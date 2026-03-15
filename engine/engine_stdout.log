@@ -1,0 +1,19 @@
+      INFO:     127.0.0.1:62989 - "POST /api/v1/dashboard/executive-metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52476 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57761 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59555 - "POST /api/v1/dashboard/executive-metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63953 - "POST /api/v1/dashboard/executive-metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58111 - "POST /api/v1/dashboard/executive-metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63195 - "GET /api/v1/terminations/causes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49934 - "POST /api/v1/documents/generate/6b9a0cdb-7e20-4d0c-8db3-7d0283cf7750?type=contrato HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61937 - "GET /api/v1/terminations/causes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50330 - "GET /api/v1/terminations/causes HTTP/1.1" 200 OK
+Traceback (most recent call last):
+  File "C:\Users\Matías Riquelme\Desktop\Contapymepuq\engine\api\routers\terminations.py", line 146, in calculate_termination
+    ins_res = db.table("employee_terminations").insert(termination_data).execute()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Matías Riquelme\Desktop\Contapymepuq\engine\.venv\Lib\site-packages\postgrest\_sync\request_builder.py", line 53, in execute
+    raise APIError(dict(json_obj))
+postgrest.exceptions.APIError: {'message': "Could not find the 'notice_indemnification_amount' column of 'employee_terminations' in the schema cache", 'code': 'PGRST204', 'hint': None, 'details': None}
+
+INFO:     127.0.0.1:59543 - "POST /api/v1/terminations/calculate HTTP/1.1" 500 Internal Server Error

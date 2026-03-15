@@ -1,0 +1,44 @@
+{
+  "organization_members": [
+    {
+      "id": "57d54765-730b-4100-90ff-87df4024c317",
+      "organization_id": "ea722f9d-2a8e-4f77-90c5-6d3e964b7f6d",
+      "user_id": "4369feb8-e9cd-4f7c-8446-cf5729e76147",
+      "role": "owner",
+      "created_at": "2026-03-15T00:53:05.399768+00:00",
+      "permissions": []
+    },
+    {
+      "id": "36c01914-4a8e-4c6a-a688-c15301a1c760",
+      "organization_id": "e1c9ac00-ba17-489a-a4f4-ce62ef2bc521",
+      "user_id": "4369feb8-e9cd-4f7c-8446-cf5729e76147",
+      "role": "owner",
+      "created_at": "2026-03-15T07:28:31.844834+00:00",
+      "permissions": []
+    },
+    {
+      "id": "248d5238-3da7-459b-9853-ad4182312bda",
+      "organization_id": "4cdfe645-6486-4ab0-a47e-69703ee76af0",
+      "user_id": "4369feb8-e9cd-4f7c-8446-cf5729e76147",
+      "role": "owner",
+      "created_at": "2026-03-15T07:28:32.086648+00:00",
+      "permissions": []
+    },
+    {
+      "id": "9f9b6045-4632-4b43-975b-d99d25be3335",
+      "organization_id": "160208c9-5dde-4728-bbc9-110fb33049ac",
+      "user_id": "4369feb8-e9cd-4f7c-8446-cf5729e76147",
+      "role": "owner",
+      "created_at": "2026-03-15T07:28:32.305399+00:00",
+      "permissions": []
+    },
+    {
+      "id": "da92150a-0f7e-48fe-8362-bc3d5e627f99",
+      "organization_id": "22774000-4384-4c1f-9df2-b82d3f683303",
+      "user_id": "4369feb8-e9cd-4f7c-8446-cf5729e76147",
+      "role": "owner",
+      "created_at": "2026-03-15T07:06:51.650418+00:00",
+      "permissions": []
+    }
+  ]
+}

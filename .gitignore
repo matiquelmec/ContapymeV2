@@ -1,0 +1,29 @@
+# ============================================
+# CONTAPYME V2 — .gitignore RAÍZ
+# ============================================
+
+# Variables de entorno (NUNCA exponer credenciales)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Python
+engine/.venv/
+engine/__pycache__/
+engine/**/__pycache__/
+engine/*.pyc
+engine/*.pyo
+
+# Node.js
+app/node_modules/
+app/.next/
+app/out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
