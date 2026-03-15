@@ -99,16 +99,19 @@ async def generate_document(employee_id: str, type: str = "contrato"):
 
         # 6. Registrar en la base de datos que el documento fue generado
         try:
+            fecha_inicio = emp.get('fecha_ingreso')
+            if not fecha_inicio:
+                fecha_inicio = str(hoy)
+                
             contract_record = {
                 "organization_id": org_id,
                 "employee_id": employee_id,
                 "tipo_documento": type,
-                "tipo_contrato": emp.get('tipo_contrato', 'indefinido'),
-                "fecha_inicio": emp.get('fecha_ingreso'),
-                "sueldo_base": sueldo_base,
-                "cargo": emp.get('cargo', 'Trabajador'),
-                "status": "generado",
-                "created_at": datetime.now().isoformat()
+                "tipo_contrato": emp.get('tipo_contrato') or 'indefinido',
+                "fecha_inicio": fecha_inicio,
+                "sueldo_base": sueldo_base or 0,
+                "cargo": emp.get('cargo') or 'Trabajador',
+                "status": "generado"
             }
             db.table("employment_contracts").insert(contract_record).execute()
         except Exception as db_err:

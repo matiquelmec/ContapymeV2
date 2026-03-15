@@ -27,3 +27,11 @@ Thumbs.db
 # Editor
 .vscode/
 *.swp
+
+# Temporales y Logs de Auditoria/Pruebas
+*.log
+engine/test_*.py
+engine/check_*.py
+engine/apply_*.py
+engine/get_ip.py
+app/.next/
