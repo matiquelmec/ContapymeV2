@@ -144,6 +144,10 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 │       ├── 📁 components/               # layout/ (Sidebar, Header) + ui/ (shadcn)
 │       └── 📁 lib/supabase/             # Clientes tipados: server.ts (RSC) + client.ts
 │
+├── 📁 supabase/                         # 🗄️ 3. Centro de Datos (Base de Datos)
+│   ├── 📁 migrations/                   # Historial cronológico de cambios (Deltas)
+│   ├── 📁 snapshots/                    # Referencia consolidada del esquema actual
+│   └── README.md                        # Guía profesional de gestión de DB
 ├── BLUEPRINT_MAESTRO.md                 # Este archivo
 └── start.ps1                            # Launcher unificado (Engine + Frontend)
 ```
