@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.3 (Consolidación RCV y Sincronización Schema) | **Fecha:** 2026-03-16 | **Estado:** EN DESARROLLO 🚧 — Fases 1–8 Completadas ✅ | Fase 8.1 Completada y Blindada 🔒
+> **Versión:** 2.4 (Blindaje RCV e Integridad Temporal) | **Fecha:** 2026-03-16 | **Estado:** EN DESARROLLO 🚧 — Fase 8.2 Blindaje de Integridad Completado 🔒✅
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -89,10 +89,14 @@ Extensa lógica progresiva y normativa chilena completa.
 ### 3.5 📉 Módulo Indicadores Económicos
 *   **Python Engine:** `workers/indicators_scheduler.py` — APScheduler que corre **automáticamente Lun-Vie a las 09:00 AM (hora Santiago)** consultando mindicador.cl y almacenando en Supabase. También se ejecuta al iniciar el servidor (lifespan FastAPI).
 
-### 3.6 📚 Módulo Contabilidad IFRS y RCV
-El pilar de la salud contable.
-*   **Python Engine:** Procesa XML/CSV del RCV del SII. Cuadra compras y ventas, genera asientos para el Libro Diario. Genera Estado de Resultados y Balance General.
-*   **Next.js:** Plan de Cuentas IFRS editable, Libro Diario, Libro Mayor, Balance de Comprobación, Reportes Financieros.
+### 3.6 📚 Módulo Contabilidad IFRS y RCV (Blindaje de Integridad)
+El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
+*   **Python Engine:** Procesa XML/CSV del RCV del SII. Cuadra compras y ventas, genera asientos para el Libro Diario.
+*   **Blindaje SQL (Integridad Temporal):** Implementación de triggers `BEFORE INSERT OR UPDATE` que fuerzan la coincidencia exacta entre el periodo contable y la fecha real del documento. Esto elimina el 100% de los errores de clasificación manual.
+*   **Next.js:** RCV Dashboard con **Visión de Inteligencia Pasiva**:
+    - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Flow).
+    - **Orden Cronológico:** Priorización automática de los periodos más recientes en la visualización.
+    - **Aislamiento Multi-Tenant:** Consultas estrictamente filtradas por `organization_id` con protección contra cruce de datos.
 
 ---
 
