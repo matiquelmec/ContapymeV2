@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from parsers.f29_plumber import parse_f29_pdf
 from core.database import get_supabase
 
-router = APIRouter(prefix="/f29", tags=["Formulario 29"])
+router = APIRouter(tags=["Formulario 29"])
 
 class ProcessF29Request(BaseModel):
     storage_path: str
@@ -16,6 +16,7 @@ class ProcessF29Request(BaseModel):
 class F29Response(BaseModel):
     success: bool
     data: Dict[str, Any] | None = None
+    audit: Dict[str, Any] | None = None
     error: str | None = None
 
 @router.post("/process", response_model=F29Response)
@@ -45,7 +46,11 @@ async def process_f29(payload: ProcessF29Request):
         if not parse_result.get("success"):
             raise HTTPException(status_code=422, detail=parse_result.get("error"))
             
-        return F29Response(success=True, data=parse_result["data"])
+        return F29Response(
+            success=True, 
+            data=parse_result["data"],
+            audit=parse_result.get("audit")
+        )
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fatal: {str(e)}")
@@ -54,56 +59,98 @@ async def process_f29(payload: ProcessF29Request):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+@router.get("/debug/all")
+async def debug_all_f29():
+    db = get_supabase()
+    result = db.table("f29_forms").select("*").execute()
+    return {"total": len(result.data), "data": result.data}
+
+@router.delete("/{f29_id}")
+async def delete_f29_record(f29_id: str):
+    """Elimina un registro de F29 por su ID."""
+    db = get_supabase()
+    result = db.table("f29_forms").delete().eq("id", f29_id).execute()
+    return {"success": True, "message": f"Registro {f29_id} eliminado."}
+
 @router.get("/analysis/history")
 async def get_f29_history(organization_id: str, limit: int = 12):
     """
     Recupera el historial de F29 y calcula variaciones porcentuales (Tendencias).
     """
+    print(f"DEBUG: Buscando historial para ORG_ID: {organization_id}")
     db = get_supabase()
-    
     try:
+        # Consulta simplificada para asegurar recuperación
         result = db.table("f29_forms") \
             .select("*") \
             .eq("organization_id", organization_id) \
-            .order("periodo", vertical=False) \
-            .limit(limit) \
             .execute()
         
         data = result.data or []
+        print(f"DEBUG: Registros encontrados: {len(data)}")
+        
         if not data:
-            return {"success": True, "history": [], "trends": {}}
+            return {"success": True, "history": [], "insights": {}}
 
-        # Ordenar por periodo ascendente para calcular variaciones
+        # Ordenar localmente para evitar problemas de parámetros en el SDK
         data_sorted = sorted(data, key=lambda x: x["periodo"])
         
-        history = []
+        from typing import Any
+        history: list[Any] = []
+        
         for i, current in enumerate(data_sorted):
-            entry = {**current}
+            entry = dict(current)
+            
+            # Valores base como floats
+            v = float(current.get("ventas_netas") or 0)
+            df = float(current.get("debito_fiscal") or 0)
+            cf = float(current.get("credito_fiscal") or 0)
+            tp = float(current.get("total_a_pagar") or 0)
+            
+            cp = float(cf / 0.19) if cf > 0 else 0.0
+            
+            # Ratios
+            entry["ratios"] = {
+                "margin_proyectado": round((v - cp) / v * 100, 1) if v > 0 else 0.0,
+                "tax_burden": round(tp / v * 100, 2) if v > 0 else 0.0,
+                "iva_effectiveness": round(df / v * 100, 2) if v > 0 else 0.0,
+                "credit_debit_ratio": round(cf / df, 2) if df > 0 else 0.0,
+                "compras_proyectadas": cp
+            }
+
+            var = 0.0
             if i > 0:
-                prev = data_sorted[i-1]
-                # Calcular variación de IVA a pagar
-                curr_pay = current.get("total_a_pagar", 0)
-                prev_pay = prev.get("total_a_pagar", 0)
-                
-                if prev_pay != 0:
-                    entry["variation_pct"] = round(((curr_pay - prev_pay) / prev_pay) * 100, 2)
-                else:
-                    entry["variation_pct"] = 0
-            else:
-                entry["variation_pct"] = 0
+                prev_tp = float(data_sorted[i-1].get("total_a_pagar") or 0)
+                if prev_tp != 0:
+                    var = round(((tp - prev_tp) / prev_tp) * 100, 2)
+            
+            entry["variation_pct"] = var
             history.append(entry)
 
-        # Insights de IA simulada (Tendencias)
-        last_3 = history[-3:] if len(history) >= 3 else history
-        avg_pay = sum(h["total_a_pagar"] for h in last_3) / len(last_3) if last_3 else 0
+        # Resumen final
+        last = history[-1] if history else {}
+        sub = history[-3:] if history else []
+        avg = sum(float(h.get("total_a_pagar") or 0) for h in sub) / len(sub) if sub else 0.0
         
+        msg = "Inicie cargando su primer F29."
+        last_v = 0.0
+        
+        if len(history) == 1:
+            msg = "Primer periodo analizado. Suba otro mes para comparar."
+        elif len(history) > 1:
+            last_v = float(last.get("variation_pct") or 0)
+            status = "subido" if last_v > 0 else "bajado"
+            m = last.get("ratios", {}).get("margin_proyectado", 0)
+            msg = f"Impuestos han {status} {abs(last_v)}%. Margen: {m}%."
+
         return {
             "success": True, 
             "history": history,
             "insights": {
-                "average_total": avg_pay,
-                "trend": "upward" if history[-1]["variation_pct"] > 0 else "downward",
-                "message": f"Las obligaciones tributarias han {'aumentado' if history[-1]['variation_pct'] > 0 else 'disminuido'} un {abs(history[-1]['variation_pct'])}% respecto al mes anterior."
+                "average_total": avg,
+                "last_margin": last.get("ratios", {}).get("margin_proyectado", 0) if history else 0,
+                "trend": "upward" if last_v > 0 else "downward" if last_v < 0 else "stable",
+                "message": msg
             }
         }
 

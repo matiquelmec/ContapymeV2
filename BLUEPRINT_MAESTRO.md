@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.1 (Arquitectura Slingshot + Motor Matemático Real) | **Fecha:** 2026-03-15 | **Estado:** EN DESARROLLO 🚧 — Fases 1–6 Completadas ✅
+> **Versión:** 2.3 (Consolidación RCV y Sincronización Schema) | **Fecha:** 2026-03-16 | **Estado:** EN DESARROLLO 🚧 — Fases 1–8 Completadas ✅ | Fase 8.1 Completada y Blindada 🔒
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -68,10 +68,14 @@ El sistema abandona el 1 a 1 y asume que el usuario es un Contador gestionando d
 *   **Base de Datos:** Tablas troncales de `organizations` y `organization_members`. **Toda** tabla transaccional (Ej. `f29_forms`, `employees`) hereda y se amarra al `organization_id`.
 *   **Next.js:** Provee la selección activa del cliente (El "Company Switcher" en el Header) que filtra localmente y visualmente todas las tablas y dashboards.
 
-### 3.2 🧾 Módulo F29: Análisis, Comparativa y Tendencia
-El corazón comercial del producto. Convierte papeleo en inteligencia de negocios.
-*   **Next.js:** Recibe el "Drag & Drop" del contador. Visualiza Dashboard de Tendencias con gráficos interactivos `Recharts`.
-*   **Python Engine:** Detecta el PDF nuevo, aplica extractores geométricos (`PyMuPDF`). Maneja **Análisis Comparativo Histórico** de hasta 24 meses.
+### 3.2 🧾 Módulo F29: Auditoría Tributaria Inteligente (V2 Elevada)
+El corazón comercial del producto. Convierte papeleo en analítica estratégica "Clase Mundial".
+*   **Next.js:** Dashboard interactivo que visualiza ratios críticos: **Margen Operacional Proyectado**, **Carga Tributaria**, **Efectividad de IVA** y **Ratio Crédito/Débito**. 
+    - **Gestión Dinámica:** Sistema de checkboxes para comparación selectiva de periodos y tabla de historial con eliminación de registros (Consola de Control).
+    - **Visualización:** Gráficos de tendencias (Recharts) con renderizado optimizado por debouncing y claves dinámicas.
+    - **Insights:** Alertas automáticas sobre tendencias de pago (Alza/Baja) y coherencia fiscal.
+*   **Python Engine:** `parsers/f29_plumber.py` (Proximidad Global V2.1). Captura códigos 563 (Ventas), 538, 537, 062, 151 y 049. Ejecuta una **Lógica de Auditoría Multidimensional** que genera alertas inteligentes ante anomalías o discrepancias de IVA.
+    - **API Endpoint:** Soporte para `DELETE` por ID con limpieza automática de caché y recalculo de métricas.
 
 ### 3.3 👥 Módulo Remuneraciones (Payroll) y Finiquitos
 Extensa lógica progresiva y normativa chilena completa.
@@ -156,7 +160,7 @@ El pilar de la salud contable.
 | `/accounting/ledger` | `accounting/ledger/` | `actions/accounting.ts` | ✅ Completo |
 | `/accounting/trial-balance` | `accounting/trial-balance/` | `actions/accounting.ts` | ✅ Completo |
 | `/accounting/reports` | `accounting/reports/` (14KB) | `actions/accounting.ts` | ✅ Completo |
-| `/accounting/f29-comparative` | `accounting/f29-comparative/` | `actions/f29.ts` | ✅ Completo |
+| `/accounting/f29-comparative` | `accounting/f29-comparative/` | `actions/f29.ts` | ✅ Completo (Incluye Gestión/Delete) |
 | `/accounting/config` | `accounting/config/` | `actions/accounting.ts` | ✅ Completo |
 | `/reconciliation` | `reconciliation/` | — | ✅ Completo |
 | `/assets` | `assets/` | `actions/assets.ts` | ✅ Completo |
@@ -254,6 +258,8 @@ El pilar de la salud contable.
 - [x] Balance de Comprobación y Saldos.
 - [x] Estado de Resultados, Balance General y análisis de proveedores/clientes.
 
+  > ⚠️ **Nota de Auditoría (2026-03-15):** El módulo RCV tiene funcionalidad base operativa, pero carece de visualizaciones avanzadas (gráficos), historial de importaciones y análisis enriquecido. Ver Fase 8.1 para el plan de restauración y potenciación completo.
+
 ### FASE 7: Motor Matemático de Clase Mundial ✅ COMPLETADA (2026-03-15)
 El salto de "simulación" a un sistema contable-laboral de producción real.
 - [x] **`calculators/chilean_payroll.py`**: Motor puro con normativa laboral chilena completa:
@@ -279,6 +285,53 @@ Puesta en marcha productiva de alto estrés.
 - [ ] **Módulo de Auditoría y Logs**: Registro de acciones críticas.
 - [ ] Stress-Test y validaciones unitarias (pytest + Vitest).
 
+### FASE 8.1: Restauración y Potenciación RCV ✅ COMPLETADA (2026-03-15)
+Auditoría del módulo RCV reveló brechas vs versión Master. Plan de restauración implementado y adaptado a arquitectura Slingshot.
+
+#### Orden de Ejecución:
+
+**PASO 1 — Migración DB (Prerequisito, no-destructivo)** `[PENDIENTE EJECUTAR EN SUPABASE]`
+- [x] `ADD COLUMN monto_calculado BIGINT` y `es_suma BOOLEAN` en `purchase_records` y `sales_records`
+- [x] `CREATE INDEX` en `(organization_id, periodo)` para ambas tablas
+- [x] `ADD CONSTRAINT UNIQUE (organization_id, folio, rut_emisor, periodo)` para evitar duplicados en upsert
+- [ ] ~~**Pendiente:**~~ Ejecutar `supabase/migrations/20260315000000_rcv_fase81_potenciacion.sql` en el Dashboard de Supabase
+
+**PASO 2 — Engine Python (`engine/api/routers/rcv.py`)** `✅ COMPLETADO`
+- [x] Constantes `DOCUMENT_TYPES_SUMA = {'33', '34', '56'}` y `DOCUMENT_TYPES_RESTA = {'61'}` con lógica J+K
+- [x] Parser mejorado: calcula y guarda `monto_calculado` y `es_suma` por tipo de documento
+- [x] Upsert corregido con `on_conflict="organization_id,folio,rut_emisor,periodo"`
+- [x] `GET /analysis/top-vendors|top-customers`: ahora incluye `monto_calculado`, `porcentaje`, `count_suma`, `count_resta`
+- [x] Nuevo `GET /analysis/summary`: KPIs del período
+- [x] Nuevo `GET /history`: historial de importaciones agrupado por (periodo, tipo)
+- [x] Nuevo `GET /periodos`: lista de períodos únicos con data
+
+**PASO 3 — Server Actions (`app/src/actions/rcv.ts`)** `✅ COMPLETADO`
+- [x] **Bugfix crítico DT-09**: Corregido typo `organiationId` → `organizationId`
+- [x] `getRCVSummary(organizationId, periodo?)` implementado
+- [x] `getRCVHistory(organizationId, limit?)` implementado
+- [x] `getAvailablePeriodos(organizationId)` implementado
+
+**PASO 4 — Dependencia Frontend** `✅ YA ESTABA INSTALADA`
+- [x] `recharts ^3.8.0` ya presente en `package.json` (del módulo F29)
+
+**PASO 5 — Componentes Frontend** `✅ COMPLETADO`
+- [x] `rcv-analysis-client.tsx` refactorizado: KPIs cards + selector de período + Tabs + BarChart + PieChart + tabla expandible + exportar CSV
+- [x] `rcv-upload-client.tsx` mejorado: drag & drop, feedback visual nombre/tamaño, auto-refresh post importación
+- [x] `rcv/history/page.tsx` creada: historial de importaciones con estado de asientos
+- [x] `rcv/page.tsx` actualizado: botón "Historial", secciones estructuradas
+
+**PASO 6 — Blindaje de Importación RCV y Asientos (V2.3)** `✅ COMPLETADO (2026-03-16)`
+- [x] **Normalización de Periodos**: Corrección algorítmica (`YYYY-MM-01`) global cruzada entre RCV y Generación de Asientos para evitar desajustes u omisiones de búsqueda en PostgreSQL.
+- [x] **Soporte Ficticio/Real Extendido**: Agregado soporte formal para documento Tipo `45` (Factura de Compra).
+- [x] **Sincronización de Source of Truth (`schema.sql`)**: Archivo maestro local sincronizado exactamente con la base de datos productiva, incluyendo tablas faltantes de RRHH, Cuentas y Documentos, y corrigiendo dependencias de tipos de datos (`ENUM` vs `text`).
+- [x] **Sistema Activo Anti-Duplicados**: Prevención estricta en el endpoint de subida (lanzamiento de HTTP 400 si el periodo ya existe) con override funcional (`force=true`) para garantizar integridad en UPSERTs.
+
+#### Principios Rectores Aplicados:
+- **No se rompió nada existente**: `purchase_records`, `sales_records` y `journal_entries` intactos.
+- **Slingshot Style**: Toda lógica de análisis en Engine Python. Frontend solo visualiza.
+- **Multi-tenant**: Todos los endpoints filtran por `organization_id`.
+- **Progressive Enhancement**: Estado vacío elegante si el Engine está caído.
+
 ---
 
 ## 🗺️ 7. INVENTARIO DE MIGRACIÓN V1 → V2
@@ -286,9 +339,9 @@ Puesta en marcha productiva de alto estrés.
 | Módulo V1 (`Contapyme_V2`) | Estado en V2 |
 |---|---|
 | Login / Auth multi-tenant | ✅ Migrado con RLS |
-| F29 Individual (Upload + Parser Python) | ✅ Migrado y mejorado |
-| F29 Comparativo Histórico (24 meses) | ✅ Completado |
-| RCV Análisis + Historial de Proveedores | ✅ Completado |
+| F29 Individual (Auditoría Inteligente V2 Elevada) | ✅ Migrado y Elevado |
+| F29 Comparativo Histórico (24 meses) | ✅ Completo (Dinámico + Selectivo) |
+| RCV Análisis + Historial de Proveedores | ✅ Completado y Potenciado (Fase 8.1) |
 | Libro Diario (Journal + Asientos) | ✅ Migrado |
 | Libro Mayor (Ledger por cuenta) | ✅ Completado |
 | Balance de Comprobación | ✅ Completado |
@@ -320,6 +373,11 @@ Puesta en marcha productiva de alto estrés.
 | DT-04 | Tests unitarios exhaustivos (`pytest`) para `calculators/chilean_payroll.py` (Casos Extremos) | Alta | 8 |
 | DT-06 | CORS en producción: dominio real de Vercel pendiente de agregar a lista blanca de FastAPI | Crítica | 8 |
 | DT-08 | Roles granulares protegidos vía Middleware (Actualmente confían en UI logic parcialmente) | Crítica | 8 |
+| DT-09 | **RCV Bugfix**: ~~Typo `organiationId` en `actions/rcv.ts`~~ | ~~Alta~~ | ✅ 8.1 |
+| DT-10 | **RCV Upsert sin conflict key**: ~~Duplicados en `purchase_records`/`sales_records`~~ | ~~Alta~~ | ✅ 8.1 |
+| DT-11 | **RCV Sin gráficos ni KPIs**: ~~Sin visualizaciones~~ | ~~Media~~ | ✅ 8.1 |
+| DT-12 | **RCV Tipo 34 ignorado**: ~~Parser no diferenciaba Facturas Exentas~~ | ~~Media~~ | ✅ 8.1 |
+| DT-13 | **RCV Migración DB Pendiente**: ~~Ejecutar `supabase/migrations/20260315000000_rcv_fase81_potenciacion.sql`~~ | ~~Alta~~ | ✅ 8.1 |
 
 ---
 

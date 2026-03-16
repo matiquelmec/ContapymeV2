@@ -22,25 +22,33 @@ async def get_executive_metrics(req: MetricsRequest):
         start_date = f"{req.year}-01-01"
         end_date = f"{req.year}-12-31"
 
+        print(f"[FASTAPI DASHBOARD] Calculando métricas para ORG: {req.organization_id} | AÑO: {req.year}")
+
         # 1. Ventas Totales del Año (desde sales_records)
         sales_res = db.table("sales_records") \
-            .select("monto_neto") \
+            .select("monto_neto, fecha_docto") \
             .eq("organization_id", req.organization_id) \
             .gte("fecha_docto", start_date) \
             .lte("fecha_docto", end_date) \
             .execute()
         
-        total_sales = sum([s["monto_neto"] for s in sales_res.data]) if sales_res.data else 0
+        total_sales = sum([int(s.get("monto_neto", 0) or 0) for s in sales_res.data]) if sales_res.data else 0
+        print(f"   -> Ventas encontradas: {len(sales_res.data)} | Total: {total_sales}")
+        if sales_res.data:
+            print(f"   -> Ejemplo venta: {sales_res.data[0]}")
 
         # 2. Compras Totales del Año (desde purchase_records)
         purchases_res = db.table("purchase_records") \
-            .select("monto_neto") \
+            .select("monto_neto, fecha_docto") \
             .eq("organization_id", req.organization_id) \
             .gte("fecha_docto", start_date) \
             .lte("fecha_docto", end_date) \
             .execute()
             
-        total_purchases = sum([p["monto_neto"] for p in purchases_res.data]) if purchases_res.data else 0
+        total_purchases = sum([int(p.get("monto_neto", 0) or 0) for p in purchases_res.data]) if purchases_res.data else 0
+        print(f"   -> Compras encontradas: {len(purchases_res.data)} | Total: {total_purchases}")
+        if purchases_res.data:
+            print(f"   -> Ejemplo compra: {purchases_res.data[0]}")
 
         # 3. Activos Fijos y Depreciación
         assets_res = db.table("fixed_assets") \
@@ -56,8 +64,8 @@ async def get_executive_metrics(req: MetricsRequest):
         for month in range(1, 13):
             month_str = f"{req.year}-{str(month).zfill(2)}"
             
-            m_sales = sum([s["monto_neto"] for s in sales_res.data if s.get("fecha_docto", "").startswith(month_str)])
-            m_purch = sum([p["monto_neto"] for p in purchases_res.data if p.get("fecha_docto", "").startswith(month_str)])
+            m_sales = sum([int(s.get("monto_neto", 0) or 0) for s in sales_res.data if str(s.get("fecha_docto", "")).startswith(month_str)])
+            m_purch = sum([int(p.get("monto_neto", 0) or 0) for p in purchases_res.data if str(p.get("fecha_docto", "")).startswith(month_str)])
             
             monthly_trend.append({
                 "month": calendar.month_abbr[month],
@@ -84,10 +92,20 @@ async def get_executive_metrics(req: MetricsRequest):
 
         score = min(100, max(0, int(margin_percentage * 2))) if margin_percentage > 0 else 0
 
+        # Obtener nombre de la organización para confirmar
+        org_name = "Desconocida"
+        try:
+            org_info = db.table("organizations").select("nombre").eq("id", req.organization_id).single().execute()
+            if org_info.data:
+                org_name = org_info.data["nombre"]
+        except:
+            pass
+
         return {
             "success": True,
             "data": {
                 "year": req.year,
+                "orgName": org_name,
                 "financials": {
                     "totalSales": total_sales,
                     "totalPurchases": total_purchases,

@@ -63,102 +63,183 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
 async def generate_from_rcv(req: GenerateFromRCVRequest):
     db = get_supabase()
     try:
+        # Normalizar periodo globalmente para la función
+        periodo_query = req.periodo
+        if len(periodo_query) == 7: # YYYY-MM -> YYYY-MM-01
+            periodo_query = f"{periodo_query}-01"
+
         config = get_accounting_config(db, req.organization_id, 'rcv', req.type)
         if not config:
             raise HTTPException(status_code=400, detail=f"No hay configuración contable para {req.type}")
 
+        # Mapa de nombres de documentos para la glosa
+        doc_names = {
+            '33': 'Factura Electrónica',
+            '34': 'Factura Exenta',
+            '39': 'Boleta Electrónica',
+            '41': 'Boleta Exenta',
+            '45': 'Factura de Compra',
+            '46': 'Factura de Compra Elect.',
+            '56': 'Nota de Débito',
+            '61': 'Nota de Crédito',
+            '110': 'Factura Exportación',
+            '111': 'Nota de Débito Export.',
+            '112': 'Nota de Crédito Export.'
+        }
+
+        count = 0
         if req.type == 'purchases':
-            res = db.table("purchase_records").select("*").eq("organization_id", req.organization_id).eq("periodo", req.periodo).is_("journal_entry_id", "null").execute()
+            res = db.table("purchase_records").select("*") \
+                .eq("organization_id", req.organization_id) \
+                .eq("periodo", periodo_query) \
+                .is_("journal_entry_id", "null") \
+                .execute()
             records = res.data or []
-            count = 0
-            for rec in records:
-                glosa = f"Compra Folio {rec['folio']} - {rec.get('razon_social_emisor', 'S/N')}"
-                entry = db.table("journal_entries").insert({
-                    "organization_id": req.organization_id, 
-                    "fecha": rec["fecha_docto"], 
-                    "glosa": glosa
-                }).execute()
-                eid = entry.data[0]["id"]
-                lines = []
-                
-                # Línea Gasto (Debe)
-                if rec["monto_neto"] > 0:
-                    lines.append({
-                        "entry_id": eid, 
-                        "cuenta_codigo": config["revenue_account_code"], 
-                        "cuenta_nombre": config["revenue_account_name"], 
-                        "tipo": "debe", "monto": rec["monto_neto"]
-                    })
-                
-                # Línea IVA (Debe)
-                if rec["monto_iva"] > 0:
-                    lines.append({
-                        "entry_id": eid, 
-                        "cuenta_codigo": config["tax_account_code"], 
-                        "cuenta_nombre": config["tax_account_name"], 
-                        "tipo": "debe", "monto": rec["monto_iva"]
-                    })
-                
-                # Línea Pasivo (Haber)
-                lines.append({
-                    "entry_id": eid, 
-                    "cuenta_codigo": config["asset_account_code"], 
-                    "cuenta_nombre": config["asset_account_name"], 
-                    "tipo": "haber", "monto": rec["monto_total"]
-                })
-                
-                db.table("journal_entry_lines").insert(lines).execute()
-                db.table("purchase_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                count += 1
-            return {"success": True, "entries_created": count}
             
-        elif req.type == 'sales':
-            # Implementación análoga para ventas
-            res = db.table("sales_records").select("*").eq("organization_id", req.organization_id).eq("periodo", req.periodo).is_("journal_entry_id", "null").execute()
-            records = res.data or []
-            count = 0
             for rec in records:
-                glosa = f"Venta Folio {rec['folio']} - {rec.get('razon_social_receptor', 'S/N')}"
-                entry = db.table("journal_entries").insert({
-                    "organization_id": req.organization_id, 
-                    "fecha": rec["fecha_docto"], 
-                    "glosa": glosa
-                }).execute()
-                eid = entry.data[0]["id"]
-                lines = []
+                # Aseguramos conversión a int robusta
+                def to_int(val):
+                    try: return int(float(val or 0))
+                    except: return 0
+
+                monto_total = to_int(rec.get("monto_total"))
+                if monto_total == 0:
+                    print(f"Saltando registro Folio {rec.get('folio')} por monto $0")
+                    continue
+
+                es_suma = rec.get("es_suma", True)
+                tipo_doc_id = str(rec.get("tipo_documento", "33"))
+                doc_name = doc_names.get(tipo_doc_id, f"Doc.{tipo_doc_id}")
+                partner = rec.get('razon_social_emisor', 'S/N')
+                glosa = f"{doc_name} Folio {rec['folio']} - {partner}"
                 
-                # Línea Activo (Debe - Clientes)
-                lines.append({
-                    "entry_id": eid, 
-                    "cuenta_codigo": config["asset_account_code"], 
-                    "cuenta_nombre": config["asset_account_name"], 
-                    "tipo": "debe", "monto": rec["monto_total"]
-                })
-                
-                # Línea IVA (Haber - Débito)
-                if rec["monto_iva"] > 0:
-                    lines.append({
-                        "entry_id": eid, 
-                        "cuenta_codigo": config["tax_account_code"], 
-                        "cuenta_nombre": config["tax_account_name"], 
-                        "tipo": "haber", "monto": rec["monto_iva"]
-                    })
-                
-                # Línea Ingreso (Haber - Ventas)
-                if rec["monto_neto"] > 0:
-                    lines.append({
-                        "entry_id": eid, 
+                if not es_suma:
+                    glosa = f"[AJUSTE] {glosa}"
+
+                monto_neto = int(rec.get("monto_neto", 0) or 0)
+                monto_exento = int(rec.get("monto_exento", 0) or 0)
+                monto_iva = int(rec.get("monto_iva", 0) or 0)
+                monto_base = monto_neto + monto_exento
+
+                if abs(monto_base + monto_iva) != abs(monto_total):
+                    monto_base = abs(monto_total) - abs(monto_iva)
+
+                lines_to_insert = []
+                tipo_gasto = "debe" if es_suma else "haber"
+                tipo_pasivo = "haber" if es_suma else "debe"
+
+                if monto_base != 0:
+                    lines_to_insert.append({
                         "cuenta_codigo": config["revenue_account_code"], 
                         "cuenta_nombre": config["revenue_account_name"], 
-                        "tipo": "haber", "monto": rec["monto_neto"]
+                        "tipo": tipo_gasto, "monto": abs(monto_base)
+                    })
+                
+                if monto_iva != 0:
+                    lines_to_insert.append({
+                        "cuenta_codigo": config["tax_account_code"], 
+                        "cuenta_nombre": config["tax_account_name"], 
+                        "tipo": tipo_gasto, "monto": abs(monto_iva)
+                    })
+                
+                if monto_total != 0:
+                    lines_to_insert.append({
+                        "cuenta_codigo": config["asset_account_code"], 
+                        "cuenta_nombre": config["asset_account_name"], 
+                        "tipo": tipo_pasivo, "monto": abs(monto_total)
                     })
 
-                db.table("journal_entry_lines").insert(lines).execute()
-                db.table("sales_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                count += 1
-            return {"success": True, "entries_created": count}
+                if lines_to_insert:
+                    entry = db.table("journal_entries").insert({
+                        "organization_id": req.organization_id, 
+                        "fecha": rec["fecha_docto"], 
+                        "glosa": glosa
+                    }).execute()
+                    if not entry.data: continue
+                    eid = entry.data[0]["id"]
+                    
+                    for l in lines_to_insert:
+                        l["entry_id"] = eid
+                    
+                    db.table("journal_entry_lines").insert(lines_to_insert).execute()
+                    db.table("purchase_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
+                    count += 1
+
+        elif req.type == 'sales':
+            res = db.table("sales_records").select("*") \
+                .eq("organization_id", req.organization_id) \
+                .eq("periodo", periodo_query) \
+                .is_("journal_entry_id", "null") \
+                .execute()
+            records = res.data or []
             
-        return {"success": False, "message": "Tipo no soportado"}
+            for rec in records:
+                monto_total = int(rec.get("monto_total", 0) or 0)
+                if monto_total == 0:
+                    continue
+
+                es_suma = rec.get("es_suma", True)
+                tipo_doc_id = str(rec.get("tipo_documento", "33"))
+                doc_name = doc_names.get(tipo_doc_id, f"Doc.{tipo_doc_id}")
+                partner = rec.get('razon_social_receptor', 'S/N')
+                glosa = f"{doc_name} Folio {rec['folio']} - {partner}"
+
+                if not es_suma:
+                    glosa = f"[AJUSTE] {glosa}"
+
+                monto_neto = int(rec.get("monto_neto", 0) or 0)
+                monto_exento = int(rec.get("monto_exento", 0) or 0)
+                monto_iva = int(rec.get("monto_iva", 0) or 0)
+                monto_base = monto_neto + monto_exento
+
+                if abs(monto_base + monto_iva) != abs(monto_total):
+                    monto_base = abs(monto_total) - abs(monto_iva)
+
+                lines_to_insert = []
+                tipo_activo = "debe" if es_suma else "haber"
+                tipo_ingreso = "haber" if es_suma else "debe"
+
+                if monto_total != 0:
+                    lines_to_insert.append({
+                        "cuenta_codigo": config["asset_account_code"], 
+                        "cuenta_nombre": config["asset_account_name"], 
+                        "tipo": tipo_activo, "monto": abs(monto_total)
+                    })
+                
+                if monto_iva != 0:
+                    lines_to_insert.append({
+                        "cuenta_codigo": config["tax_account_code"], 
+                        "cuenta_nombre": config["tax_account_name"], 
+                        "tipo": tipo_ingreso, "monto": abs(monto_iva)
+                    })
+                
+                if monto_base != 0:
+                    lines_to_insert.append({
+                        "cuenta_codigo": config["revenue_account_code"], 
+                        "cuenta_nombre": config["revenue_account_name"], 
+                        "tipo": tipo_ingreso, "monto": abs(monto_base)
+                    })
+
+                if lines_to_insert:
+                    entry = db.table("journal_entries").insert({
+                        "organization_id": req.organization_id, 
+                        "fecha": rec["fecha_docto"], 
+                        "glosa": glosa
+                    }).execute()
+                    if not entry.data: continue
+                    eid = entry.data[0]["id"]
+                    
+                    for l in lines_to_insert:
+                        l["entry_id"] = eid
+                        
+                    db.table("journal_entry_lines").insert(lines_to_insert).execute()
+                    db.table("sales_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
+                    count += 1
+
+        return {"success": True, "entries_created": count}
+    except Exception as e:
+        print(f"[ERROR generate_from_rcv] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
