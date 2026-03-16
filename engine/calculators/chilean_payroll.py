@@ -339,21 +339,43 @@ def calcular_liquidacion(
 def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -> dict:
     """
     Convierte un LiquidacionResult al dict listo para insertar en la tabla
-    `liquidations` de Supabase. Centraliza el mapeo de campos.
+    `liquidations` de Supabase. Centraliza el mapeo de campos siguiendo
+    estrictamente el esquema de producción.
     """
     return {
         "organization_id": org_id,
         "employee_id": emp_id,
         "periodo": periodo,
         "sueldo_base": res.sueldo_base,
+        "gratificacion": res.gratificacion,
+        "asignacion_colacion": res.asignacion_colacion,
+        "asignacion_movilizacion": res.asignacion_movilizacion,
+        "bono_colacion": res.asignacion_colacion,  # Redundancia por compatibilidad
+        "bono_movilizacion": res.asignacion_movilizacion, # Redundancia por compatibilidad
+        "horas_extra_monto": res.horas_extra_monto,
+        "bono_extra": res.bono_extra,
         "total_haberes_brutos": res.total_haberes_brutos,
+        "base_imponible_afp": res.base_imponible_afp,
+        "base_imponible_salud": res.base_imponible_salud,
+        "base_imponible_impuesto": res.base_imponible_impuesto,
         "afp": res.afp,
+        "afp_comision": res.afp_comision,
         "salud": res.salud,
         "afc_trabajador": res.afc_trabajador,
         "impuesto_unico": res.impuesto_unico,
         "total_descuentos": res.total_descuentos_legales,
         "afc_empresa": res.afc_empresa,
         "seguro_invalidez": res.sis_empresa,
+        "sis_empresa": res.sis_empresa,       # Redundancia por compatibilidad
         "sueldo_liquido": res.sueldo_liquido,
+        "afp_code": res.afp_code,
+        "salud_code": res.salud_code,
+        "uf_valor_usado": res.uf_valor_usado,
+        "dias_trabajados": res.dias_trabajados,
         "status": "borrador",
+        "calculation_snapshot": {
+            "uf": res.uf_valor_usado,
+            "tipo_contrato": res.tipo_contrato,
+            "afp_code": res.afp_code
+        }
     }
