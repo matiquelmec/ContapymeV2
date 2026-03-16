@@ -49,7 +49,7 @@ El ecosistema ahora consta de 3 actores independientes que se comunican de forma
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ Supabase Client / React Server Components
 ┌───────────────────────────────────▼──────────────────────────────────┐
-│  FRONTEND EJECUTIVO (Next.js 15 App Router)                          │
+│  FRONTEND EJECUTIVO (Next.js 16 App Router)                          │
 │  Carpeta: /app                                                       │
 │  - UI Institucional: TailwindCSS + shadcn/ui.                        │
 │  - Autenticación Frontal con Middleware SSR.                         │
@@ -94,9 +94,9 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   **Python Engine:** Procesa XML/CSV del RCV del SII. Cuadra compras y ventas, genera asientos para el Libro Diario.
 *   **Blindaje SQL (Integridad Temporal):** Implementación de triggers `BEFORE INSERT OR UPDATE` que fuerzan la coincidencia exacta entre el periodo contable y la fecha real del documento. Esto elimina el 100% de los errores de clasificación manual.
 *   **Next.js:** RCV Dashboard con **Visión de Inteligencia Pasiva**:
-    - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Flow).
-    - **Orden Cronológico:** Priorización automática de los periodos más recientes en la visualización.
-    - **Aislamiento Multi-Tenant:** Consultas estrictamente filtradas por `organization_id` con protección contra cruce de datos.
+    - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Awareness).
+    - **Orden Cronológico:** Priorización automática de los periodos más recientes.
+    - **Integridad:** Sincronizado con triggers SQL para evitar desajustes temporales.
 
 ---
 
@@ -335,11 +335,15 @@ Auditoría del módulo RCV reveló brechas vs versión Master. Plan de restaurac
 - [x] `rcv/history/page.tsx` creada: historial de importaciones con estado de asientos
 - [x] `rcv/page.tsx` actualizado: botón "Historial", secciones estructuradas
 
-**PASO 6 — Blindaje de Importación RCV y Asientos (V2.3)** `✅ COMPLETADO (2026-03-16)`
-- [x] **Normalización de Periodos**: Corrección algorítmica (`YYYY-MM-01`) global cruzada entre RCV y Generación de Asientos para evitar desajustes u omisiones de búsqueda en PostgreSQL.
-- [x] **Soporte Ficticio/Real Extendido**: Agregado soporte formal para documento Tipo `45` (Factura de Compra).
-- [x] **Sincronización de Source of Truth (`schema.sql`)**: Archivo maestro local sincronizado exactamente con la base de datos productiva, incluyendo tablas faltantes de RRHH, Cuentas y Documentos, y corrigiendo dependencias de tipos de datos (`ENUM` vs `text`).
-- [x] **Sistema Activo Anti-Duplicados**: Prevención estricta en el endpoint de subida (lanzamiento de HTTP 400 si el periodo ya existe) con override funcional (`force=true`) para garantizar integridad en UPSERTs.
+**PASO 6 — Blindaje de Importación RCV y Asientos (V2.3)** `✅ COMPLETADO`
+- [x] **Normalización de Periodos**: Corrección algorítmica (`YYYY-MM-01`) global.
+- [x] **Soporte Ficticio/Real Extendido**: Documento Tipo `45` integrado.
+- [x] **Triggers de Blindaje**: Implementado `fn_secure_rcv_period()` en PostgreSQL.
+- [x] **Anti-Duplicados**: Restricción `UNIQUE` y lógica de override funcional.
+
+**PASO 7 — Próximos Pasos (Fase 8.3)** `⏳ PLANIFICADO`
+- [ ] **Auto-Contabilización**: Generación automática de asientos al subir el CSV sin intervención humana.
+- [ ] **RLS Hardened**: Políticas de seguridad a nivel de fila en Supabase.
 
 #### Principios Rectores Aplicados:
 - **No se rompió nada existente**: `purchase_records`, `sales_records` y `journal_entries` intactos.

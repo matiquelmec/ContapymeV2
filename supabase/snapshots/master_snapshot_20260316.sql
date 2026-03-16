@@ -1,14 +1,15 @@
 -- ============================================================
 -- CONTAPYME V2 — SCHEMA MAESTRO (Sincronizado)
--- Versión: 2.1 | Fecha: 2026-03-16
+-- Versión: 2.2 | Fecha: 2026-03-16
 -- Propósito: Única fuente de verdad de la estructura de DB.
--- Incluye: Estructura base + Blindaje de Integridad RCV.
+-- Sincronización final: Refleja 100% la estructura de producción.
 -- ============================================================
 
--- EXTENSIONES
+-- 1. EXTENSIONES Y TIPOS (Si existen en Supabase)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- TABLAS DE NÚCLEO
+-- 2. TABLAS DE INFRAESTRUCTURA (Alineado con DB Real)
+
 CREATE TABLE public.organizations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   rut_empresa character varying NOT NULL UNIQUE,
@@ -24,6 +25,17 @@ CREATE TABLE public.organizations (
   CONSTRAINT organizations_pkey PRIMARY KEY (id)
 );
 
+CREATE TABLE public.organization_members (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  organization_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role text NOT NULL DEFAULT 'viewer', -- Referenciado como USER-DEFINED member_role
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  permissions jsonb DEFAULT '[]'::jsonb,
+  CONSTRAINT organization_members_pkey PRIMARY KEY (id),
+  CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
   full_name text,
@@ -33,7 +45,8 @@ CREATE TABLE public.profiles (
   CONSTRAINT profiles_pkey PRIMARY KEY (id)
 );
 
--- CONTABILIDAD
+-- 3. MÓDULO CONTABILIDAD E INDICADORES
+
 CREATE TABLE public.chart_of_accounts (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -49,6 +62,17 @@ CREATE TABLE public.chart_of_accounts (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT chart_of_accounts_pkey PRIMARY KEY (id),
   CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+
+CREATE TABLE public.economic_indicators (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  codigo character varying NOT NULL UNIQUE,
+  nombre text NOT NULL,
+  valor numeric NOT NULL,
+  fecha date NOT NULL,
+  fuente text DEFAULT 'mindicador.cl'::text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT economic_indicators_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE public.journal_entries (
@@ -76,7 +100,8 @@ CREATE TABLE public.journal_entry_lines (
   CONSTRAINT journal_entry_lines_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id)
 );
 
--- RCV (REGISTRO COMPRA VENTAS)
+-- 4. MÓDULO RCV (REGISTRO COMPRA VENTAS) - CON BLINDAJE
+
 CREATE TABLE public.rcv_imports (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -96,7 +121,7 @@ CREATE TABLE public.purchase_records (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
   periodo date NOT NULL,
-  tipo_documento character varying NOT NULL,
+  tipo_documento text NOT NULL, -- Referenciado como USER-DEFINED
   folio bigint NOT NULL,
   rut_emisor character varying NOT NULL,
   razon_social_emisor text,
@@ -120,7 +145,7 @@ CREATE TABLE public.sales_records (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
   periodo date NOT NULL,
-  tipo_documento character varying NOT NULL,
+  tipo_documento text NOT NULL, -- Referenciado como USER-DEFINED
   folio bigint NOT NULL,
   rut_receptor character varying NOT NULL,
   razon_social_receptor text,
@@ -140,7 +165,8 @@ CREATE TABLE public.sales_records (
   CONSTRAINT sales_records_unique_doc UNIQUE (organization_id, folio, rut_receptor, periodo)
 );
 
--- RRHH (RECURSOS HUMANOS)
+-- 5. MÓDULO RECURSOS HUMANOS (RRHH)
+
 CREATE TABLE public.employees (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -153,7 +179,7 @@ CREATE TABLE public.employees (
   fecha_termino date,
   cargo text,
   departamento text,
-  tipo_contrato character varying NOT NULL DEFAULT 'indefinido',
+  tipo_contrato text NOT NULL DEFAULT 'indefinido',
   sueldo_base bigint NOT NULL,
   gratificacion_legal boolean NOT NULL DEFAULT true,
   afp text,
@@ -188,7 +214,7 @@ CREATE TABLE public.liquidations (
   sueldo_liquido bigint NOT NULL,
   afc_empresa bigint DEFAULT 0,
   seguro_invalidez bigint DEFAULT 0,
-  status character varying NOT NULL DEFAULT 'borrador',
+  status text NOT NULL DEFAULT 'borrador',
   pdf_url text,
   generated_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
@@ -213,9 +239,81 @@ CREATE TABLE public.liquidations (
   CONSTRAINT liquidations_account_id_neto_fkey FOREIGN KEY (account_id_neto) REFERENCES public.chart_of_accounts(id)
 );
 
--- ============================================================
--- BLINDAJE DE INTEGRIDAD RCV (TRIGGERS)
--- ============================================================
+CREATE TABLE public.employment_contracts (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  organization_id uuid NOT NULL,
+  employee_id uuid NOT NULL,
+  tipo_documento text NOT NULL DEFAULT 'contrato'::text,
+  tipo_contrato text NOT NULL DEFAULT 'indefinido'::text,
+  fecha_inicio date NOT NULL,
+  fecha_termino_fijo date,
+  sueldo_base bigint NOT NULL,
+  cargo text NOT NULL,
+  jornada_horas integer DEFAULT 45,
+  gratificacion_tipo text DEFAULT 'legal'::text,
+  lugar_trabajo text,
+  descripcion_cargo text,
+  status text NOT NULL DEFAULT 'borrador'::text,
+  pdf_url text,
+  firma_empleado_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  version integer DEFAULT 1,
+  parent_contract_id uuid,
+  CONSTRAINT employment_contracts_pkey PRIMARY KEY (id),
+  CONSTRAINT employment_contracts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT employment_contracts_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id)
+);
+
+-- 6. MÓDULO ACTIVOS FIJOS Y F29
+
+CREATE TABLE public.fixed_assets (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  organization_id uuid NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  numero_serie text,
+  fecha_adquisicion date NOT NULL,
+  valor_adquisicion bigint NOT NULL,
+  vida_util_meses integer NOT NULL,
+  valor_residual bigint DEFAULT 0,
+  metodo_depreciacion text NOT NULL DEFAULT 'lineal',
+  condicion text NOT NULL DEFAULT 'activo',
+  depreciacion_mensual bigint DEFAULT 0,
+  depreciacion_acumulada bigint DEFAULT 0,
+  valor_libro_actual bigint,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  ultimo_periodo_depreciado date,
+  CONSTRAINT fixed_assets_pkey PRIMARY KEY (id),
+  CONSTRAINT fixed_assets_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+
+CREATE TABLE public.f29_forms (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  organization_id uuid NOT NULL,
+  periodo date NOT NULL,
+  debito_fiscal bigint DEFAULT 0,
+  credito_fiscal bigint DEFAULT 0,
+  iva_determinado bigint DEFAULT 0,
+  iva_a_pagar bigint DEFAULT 0,
+  ppm_neto bigint DEFAULT 0,
+  ppm_tasa numeric DEFAULT 0,
+  retencion_honorarios bigint DEFAULT 0,
+  total_a_pagar bigint DEFAULT 0,
+  total_a_favor bigint DEFAULT 0,
+  storage_path text,
+  extraction_method text DEFAULT 'pdfplumber'::text,
+  extraction_confidence numeric,
+  parsed_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  ventas_netas bigint DEFAULT 0,
+  prestamo_solidario bigint DEFAULT 0,
+  CONSTRAINT f29_forms_pkey PRIMARY KEY (id),
+  CONSTRAINT f29_forms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+
+-- 7. BLINDAJE DE INTEGRIDAD RCV (TRIGGERS)
 
 CREATE OR REPLACE FUNCTION public.fn_secure_rcv_period()
 RETURNS TRIGGER AS $$
