@@ -150,20 +150,18 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
                     })
 
                 if lines_to_insert:
-                    entry = db.table("journal_entries").insert({
-                        "organization_id": req.organization_id, 
-                        "fecha": rec["fecha_docto"], 
-                        "glosa": glosa
+                    # USAR RPC PARA ATOMICIDAD (Insertar cabecera + líneas en un solo paso DB)
+                    rpc_res = db.rpc("create_journal_entry_with_lines", {
+                        "p_organization_id": req.organization_id,
+                        "p_fecha": rec["fecha_docto"],
+                        "p_glosa": glosa,
+                        "p_lines": lines_to_insert
                     }).execute()
-                    if not entry.data: continue
-                    eid = entry.data[0]["id"]
                     
-                    for l in lines_to_insert:
-                        l["entry_id"] = eid
-                    
-                    db.table("journal_entry_lines").insert(lines_to_insert).execute()
-                    db.table("purchase_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                    count += 1
+                    if rpc_res.data:
+                        eid = rpc_res.data
+                        db.table("purchase_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
+                        count += 1
 
         elif req.type == 'sales':
             res = db.table("sales_records").select("*") \
@@ -221,26 +219,22 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
                     })
 
                 if lines_to_insert:
-                    entry = db.table("journal_entries").insert({
-                        "organization_id": req.organization_id, 
-                        "fecha": rec["fecha_docto"], 
-                        "glosa": glosa
+                    # USAR RPC PARA ATOMICIDAD
+                    rpc_res = db.rpc("create_journal_entry_with_lines", {
+                        "p_organization_id": req.organization_id,
+                        "p_fecha": rec["fecha_docto"],
+                        "p_glosa": glosa,
+                        "p_lines": lines_to_insert
                     }).execute()
-                    if not entry.data: continue
-                    eid = entry.data[0]["id"]
                     
-                    for l in lines_to_insert:
-                        l["entry_id"] = eid
-                        
-                    db.table("journal_entry_lines").insert(lines_to_insert).execute()
-                    db.table("sales_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                    count += 1
+                    if rpc_res.data:
+                        eid = rpc_res.data
+                        db.table("sales_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
+                        count += 1
 
         return {"success": True, "entries_created": count}
     except Exception as e:
         print(f"[ERROR generate_from_rcv] {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/chart-of-accounts")
