@@ -95,22 +95,32 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         if len(periodo) == 7:
             periodo = f"{periodo}-01"
 
-        # VALIDACIÓN DE DUPLICADOS: Buscar si ya existe una importación exitosa para este periodo
+        # VALIDACIÓN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
         if not force:
             existing = db.table("rcv_imports") \
-                .select("id, file_name, created_at") \
+                .select("id, file_name, total_docs") \
                 .eq("organization_id", organization_id) \
                 .eq("periodo", periodo) \
                 .eq("tipo", "purchases") \
+                .gt("total_docs", 0) \
                 .execute()
             
             if existing.data:
                 last_file = existing.data[0].get("file_name", "desconocido")
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"YA EXISTE una carga de COMPRAS para este periodo (Archivo: {last_file}). "
-                           f"Usa el parámetro 'force=true' si deseas sobreescribirla."
+                    detail=f"YA EXISTE una carga de COMPRAS VALIDADA para este periodo (Archivo: {last_file}). "
+                           f"Usa el botón 'FORZAR SOBREESCRITURA' si deseas reemplazarla."
                 )
+
+        # LIMPIEZA DE BASURA: Borrar intentos fallidos previos para este periodo
+        db.table("rcv_imports") \
+            .delete() \
+            .eq("organization_id", organization_id) \
+            .eq("periodo", periodo) \
+            .eq("tipo", "purchases") \
+            .eq("total_docs", 0) \
+            .execute()
 
         content = await file.read()
         timestamp = int(time.time())
@@ -218,22 +228,32 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
         if len(periodo) == 7:
             periodo = f"{periodo}-01"
 
-        # VALIDACIÓN DE DUPLICADOS: Buscar si ya existe una importación exitosa para este periodo
+        # VALIDACIÓN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
         if not force:
             existing = db.table("rcv_imports") \
-                .select("id, file_name, created_at") \
+                .select("id, file_name, total_docs") \
                 .eq("organization_id", organization_id) \
                 .eq("periodo", periodo) \
                 .eq("tipo", "sales") \
+                .gt("total_docs", 0) \
                 .execute()
             
             if existing.data:
                 last_file = existing.data[0].get("file_name", "desconocido")
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"YA EXISTE una carga de VENTAS para este periodo (Archivo: {last_file}). "
-                           f"Usa el parámetro 'force=true' si deseas sobreescribirla."
+                    detail=f"YA EXISTE una carga de VENTAS VALIDADA para este periodo (Archivo: {last_file}). "
+                           f"Usa el botón 'FORZAR SOBREESCRITURA' si deseas reemplazarla."
                 )
+
+        # LIMPIEZA DE BASURA: Borrar intentos fallidos previos para este periodo
+        db.table("rcv_imports") \
+            .delete() \
+            .eq("organization_id", organization_id) \
+            .eq("periodo", periodo) \
+            .eq("tipo", "sales") \
+            .eq("total_docs", 0) \
+            .execute()
 
         content = await file.read()
         timestamp = int(time.time())

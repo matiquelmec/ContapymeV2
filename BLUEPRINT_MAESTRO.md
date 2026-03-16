@@ -281,9 +281,16 @@ Puesta en marcha productiva de alto estrés.
 - [ ] Pruebas unitarias `calculators/` con pytest (casos extremos: SIS, topes UF, impuesto).
 - [ ] Reemplazar copias locales por CI/CD: Vercel (app) + Railway/Render (engine).
 - [ ] Automatizar Worker de Indicadores con cron en producción.
-- [ ] **Roles granulares**: owner / accountant / viewer con permisos diferenciados.
-- [ ] **Módulo de Auditoría y Logs**: Registro de acciones críticas.
+- [ ] Roles granulares: owner / accountant / viewer con permisos diferenciados.
+- [ ] Módulo de Auditoría y Logs: Registro de acciones críticas.
 - [ ] Stress-Test y validaciones unitarias (pytest + Vitest).
+
+### FASE 8.2: Auditoría Senior y Consolidación de Infraestructura ✅ COMPLETADA (2026-03-16)
+Refactorización institucional para garantizar un entorno de desarrollo profesional y escalable.
+- [x] **Auditoría de Código y Limpieza Profunda**: Purga de scripts temporales (`tmp_*.py`) y centralización de utilerías en `engine/dev_tools`.
+- [x] **Centralización del Esquema SQL**: Sincronización de `supabase/schema.sql` como Fuente de Verdad única, incluyendo tipos ENUM y todas las tablas de Contabilidad/RRHH.
+- [x] **Verificación Multi-Tenant**: Confirmación de que todos los routers y server actions filtran estrictamente por `organization_id`.
+- [x] **Normalización de Dependencias**: Limpieza de archivos `.log` y archivos residuales del sistema.
 
 ### FASE 8.1: Restauración y Potenciación RCV ✅ COMPLETADA (2026-03-15)
 Auditoría del módulo RCV reveló brechas vs versión Master. Plan de restauración implementado y adaptado a arquitectura Slingshot.
