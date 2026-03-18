@@ -10,7 +10,7 @@ from typing import Optional, List, Dict, Any
 router = APIRouter()
 
 # ==========================================
-# CONSTANTES SII — Tipos de Documento
+# CONSTANTES SII â Tipos de Documento
 # ==========================================
 DOCUMENT_TYPES_NAMES = {
     '33': 'Factura Electrónica',
@@ -26,14 +26,14 @@ DOCUMENT_TYPES_NAMES = {
     '112': 'Nota de Crédito Export.'
 }
 
-# Tipos que SUMAN al monto calculado (Incluye Notas de Débito 56/111)
+# Tipos que SUMAN al monto calculado (Incluye Notas de DÃ©bito 56/111)
 DOCUMENT_TYPES_SUMA = {'33', '34', '39', '41', '43', '45', '46', '56', '110', '111'}
-# Tipos que RESTAN al monto calculado (Notas de Crédito)
+# Tipos que RESTAN al monto calculado (Notas de CrÃ©dito)
 DOCUMENT_TYPES_RESTA = {'61', '112'}
 
 def _calcular_monto(monto_neto: int, monto_exento: int, tipo_doc: str) -> tuple[int, bool]:
     """
-    Calcula el monto final (J+K) según lógica SII por tipo de documento.
+    Calcula el monto final (J+K) segÃºn lÃ³gica SII por tipo de documento.
     Retorna (monto_calculado, es_suma).
     """
     monto_base = monto_neto + monto_exento
@@ -46,36 +46,57 @@ def _calcular_monto(monto_neto: int, monto_exento: int, tipo_doc: str) -> tuple[
         return (monto_base, True)
 
 def _normalizar_fecha(fecha_raw: str) -> str:
-    """Convierte DD/MM/YYYY → YYYY-MM-DD. Si ya está en ISO, la devuelve tal cual."""
+    """Convierte DD/MM/YYYY o YYYY/MM/DD â YYYY-MM-DD."""
     if not fecha_raw:
         return ""
+    fecha_raw = str(fecha_raw).strip()
     if "/" in fecha_raw:
         try:
-            parts = fecha_raw.strip().split("/")
+            parts = fecha_raw.split("/")
             if len(parts) == 3:
-                d, m, y = parts
-                return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+                # Caso DD/MM/YYYY
+                if len(parts[2]) == 4:
+                    d, m, y = parts
+                    return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+                # Caso YYYY/MM/DD
+                elif len(parts[0]) == 4:
+                    y, m, d = parts
+                    return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
         except Exception:
             pass
-    return fecha_raw.strip()
+    return fecha_raw
+
+def _extraer_rut_nombre_archivo(filename: str) -> Optional[str]:
+    """Extrae algo que parece un RUT de un nombre de archivo (ej. RCV_COMPRA_76444333-2.csv)"""
+    import re
+    # Busca patrones tipo 12345678-9 o 12.345.678-9
+    match = re.search(r'(\d{1,2}(?:\.?\d{3}){2}-[\dkK])', filename)
+    if match:
+        return match.group(1).replace(".", "")
+    return None
+
+def _formatear_rut(rut: str) -> str:
+    """Elimina puntos para comparacion homogenea."""
+    if not rut: return ""
+    return str(rut).replace(".", "").strip().upper()
 
 def _get_val(row_clean: dict, key: str, default: any = "") -> any:
-    """Busca en el diccionario de forma insensible a mayúsculas usando alias conocidos."""
-    # Mapa de alias (todos en minúsculas)
+    """Busca en el diccionario de forma insensible a mayÃºsculas usando alias conocidos."""
+    # Mapa de alias (todos en minÃºsculas)
     aliases = {
         "rut_emisor": ["rut emisor", "rut proveedor", "rut_emisor", "rut_proveedor", "emisor", "proveedor"],
         "rut_receptor": ["rut receptor", "rut cliente", "rut comprador", "rut_receptor", "rut_cliente", "receptor", "cliente"],
-        "razon_social": ["razon social", "razón social", "nombre", "nombre emisor", "nombre receptor", "razón social emisor"],
-        "tipo_doc": ["tipo doc", "tipo docto", "código tipo doc", "tipo documento", "t_doc"],
-        "folio": ["folio", "nro docto", "nº documento", "n° documento", "folio docto"],
-        "fecha": ["fecha docto", "fecha documento", "fecha emisión", "fecha", "fecha_doc"],
+        "razon_social": ["razon social", "razÃ³n social", "nombre", "nombre emisor", "nombre receptor", "razÃ³n social emisor"],
+        "tipo_doc": ["tipo doc", "tipo docto", "cÃ³digo tipo doc", "tipo documento", "t_doc"],
+        "folio": ["folio", "nro docto", "nÂº documento", "nÂ° documento", "folio docto"],
+        "fecha": ["fecha docto", "fecha documento", "fecha emisiÃ³n", "fecha", "fecha_doc"],
         "neto": ["monto neto", "neto", "monto_neto", "m_neto"],
         "exento": ["monto exento", "exento", "monto_exento", "m_exento"],
         "iva": ["monto iva", "iva", "monto iva recuperable", "monto iva diferido", "m_iva", "iva recuperable"],
         "total": ["monto total", "total", "monto_total", "m_total"]
     }
     
-    # Normalizamos el diccionario de entrada a minúsculas
+    # Normalizamos el diccionario de entrada a minÃºsculas
     row_lower = {str(k).lower().strip(): v for k, v in row_clean.items()}
     
     targets = aliases.get(key, [key])
@@ -85,7 +106,7 @@ def _get_val(row_clean: dict, key: str, default: any = "") -> any:
     return default
 
 # ==========================================
-# IMPORTACIÓN
+# IMPORTACIÃN
 # ==========================================
 @router.post("/import-purchases")
 async def import_purchases(organization_id: str, periodo: str, force: bool = False, file: UploadFile = File(...)):
@@ -95,7 +116,20 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         if len(periodo) == 7:
             periodo = f"{periodo}-01"
 
-        # VALIDACIÓN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
+        # 0. BLINDAJE: Obtener RUT de la organizaciÃ³n para validaciÃ³n cruzada
+        org_res = db.table("organizations").select("rut_empresa").eq("id", organization_id).single().execute()
+        org_rut = _formatear_rut(org_res.data.get("rut_empresa")) if org_res.data else None
+        
+        # 1. BLINDAJE: Validar Nombre del Archivo (Si trae RUT)
+        file_rut = _extraer_rut_nombre_archivo(file.filename)
+        if file_rut and org_rut and _formatear_rut(file_rut) != org_rut:
+             raise HTTPException(
+                status_code=400,
+                detail=f"ERROR DE SEGURIDAD: El archivo pertenece al RUT {file_rut}, "
+                       f"pero estÃ¡s intentando subirlo a la empresa con RUT {org_rut}."
+            )
+
+        # 2. VALIDACIÃN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
         if not force:
             existing = db.table("rcv_imports") \
                 .select("id, file_name, total_docs") \
@@ -110,10 +144,10 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
                 raise HTTPException(
                     status_code=400, 
                     detail=f"YA EXISTE una carga de COMPRAS VALIDADA para este periodo (Archivo: {last_file}). "
-                           f"Usa el botón 'FORZAR SOBREESCRITURA' si deseas reemplazarla."
+                           f"Usa el botÃ³n 'FORZAR SOBREESCRITURA' si deseas reemplazarla."
                 )
 
-        # LIMPIEZA DE BASURA: Borrar intentos fallidos previos para este periodo
+        # 3. LIMPIEZA DE BASURA
         db.table("rcv_imports") \
             .delete() \
             .eq("organization_id", organization_id) \
@@ -144,7 +178,7 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         }).execute()
 
         text = content.decode("utf-8-sig") if content.startswith(b'\xef\xbb\xbf') else content.decode("iso-8859-1")
-        # Detección de delimitador
+        # DetecciÃ³n de delimitador
         delim = ';' if ';' in text.split('\n')[0] else ','
         f = StringIO(text)
         reader = csv.DictReader(f, delimiter=delim)
@@ -153,15 +187,23 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         errors = []
         row_num = 1
         
+        # 4. BLINDAJE: Validar Contenido de Filas
         for row in reader:
             row_num += 1
             row_clean = {str(k).strip(): str(v).strip() if v else "" for k, v in row.items() if k is not None}
             row_keys_lower = [str(k).lower().strip() for k in row_clean.keys()]
 
-            # Validación de cruce (Ventas en Compras)
+            # Validar si el receptor de la compra es nuestra empresa (Si la columna existe)
+            if org_rut:
+                rut_receptor_csv = _formatear_rut(_get_val(row_clean, "rut_receptor", ""))
+                if rut_receptor_csv and rut_receptor_csv != org_rut:
+                     errors.append(f"Error crÃ­tico: El documento en fila {row_num} indica Receptor {rut_receptor_csv}, pero la empresa activa es {org_rut}.")
+                     break
+
+            # ValidaciÃ³n de cruce (Ventas en Compras)
             if row_num == 2:
                 if "rut receptor" in row_keys_lower or ("rut cliente" in row_keys_lower and "tipo compra" not in row_keys_lower):
-                     errors.append("Error crítico: Parece que intentaste subir un archivo de VENTAS en la sección de COMPRAS.")
+                     errors.append("Error crÃ­tico: Parece que intentaste subir un archivo de VENTAS en la secciÃ³n de COMPRAS.")
                      break
 
             try:
@@ -219,16 +261,28 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/import-sales")
 async def import_sales(organization_id: str, periodo: str, force: bool = False, file: UploadFile = File(...)):
     db = get_supabase()
     try:
+        # 0. BLINDAJE: Obtener RUT de la organizaciÃ³n
+        org_res = db.table("organizations").select("rut_empresa").eq("id", organization_id).single().execute()
+        org_rut = _formatear_rut(org_res.data.get("rut_empresa")) if org_res.data else None
+
+        # 1. BLINDAJE: Validar Nombre del Archivo
+        file_rut = _extraer_rut_nombre_archivo(file.filename)
+        if file_rut and org_rut and _formatear_rut(file_rut) != org_rut:
+             raise HTTPException(
+                status_code=400,
+                detail=f"ERROR DE SEGURIDAD: El archivo pertenece al RUT {file_rut}, "
+                       f"pero estÃ¡s intentando subirlo a la empresa con RUT {org_rut}."
+            )
+
         # Normalizar periodo (YYYY-MM -> YYYY-MM-01)
         if len(periodo) == 7:
             periodo = f"{periodo}-01"
 
-        # VALIDACIÓN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
+        # 2. VALIDACIÃN DE DUPLICADOS
         if not force:
             existing = db.table("rcv_imports") \
                 .select("id, file_name, total_docs") \
@@ -243,10 +297,10 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
                 raise HTTPException(
                     status_code=400, 
                     detail=f"YA EXISTE una carga de VENTAS VALIDADA para este periodo (Archivo: {last_file}). "
-                           f"Usa el botón 'FORZAR SOBREESCRITURA' si deseas reemplazarla."
+                           f"Usa el botÃ³n 'FORZAR SOBREESCURA' si deseas reemplazarla."
                 )
 
-        # LIMPIEZA DE BASURA: Borrar intentos fallidos previos para este periodo
+        # 3. LIMPIEZA DE BASURA
         db.table("rcv_imports") \
             .delete() \
             .eq("organization_id", organization_id) \
@@ -285,17 +339,24 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
         errors = []
         row_num = 1
         
+        # 4. BLINDAJE: Validar Contenido de Filas
         for row in reader:
             row_num += 1
             row_clean = {str(k).strip(): str(v).strip() if v else "" for k, v in row.items() if k is not None}
             row_keys_lower = [str(k).lower().strip() for k in row_clean.keys()]
 
-            # Validación de cruce (Compras en Ventas)
-            if row_num == 2:
-                if "tipo compra" in row_keys_lower or "rut emisor" in row_keys_lower or "rut proveedor" in row_keys_lower:
-                     errors.append("Error crítico: Parece que intentaste subir un archivo de COMPRAS en la sección de VENTAS.")
+            # Validar si el emisor de la venta es nuestra empresa
+            if org_rut:
+                rut_emisor_csv = _formatear_rut(_get_val(row_clean, "rut_emisor", ""))
+                if rut_emisor_csv and rut_emisor_csv != org_rut:
+                     errors.append(f"Error crÃ­tico: El documento en fila {row_num} indica Emisor {rut_emisor_csv}, pero la empresa activa es {org_rut}.")
                      break
 
+            # ValidaciÃ³n de cruce (Compras en Ventas)
+            if row_num == 2:
+                if "tipo compra" in row_keys_lower or "rut emisor" in row_keys_lower or "rut proveedor" in row_keys_lower:
+                     errors.append("Error crÃ­tico: Parece que intentaste subir un archivo de COMPRAS en la secciÃ³n de VENTAS.")
+                     break
             try:
                 tipo_docto = _get_val(row_clean, "tipo_doc", "33")
                 rut_receptor = _get_val(row_clean, "rut_receptor", "")
@@ -353,7 +414,7 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
 
 
 # ==========================================
-# ANÁLISIS — ENDPOINTS DE CONSULTA
+# ANÃLISIS â ENDPOINTS DE CONSULTA
 # ==========================================
 
 @router.get("/analysis/top-vendors")
@@ -462,7 +523,7 @@ async def get_top_customers(organization_id: str, periodo: Optional[str] = None,
 @router.get("/analysis/summary")
 async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
     """
-    Retorna KPIs resumen del período:
+    Retorna KPIs resumen del perÃ­odo:
     - monto_compras, monto_ventas, monto_calculado_compras, monto_calculado_ventas
     - total_docs_compras, total_docs_ventas
     - proveedores_unicos, clientes_unicos
@@ -509,8 +570,8 @@ async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
 @router.get("/periodos")
 async def get_available_periods(organization_id: str):
     """
-    Retorna lista de períodos únicos (YYYY-MM-01) que tienen datos,
-    con conteo de documentos de compras y ventas por período.
+    Retorna lista de perÃ­odos Ãºnicos (YYYY-MM-01) que tienen datos,
+    con conteo de documentos de compras y ventas por perÃ­odo.
     """
     db = get_supabase()
 
@@ -547,12 +608,12 @@ async def get_import_history(organization_id: str, limit: int = 30):
     """
     db = get_supabase()
 
-    # Compras — agrupar por periodo
+    # Compras â agrupar por periodo
     p_res = db.table("purchase_records").select(
         "periodo, monto_total, monto_calculado, es_suma, journal_entry_id"
     ).eq("organization_id", organization_id).order("periodo", desc=True).execute()
 
-    # Ventas — agrupar por periodo
+    # Ventas â agrupar por periodo
     s_res = db.table("sales_records").select(
         "periodo, monto_total, monto_calculado, es_suma, journal_entry_id"
     ).eq("organization_id", organization_id).order("periodo", desc=True).execute()

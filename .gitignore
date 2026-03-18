@@ -30,8 +30,14 @@ Thumbs.db
 
 # Temporales y Logs de Auditoria/Pruebas
 *.log
-engine/test_*.py
-engine/check_*.py
-engine/apply_*.py
-engine/get_ip.py
-app/.next/
+engine/output_images/
+engine/tmp/
+engine/.pytest_cache/
+.agent/
+.agents/
+.claude/
+.gemini/
+dev_tools/*/  # Ignorar scripts locales si son muy pesados o sensibles
+node_modules/
+dist/
+build/

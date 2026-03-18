@@ -51,7 +51,10 @@ async def _fetch_and_store_indicators() -> dict:
     logger.info(f"[Scheduler] Actualizando indicadores económicos — {hoy}")
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
             for codigo, nombre in INDICADORES.items():
                 try:
                     url = f"https://mindicador.cl/api/{codigo}"
@@ -89,9 +92,11 @@ async def _fetch_and_store_indicators() -> dict:
                     errores.append(msg)
                     logger.error(f"[Scheduler] ❌ {msg}")
                 except Exception as e:
-                    msg = f"{codigo}: {str(e)}"
+                    import traceback
+                    msg = f"{codigo}: {type(e).__name__} - {str(e)}"
                     errores.append(msg)
                     logger.error(f"[Scheduler] ❌ {msg}")
+                    logger.debug(f"[Scheduler] Traceback: {traceback.format_exc()}")
 
     except Exception as e:
         logger.critical(f"[Scheduler] Error crítico en worker de indicadores: {e}")

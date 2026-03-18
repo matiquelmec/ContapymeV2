@@ -16,6 +16,7 @@ from api.routers import (
     payroll_settings, lre,
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
+from workers.news_worker import start_news_worker, stop_news_worker
 
 
 # ─── Lifespan: arranque y cierre ordenado del Motor ───────────────────────────
@@ -24,12 +25,18 @@ from workers.indicators_scheduler import start_scheduler, stop_scheduler
 async def lifespan(app: FastAPI):
     """
     Gestiona el ciclo de vida del Motor Python.
-    - Al INICIAR: arranca el scheduler de indicadores y hace una actualización inmediata.
-    - Al CERRAR: detiene el scheduler limpiamente.
+    - Al INICIAR: arranca el scheduler de indicadores y el de noticias con IA local.
+    - Al CERRAR: detiene los schedulers limpiamente.
     """
+    # Iniciar Workers
     await start_scheduler()
+    await start_news_worker()
+    
     yield
+    
+    # Detener Workers
     await stop_scheduler()
+    await stop_news_worker()
 
 
 # ─── Aplicación FastAPI ────────────────────────────────────────────────────────

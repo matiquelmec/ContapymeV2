@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.4 (Blindaje RCV e Integridad Temporal) | **Fecha:** 2026-03-16 | **Estado:** EN DESARROLLO 🚧 — Fase 8.2 Blindaje de Integridad Completado 🔒✅
+> **Versión:** 2.5 (Magallanes 2077 — IA & GPU Local) | **Fecha:** 2026-03-18 | **Estado:** EN DESARROLLO 🚧 — IA Image Pipeline & Redacción Cerrada Integrada 🎨✅
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -97,6 +97,16 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
     - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Awareness).
     - **Orden Cronológico:** Priorización automática de los periodos más recientes.
     - **Integridad:** Sincronizado con triggers SQL para evitar desajustes temporales.
+
+### 3.7 🏔️ Módulo Diario Regional (IA & GPU Local)
+El portal se transforma en un centro de noticias de vanguardia para Magallanes, utilizando IA generativa local.
+*   **Next.js (Frontend Magallanes 2077):** 
+    - **Visualización Premium:** Interfaz con efectos de glasmorfismo, bordes de neón reactivos y diseño optimizado para noticias de alto impacto.
+    - **Seguridad de Imagen:** Configuración operativa en `next.config.ts` para renderizar contenido dinámico desde hostings externos (Supabase) con validación estricta de dominios.
+*   **Python Engine (Cerebro IA & GPU):**
+    - **Redacción con Ollama:** Transforma noticias originales en resúmenes ejecutivos "cerrados" que responden al Qué, Cómo y Por Qué, evitando finales abiertos y garantizando profesionalismo institucional.
+    - **Generación de Arte (GPU RTX 3060):** Utiliza **SDXL-Lightning (4 steps)** para crear arte futurista/animado (Estilo Ghibli/Cyberpunk) en segundos, eliminando la dependencia de imágenes de stock.
+    - **Worker Autónomo:** Procesamiento asíncrono cada 4 horas y al arranque del sistema, con subida automática a Supabase Storage en formato WebP optimizado (Web-Friendly).
 
 ---
 

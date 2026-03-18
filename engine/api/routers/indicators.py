@@ -30,7 +30,10 @@ async def update_indicators():
     actualizados = []
     errores = []
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
         for codigo, nombre in INDICADORES.items():
             try:
                 # API de mindicador.cl — gratuita y oficial
@@ -65,7 +68,11 @@ async def update_indicators():
                 })
 
             except Exception as e:
-                errores.append(f"{codigo}: {str(e)}")
+                import traceback
+                msg = f"{codigo}: {type(e).__name__} - {str(e)}"
+                errores.append(msg)
+                print(f"[INDICATORS] Error en {codigo}: {msg}")
+                traceback.print_exc()
 
     return {
         "success": len(errores) == 0,
