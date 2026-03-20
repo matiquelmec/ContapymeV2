@@ -12,12 +12,16 @@ from core.images import generate_and_upload_image
 
 logger = logging.getLogger("contapyme.news")
 
-# ─── Fuentes de noticias de Magallanes 🟢 (Mejorado con Google News Fallback) ──
+# ─── Fuentes de noticias e indicadores 🟢 ──
 NEWS_SOURCES = [
-    {"name": "La Prensa Austral", "url": "https://laprensaaustral.cl/feed/"},
-    {"name": "El Pingüino", "url": "https://elpinguino.com/rss"},
-    {"name": "Ovejero Noticias", "url": "https://www.ovejeronoticias.cl/feed/"},
-    {"name": "Google News Magallanes", "url": "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419"},
+    # Regionales (Core)
+    {"name": "La Prensa Austral", "url": "https://laprensaaustral.cl/feed/", "type": "regional"},
+    {"name": "El Pingüino", "url": "https://elpinguino.com/rss", "type": "regional"},
+    {"name": "Ovejero Noticias", "url": "https://www.ovejeronoticias.cl/feed/", "type": "regional"},
+    {"name": "Google News Magallanes", "url": "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
+    # Económicas y Financieras (Link al nicho Contapyme)
+    {"name": "Diario Financiero", "url": "https://www.df.cl/site/asociacion/rss/rss_index.xml", "type": "financial"},
+    {"name": "Google News Economía", "url": "https://news.google.com/rss/search?q=SII+IPC+Dolar+Chile+Impuestos+Economia&hl=es-419&gl=CL&ceid=CL:es-419", "type": "financial"},
 ]
 
 # Cabeceras de Navegador Real (Stealth) para evitar bloqueos 403
@@ -113,6 +117,7 @@ async def _fetch_from_magallanes_rss():
                             "img": "/news-placeholder.png",
                             "link": link,
                             "source_name": source["name"],
+                            "source_type": source.get("type", "regional"),
                             "pub_date": pub_date
                         })
                     logger.info(f"[News Worker] 📡 Capturadas {len(items)} noticias de {source['name']}")
@@ -130,92 +135,181 @@ async def _fetch_and_process_news():
 
     logger.info("[News Worker] Iniciando ciclo de recolección de noticias regionales...")
 
-    # Noticas de RSS
+    # 1. Captura de Noticias de Fuentes RSS
     news_pool = await _fetch_from_magallanes_rss()
     
-    # Fallback si RSS falla completamente
     if not news_pool:
-        news_pool = [
-            {"headline": "Inversión en Hidrógeno Verde en Magallanes supera expectativas", "content": "Proyectos en la región avanzan con fuerza...", "img": "/news-hydrogen.png", "link": ""},
-            {"headline": "Punta Arenas se prepara para el Carnaval de Invierno 2026", "content": "Se anunciaron fechas tentativas...", "img": "/news-horoscopo.png", "link": ""}
-        ]
+        logger.warning("[News Worker] ⚠️ No se encontraron noticias nuevas en las fuentes RSS.")
+        return {"total": 0}
 
-    logger.info(f"[News Worker] Pool listo con {len(news_pool)} noticias candidatas.")
-
-    # 1. Obtener URLs ya procesadas para evitar duplicados (sin límite de 50, buscando por source_url)
+    # 2. Obtener duplicados (URLs y Títulos Normalizados) para evitar reprocesar con IA
     try:
-        existing_urls_res = db.table("regional_news").select("source_url").execute()
-        existing_urls = [n["source_url"] for n in existing_urls_res.data if n.get("source_url")] if existing_urls_res.data else []
+        existing_res = db.table("regional_news").select("source_url, normalized_title").execute()
+        existing_urls = [n["source_url"] for n in existing_res.data if n.get("source_url")] if existing_res.data else []
+        existing_titles = [n["normalized_title"] for n in existing_res.data if n.get("normalized_title")]
     except Exception as e:
-        logger.warning(f"[News Worker] ⚠️ No se pudo obtener URLs existentes: {e}")
-        existing_urls = []
+        logger.warning(f"[News Worker] ⚠️ No se pudo obtener datos existentes: {e}")
+        existing_urls, existing_titles = [], []
 
-    # 3. Procesar individualmente (Limitado a 4 de ALTA CALIDAD para rapidez)
-    for raw_news in news_pool[:4]:
-        print(f"🎨 [Redactor] Iniciando procesamiento de: {raw_news.get('title')}", flush=True)
+    # 3. Filtrado Inteligente (Deduplicación rápida y relevancia local)
+    candidates = []
+    for raw in news_pool:
+        url = raw.get("link")
+        headline = raw.get("headline", "")
+        norm_headline = headline.lower().strip()
+        
+        # Omitir si URL ya existe
+        if url in existing_urls:
+            continue
+            
+        # Omitir si el título (o algo muy parecido) ya fue procesado
+        if norm_headline in existing_titles:
+            logger.info(f"[News Worker] ⏭️ Omitiendo (Título similar ya existe): {headline[:50]}...")
+            continue
+
+        # Blindaje de Sustancia: Si el contenido es demasiado corto, no hay material para una noticia premium
+        if len(raw.get("content", "")) < 200:
+            logger.info(f"[News Worker] ⏭️ Omitiendo (Contenido insuficiente): {headline[:50]}...")
+            continue
+
+        # 4. Escudo Regional y de Nicho (Estrategia Híbrida Experta)
+        region_keywords = ["magallanes", "punta arenas", "natales", "porvenir", "williams", "tierra del fuego", "antártica"]
+        financial_keywords = ["sii", "ipc", "dólar", "dolar", "impuesto", "finanzas", "economía", "hacienda", "pib", "tasa", "empleo", "dt", "trabajo"]
+        
+        is_regional = any(k in norm_headline for k in region_keywords)
+        is_financial = any(k in norm_headline for k in financial_keywords)
+        
+        # Filtro de Rechazo: Si no es regional ni financiero, se descarta (Chau Chuck Norris)
+        if not is_regional and not is_financial:
+            logger.info(f"[News Worker] ⏭️ Omitiendo (Fuera de Nicho): {headline[:50]}...")
+            continue
+        
+        # Blindaje Extra para Google News (Evitar ruido genérico)
+        if "Google News" in raw["source_name"]:
+            if not is_regional and not is_financial:
+                continue
+
+        candidates.append(raw)
+        if len(candidates) >= 4: break # Límite de 4 noticias por ciclo para mantener calidad
+
+    if not candidates:
+        logger.info("[News Worker] 💤 No hay noticias nuevas que cumplan los criterios de calidad.")
+        return {"total": 0}
+
+    # 4. Procesamiento en PARALELO para la IA (Rápido)
+    logger.info(f"[News Worker] 🤖 Iniciando redacción paralela de {len(candidates)} noticias...")
+    
+    async def _news_pipeline_task(raw):
+        print(f"🎨 [Redactor] Iniciando procesamiento de: {raw['headline']}", flush=True)
+        ai_data = await process_news_with_local_llm(raw["headline"], raw["content"])
+        return (raw, ai_data)
+
+    tasks = [_news_pipeline_task(c) for c in candidates]
+    results = await asyncio.gather(*tasks)
+
+    # 5. Procesamiento SECUENCIAL para Imágenes y DB (Protección de VRAM GPU)
+    for raw_news, ai_data in results:
+        # Blindajes de calidad y relevancia
+        if not ai_data or ai_data.get("category") == "IGNORE":
+            logger.info(f"[News Worker] ⏭️ Omitiendo noticia (Sin relevancia institucional): {raw_news['headline'][:50]}...")
+            continue
+
+        if not ai_data.get("title") or not ai_data.get("full_content"):
+            continue
+
+        # Si la IA no redactó nada nuevo (copy-paste literal), descartamos por falta de calidad premium
+        if ai_data["full_content"].strip() == raw_news["content"].strip():
+            logger.warning(f"[News Worker] ⚠️ IA devolvió contenido idéntico. Omitiendo: {ai_data['title']}")
+            continue
+
         try:
-            # 2. Verificar si la URL ya existe ANTES de procesar con IA/GPU
-            if raw_news.get("link") in existing_urls:
-                logger.info(f"[News Worker] ⏭️ Omitiendo (URL ya procesada): {raw_news['link']}")
-                continue
-
-            logger.info(f"[News Worker] 🤖 Procesando texto con LLM Local: {raw_news['headline'][:50]}...")
-            ai_data = await process_news_with_local_llm(raw_news["headline"], raw_news["content"])
-            
-            # BLINDAJE: Si la IA no generó el contenido completo o un titular válido, omitimos.
-            # No queremos "basura" o noticias crudas de RSS en el portal.
-            if not ai_data or not ai_data.get("title") or not ai_data.get("full_content"):
-                logger.warning(f"[News Worker] ⚠️ IA falló al reescribir la noticia '{raw_news['headline']}'. Omitiendo para preservar calidad.")
-                continue
-            
-            # Verificación de "Originalidad": Si el contenido IA es idéntico al crudo, algo falló.
-            if ai_data["full_content"].strip() == raw_news["content"].strip():
-                logger.warning(f"[News Worker] ⚠️ IA devolvió contenido idéntico al original. Omitiendo por falta de redacción premium.")
-                continue
-
-            # 3. Generar Imagen con GPU Local (Estilo Artístico Profesional)
+            # Generar Imagen con GPU Local
             image_url = raw_news["img"] 
             if ai_data.get("visual_prompt"):
                 logger.info(f"[News Worker] 🎨 Generando IMAGEN ARTÍSTICA para: {ai_data['title']}")
                 image_url = await generate_and_upload_image(ai_data["visual_prompt"])
 
-            # 4. Insertar la noticia (Usamos la fecha del RSS si existe, sino ahora)
+            # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
             if raw_news.get("pub_date"):
                 try:
-                    # Ejemplo: Wed, 18 Mar 2026 21:08:09 +0000
                     pub_date_iso = datetime.strptime(raw_news["pub_date"], "%a, %d %b %Y %H:%M:%S %z").isoformat()
-                except:
-                    pass
+                except: pass
 
+            # Normalizar Categoría para prioridad Smart Mix
+            category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
+            
+            # Persistencia en Supabase con blindajes profesionales
             db.table("regional_news").insert({
-                "title": ai_data.get("title", raw_news["headline"]),
-                "slug": _slugify(ai_data.get("title", raw_news["headline"])),
-                "normalized_title": ai_data.get("title", "").lower().strip(),
-                "category": ai_data.get("category", "REGIONAL"),
-                "content": ai_data["full_content"], # Garantizado por el blindaje superior
+                "title": ai_data["title"],
+                "slug": _slugify(ai_data["title"]),
+                "normalized_title": ai_data["title"].lower().strip(),
+                "category": category,
+                "content": ai_data["full_content"],
                 "summary": ai_data.get("summary", ""),
                 "image_url": image_url,
-                "is_featured": ai_data.get("is_featured", False),
-                "source_url": raw_news.get("link", ""), # RESTAURADO: Necesario para deduplicación interna
-                "source_name": "Diario Punta Arenas", # Atribución interna del portal
+                "is_featured": ai_data.get("is_featured", False) or category == "SII / LEGAL", # Autoprioridad
+                "source_url": raw_news.get("link", ""),
+                "source_name": "Diario Punta Arenas", 
                 "published_at": pub_date_iso,
                 "updated_at": datetime.now().isoformat()
             }).execute()
             
             processed_count += 1
-            existing_urls.append(raw_news.get("link"))
-            logger.info(f"[News Worker] ✅ Noticia guardada: {ai_data['title']}")
+            logger.info(f"[News Worker] 🚀 ÉXITO EN BASE DE DATOS: {ai_data['title']} ({category})")
 
         except Exception as e:
-            # Si falla por conflicto de título (aunque la URL sea distinta), lo manejamos
-            if "duplicate key value violates unique constraint" in str(e).lower():
-                logger.warning(f"[News Worker] ⚠️ Conflicto de título, omitiendo: {raw_news['headline']}")
-            else:
-                logger.error(f"[News Worker] ❌ Error procesando noticia: {e}")
+            logger.error(f"[News Worker] ❌ Fallo al guardar la noticia '{ai_data['title']}': {e}")
+    
+    # Al final del ciclo, hacemos limpieza de higiene
+    await _maintain_db_hygiene()
 
     logger.info(f"[News Worker] Ciclo completado. Total noticias procesadas: {processed_count}")
     return {"total": processed_count}
+
+async def _cleanup_junk_news():
+    """Limpia las noticias de prueba (Chuck Norris, Petro, etc.) de la base de datos."""
+    db = get_supabase()
+    try:
+        logger.info("[News Worker] 🧹 Iniciando limpieza de noticias irrelevantes...")
+        # Borrar por palabras clave de mala calidad/fuera de nicho
+        junk_patterns = ["%Chuck Norris%", "%Petro%", "Investigación en EE.UU.%", "San Felipe fuera de la liguilla%", "%LIGUILLAS%"]
+        
+        for pattern in junk_patterns:
+            res = db.table("regional_news").delete().ilike("title", pattern).execute()
+            if res.data:
+                logger.info(f"[News Worker] 🗑️ Purgadas {len(res.data)} noticias de tipo: {pattern}")
+        
+        logger.info("[News Worker] ✨ Limpieza completada.")
+    except Exception as e:
+        logger.error(f"[News Worker] ⚠️ Error en limpieza de DB: {e}")
+
+async def _maintain_db_hygiene():
+    """Mantiene solo las últimas 50 noticias para evitar saturación de datos irrelevantes."""
+    db = get_supabase()
+    try:
+        # Obtener IDs de las útlimas 50 noticias
+        res = db.table("regional_news").select("id").order("published_at", desc=True).limit(50).execute()
+        if not res.data: return
+        
+        keep_ids = [n["id"] for n in res.data]
+        
+        # Borrar todas las que NO estén en ese grupo
+        # Nota: Supabase Python no soporta 'not.in' directamente fácil, usamos un filtro de ID
+        all_res = db.table("regional_news").select("id").execute()
+        all_ids = [n["id"] for n in all_res.data]
+        
+        delete_ids = [id for id in all_ids if id not in keep_ids]
+        
+        if delete_ids:
+            logger.info(f"[News Worker] 🧹 Higiene de DB: Purgando {len(delete_ids)} noticias antiguas...")
+            for i in range(0, len(delete_ids), 10): # Borrar en lotes
+                chunk = delete_ids[i:i+10]
+                db.table("regional_news").delete().in_("id", chunk).execute()
+            logger.info("[News Worker] ✅ Base de Datos purificada y optimizada.")
+            
+    except Exception as e:
+        logger.error(f"[News Worker] ⚠️ Error al mantener higiene de DB: {e}")
 
 def get_news_scheduler() -> AsyncIOScheduler:
     """Retorna el scheduler para el worker de noticias."""
@@ -238,8 +332,29 @@ async def start_news_worker():
     if not scheduler.running:
         scheduler.start()
         logger.info("[News Worker] 🚀 Scheduler iniciado.")
-        # Carga inicial inmediata en segundo plano (para no bloquear el arranque del motor)
+        # Carga inicial inmediata y LIMPIEZA en segundo plano
+        asyncio.create_task(_cleanup_junk_news())
         asyncio.create_task(_fetch_and_process_news())
+
+def _normalize_category(cat: str) -> str:
+    """Normaliza la categoría de la IA a las permitidas por el Smart Mixer del Frontend."""
+    cat = cat.upper().strip()
+    
+    # Mapeos de Relevancia Contable/Financiera
+    if any(k in cat for k in ["SII", "LEGAL", "LEY", "DERECHO", "EMPRESARIAL", "TRIBUTARIO"]):
+        return "SII / LEGAL"
+    if any(k in cat for k in ["FINAN", "BOLSA", "MERCADO", "IPC", "DÓLAR"]):
+        return "FINANZAS"
+    if any(k in cat for k in ["ECONOM", "INVERSI", "INDUSTRIA", "MINER", "GAS", "HIDR"]):
+        return "ECONOMÍA"
+    
+    # Mapeos Regionales
+    if any(k in cat for k in ["MAGALLANES", "ARENAS", "PUNTA", "WILLIAMS", "NATALES", "PORVENIR", "LOCAL"]):
+        return "MAGALLANES ACTUAL"
+    if "DEPORTE" in cat:
+        return "DEPORTES REGIONALES"
+    
+    return "MAGALLANES ACTUAL" # Fallback regional
 
 async def stop_news_worker():
     """Detiene el worker limpiamente."""

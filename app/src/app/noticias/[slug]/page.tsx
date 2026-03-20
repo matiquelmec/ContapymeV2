@@ -1,5 +1,7 @@
 import { Metadata, ResolvingMetadata } from "next";
-import { getRegionalNews } from "@/actions/news";
+
+export const revalidate = 0 // Dinamismo para noticias individuales
+import { getRegionalNews, getNewsBySlug } from "@/actions/news";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,8 +19,8 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { slug } = await params;
-  const newsRes = await getRegionalNews();
-  const news = newsRes.success ? newsRes.data.find((n: any) => n.slug === slug) : null;
+  const newsRes = await getNewsBySlug(slug);
+  const news = newsRes.success ? newsRes.data : null;
 
   if (!news) return { title: "Noticia no encontrada" };
 
@@ -45,8 +47,8 @@ export async function generateMetadata(
 
 export default async function NewsPage({ params }: Props) {
   const { slug } = await params;
-  const newsRes = await getRegionalNews();
-  const news = newsRes.success ? newsRes.data.find((n: any) => n.slug === slug) : null;
+  const newsRes = await getNewsBySlug(slug);
+  const news = newsRes.success ? newsRes.data : null;
 
   if (!news) notFound();
 

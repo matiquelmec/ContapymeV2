@@ -15,31 +15,35 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     darle un tono ejecutivo y verificar su relevancia regional.
     """
     prompt = f"""
-    Eres el editor principal de 'Contapyme V2', un portal de noticias institucional premium para la Región de Magallanes, Chile.
-    Tu objetivo es transformar un texto ruidoso capturado de medios locales en una noticia COMPLETAMENTE ORIGINAL, estructurada y profesional.
+    Eres el editor y Analista Financiero principal de 'Contapymepuq', un portal institucional de noticias en Magallanes, Chile.
+    Tu audiencia son contadores, dueños de empresas y profesionales que buscan información estratégica.
+    Tu objetivo es transformar textos crudosen artículos profesionales, sobrios y útiles.
+    
+    ¡IMPORTANTE!: Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. En su lugar, responde con un JSON que tenga "category": "IGNORE".
 
     TEXTO CAPTURADO (CRUDO):
     Titular sugerido: {headline}
     Contenido detectado: {str(content)[0:3000]}...
 
-    REGLAS DE ORO PARA EL REDACTOR:
-    1. ORIGINALIDAD TOTAL: Reescribe la noticia desde cero con un lenguaje elegante, formal y periodístico. ¡Prohibido copiar frases del texto crudo!
-    2. ESTILO VISUAL (CRÍTICO): Genera un prompt para imagen estilo "Studio Ghibli meets Cyberpunk 2077". Debe ser dinámico y artístico.
-    3. ESTRUCTURA OBLIGATORIA (SI NO ESTÁ COMPLETO, SE RECHAZARÁ):
-       - 'title': Titular potente, corto y vendedor (MÁXIMO 10 PALABRAS).
-       - 'summary': Resumen ejecutivo de EXACTAMENTE 3 líneas.
-       - 'full_content': Redacta un artículo de MÍNIMO 3 párrafos de alta calidad. Debe sonar a periodismo institucional de lujo. Omitir publicidad, teléfonos o links.
-    4. TONO: Formal, profesional, optimista y orgullosamente regional de Magallanes.
-    5. CATEGORÍAS: INVERSIONES, DEPORTES, CLIMA, ECONOMÍA, SOCIAL.
+    REGLAS DE ORO PARA EL ANALISTA:
+    1. ORIGINALIDAD Y VALOR: Redacta desde una perspectiva institucional. Si la noticia es económica, resalta el impacto (ej. cómo afecta el dólar al comercio local).
+    2. PERSPECTIVA EDITORIAL: Habla desde el noticiero de 'Contapymepuq'. Usa un tono ejecutivo y serio.
+    3. ESTILO VISUAL: Prompt de imagen "Studio Ghibli meets Cyberpunk 2077", elegante, con un toque tecnológico/financiero pero siempre regional (Patagonia).
+    4. ESTRUCTURA:
+       - 'title': Titular profesional (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
+       - 'summary': Resumen de 3 líneas enfocado en lo que el lector necesita saber.
+       - 'full_content': MÍNIMO 3 párrafos de redacción experta.
+    5. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
+    6. TONO: Ejecutivo, sobrio y analítico.
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
     {{
         "title": "Titular reescrito",
         "category": "CATEGORÍA",
-        "summary": "Resumen para el portal.",
-        "full_content": "Cuerpo extenso de la noticia totalmente original y sin ruido.",
+        "summary": "Resumen ejecutivo.",
+        "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
-        "visual_prompt": "Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, [detalles épicos de la escena], 8k, vibrant colors."
+        "visual_prompt": "Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, professional business atmosphere, 8k."
     }}
     """
 
@@ -47,7 +51,12 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         "model": DEFAULT_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "format": "json"
+        "format": "json",
+        "options": {
+            "num_predict": 2048,  # Aumento del límite de tokens para evitar cortes
+            "temperature": 0.3,   # Más determinismo para evitar divagaciones
+            "top_p": 0.9          # Estabilidad en la elección de palabras
+        }
     }
 
     try:
