@@ -15,57 +15,63 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     darle un tono ejecutivo y verificar su relevancia regional.
     """
     prompt = f"""
-    Eres un editor experto de 'Contapyme V2', un portal de noticias institucional para la Región de Magallanes, Chile.
-    Tu misión es transformar el siguiente titular y contenido en una noticia breve, pero COMPLETAMENTE INFORMATIVA.
+    Eres el editor principal de 'Contapyme V2', un portal de noticias institucional premium para la Región de Magallanes, Chile.
+    Tu objetivo es transformar un texto ruidoso capturado de medios locales en una noticia COMPLETAMENTE ORIGINAL, estructurada y profesional.
 
-    NOTICIA ORIGINAL:
-    Titular: {headline}
-    Contenido: {str(content)[0:1000]}...
+    TEXTO CAPTURADO (CRUDO):
+    Titular sugerido: {headline}
+    Contenido detectado: {str(content)[0:3000]}...
 
-    REGLAS DE EDICIÓN:
-    1. El tono debe ser formal, optimista y orientado al progreso regional.
-    2. REDACCIÓN COMPLETA: El resumen debe ser de 3 a 4 oraciones. NO dejes la noticia abierta. 
-       - Si mencionas "estrategias", "medidas" o "planes", DEBES detallar brevemente cuáles son.
-       - El lector debe entender el QUÉ, CÓMO y POR QUÉ sin necesidad de leer más.
-    3. Clasifica en: INVERSIONES, DEPORTES, CLIMA, CULTURA, ECONOMÍA, SOCIAL.
-    4. Crea un visual_prompt para nuestra IA local (GPU) siguiendo este estilo:
-       - ESTILO: Animación híbrida 2D/3D (Estilo Ghibli futurista / Cyberpunk suave).
-       - ELEMENTOS: Luces de neón azul/cian, arquitectura de vanguardia en Punta Arenas, tecnología limpia.
+    REGLAS DE ORO PARA EL REDACTOR:
+    1. ORIGINALIDAD TOTAL: Reescribe la noticia desde cero con un lenguaje elegante, formal y periodístico. ¡Prohibido copiar frases del texto crudo!
+    2. ESTILO VISUAL (CRÍTICO): Genera un prompt para imagen estilo "Studio Ghibli meets Cyberpunk 2077". Debe ser dinámico y artístico.
+    3. ESTRUCTURA OBLIGATORIA (SI NO ESTÁ COMPLETO, SE RECHAZARÁ):
+       - 'title': Titular potente, corto y vendedor (MÁXIMO 10 PALABRAS).
+       - 'summary': Resumen ejecutivo de EXACTAMENTE 3 líneas.
+       - 'full_content': Redacta un artículo de MÍNIMO 3 párrafos de alta calidad. Debe sonar a periodismo institucional de lujo. Omitir publicidad, teléfonos o links.
+    4. TONO: Formal, profesional, optimista y orgullosamente regional de Magallanes.
+    5. CATEGORÍAS: INVERSIONES, DEPORTES, CLIMA, ECONOMÍA, SOCIAL.
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
     {{
-        "title": "Titular optimizado",
+        "title": "Titular reescrito",
         "category": "CATEGORÍA",
-        "summary": "Resumen ejecutivo detallado y CERRADO (incluye el 'cómo' y los puntos clave).",
+        "summary": "Resumen para el portal.",
+        "full_content": "Cuerpo extenso de la noticia totalmente original y sin ruido.",
         "is_featured": boolean,
-        "visual_style": "ANIMACION_FUTURISTA",
-        "visual_prompt": "Digital high-tech 2D/3D animation, Ghibli vibes, neon cyberpunk Punta Arenas, [SCENE_DETAILS], 8k."
+        "visual_prompt": "Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, [detalles épicos de la escena], 8k, vibrant colors."
     }}
     """
 
+    payload = {
+        "model": DEFAULT_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "format": "json"
+    }
+
     try:
-        payload = {
-            "model": DEFAULT_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": False,
-            "format": "json"
-        }
-        
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             response = await client.post(OLLAMA_URL, json=payload)
             if response.status_code == 200:
                 result = response.json()
-                content_res = result.get("message", {}).get("content", "{}")
-                return json.loads(content_res)
+                content_raw = result.get("message", {}).get("content", "{}")
+                data = json.loads(content_raw)
+                
+                # Blindaje: Asegurar que TODAS las llaves necesarias existan
+                return {
+                    "title": data.get("title", headline),
+                    "category": data.get("category", "REGIONAL"),
+                    "summary": data.get("summary", ""),
+                    "full_content": data.get("full_content", content),
+                    "is_featured": data.get("is_featured", False),
+                    "visual_prompt": data.get("visual_prompt", f"Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, 8k, vibrant colors.")
+                }
             else:
                 logger.error(f"[AI] Error en Ollama: {response.status_code}")
     except Exception as e:
-        logger.error(f"[AI] No se pudo conectar con Ollama Local: {e}")
+        logger.error(f"[AI] No se pudo procesar con IA: {e}")
     
-    # Fallback básico si la IA falla
-    return {
-        "title": headline,
-        "category": "REGIONAL",
-        "summary": content[:150] if content else "Noticia capturada desde medios locales.",
-        "is_featured": False
-    }
+    # Si la IA falla, devolvemos NULL para no ensuciar el portal con basura.
+    # El portal debe ser IMPECABLE o estar vacío.
+    return None

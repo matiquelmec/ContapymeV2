@@ -1,0 +1,48 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+import { getActiveOrganizationId } from './organizations'
+
+export async function processPayroll() {
+  const supabase = await createClient()
+  
+  // 1. Validar Sesión Activa (Server-side)
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) return { success: false, error: 'Sesión inválida.' }
+
+  // 2. Obtener organización activa real del contexto (Cookies)
+  const activeOrgId = await getActiveOrganizationId()
+
+  if (!activeOrgId) return { success: false, error: 'No se encontró empresa activa seleccionada.' }
+
+  // 3. Disparar Motor Matemático Python
+  try {
+    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
+    const res = await fetch(`${engineUrl}/api/v1/payroll/process`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        org_id: activeOrgId,
+        periodo: '2026-03-01' // Por defecto usamos el mes actual para la V2 Demo
+      })
+    })
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ detail: 'Fallo en Motor Matemático Payroll.' }))
+      return { success: false, error: errData.detail || 'Fallo en Motor Matemático Payroll.' }
+    }
+
+    const payrollData = await res.json()
+
+    // 4. El Motor Python ya guardó y generó los datos. Ordenamos refrescar la UI.
+    revalidatePath('/dashboard/payroll')
+    return { success: true, count: payrollData.processed_count }
+
+  } catch (err: any) {
+    console.error("Server Action Payroll Exception:", err)
+    return { success: false, error: `Error interno de conexión o proceso: ${err.message}` }
+  }
+}
