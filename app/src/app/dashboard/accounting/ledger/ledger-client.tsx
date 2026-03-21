@@ -24,6 +24,7 @@ import {
 import { getLedger } from "@/actions/accounting";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { fCurrency } from "@/lib/utils";
 
 export default function LedgerClient({ organizationId, accounts }: { organizationId: string, accounts: any[] }) {
   const [selectedAccount, setSelectedAccount] = useState("");
@@ -175,7 +176,7 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                           <TableCell className="text-right px-10 py-5 text-muted-foreground/20">—</TableCell>
                           <TableCell className="text-right px-10 py-5 text-muted-foreground/20">—</TableCell>
                           <TableCell className={`text-right font-black px-10 py-5 bg-primary/5 ${ledgerData.saldo_anterior >= 0 ? 'text-primary' : 'text-amber-600'}`}>
-                            ${ledgerData.saldo_anterior.toLocaleString('es-CL')}
+                            {fCurrency(ledgerData.saldo_anterior)}
                           </TableCell>
                         </TableRow>
                       )}
@@ -190,19 +191,19 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                           <TableCell className="text-right font-black text-sm text-emerald-700 px-10 py-6">
                             {m.debe > 0 ? (
                               <div className="bg-emerald-50/50 rounded-lg py-2 px-4 inline-block shadow-sm ring-1 ring-emerald-100 group-hover:bg-emerald-50 transition-colors">
-                                ${m.debe.toLocaleString('es-CL')}
+                                {fCurrency(m.debe)}
                               </div>
                             ) : <span className="text-muted-foreground/20">—</span>}
                           </TableCell>
                           <TableCell className="text-right font-black text-sm text-rose-600 px-10 py-6">
                             {m.haber > 0 ? (
                               <div className="bg-rose-50/50 rounded-lg py-2 px-4 inline-block shadow-sm ring-1 ring-rose-100 group-hover:bg-rose-50 transition-colors">
-                                ${m.haber.toLocaleString('es-CL')}
+                                {fCurrency(m.haber)}
                               </div>
                             ) : <span className="text-muted-foreground/20">—</span>}
                           </TableCell>
                           <TableCell className={`text-right font-black text-sm px-10 py-6 bg-primary/[0.02] group-hover:bg-primary/[0.05] transition-colors ${m.saldo >= 0 ? 'text-primary' : 'text-amber-600'}`}>
-                            ${m.saldo.toLocaleString('es-CL')}
+                            {fCurrency(m.saldo)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -211,15 +212,15 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                       <TableRow className="bg-muted/30 font-black border-t-8 border-primary/10">
                         <TableCell colSpan={2} className="px-10 py-8 text-[11px] uppercase tracking-[0.2em] text-foreground">Resumen de Auditoría del Periodo</TableCell>
                         <TableCell className="text-right px-10 text-emerald-700 text-xl decoration-emerald-500/30 underline underline-offset-8 decoration-2 italic">
-                          ${ledgerData.total_debe.toLocaleString('es-CL')}
+                          {fCurrency(ledgerData.total_debe)}
                         </TableCell>
                         <TableCell className="text-right px-10 text-rose-600 text-xl decoration-rose-500/30 underline underline-offset-8 decoration-2 italic">
-                          ${ledgerData.total_haber.toLocaleString('es-CL')}
+                          {fCurrency(ledgerData.total_haber)}
                         </TableCell>
                         <TableCell className="text-right px-10 bg-primary/5 py-8 border-l border-primary/10">
                           <div className="flex flex-col items-end">
                             <span className="text-[10px] text-primary/60 font-black uppercase tracking-[0.2em] leading-none mb-2">Saldo Final Neto</span>
-                            <span className="text-primary text-3xl font-black tracking-tighter">${ledgerData.saldo_final.toLocaleString('es-CL')}</span>
+                            <span className="text-primary text-3xl font-black tracking-tighter">{fCurrency(ledgerData.saldo_final)}</span>
                           </div>
                         </TableCell>
                       </TableRow>

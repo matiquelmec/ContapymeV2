@@ -21,13 +21,44 @@ export async function analyzeBankStatementAction(formData: FormData) {
   try {
     const response = await fetch(`${ENGINE_URL}/api/v1/bank/analyze`, {
       method: "POST",
-      body: formData, // FormData handles the multi-part file upload
+      body: formData,
     });
     
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || "Error al analizar cartola");
     
     return { success: true, data: result };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function saveReconciliationAction(data: {
+  organization_id: string;
+  matches: Array<{
+    journal_entry_line_id: string;
+    status: string;
+    notes?: string;
+  }>;
+}) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/bank/save-reconciliation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    
+    const result = await response.json();
+    if (!response.ok) {
+      const errorMsg = typeof result.detail === 'string' 
+        ? result.detail 
+        : (typeof result.detail === 'object' ? JSON.stringify(result.detail) : "Error al guardar conciliación");
+      throw new Error(errorMsg);
+    }
+    
+    revalidatePath("/dashboard/reconciliation");
+    return { success: true, message: result.message };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, error: errorMessage };

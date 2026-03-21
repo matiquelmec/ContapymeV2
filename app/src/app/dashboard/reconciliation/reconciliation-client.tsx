@@ -5,8 +5,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search } from 'lucide-react'
-import { analyzeBankStatementAction } from '@/actions/bank-reconciliation'
+import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark } from 'lucide-react'
+import { analyzeBankStatementAction, saveReconciliationAction } from '@/actions/bank-reconciliation'
+import { toast } from 'sonner'
+import { fCurrency } from '@/lib/utils'
 
 interface BankTransaction {
     fecha: string;
@@ -23,11 +25,30 @@ interface ReconciliationMatch {
     confidence: number;
 }
 
-export function ReconciliationClient({ accountingEntries }: { accountingEntries: any[] }) {
+export function ReconciliationClient({ 
+    accountingEntries,
+    organizationId 
+}: { 
+    accountingEntries: any[],
+    organizationId: string
+}) {
     const [file, setFile] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [matches, setMatches] = useState<ReconciliationMatch[]>([])
     const [error, setError] = useState<string | null>(null)
+
+    // Filtrar entradas ya conciliadas (Soporta objeto 1:1 o Arreglo)
+    const reconciledEntries = accountingEntries.filter(ae => {
+        const br = ae.bank_reconciliations;
+        return br && (Array.isArray(br) ? br.length > 0 : true);
+    })
+
+    // Función segura para obtener datos de la conciliación
+    const getBRVal = (ae: any, field: string) => {
+        const br = ae.bank_reconciliations;
+        if (!br) return null;
+        return Array.isArray(br) ? br[0]?.[field] : br[field];
+    }
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0]
@@ -51,22 +72,26 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                 throw new Error(result.error)
             }
 
-            // Auto-matching logic
+            // Solo intentar cruzar con entradas NO conciliadas aún
+            const pendingEntries = accountingEntries.filter(ae => 
+                !ae.bank_reconciliations || ae.bank_reconciliations.length === 0
+            )
+
             const foundMatches: ReconciliationMatch[] = result.data.transactions.map((bt: BankTransaction) => {
-                // Algoritmo de cruce V2: Busca por monto exacto (sin importar el signo para simplificar el match inicial)
-                const possibleMatch = accountingEntries.find(ae => 
-                    Math.abs(ae.monto) === Math.abs(bt.monto)
+                const possibleMatch = pendingEntries.find(ae => 
+                    Math.abs(Number(ae.monto)) === Math.abs(bt.monto)
                 )
 
                 return {
                     bankRow: bt,
                     accountingEntry: possibleMatch,
-                    status: possibleMatch ? 'matched' : 'unmatched',
+                    status: (possibleMatch ? 'matched' : 'unmatched') as 'matched' | 'unmatched',
                     confidence: possibleMatch ? 0.95 : 0
                 }
             })
 
             setMatches(foundMatches)
+            toast.success("Análisis completado. Revise los cruces detectados.")
         } catch (err: any) {
             setError(err.message || "Error al procesar la cartola")
         } finally {
@@ -74,12 +99,41 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
         }
     }
 
-    const fCurrency = (num: number) => {
-        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(num)
+    const handleSave = async () => {
+        const matchedItems = matches.filter(m => m.status === 'matched' && m.accountingEntry)
+        if (matchedItems.length === 0) return
+
+        setLoading(true)
+        try {
+            const data = {
+                organization_id: organizationId,
+                matches: matchedItems.map(m => ({
+                    journal_entry_line_id: m.accountingEntry.id,
+                    organization_id: organizationId,
+                    status: 'reconciled',
+                    notes: `Conciliado contra cartola: ${m.bankRow.descripcion}`
+                }))
+            }
+
+            const result = await saveReconciliationAction(data)
+            if (result.success) {
+                toast.success(result.message)
+                setMatches([]) 
+                setFile(null)
+            } else {
+                throw new Error(result.error)
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Error al guardar la conciliación")
+        } finally {
+            setLoading(false)
+        }
     }
 
+
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
+        <div className="space-y-12 animate-in fade-in duration-700" suppressHydrationWarning={true}>
             
             {/* Zona de Carga Premium */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -109,7 +163,7 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                                             <FileType className="w-8 h-8" />
                                         </div>
                                         <span className="text-sm font-black uppercase tracking-tight max-w-[300px] truncate">{file.name}</span>
-                                        <Button variant="ghost" className="mt-4 text-[10px] font-black uppercase text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-full" onClick={(e) => { e.stopPropagation(); setFile(null); }}>Eliminar archivo</Button>
+                                        <Button variant="outline" className="mt-4 text-[10px] font-black uppercase border-rose-200 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-full" onClick={(e) => { e.stopPropagation(); setFile(null); }}>Eliminar archivo</Button>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center text-muted-foreground transition-colors group-hover:text-primary">
@@ -160,6 +214,17 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                                     </span>
                                 </div>
                             </div>
+
+                            {matches.some(m => m.status === 'matched') && !loading && (
+                                <Button 
+                                    onClick={handleSave}
+                                    className="w-full mt-8 h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest rounded-3xl shadow-lg shadow-emerald-500/20 gap-3"
+                                >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Confirmar y Guardar Auditoría
+                                </Button>
+                            )}
+                            
                             <div className="mt-8 pt-8 border-t border-border flex items-center gap-4">
                                 <div className="p-3 bg-primary/5 rounded-xl">
                                     <Search className="w-5 h-5 text-primary" />
@@ -174,10 +239,16 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                 </div>
             </div>
 
-            {/* Resultado de la Conciliación */}
+            {/* Resultado de la Conciliación Actual */}
             {matches.length > 0 && (
                 <Card className="bg-card border-border shadow-2xl overflow-hidden rounded-[2.5rem] border-t-8 border-t-primary/20 animate-in slide-in-from-bottom-6 duration-500">
                     <CardContent className="p-0">
+                        <div className="p-6 bg-muted/20 border-b border-border flex justify-between items-center">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-3">
+                                <Landmark className="w-5 h-5 text-primary" />
+                                Resultado del Análisis Actual
+                            </h3>
+                        </div>
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
@@ -206,7 +277,7 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                                             <TableCell className="px-10 py-6">
                                                 <div className="flex flex-col">
                                                     <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{m.bankRow.descripcion}</span>
-                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase tracking-widest opacity-60">{btDate(m.bankRow.fecha)}</span>
+                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase tracking-widest opacity-60">{m.bankRow.fecha}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right px-10 py-6">
@@ -233,7 +304,7 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                                             
                                             <TableCell className="text-right px-10 py-6 bg-muted/5 group-hover:bg-primary/[0.03] transition-colors border-l border-border/30">
                                                 {m.status === 'matched' ? (
-                                                    <span className="font-black text-sm text-primary tracking-tighter">{fCurrency(m.accountingEntry.monto)}</span>
+                                                    <span className="font-black text-sm text-primary tracking-tighter">{fCurrency(Number(m.accountingEntry.monto))}</span>
                                                 ): (
                                                     <span className="text-muted-foreground/30 font-black italic text-[10px] tracking-widest uppercase">Sin Registro</span>
                                                 )}
@@ -246,11 +317,70 @@ export function ReconciliationClient({ accountingEntries }: { accountingEntries:
                     </CardContent>
                 </Card>
             )}
+
+            {/* Historial de Conciliaciones Pasadas */}
+            {reconciledEntries.length > 0 && (
+                <Card className="bg-card border-border shadow-2xl overflow-hidden rounded-[2.5rem] border-t-8 border-t-emerald-500/20 animate-in slide-in-from-bottom-10 duration-700">
+                    <CardContent className="p-0">
+                        <div className="p-8 bg-emerald-50/50 border-b border-border flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                    <History className="w-6 h-6 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black uppercase tracking-tighter text-foreground">Historial de Auditoría Bancaria</h3>
+                                    <p className="text-[10px] font-bold text-muted-foreground italic uppercase">Registros blindados y verificados en el Libro Diario</p>
+                                </div>
+                            </div>
+                            <Badge className="bg-emerald-600 text-white font-black px-4 py-2 rounded-xl shadow-lg shadow-emerald-600/20 border-none uppercase text-[10px]">
+                                {reconciledEntries.length} Registros Consolidados
+                            </Badge>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/30 border-b border-border">
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Fecha Conciliación</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 text-center">Referencia ERP</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Glosa Auditoría</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 text-right">Monto Auditado</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {reconciledEntries.map((ae, i) => (
+                                        <TableRow key={i} className="border-border hover:bg-emerald-500/[0.02] transition-all">
+                                            <TableCell className="px-10 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-foreground font-black uppercase text-xs">
+                                                        {new Date(getBRVal(ae, 'reconciled_at') || ae.created_at).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-emerald-600 uppercase italic">Verificado V2</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="px-10 py-6 text-center">
+                                                <Badge variant="outline" className="font-black uppercase text-[9px] border-border bg-white py-1 px-3 rounded-lg">
+                                                    Asiento #{ae.journal_entries.numero_asiento || ae.id.substring(0,8).toUpperCase()}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="px-10 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-foreground font-bold text-xs uppercase">{getBRVal(ae, 'notes') || 'Sin observaciones'}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-bold italic truncate max-w-[300px] mt-1 uppercase tracking-widest">Cuenta: {ae.cuenta_nombre}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="px-10 py-6 text-right">
+                                                <span className="font-black text-sm text-emerald-600 tracking-tighter">
+                                                    {fCurrency(Number(ae.monto))}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
-}
-
-function btDate(d: string) {
-    if (!d) return "Sin fecha";
-    return d;
 }

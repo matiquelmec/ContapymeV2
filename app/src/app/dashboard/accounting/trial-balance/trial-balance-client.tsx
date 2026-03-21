@@ -16,6 +16,7 @@ import { Search, Printer, Download, Filter, CheckCircle2, AlertCircle, RefreshCc
 import { getTrialBalance } from "@/actions/accounting";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { fCurrency } from "@/lib/utils";
 
 export default function TrialBalanceClient({ organizationId }: { organizationId: string }) {
   const [data, setData] = useState<any[]>([]);
@@ -115,7 +116,6 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       </div>
 
       {/* 2. Estado de Cuadratura - Indicador Visual */}
-      {/* 2. Estado de Cuadratura - Indicador Visual */}
       <div className={`p-8 rounded-[2.5rem] border-2 flex items-center justify-between shadow-lg transition-all duration-500 overflow-hidden relative ${isSquare ? 'bg-emerald-50/50 border-emerald-500/20 text-emerald-800' : 'bg-rose-50/50 border-rose-500/20 text-rose-800'}`}>
         <div className="flex items-center gap-6 z-10">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 shadow-inner ${isSquare ? 'bg-emerald-100 border-emerald-500/30' : 'bg-rose-100 border-rose-500/30'}`}>
@@ -130,7 +130,7 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
         </div>
         <div className="flex flex-col items-end z-10">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Diferencia Neta Detectada</span>
-            <span className="text-4xl font-black tracking-tighter">${Math.abs(totalSumas.debe - totalSumas.haber).toLocaleString('es-CL')}</span>
+            <span className="text-4xl font-black tracking-tighter">{fCurrency(Math.abs(totalSumas.debe - totalSumas.haber))}</span>
         </div>
         {/* Decorative background element */}
         <div className={`absolute -right-8 -bottom-8 opacity-[0.03] transform rotate-12 ${isSquare ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -175,19 +175,19 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
                         <span className="text-foreground font-black uppercase text-xs tracking-tight">{row.nombre}</span>
                     </TableCell>
                     <TableCell className="text-right px-10 py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                        {row.debe > 0 ? row.debe.toLocaleString('es-CL') : <span className="opacity-0">—</span>}
+                        {row.debe > 0 ? fCurrency(row.debe) : <span className="opacity-0">—</span>}
                     </TableCell>
                     <TableCell className="text-right px-10 py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                        {row.haber > 0 ? row.haber.toLocaleString('es-CL') : <span className="opacity-0">—</span>}
+                        {row.haber > 0 ? fCurrency(row.haber) : <span className="opacity-0">—</span>}
                     </TableCell>
                     <TableCell className="text-right px-10 py-6 bg-blue-50/10 group-hover:bg-blue-50/30 transition-colors">
                         <span className="text-sm font-black text-primary">
-                            {row.saldo_deudor > 0 ? row.saldo_deudor.toLocaleString('es-CL') : <span className="opacity-0">—</span>}
+                            {row.saldo_deudor > 0 ? fCurrency(row.saldo_deudor) : <span className="opacity-0">—</span>}
                         </span>
                     </TableCell>
                     <TableCell className="text-right px-10 py-6 bg-amber-50/10 group-hover:bg-amber-50/30 transition-colors">
                          <span className="text-sm font-black text-amber-600">
-                            {row.saldo_acreedor > 0 ? row.saldo_acreedor.toLocaleString('es-CL') : <span className="opacity-0">—</span>}
+                            {row.saldo_acreedor > 0 ? fCurrency(row.saldo_acreedor) : <span className="opacity-0">—</span>}
                          </span>
                     </TableCell>
                   </TableRow>
@@ -212,25 +212,25 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
                         <TableCell colSpan={2} className="px-10 py-10 font-black uppercase text-[11px] tracking-[0.2em] text-foreground">Total Consolidado Institucional</TableCell>
                         <TableCell className="text-right px-10 py-10">
                             <div className="flex flex-col items-end">
-                                <span className="text-sm font-black text-foreground">${totalSumas.debe.toLocaleString('es-CL')}</span>
+                                <span className="text-sm font-black text-foreground">{fCurrency(totalSumas.debe)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Suma Débitos</span>
                             </div>
                         </TableCell>
                         <TableCell className="text-right px-10 py-10">
                              <div className="flex flex-col items-end">
-                                <span className="text-sm font-black text-foreground">${totalSumas.haber.toLocaleString('es-CL')}</span>
+                                <span className="text-sm font-black text-foreground">{fCurrency(totalSumas.haber)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Suma Créditos</span>
                              </div>
                         </TableCell>
                         <TableCell className="text-right px-10 py-10 bg-primary/5 border-l border-primary/10">
                              <div className="flex flex-col items-end">
-                                <span className="text-primary text-2xl font-black tracking-tighter">${totalSumas.saldo_deudor.toLocaleString('es-CL')}</span>
+                                <span className="text-primary text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_deudor)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 mt-1 whitespace-nowrap">Acumulado Deudor</span>
                              </div>
                         </TableCell>
                         <TableCell className="text-right px-10 py-10 bg-amber-600/5 border-l border-amber-600/10">
                              <div className="flex flex-col items-end">
-                                <span className="text-amber-600 text-2xl font-black tracking-tighter">${totalSumas.saldo_acreedor.toLocaleString('es-CL')}</span>
+                                <span className="text-amber-600 text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_acreedor)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-600/60 mt-1 whitespace-nowrap">Acumulado Acreedor</span>
                              </div>
                         </TableCell>
