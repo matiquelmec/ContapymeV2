@@ -13,6 +13,75 @@ CREATE TABLE public.account_mapping_rules (
   CONSTRAINT account_mapping_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT account_mapping_rules_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id)
 );
+CREATE TABLE public.bank_accounts (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL,
+    bank_name text NOT NULL,
+    account_number text NOT NULL,
+    account_type text DEFAULT 'corriente'::text,
+    currency text DEFAULT 'CLP'::text,
+    chart_account_id uuid,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_accounts_pkey PRIMARY KEY (id),
+    CONSTRAINT bank_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE,
+    CONSTRAINT bank_accounts_chart_account_id_fkey FOREIGN KEY (chart_account_id) REFERENCES public.chart_of_accounts(id),
+    CONSTRAINT bank_accounts_org_bank_acc_key UNIQUE (organization_id, bank_name, account_number)
+);
+CREATE TABLE public.bank_mapping_rules (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    organization_id uuid NOT NULL,
+    search_pattern text NOT NULL,
+    target_account_id uuid,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_mapping_rules_pkey PRIMARY KEY (id),
+    CONSTRAINT bank_mapping_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+    CONSTRAINT bank_mapping_rules_target_account_id_fkey FOREIGN KEY (target_account_id) REFERENCES public.chart_of_accounts(id)
+);
+CREATE TABLE public.bank_reconciliations (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    bank_line_id uuid NOT NULL,
+    journal_entry_id uuid NOT NULL,
+    match_type text DEFAULT 'manual'::text,
+    confidence_score double precision DEFAULT 1.0,
+    reconciled_at timestamp with time zone DEFAULT now(),
+    reconciled_by uuid,
+    CONSTRAINT bank_reconciliations_pkey PRIMARY KEY (id),
+    CONSTRAINT bank_reconciliations_bank_line_id_fkey FOREIGN KEY (bank_line_id) REFERENCES public.bank_statement_lines(id) ON DELETE CASCADE,
+    CONSTRAINT bank_reconciliations_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id) ON DELETE CASCADE,
+    CONSTRAINT bank_reconciliations_bank_line_id_key UNIQUE (bank_line_id)
+);
+CREATE TABLE public.bank_statement_lines (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    statement_id uuid,
+    bank_account_id uuid NOT NULL,
+    fecha date NOT NULL,
+    descripcion text NOT NULL,
+    monto bigint NOT NULL,
+    tipo text NOT NULL,
+    referencia_bancaria text,
+    rut_tercero text,
+    is_reconciled boolean DEFAULT false,
+    external_id text,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_statement_lines_pkey PRIMARY KEY (id),
+    CONSTRAINT bank_statement_lines_statement_id_fkey FOREIGN KEY (statement_id) REFERENCES public.bank_statements(id) ON DELETE CASCADE,
+    CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id)
+);
+CREATE TABLE public.bank_statements (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    bank_account_id uuid NOT NULL,
+    period date NOT NULL,
+    file_name text,
+    original_balance bigint DEFAULT 0,
+    final_balance bigint DEFAULT 0,
+    status text DEFAULT 'processed'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_statements_pkey PRIMARY KEY (id),
+    CONSTRAINT bank_statements_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id) ON DELETE CASCADE
+);
 CREATE TABLE public.centralized_account_config (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,

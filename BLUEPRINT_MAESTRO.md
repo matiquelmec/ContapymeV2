@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.7 (Magallanes 2077 — Sello de Integridad) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Hardening & Blindaje Corporativo Integrando 🛡️✅
+> **Versión:** 2.8 (Magallanes 2077 — Conciliación Persistente) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Hardening & Blindaje Bancario 🛡️🏦
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -94,7 +94,15 @@ Extensa lógica progresiva y normativa chilena completa.
 ### 3.5 📉 Módulo Indicadores Económicos
 *   **Python Engine:** `workers/indicators_scheduler.py` — APScheduler que corre **automáticamente Lun-Vie a las 09:00 AM (hora Santiago)** consultando mindicador.cl y almacenando en Supabase. También se ejecuta al iniciar el servidor (lifespan FastAPI).
 
-### 3.6 📚 Módulo Contabilidad IFRS y RCV (Blindaje de Integridad)
+### 3.7 🏦 Módulo de Conciliación Bancaria (Persistencia Avanzada)
+Supera al Master mediante la persistencia de movimientos y reglas de aprendizaje.
+*   **Next.js:** Centro de Conciliación. Visualización de "Cruce de Datos" entre Cartola vs Libro Mayor. Sistema semi-automático para marcar transacciones conciliadas.
+    - **Gestión de Cuentas:** CRUD de bancos y cuentas corrientes vinculadas a cuentas contables.
+    - **Upload Manager:** Historial de archivos procesados y saldos de cuadratura.
+*   **Python Engine:** `routers/bank_reconciliation.py` — Motor de parsing (Regex + IA) que identifica tipos de movimiento, RUTs de origen y patrones.
+    - **Inteligencia de Mapeo:** Aplica `bank_mapping_rules` para pre-clasificar gastos (Ej: "TELEFONIA" -> Cuenta Gastos Comunicaciones).
+
+### 3.8 📚 Módulo Contabilidad IFRS y RCV (Blindaje de Integridad)
 El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   **Python Engine:** Procesa XML/CSV del RCV del SII. Cuadra compras y ventas, genera asientos para el Libro Diario.
 *   **Blindaje SQL (Integridad Temporal):** Implementación de triggers `BEFORE INSERT OR UPDATE` que fuerzan la coincidencia exacta entre el periodo contable y la fecha real del documento. Esto elimina el 100% de los errores de clasificación manual.

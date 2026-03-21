@@ -13,7 +13,7 @@ from api.routers import (
     f29, payroll, assets, indicators,
     documents, previred, terminations,
     rcv, accounting, dashboard_metrics,
-    payroll_settings, lre,
+    payroll_settings, lre, bank_reconciliation,
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
@@ -80,6 +80,7 @@ app.include_router(accounting.router,       prefix="/api/v1/accounting",     tag
 app.include_router(dashboard_metrics.router,prefix="/api/v1/dashboard",      tags=["Dashboard Ejecutivo"])
 app.include_router(payroll_settings.router, prefix="/api/v1/payroll",        tags=["Config. Previsional"])
 app.include_router(lre.router,              prefix="/api/v1/payroll/lre",    tags=["Libro LRE"])
+app.include_router(bank_reconciliation.router, prefix="/api/v1/bank",  tags=["Conciliación Bancaria V2"])
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────

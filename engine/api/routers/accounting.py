@@ -287,46 +287,95 @@ async def delete_account(account_id: str, organization_id: str):
 
 @router.get("/trial-balance")
 async def get_trial_balance(organization_id: str, start_date: str, end_date: str):
+    """
+    Genera el Balance de Comprobación y Saldos (Trial Balance) con integridad histórica.
+    Calcula: 
+    1. Sumas del Periodo (Debe/Haber).
+    2. Saldos Finales Acumulados (Deudor/Acreedor) incluyendo arrastre anterior.
+    """
     db = get_supabase()
     try:
-        res = db.table("journal_entry_lines") \
-            .select("*, journal_entries!inner(fecha)") \
+        # 1. Obtener TODO el Plan de Cuentas para asegurar integridad
+        acc_res = db.table("chart_of_accounts") \
+            .select("codigo, nombre, naturaleza, tipo") \
+            .eq("organization_id", organization_id) \
+            .execute()
+        
+        catalog = {a["codigo"]: a for a in acc_res.data}
+        accounts_data: Dict[str, Dict[str, Any]] = {}
+
+        # Inicializar catálogo
+        for code, info in catalog.items():
+            accounts_data[code] = {
+                "codigo": code,
+                "nombre": info["nombre"],
+                "naturaleza": info["naturaleza"].lower(),
+                "saldo_anterior": 0,
+                "debe": 0,
+                "haber": 0,
+                "saldo_deudor": 0,
+                "saldo_acreedor": 0
+            }
+
+        # 2. CÁLCULO DE SALDO ANTERIOR
+        prev_res = db.table("journal_entry_lines") \
+            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha, organization_id)") \
+            .eq("journal_entries.organization_id", organization_id) \
+            .lt("journal_entries.fecha", start_date) \
+            .execute()
+        
+        for m in (prev_res.data or []):
+            code = m["cuenta_codigo"]
+            if code not in accounts_data: continue
+            
+            monto = int(m["monto"])
+            nature = accounts_data[code]["naturaleza"]
+            
+            if (m["tipo"] == "debe" and nature == "deudora") or (m["tipo"] == "haber" and nature == "acreedora"):
+                accounts_data[code]["saldo_anterior"] += monto
+            else:
+                accounts_data[code]["saldo_anterior"] -= monto
+
+        # 3. MOVIMIENTOS DEL PERIODO
+        period_res = db.table("journal_entry_lines") \
+            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha, organization_id)") \
             .eq("journal_entries.organization_id", organization_id) \
             .gte("journal_entries.fecha", start_date) \
             .lte("journal_entries.fecha", end_date) \
             .execute()
         
-        lines = res.data or []
-        accounts: Dict[str, Dict[str, Any]] = {}
-        
-        for l in lines:
-            code = l["cuenta_codigo"]
-            if code not in accounts:
-                accounts[code] = {
-                    "codigo": code,
-                    "nombre": l["cuenta_nombre"],
-                    "debe": 0,
-                    "haber": 0
-                }
+        for m in (period_res.data or []):
+            code = m["cuenta_codigo"]
+            if code not in accounts_data: continue
             
-            monto = int(l["monto"])
-            if l["tipo"] == "debe":
-                accounts[code]["debe"] += monto
+            monto = int(m["monto"])
+            if m["tipo"] == "debe":
+                accounts_data[code]["debe"] += monto
             else:
-                accounts[code]["haber"] += monto
-                
+                accounts_data[code]["haber"] += monto
+
+        # 4. CONSOLIDACIÓN FINAL
         result = []
-        for code in sorted(accounts.keys()):
-            acc = accounts[code]
-            debe = acc["debe"]
-            haber = acc["haber"]
-            acc["saldo_deudor"] = debe - haber if debe > haber else 0
-            acc["saldo_acreedor"] = haber - debe if haber > debe else 0
+        for code in sorted(accounts_data.keys()):
+            acc = accounts_data[code]
+            if acc["debe"] == 0 and acc["haber"] == 0 and acc["saldo_anterior"] == 0:
+                continue
+                
+            if acc["naturaleza"] == "deudora":
+                total_balance = acc["saldo_anterior"] + acc["debe"] - acc["haber"]
+                acc["saldo_deudor"] = total_balance if total_balance > 0 else 0
+                acc["saldo_acreedor"] = -total_balance if total_balance < 0 else 0
+            else:
+                total_balance = acc["saldo_anterior"] + acc["haber"] - acc["debe"]
+                acc["saldo_acreedor"] = total_balance if total_balance > 0 else 0
+                acc["saldo_deudor"] = -total_balance if total_balance < 0 else 0
+            
             result.append(acc)
             
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"[ERROR Trial Balance Engine] {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Falla crítica en cálculo de balance: {str(e)}")
 
 @router.get("/ledger")
 async def get_ledger(organization_id: str, account_code: str, start_date: Optional[str] = None, end_date: Optional[str] = None):
