@@ -17,8 +17,30 @@ export async function getBankAccounts(organizationId: string) {
   }
 }
 
+export async function createBankAccount(data: {
+  organization_id: string;
+  bank_name: string;
+  account_number: string;
+  account_type: string;
+  chart_account_id?: string;
+}) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/bank/accounts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Error al crear cuenta bancaria");
+    revalidatePath("/dashboard/reconciliation");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function analyzeBankStatementAction(formData: FormData) {
   try {
+    // El formData ya debe contener organization_id y bank_account_id desde el cliente
     const response = await fetch(`${ENGINE_URL}/api/v1/bank/analyze`, {
       method: "POST",
       body: formData,

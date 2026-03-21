@@ -54,6 +54,42 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
     }
   };
 
+  const handleExportCSV = () => {
+    if (!reports) return;
+
+    // Convert data to CSV format
+    const headers = ["Sección", "Tipo", "Código", "Nombre", "Monto"];
+    const erRows = reports.estado_resultados.detalles.map((d: any) => [
+      "ESTADO DE RESULTADOS", 
+      d.tipo.toUpperCase(), 
+      d.codigo, 
+      d.nombre, 
+      d.monto
+    ]);
+    const bgRows = reports.balance_general.detalles.map((d: any) => [
+      "BALANCE GENERAL", 
+      d.tipo.toUpperCase(), 
+      d.codigo, 
+      d.nombre, 
+      d.monto
+    ]);
+
+    const allRows = [headers, ...erRows, ...bgRows];
+    const csvContent = "\uFEFF" + allRows.map(row => 
+      row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `FINANCIAL_INTELLIGENCE_${year}_${month || 'ANUAL'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Resumen consolidado exportado");
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
       {/* 1. Panel de Control Estratégico */}
@@ -155,7 +191,11 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                   <CardTitle className="text-2xl font-black uppercase tracking-tight text-foreground">Desglose Analítico Operativo</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Consolidación transaccional por nivel de cuenta.</CardDescription>
                 </div>
-                <Button variant="outline" className="gap-2 font-black uppercase text-[10px] tracking-widest h-12 px-6 rounded-full border-2 border-border hover:bg-muted shadow-sm transition-all duration-300">
+                <Button 
+                  onClick={handleExportCSV}
+                  variant="outline" 
+                  className="gap-2 font-black uppercase text-[10px] tracking-widest h-12 px-6 rounded-full border-2 border-border hover:bg-muted shadow-sm transition-all duration-300"
+                >
                   <Download className="h-5 w-5 text-primary" /> Data Export CSV
                 </Button>
               </CardHeader>
@@ -170,15 +210,19 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                   </TableHeader>
                   <TableBody className="divide-y divide-border/30">
                     {reports.estado_resultados.detalles.map((d: any) => (
-                      <TableRow key={d.codigo} className="group hover:bg-primary/[0.02] transition-colors">
+                      <TableRow 
+                        key={d.codigo} 
+                        className="group hover:bg-primary/[0.02] transition-colors cursor-pointer"
+                        onClick={() => window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`}
+                      >
                         <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
                         <TableCell className="px-10 py-6">
-                            <span className="text-foreground font-black uppercase text-xs tracking-tight">{d.nombre}</span>
+                            <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
                         </TableCell>
                         <TableCell className={`text-right px-10 py-6 font-black text-sm group-hover:bg-primary/[0.02] transition-colors ${d.tipo === 'ingreso' ? 'text-emerald-700' : 'text-rose-600'}`}>
                           <div className="flex items-center justify-end gap-2">
-                            {d.tipo === 'ingreso' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                            ${d.monto.toLocaleString('es-CL')}
+                             {d.tipo === 'ingreso' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                             ${d.monto.toLocaleString('es-CL')}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -219,7 +263,9 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
               <CardHeader className="border-b border-border/50 bg-muted/5 py-8 px-10">
                 <CardTitle className="text-2xl font-black uppercase tracking-tight text-foreground flex flex-col sm:flex-row sm:items-center gap-4">
                     Balance General Consolidado
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 w-fit">Dualidad A = P + K</Badge>
+                    <Badge className={`${reports.balance_general.is_balanced ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'} text-[10px] font-black uppercase tracking-widest px-4 py-1.5 w-fit`}>
+                      {reports.balance_general.is_balanced ? 'Ecuación Cuadrada (A = P + K)' : 'Descuadre Detectado'}
+                    </Badge>
                 </CardTitle>
                 <CardDescription className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mt-3">Ecuación fundamental de la contabilidad patrimonial.</CardDescription>
               </CardHeader>
@@ -235,10 +281,21 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                   </TableHeader>
                   <TableBody className="divide-y divide-border/30">
                     {reports.balance_general.detalles.sort((a:any, b:any) => a.codigo.localeCompare(b.codigo)).map((d: any) => (
-                      <TableRow key={d.codigo} className="group hover:bg-primary/[0.02] transition-colors">
+                      <TableRow 
+                        key={d.codigo} 
+                        className={`group hover:bg-primary/[0.02] transition-colors ${d.is_virtual ? 'bg-indigo-50/20 italic' : 'cursor-pointer'}`}
+                        onClick={() => {
+                          if (!d.is_virtual) {
+                            window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`;
+                          }
+                        }}
+                      >
                         <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
                         <TableCell className="px-10 py-6">
-                            <span className="text-foreground font-black uppercase text-xs tracking-tight">{d.nombre}</span>
+                            <div className="flex flex-col">
+                              <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
+                              {d.is_virtual && <span className="text-[9px] font-black text-indigo-600 tracking-widest mt-1 uppercase">Ajuste de Ejercicio</span>}
+                            </div>
                         </TableCell>
                         <TableCell className="px-10 py-6 capitalize">
                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full border shadow-sm ${

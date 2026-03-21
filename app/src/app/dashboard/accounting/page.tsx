@@ -58,7 +58,7 @@ export default async function AccountingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ===== UPLOADER PRINCIPAL ===== */}
         <div className="lg:col-span-2">
-          <F29Uploader activeOrgId={activeOrgId} />
+          <F29Uploader key={activeOrgId} activeOrgId={activeOrgId} />
         </div>
 
         {/* ===== PANEL LATERAL ===== */}

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ChartOfAccountsClient from "./chart-client";
-import { getChartOfAccounts } from "@/actions/accounting";
+import { getChartOfAccounts, getChartStats } from "@/actions/accounting";
 import { Layers } from "lucide-react";
 
 export default async function ChartOfAccountsPage() {
@@ -24,7 +24,10 @@ export default async function ChartOfAccountsPage() {
     )
   }
 
-  const accounts = await getChartOfAccounts(activeOrgId);
+  const [accounts, stats] = await Promise.all([
+    getChartOfAccounts(activeOrgId),
+    getChartStats(activeOrgId)
+  ]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
@@ -45,8 +48,10 @@ export default async function ChartOfAccountsPage() {
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
 
       <ChartOfAccountsClient 
+        key={activeOrgId}
         organizationId={activeOrgId} 
         initialAccounts={accounts} 
+        initialStats={stats}
       />
     </div>
   );

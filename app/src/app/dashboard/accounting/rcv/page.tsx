@@ -68,6 +68,7 @@ export default async function RCVPage() {
         </div>
         <Suspense fallback={<AnalysisSkeleton />}>
           <RCVAnalysisClient 
+            key={organizationId}
             organizationId={organizationId} 
             initialData={initialData} 
           />
@@ -80,7 +81,7 @@ export default async function RCVPage() {
           <h2 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100/50">Sincronización SII</h2>
           <div className="h-px bg-gradient-to-r from-border to-transparent flex-1" />
         </div>
-        <RCVUploadClient organizationId={organizationId} />
+        <RCVUploadClient key={organizationId} organizationId={organizationId} />
       </section>
 
       {/* ---- NOTA DE INTEGRIDAD ---- */}

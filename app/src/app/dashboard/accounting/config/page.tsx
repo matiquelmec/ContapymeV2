@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { getAccountingConfig } from "@/actions/accounting";
+import { getAccountingConfig, getMappingRules, getChartOfAccounts } from "@/actions/accounting";
 import { ConfigClient } from "./config-client";
 import { Settings } from "lucide-react";
 
@@ -19,7 +19,14 @@ export default async function AccountingConfigPage() {
     return <div className="p-8 text-center text-muted-foreground font-medium italic underline decoration-primary/30 underline-offset-8">Seleccione una empresa en el encabezado para configurar el mapeo de cuentas.</div>
   }
 
-  const configs = await getAccountingConfig(activeOrgId);
+  const { getBankAccounts } = await import('@/actions/bank-reconciliation')
+
+  const [configs, rules, accounts, bankAccounts] = await Promise.all([
+    getAccountingConfig(activeOrgId),
+    getMappingRules(activeOrgId),
+    getChartOfAccounts(activeOrgId),
+    getBankAccounts(activeOrgId)
+  ]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
@@ -39,7 +46,14 @@ export default async function AccountingConfigPage() {
 
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
 
-      <ConfigClient initialConfigs={configs} organizationId={activeOrgId} />
+      <ConfigClient 
+        key={activeOrgId}
+        initialConfigs={configs} 
+        initialRules={rules}
+        initialBankAccounts={bankAccounts || []}
+        accounts={accounts}
+        organizationId={activeOrgId} 
+      />
     </div>
   );
 }

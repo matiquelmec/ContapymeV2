@@ -15,9 +15,13 @@ import {
   Filter,
   Layers,
   Trash2,
-  Loader2
+  Loader2,
+  FileDown,
+  Edit2,
+  BarChart3,
+  CheckCircle2
 } from "lucide-react";
-import { initializeChartAction, createAccountAction, deleteAccountAction } from "@/actions/accounting";
+import { initializeChartAction, createAccountAction, deleteAccountAction, updateAccountAction } from "@/actions/accounting";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,6 +31,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,16 +53,30 @@ interface Account {
   acepta_movimiento: boolean;
 }
 
-export default function ChartOfAccountsClient({ organizationId, initialAccounts }: { organizationId: string, initialAccounts: Account[] }) {
+export default function ChartOfAccountsClient({ 
+  organizationId, 
+  initialAccounts, 
+  initialStats 
+}: { 
+  organizationId: string, 
+  initialAccounts: Account[], 
+  initialStats?: any 
+}) {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
+  const [stats, setStats] = useState(initialStats);
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("all");
+  const [filterNivel, setFilterNivel] = useState("all");
   
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+
   useEffect(() => {
     setAccounts(initialAccounts);
-  }, [initialAccounts, organizationId]);
+    if (initialStats) setStats(initialStats);
+  }, [initialAccounts, initialStats, organizationId]);
 
   const [newAccount, setNewAccount] = useState({
     codigo: "",
@@ -67,6 +86,76 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
     naturaleza: "deudora",
     acepta_movimiento: true
   });
+
+  // --- LÓGICA DE INTELIGENCIA CONTABLE ---
+  
+  const autoDetectFromCode = (code: string) => {
+    const firstDigit = code[0];
+    let detectedType = newAccount.tipo;
+    let detectedNature = newAccount.naturaleza;
+
+    const typeMap: Record<string, string> = {
+      '1': 'activo',
+      '2': 'pasivo',
+      '3': 'patrimonio',
+      '4': 'ingreso',
+      '5': 'gasto'
+    };
+
+    if (firstDigit && typeMap[firstDigit]) {
+      detectedType = typeMap[firstDigit];
+    }
+
+    if (detectedType === 'activo' || detectedType === 'gasto') {
+      detectedNature = 'deudora';
+    } else {
+      detectedNature = 'acreedora';
+    }
+
+    const parts = code.split('.').filter(p => p !== "");
+    const detectedLevel = Math.min(Math.max(parts.length, 1), 4);
+    const acceptsMovement = detectedLevel === 4;
+
+    return { 
+      tipo: detectedType, 
+      naturaleza: detectedNature, 
+      nivel: detectedLevel,
+      acepta_movimiento: acceptsMovement 
+    };
+  };
+
+  const formatCodeInput = (input: string) => {
+    const numbersOnly = input.replace(/[^\d]/g, '');
+    if (numbersOnly.length === 0) return "";
+
+    let formatted = "";
+    if (numbersOnly.length === 1) {
+      formatted = numbersOnly;
+    } else if (numbersOnly.length === 2) {
+      formatted = `${numbersOnly[0]}.${numbersOnly[1]}`;
+    } else if (numbersOnly.length === 3) {
+      formatted = `${numbersOnly[0]}.${numbersOnly[1]}.${numbersOnly[2].padStart(2, '0')}`;
+    } else if (numbersOnly.length >= 4) {
+      const p1 = numbersOnly[0];
+      const p2 = numbersOnly[1];
+      const p3 = numbersOnly.slice(2, 4).padStart(2, '0');
+      const p4 = numbersOnly.slice(4).padStart(3, '0');
+      formatted = `${p1}.${p2}.${p3}.${p4}`;
+    }
+    return formatted;
+  };
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    if (e.target.value.length < newAccount.codigo.length) {
+      const stripped = e.target.value.replace(/[^\d\.]/g, '');
+      setNewAccount(prev => ({ ...prev, codigo: stripped }));
+      return;
+    }
+    const formatted = formatCodeInput(rawValue);
+    const detections = autoDetectFromCode(formatted);
+    setNewAccount(prev => ({ ...prev, codigo: formatted, ...detections }));
+  };
 
   const handleInitialize = async () => {
     setLoading(true);
@@ -110,7 +199,6 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
     if (!window.confirm("¿Estás seguro de que deseas eliminar esta cuenta? Esta acción no se puede deshacer y solo funcionará si la cuenta no tiene movimientos.")) {
       return;
     }
-    
     setLoading(true);
     try {
       const result = await deleteAccountAction(accountId, organizationId);
@@ -127,11 +215,59 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
     }
   };
 
+  const handleUpdateAccount = async () => {
+    if (!editingAccount) return;
+    setLoading(true);
+    try {
+      const result = await updateAccountAction(editingAccount.id, {
+        nombre: editingAccount.nombre
+      });
+      if (result.success) {
+        toast.success("Cuenta actualizada");
+        setIsEditOpen(false);
+        window.location.reload();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      toast.error("Error al actualizar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ["Codigo", "Nombre", "Nivel", "Tipo", "Naturaleza", "Imputable"];
+    const rows = accounts.map(acc => [
+      acc.codigo,
+      acc.nombre,
+      acc.nivel,
+      acc.tipo,
+      acc.naturaleza,
+      acc.acepta_movimiento ? "SI" : "NO"
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Plan_de_Cuentas_${organizationId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredAccounts = accounts.filter(acc => {
     const matchesSearch = acc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          acc.codigo.includes(searchTerm);
     const matchesFilter = filterTipo === "all" || acc.tipo === filterTipo;
-    return matchesSearch && matchesFilter;
+    const matchesNivel = filterNivel === "all" || String(acc.nivel) === filterNivel;
+    return matchesSearch && matchesFilter && matchesNivel;
   });
 
   const getTipoColor = (tipo: string) => {
@@ -175,21 +311,85 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
+      
+      {/* --- DASHBOARD DE ESTADÍSTICAS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-card border-border border-l-4 border-l-primary rounded-3xl shadow-sm hover:translate-y-[-4px] transition-all">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estructura Total</span>
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <BarChart3 className="w-4 h-4 text-primary" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground">{stats?.total || accounts.length}</div>
+            <p className="text-[10px] font-bold italic text-muted-foreground mt-1">Nodos contables activos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border border-l-4 border-l-emerald-500 rounded-3xl shadow-sm hover:translate-y-[-4px] transition-all">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cuentas Imputables</span>
+              <div className="p-2 bg-emerald-100 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600">{stats?.imputables || accounts.filter(a => a.acepta_movimiento).length}</div>
+            <p className="text-[10px] font-bold italic text-muted-foreground mt-1">Permiten cargos y abonos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border border-l-4 border-l-blue-500 rounded-3xl shadow-sm hover:translate-y-[-4px] transition-all">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activos vs Pasivos</span>
+              <div className="p-2 bg-blue-100 rounded-xl">
+                <Layers className="w-4 h-4 text-blue-600" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-foreground">{stats?.activos || 0}</span>
+              <span className="text-xs text-muted-foreground">/</span>
+              <span className="text-2xl font-black text-amber-600">{stats?.pasivos || 0}</span>
+            </div>
+            <p className="text-[10px] font-bold italic text-muted-foreground mt-1">Nodos Balance General</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border border-l-4 border-l-rose-500 rounded-3xl shadow-sm hover:translate-y-[-4px] transition-all">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Gestión RCV</span>
+              <div className="p-2 bg-rose-100 rounded-xl">
+                <Zap className="w-4 h-4 text-rose-600" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-rose-600">Integrado</div>
+            <p className="text-[10px] font-bold italic text-muted-foreground mt-1">Conectado a Compras/Ventas</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-8 bg-card border border-border rounded-[2.5rem] shadow-2xl">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-inner" suppressHydrationWarning={true}>
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-inner">
             <Layers className="h-8 w-8 text-primary" />
           </div>
-          <div className="space-y-1.5" suppressHydrationWarning={true}>
-            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight" suppressHydrationWarning={true}>Catálogo Maestro</h2>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] italic" suppressHydrationWarning={true}>Estructura general y nodos contables</p>
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Catálogo Maestro</h2>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] italic">Estructura general y nodos contables</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <div className="px-5 py-2.5 bg-muted/30 rounded-full border border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground shadow-sm">
-            Total Registros: <span className="text-primary">{accounts.length} Cuentas</span>
-          </div>
-          
+          <Button 
+            variant="outline"
+            onClick={exportToCSV}
+            className="gap-3 border-2 border-border font-black uppercase text-[11px] tracking-widest rounded-3xl h-14 px-8 hover:bg-muted hover:scale-[1.02] active:scale-95 transition-all shadow-sm"
+          >
+            <FileDown className="h-5 w-5" /> Exportar
+          </Button>
+
           <Button 
             onClick={() => setIsDialogOpen(true)}
             className="gap-3 font-black uppercase text-[11px] tracking-widest rounded-3xl shadow-xl shadow-primary/20 h-14 px-8 hover:scale-105 active:scale-95 transition-all"
@@ -211,8 +411,8 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-card border border-border rounded-[2.5rem] shadow-2xl p-6">
         <div className="flex-1 w-full flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full" suppressHydrationWarning={true}>
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" suppressHydrationWarning={true} />
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" />
             <Input
               placeholder="Ej. '1.1.01.001' o 'Banco Estado'..."
               className="pl-14 bg-muted/10 border-2 border-border text-foreground font-black h-14 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all text-sm uppercase tracking-wide hover:border-primary/50"
@@ -220,9 +420,10 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          
           <Select value={filterTipo} onValueChange={(val) => val && setFilterTipo(val)}>
-            <SelectTrigger className="w-full md:w-[240px] bg-muted/10 border-2 border-border h-14 rounded-3xl font-black text-xs uppercase tracking-widest shadow-sm hover:border-primary/50 transition-all px-6" suppressHydrationWarning={true}>
-              <div className="flex items-center gap-3" suppressHydrationWarning={true}>
+            <SelectTrigger className="w-full md:w-[200px] bg-muted/10 border-2 border-border h-14 rounded-3xl font-black text-xs uppercase tracking-widest shadow-sm hover:border-primary/50 transition-all px-6">
+              <div className="flex items-center gap-3">
                 <Filter className="h-5 w-5 text-muted-foreground/50" />
                 <SelectValue placeholder="CLASE" />
               </div>
@@ -236,9 +437,26 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
               <SelectItem value="gasto" className="font-black text-xs uppercase text-rose-600 cursor-pointer rounded-xl h-10 tracking-widest hover:bg-rose-50/50">Gastos (C5)</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={filterNivel} onValueChange={(val) => val && setFilterNivel(val)}>
+            <SelectTrigger className="w-full md:w-[200px] bg-muted/10 border-2 border-border h-14 rounded-3xl font-black text-xs uppercase tracking-widest shadow-sm hover:border-primary/50 transition-all px-6">
+              <div className="flex items-center gap-3">
+                <Layers className="h-5 w-5 text-muted-foreground/50" />
+                <SelectValue placeholder="NIVEL" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-border rounded-2xl shadow-2xl p-2">
+              <SelectItem value="all" className="font-black text-xs uppercase cursor-pointer rounded-xl h-10 mb-1 tracking-widest hover:bg-muted">Todos los Niveles</SelectItem>
+              <SelectItem value="1" className="font-black text-xs uppercase cursor-pointer rounded-xl h-10 mb-1 tracking-widest hover:bg-muted">Nivel 1 (Clase)</SelectItem>
+              <SelectItem value="2" className="font-black text-xs uppercase cursor-pointer rounded-xl h-10 mb-1 tracking-widest hover:bg-muted">Nivel 2 (Grupo)</SelectItem>
+              <SelectItem value="3" className="font-black text-xs uppercase cursor-pointer rounded-xl h-10 mb-1 tracking-widest hover:bg-muted">Nivel 3 (Cuenta)</SelectItem>
+              <SelectItem value="4" className="font-black text-xs uppercase cursor-pointer rounded-xl h-10 tracking-widest hover:bg-muted">Nivel 4 (Operacional)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
+      {/* --- MODAL DE CREACIÓN --- */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card shadow-2xl">
           <DialogHeader className="space-y-3 pb-4 border-b border-border">
@@ -253,9 +471,9 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
               <Input 
                 id="codigo" 
                 value={newAccount.codigo}
-                onChange={(e) => setNewAccount({...newAccount, codigo: e.target.value})}
+                onChange={handleCodeChange}
                 className="col-span-3 h-11 bg-muted/30 border-border font-black font-mono tracking-tighter" 
-                placeholder="1.1.01.005"
+                placeholder="Ej: 1101001 -> 1.1.01.001"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
@@ -302,24 +520,9 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-6">
-              <Label htmlFor="naturaleza" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Saldo</Label>
-              <Select 
-                value={newAccount.naturaleza}
-                onValueChange={(val) => val && setNewAccount({...newAccount, naturaleza: val})}
-              >
-                <SelectTrigger className="col-span-3 h-11 bg-muted/30 border-border font-bold text-xs uppercase">
-                  <SelectValue placeholder="Naturaleza" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="deudora" className="text-xs font-bold">Deudor</SelectItem>
-                  <SelectItem value="acreedora" className="text-xs font-bold">Acreedor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           <DialogFooter className="border-t border-border pt-6 mt-4">
-            <Button type="submit" onClick={handleCreateAccount} disabled={loading || !newAccount.codigo || !newAccount.nombre} className="w-full h-12 bg-primary font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 transition-all rounded-xl active:scale-95">
+            <Button type="submit" onClick={handleCreateAccount} disabled={loading} className="w-full h-12 bg-primary font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 transition-all rounded-xl active:scale-95">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
               Añadir al Plan de Cuentas
             </Button>
@@ -327,15 +530,44 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
         </DialogContent>
       </Dialog>
 
+      {/* --- MODAL DE EDICIÓN --- */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-3xl border-border bg-card shadow-2xl">
+          <DialogHeader className="space-y-3 pb-4 border-b border-border">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">Editar Nodo Contable</DialogTitle>
+            <DialogDescription className="text-xs font-bold italic text-muted-foreground leading-relaxed">
+              Modifique el nombre o descripción de la cuenta {editingAccount?.codigo}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-8">
+            <div className="grid grid-cols-4 items-center gap-6">
+              <Label htmlFor="edit-nombre" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nombre</Label>
+              <Input 
+                id="edit-nombre" 
+                value={editingAccount?.nombre || ""}
+                onChange={(e) => editingAccount && setEditingAccount({...editingAccount, nombre: e.target.value})}
+                className="col-span-3 h-11 bg-muted/30 border-border font-black uppercase text-xs"
+              />
+            </div>
+          </div>
+          <DialogFooter className="border-t border-border pt-6 mt-4">
+            <Button onClick={handleUpdateAccount} disabled={loading || !editingAccount?.nombre} className="w-full h-12 bg-primary font-black uppercase text-xs tracking-widest shadow-lg shadow-primary/20 transition-all rounded-xl active:scale-95">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCcw className="h-4 w-4 mr-2" />}
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/20">
         <CardContent className="p-0">
-          <div className="overflow-x-auto" suppressHydrationWarning={true}>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/10 border-b border-border/50">
                   <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground w-40">Identificador</th>
                   <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Cuenta Contable (IFRS)</th>
-                  <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground w-32">Naturaleza</th>
+                  <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground w-32">Clase</th>
                   <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground w-32">Saldo</th>
                   <th className="text-left py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground w-40">Imputable</th>
                 </tr>
@@ -349,11 +581,11 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
                        </span>
                     </td>
                     <td className="py-6 px-10">
-                      <div className="flex items-center gap-4" style={{ paddingLeft: `${(acc.nivel - 1) * 2}rem` }} suppressHydrationWarning={true}>
+                      <div className="flex items-center gap-4" style={{ paddingLeft: `${(acc.nivel - 1) * 2}rem` }}>
                         {acc.acepta_movimiento ? (
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ring-4 ring-emerald-500/10" suppressHydrationWarning={true} />
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ring-4 ring-emerald-500/10" />
                         ) : (
-                          <div className={`p-1.5 rounded-lg ${acc.nivel === 1 ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground/30'}`} suppressHydrationWarning={true}>
+                          <div className={`p-1.5 rounded-lg ${acc.nivel === 1 ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground/30'}`}>
                             {acc.nivel === 1 ? <Layers className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </div>
                         )}
@@ -380,15 +612,26 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
                           <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 border-border">Agrupador</Badge>
                         )}
                         
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteAccount(acc.id)}
-                          disabled={loading}
-                          className="h-10 w-10 text-muted-foreground/30 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all rounded-xl ml-2"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all ml-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => { setEditingAccount(acc); setIsEditOpen(true); }}
+                            className="h-10 w-10 text-muted-foreground/30 hover:text-primary hover:bg-primary/5 rounded-xl border border-transparent hover:border-primary/10"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDeleteAccount(acc.id)}
+                            disabled={loading}
+                            className="h-10 w-10 text-muted-foreground/30 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-transparent hover:border-rose-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -410,11 +653,11 @@ export default function ChartOfAccountsClient({ organizationId, initialAccounts 
         </CardContent>
       </Card>
       
-      <div className="flex items-start gap-4 text-[11px] font-bold text-muted-foreground bg-primary/5 p-6 rounded-2xl border border-primary/10 shadow-inner italic leading-relaxed" suppressHydrationWarning={true}>
-        <div className="p-1.5 bg-primary/20 rounded-lg shrink-0" suppressHydrationWarning={true}>
-          <Info className="h-4 w-4 text-primary" suppressHydrationWarning={true} />
+      <div className="flex items-start gap-4 text-[11px] font-bold text-muted-foreground bg-primary/5 p-6 rounded-2xl border border-primary/10 shadow-inner italic leading-relaxed">
+        <div className="p-1.5 bg-primary/20 rounded-lg shrink-0">
+          <Info className="h-4 w-4 text-primary" />
         </div>
-        <div suppressHydrationWarning={true}>
+        <div>
           <strong className="text-primary uppercase tracking-widest mb-1 block">Nota sobre Arquitectura de Datos:</strong>
           Las cuentas de niveles superiores (Clase, Grupo y Cuenta) actúan como nodos de consolidación y no aceptan cargos o abonos directos. Toda transacción debe imputarse a una <span className="text-foreground underline decoration-emerald-500/30 decoration-2">Cuenta Operacional (Nivel 4)</span> para mantener la integridad del Libro Diario.
         </div>

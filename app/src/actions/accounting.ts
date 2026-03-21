@@ -131,6 +131,38 @@ export async function createAccountAction(data: {
   }
 }
 
+export async function updateAccountAction(accountId: string, data: any) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/${accountId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "Error al actualizar cuenta");
+    
+    revalidatePath("/dashboard/accounting/chart-of-accounts");
+    return { success: true, data: result };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function getChartStats(organizationId: string) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/stats?organization_id=${organizationId}`, {
+      cache: 'no-store'
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error("error getChartStats:", error);
+    return null;
+  }
+}
+
 export async function deleteAccountAction(accountId: string, organizationId: string) {
   try {
     const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/${accountId}?organization_id=${organizationId}`, {
@@ -174,6 +206,60 @@ export async function updateAccountingConfigAction(configId: string, data: any) 
     
     revalidatePath("/dashboard/accounting/config");
     return { success: true, data: result };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+// --- REGLAS DE MAPEO (RCV ENTITY MAPPING) ---
+
+export async function getMappingRules(organizationId: string) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules?organization_id=${organizationId}`, {
+      cache: 'no-store'
+    });
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (error) {
+    console.error("error getMappingRules:", error);
+    return [];
+  }
+}
+
+export async function createMappingRuleAction(data: {
+  organization_id: string;
+  context: string;
+  account_id: string;
+}) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "Error al crear regla");
+    
+    revalidatePath("/dashboard/accounting/config");
+    return { success: true, data: result };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function deleteMappingRuleAction(ruleId: string) {
+  try {
+    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules/${ruleId}`, {
+      method: "DELETE",
+    });
+    
+    if (!response.ok) throw new Error("Error al eliminar regla");
+    
+    revalidatePath("/dashboard/accounting/config");
+    return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, error: errorMessage };

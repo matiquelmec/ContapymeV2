@@ -66,7 +66,7 @@ export default async function JournalPage() {
 
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" suppressHydrationWarning={true} />
 
-      <JournalClient entries={entries || []} />
+      <JournalClient key={activeOrgId} entries={entries || []} />
     </div>
   )
 }

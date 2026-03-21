@@ -65,11 +65,14 @@ CREATE TABLE public.bank_statement_lines (
     rut_tercero text,
     is_reconciled boolean DEFAULT false,
     external_id text,
+    organization_id uuid REFERENCES public.organizations(id),
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT bank_statement_lines_pkey PRIMARY KEY (id),
     CONSTRAINT bank_statement_lines_statement_id_fkey FOREIGN KEY (statement_id) REFERENCES public.bank_statements(id) ON DELETE CASCADE,
-    CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id)
+    CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id),
+    CONSTRAINT bank_statement_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
+CREATE INDEX IF NOT EXISTS idx_bsl_org_id ON public.bank_statement_lines(organization_id);
 CREATE TABLE public.bank_statements (
     id uuid NOT NULL DEFAULT gen_random_uuid(),
     bank_account_id uuid NOT NULL,
@@ -80,7 +83,8 @@ CREATE TABLE public.bank_statements (
     status text DEFAULT 'processed'::text,
     created_at timestamp with time zone DEFAULT now(),
     CONSTRAINT bank_statements_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_statements_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id) ON DELETE CASCADE
+    CONSTRAINT bank_statements_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id) ON DELETE CASCADE,
+    CONSTRAINT bank_statements_acc_period_unique UNIQUE (bank_account_id, period)
 );
 CREATE TABLE public.centralized_account_config (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -114,8 +118,10 @@ CREATE TABLE public.chart_of_accounts (
   activo boolean DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT chart_of_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT chart_of_accounts_org_code_unique UNIQUE (organization_id, codigo)
 );
+CREATE INDEX IF NOT EXISTS idx_coa_org_id ON public.chart_of_accounts(organization_id);
 CREATE TABLE public.economic_indicators (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   codigo character varying NOT NULL UNIQUE,
@@ -195,8 +201,10 @@ CREATE TABLE public.employees (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT employees_pkey PRIMARY KEY (id),
-  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT employees_org_rut_unique UNIQUE (organization_id, rut)
 );
+CREATE INDEX IF NOT EXISTS idx_emp_org_id ON public.employees(organization_id);
 CREATE TABLE public.employment_contracts (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -230,10 +238,12 @@ CREATE TABLE public.f29_box_details (
   description text,
   value numeric NOT NULL,
   box_type text DEFAULT 'determinativo'::text,
+  organization_id uuid REFERENCES public.organizations(id),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT f29_box_details_pkey PRIMARY KEY (id),
   CONSTRAINT f29_box_details_f29_id_fkey FOREIGN KEY (f29_id) REFERENCES public.f29_forms(id)
 );
+CREATE INDEX IF NOT EXISTS idx_bd_org_id ON public.f29_box_details(organization_id);
 CREATE TABLE public.f29_forms (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -297,10 +307,13 @@ CREATE TABLE public.journal_entry_lines (
   monto bigint NOT NULL CHECK (monto > 0),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   account_id uuid,
+  organization_id uuid REFERENCES public.organizations(id),
   CONSTRAINT journal_entry_lines_pkey PRIMARY KEY (id),
   CONSTRAINT journal_entry_lines_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.journal_entries(id),
-  CONSTRAINT journal_entry_lines_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id)
+  CONSTRAINT journal_entry_lines_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id),
+  CONSTRAINT journal_entry_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
+CREATE INDEX IF NOT EXISTS idx_jl_org_id ON public.journal_entry_lines(organization_id);
 CREATE TABLE public.liquidations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -544,4 +557,34 @@ CREATE TABLE public.termination_causes (
   category character varying NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT termination_causes_pkey PRIMARY KEY (id)
-);
+);CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER tr_update_org_timestamp BEFORE UPDATE ON public.organizations FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER tr_update_emp_timestamp BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER tr_update_fixed_timestamp BEFORE UPDATE ON public.fixed_assets FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE OR REPLACE FUNCTION fill_org_id_from_parent()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.organization_id IS NULL THEN
+        IF TG_TABLE_NAME = 'journal_entry_lines' THEN
+            SELECT organization_id INTO NEW.organization_id FROM public.journal_entries WHERE id = NEW.entry_id;
+        ELSIF TG_TABLE_NAME = 'bank_statement_lines' THEN
+            SELECT organization_id INTO NEW.organization_id FROM public.bank_accounts WHERE id = NEW.bank_account_id;
+        ELSIF TG_TABLE_NAME = 'f29_box_details' THEN
+            SELECT organization_id INTO NEW.organization_id FROM public.f29_forms WHERE id = NEW.f29_id;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_fill_org_jl BEFORE INSERT ON public.journal_entry_lines FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
+CREATE TRIGGER tr_fill_org_bank BEFORE INSERT ON public.bank_statement_lines FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
+CREATE TRIGGER tr_fill_org_f29 BEFORE INSERT ON public.f29_box_details FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();

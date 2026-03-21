@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.8 (Magallanes 2077 — Conciliación Persistente) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Hardening & Blindaje Bancario 🛡️🏦
+> **Versión:** 2.9 (Magallanes 2077 — Hardening Maestro 🛡️) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Blindaje Multitenencia & Integridad 🛡️🏦
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -105,11 +105,15 @@ Supera al Master mediante la persistencia de movimientos y reglas de aprendizaje
 ### 3.8 📚 Módulo Contabilidad IFRS y RCV (Blindaje de Integridad)
 El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   **Python Engine:** Procesa XML/CSV del RCV del SII. Cuadra compras y ventas, genera asientos para el Libro Diario.
-*   **Blindaje SQL (Integridad Temporal):** Implementación de triggers `BEFORE INSERT OR UPDATE` que fuerzan la coincidencia exacta entre el periodo contable y la fecha real del documento. Esto elimina el 100% de los errores de clasificación manual.
+*   **Blindaje SQL e Integridad Multitenencia (V2.9):** 
+    - **Aislamiento Total:** Implementación de `organization_id` denormalizado en tablas hijo (`journal_entry_lines`, `bank_statement_lines`, `f29_box_details`) para RLS ultra-rápido y seguridad absoluta.
+    - **Automatización de Integridad:** Triggers `fill_org_id_from_parent` que garantizan que el ID de empresa se asigne automáticamente en cada inserción desde la base de datos, eliminando el riesgo de "datos huérfanos".
+    - **Restricciones de Unicidad:** Bloqueo de duplicados por empresa mediante `UNIQUE constraints` en Plan de Cuentas (`org+code`), Empleados (`org+rut`) y Cartolas (`acc+period`).
+    - **Optimización de Rendimiento:** Índices compuestos en todas las llaves de organización para consultas de Libro Mayor y Cartolas en milisegundos.
 *   **Next.js:** RCV Dashboard con **Visión de Inteligencia Pasiva**:
     - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Awareness).
     - **Orden Cronológico:** Priorización automática de los periodos más recientes.
-    - **Integridad:** Sincronizado con triggers SQL para evitar desajustes temporales.
+    - **Integridad:** Sincronizado con triggers SQL y lógica de aislamiento por organización.
 
 ### 3.7 🏔️ Módulo Diario Regional (IA & GPU Local)
 El portal se transforma en un centro de noticias de vanguardia para Magallanes, utilizando IA generativa local.
@@ -312,6 +316,7 @@ Puesta en marcha productiva de alto estrés.
 - [ ] Pruebas unitarias `calculators/` con pytest (casos extremos: SIS, topes UF, impuesto).
 - [ ] Reemplazar copias locales por CI/CD: Vercel (app) + Railway/Render (engine).
 - [ ] Automatizar Worker de Indicadores con cron en producción.
+- [x] **Hardening Maestro (21/03)**: Aislamiento total de multitenencia en BD y Frontend (React keys).
 - [ ] Roles granulares: owner / accountant / viewer con permisos diferenciados.
 - [ ] Módulo de Auditoría y Logs: Registro de acciones críticas.
 - [ ] Stress-Test y validaciones unitarias (pytest + Vitest).

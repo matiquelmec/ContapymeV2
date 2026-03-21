@@ -21,6 +21,13 @@ class CreateAccountRequest(BaseModel):
     acepta_movimiento: bool = True
     descripcion: Optional[str] = None
 
+class UpdateAccountRequest(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    is_active: Optional[bool] = None
+    tipo: Optional[str] = None
+    naturaleza: Optional[str] = None
+
 class UpdateAccountingConfigRequest(BaseModel):
     tax_account_code: str
     tax_account_name: str
@@ -28,6 +35,12 @@ class UpdateAccountingConfigRequest(BaseModel):
     revenue_account_name: str
     asset_account_code: str
     asset_account_name: str
+
+class AccountMappingRuleRequest(BaseModel):
+    organization_id: str
+    context: str # Puede ser RUT o concepto
+    account_id: str
+    is_active: bool = True
 
 def get_accounting_config(db, org_id: str, module: str, tx_type: str):
     """
@@ -285,6 +298,39 @@ async def delete_account(account_id: str, organization_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.patch("/chart-of-accounts/{account_id}")
+async def update_account(account_id: str, req: UpdateAccountRequest):
+    """Actualiza parcialmente una cuenta contable."""
+    db = get_supabase()
+    try:
+        data = req.dict(exclude_unset=True)
+        res = db.table("chart_of_accounts").update(data).eq("id", account_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Error al actualizar la cuenta")
+        return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/chart-of-accounts/stats")
+async def get_chart_stats(organization_id: str):
+    """Obtiene estadísticas de salud del plan de cuentas."""
+    db = get_supabase()
+    try:
+        res = db.table("chart_of_accounts").select("*").eq("organization_id", organization_id).execute()
+        accounts = res.data or []
+        
+        return {
+          "total": len(accounts),
+          "imputables": len([a for a in accounts if a.get("acepta_movimiento")]),
+          "activos": len([a for a in accounts if a.get("tipo") == "activo"]),
+          "pasivos": len([a for a in accounts if a.get("tipo") == "pasivo"]),
+          "patrimonio": len([a for a in accounts if a.get("tipo") == "patrimonio"]),
+          "ingresos": len([a for a in accounts if a.get("tipo") == "ingreso"]),
+          "gastos": len([a for a in accounts if a.get("tipo") == "gasto"]),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/trial-balance")
 async def get_trial_balance(organization_id: str, start_date: str, end_date: str):
     """
@@ -531,7 +577,7 @@ async def get_financial_reports(organization_id: str, year: int, month: Optional
         gastos_total = 0
         activos_total = 0
         pasivos_total = 0
-        patrimonio_total = 0
+        patrimonio_antes_resultado = 0
         
         er_detalles = []
         bg_detalles = []
@@ -562,21 +608,36 @@ async def get_financial_reports(organization_id: str, year: int, month: Optional
                 pasivos_total += saldo
                 bg_detalles.append(item)
             elif tipo == "patrimonio":
-                patrimonio_total += saldo
+                patrimonio_antes_resultado += saldo
                 bg_detalles.append(item)
+
+        # 6. INTEGRIDAD CONTABLE: El resultado neto se suma al patrimonio para el balance
+        resultado_neto = ingresos_total - gastos_total
+        
+        # Añadir el resultado del ejercicio al detalle del Balance General
+        bg_detalles.append({
+            "codigo": "RE-001", 
+            "nombre": "UTILIDAD/PERDIDA DEL EJERCICIO", 
+            "monto": resultado_neto, 
+            "tipo": "patrimonio",
+            "is_virtual": True
+        })
+        
+        final_patrimonio = patrimonio_antes_resultado + resultado_neto
 
         return {
             "estado_resultados": {
                 "ingresos": ingresos_total,
                 "gastos": gastos_total,
-                "resultado": ingresos_total - gastos_total,
+                "resultado": resultado_neto,
                 "detalles": er_detalles
             },
             "balance_general": {
                 "activos": activos_total,
                 "pasivos": pasivos_total,
-                "patrimonio": patrimonio_total,
-                "detalles": bg_detalles
+                "patrimonio": final_patrimonio,
+                "detalles": bg_detalles,
+                "is_balanced": abs(activos_total - (pasivos_total + final_patrimonio)) < 1
             }
         }
     except Exception as e:
@@ -607,5 +668,42 @@ async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountin
         if not res.data:
             raise HTTPException(status_code=400, detail="Error al actualizar configuración")
         return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- ENDPOINTS PARA REGLAS DE MAPEO (RCV ENTITY MAPPING) ---
+
+@router.get("/mapping-rules")
+async def get_mapping_rules(organization_id: str):
+    """Obtiene las reglas de mapeo específicas (RUT -> Cuenta)."""
+    db = get_supabase()
+    try:
+        res = db.table("account_mapping_rules") \
+            .select("*, chart_of_accounts(codigo, nombre)") \
+            .eq("organization_id", organization_id) \
+            .execute()
+        return res.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/mapping-rules")
+async def create_mapping_rule(req: AccountMappingRuleRequest):
+    """Crea una nueva regla de mapeo específica."""
+    db = get_supabase()
+    try:
+        res = db.table("account_mapping_rules").insert(req.dict()).execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Error al crear regla de mapeo")
+        return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/mapping-rules/{rule_id}")
+async def delete_mapping_rule(rule_id: str):
+    """Elimina una regla de mapeo."""
+    db = get_supabase()
+    try:
+        db.table("account_mapping_rules").delete().eq("id", rule_id).execute()
+        return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

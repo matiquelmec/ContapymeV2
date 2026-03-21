@@ -27,21 +27,28 @@ export default async function ReconciliationPage() {
   }
 
   // Consulta REFORZADA con join robusto
-  const { data: accountingEntries, error } = await supabase
-    .from('journal_entry_lines')
-    .select(`
-      id, 
-      cuenta_codigo, 
-      cuenta_nombre, 
-      tipo, 
-      monto, 
-      created_at,
-      journal_entries!inner(id, fecha, glosa, organization_id),
-      bank_reconciliations(id, status, reconciled_at, notes)
-    `)
-    .eq('journal_entries.organization_id', activeOrgId)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  const { getBankAccounts } = await import('@/actions/bank-reconciliation')
+  
+  const [accountingEntriesRes, bankAccounts] = await Promise.all([
+    supabase
+      .from('journal_entry_lines')
+      .select(`
+        id, 
+        cuenta_codigo, 
+        cuenta_nombre, 
+        tipo, 
+        monto, 
+        created_at,
+        journal_entries!inner(id, fecha, glosa, organization_id),
+        bank_reconciliations(id, status, reconciled_at, notes)
+      `)
+      .eq('journal_entries.organization_id', activeOrgId)
+      .order('created_at', { ascending: false })
+      .limit(100),
+    getBankAccounts(activeOrgId)
+  ]);
+
+  const { data: accountingEntries, error } = accountingEntriesRes;
 
   if (error) {
     console.error("Critical Query Error (ReconciliationPage):", error);
@@ -134,7 +141,9 @@ export default async function ReconciliationPage() {
 
       {/* Interfaz Cliente Principal */}
       <ReconciliationClient 
+        key={activeOrgId}
         accountingEntries={accountingEntries || []} 
+        bankAccounts={bankAccounts || []}
         organizationId={activeOrgId}
       />
 

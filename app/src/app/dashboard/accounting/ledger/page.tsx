@@ -46,6 +46,7 @@ export default async function LedgerPage() {
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
 
       <LedgerClient 
+        key={activeOrgId}
         organizationId={activeOrgId} 
         accounts={accounts} 
       />

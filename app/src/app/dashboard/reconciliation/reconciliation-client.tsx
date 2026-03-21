@@ -1,21 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark, Plus } from 'lucide-react'
 import { analyzeBankStatementAction, saveReconciliationAction } from '@/actions/bank-reconciliation'
 import { toast } from 'sonner'
 import { fCurrency } from '@/lib/utils'
 
+interface BankAccount {
+    id: string;
+    bank_name: string;
+    account_number: string;
+}
+
 interface BankTransaction {
+    id: string;
     fecha: string;
     descripcion: string;
     monto: number;
     tipo: 'cargo' | 'abono';
-    referencia?: string;
+    referencia_bancaria?: string;
 }
 
 interface ReconciliationMatch {
@@ -27,23 +35,32 @@ interface ReconciliationMatch {
 
 export function ReconciliationClient({ 
     accountingEntries,
+    bankAccounts,
     organizationId 
 }: { 
     accountingEntries: any[],
+    bankAccounts: BankAccount[],
     organizationId: string
 }) {
+    const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>('')
     const [file, setFile] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [matches, setMatches] = useState<ReconciliationMatch[]>([])
     const [error, setError] = useState<string | null>(null)
 
-    // Filtrar entradas ya conciliadas (Soporta objeto 1:1 o Arreglo)
+    // Si solo hay una cuenta, seleccionarla por defecto
+    useEffect(() => {
+        if (bankAccounts.length === 1 && !selectedBankAccountId) {
+            setSelectedBankAccountId(bankAccounts[0].id)
+        }
+    }, [bankAccounts, selectedBankAccountId])
+
+    // Filtrar entradas ya conciliadas
     const reconciledEntries = accountingEntries.filter(ae => {
         const br = ae.bank_reconciliations;
         return br && (Array.isArray(br) ? br.length > 0 : true);
     })
 
-    // Función segura para obtener datos de la conciliación
     const getBRVal = (ae: any, field: string) => {
         const br = ae.bank_reconciliations;
         if (!br) return null;
@@ -58,13 +75,18 @@ export function ReconciliationClient({
     }
 
     const runAnalysis = async () => {
-        if (!file) return
+        if (!file || !selectedBankAccountId) {
+            toast.error("Seleccione una cuenta bancaria antes de procesar.")
+            return
+        }
         setLoading(true)
         setError(null)
 
         try {
             const formData = new FormData()
             formData.append('file', file)
+            formData.append('organization_id', organizationId)
+            formData.append('bank_account_id', selectedBankAccountId)
 
             const result = await analyzeBankStatementAction(formData)
             
@@ -72,7 +94,7 @@ export function ReconciliationClient({
                 throw new Error(result.error)
             }
 
-            // Solo intentar cruzar con entradas NO conciliadas aún
+            // Entradas contables pedientes de esta cuenta (o genéricas si no hay filtro aún)
             const pendingEntries = accountingEntries.filter(ae => 
                 !ae.bank_reconciliations || ae.bank_reconciliations.length === 0
             )
@@ -91,7 +113,7 @@ export function ReconciliationClient({
             })
 
             setMatches(foundMatches)
-            toast.success("Análisis completado. Revise los cruces detectados.")
+            toast.success("Análisis persistente completado con Motor V2.")
         } catch (err: any) {
             setError(err.message || "Error al procesar la cartola")
         } finally {
@@ -108,10 +130,11 @@ export function ReconciliationClient({
             const data = {
                 organization_id: organizationId,
                 matches: matchedItems.map(m => ({
+                    bank_line_id: m.bankRow.id,
                     journal_entry_line_id: m.accountingEntry.id,
                     organization_id: organizationId,
-                    status: 'reconciled',
-                    notes: `Conciliado contra cartola: ${m.bankRow.descripcion}`
+                    status: 'matched',
+                    notes: `Conciliado: ${m.bankRow.descripcion}`
                 }))
             }
 
@@ -130,11 +153,33 @@ export function ReconciliationClient({
         }
     }
 
-
-
     return (
         <div className="space-y-12 animate-in fade-in duration-700" suppressHydrationWarning={true}>
             
+            {/* Cabecera de Configuración Bancaria */}
+            <div className="flex flex-col md:flex-row gap-6 items-center">
+                <div className="w-full md:w-80">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 block">Cuenta Bancaria Activa</label>
+                    <Select value={selectedBankAccountId} onValueChange={(val) => setSelectedBankAccountId(val || '')}>
+                        <SelectTrigger className="h-14 rounded-2xl bg-card border-border shadow-md font-black uppercase text-xs">
+                            <SelectValue placeholder="Seleccione una cuenta..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {bankAccounts.map(acc => (
+                                <SelectItem key={acc.id} value={acc.id} className="font-bold text-xs uppercase">
+                                    {acc.bank_name} - {acc.account_number}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                {bankAccounts.length === 0 && (
+                     <div className="flex-1 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-[10px] font-black uppercase text-amber-700 leading-relaxed italic">
+                        ⚠️ No tiene cuentas bancarias configuradas. Ingrese una en la configuración para habilitar la persistencia avanzada.
+                     </div>
+                )}
+            </div>
+
             {/* Zona de Carga Premium */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2 bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary">
@@ -145,7 +190,7 @@ export function ReconciliationClient({
                             </div>
                             <div>
                                 <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Importación de Cartola Maestro</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground italic uppercase tracking-widest">Formatos admitidos: CSV, Excel (Soporte PDF en fase de Blindaje)</p>
+                                <p className="text-[10px] font-bold text-muted-foreground italic uppercase tracking-widest">Soporta CSV y Excel. La cartola se guardará vinculada a la cuenta seleccionada.</p>
                             </div>
                         </div>
 
@@ -179,11 +224,11 @@ export function ReconciliationClient({
 
                         <Button 
                             onClick={runAnalysis} 
-                            disabled={!file || loading}
+                            disabled={!file || loading || !selectedBankAccountId}
                             className="w-full h-16 bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] rounded-3xl shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all gap-4"
                         >
                             {loading ? <CircleDashed className="w-6 h-6 animate-spin" /> : <ArrowRightLeft className="w-6 h-6" />}
-                            {loading ? 'PROCESANDO CON MOTOR V2...' : 'EJECUTAR CRUCE ALGORÍTMICO'}
+                            {loading ? 'PERSISTIENDO Y ANALIZANDO...' : 'EJECUTAR CRUCE PERSISTENTE'}
                         </Button>
 
                         {error && (
@@ -199,16 +244,16 @@ export function ReconciliationClient({
                 <div className="space-y-6">
                     <Card className="bg-white border-border shadow-xl rounded-[2.5rem] overflow-hidden">
                         <CardContent className="p-8">
-                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">Estado de Coincidencia</h4>
+                            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6">Estado del Cruce</h4>
                             <div className="space-y-6">
                                 <div className="flex justify-between items-end">
-                                    <span className="text-xs font-black uppercase text-foreground/60">Conciliados AT-100</span>
+                                    <span className="text-xs font-black uppercase text-foreground/60">Conciliados (Match)</span>
                                     <span className="text-3xl font-black text-emerald-600 tracking-tighter">
                                         {matches.filter(m => m.status === 'matched').length}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-end">
-                                    <span className="text-xs font-black uppercase text-foreground/60">Pendientes de Firma</span>
+                                    <span className="text-xs font-black uppercase text-foreground/60">No Detectados</span>
                                     <span className="text-3xl font-black text-rose-500 tracking-tighter">
                                         {matches.filter(m => m.status === 'unmatched').length}
                                     </span>
@@ -221,7 +266,7 @@ export function ReconciliationClient({
                                     className="w-full mt-8 h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest rounded-3xl shadow-lg shadow-emerald-500/20 gap-3"
                                 >
                                     <CheckCircle2 className="w-4 h-4" />
-                                    Confirmar y Guardar Auditoría
+                                    Confirmar Blindaje
                                 </Button>
                             )}
                             
@@ -230,8 +275,8 @@ export function ReconciliationClient({
                                     <Search className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black uppercase text-foreground tracking-tight">Auditoría en Curso</p>
-                                    <p className="text-[9px] font-bold text-muted-foreground italic">Cruce basado en montos exactos</p>
+                                    <p className="text-[10px] font-black uppercase text-foreground tracking-tight">Persistencia Master</p>
+                                    <p className="text-[9px] font-bold text-muted-foreground italic leading-tight">Mapeo ID a ID blindado en Base de Datos.</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -246,18 +291,18 @@ export function ReconciliationClient({
                         <div className="p-6 bg-muted/20 border-b border-border flex justify-between items-center">
                             <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-3">
                                 <Landmark className="w-5 h-5 text-primary" />
-                                Resultado del Análisis Actual
+                                Cruce Algorítmico Persistente
                             </h3>
                         </div>
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/30 border-b border-border">
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px]">Estado Cruce</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Detalle Transacción Bancaria</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[200px] text-right">Importe Bancario</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Vínculo Contable (ERP)</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[200px] text-right">Valor en Libros</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px]">Estado</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Detalle Cartola (DB-Link)</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px] text-right">Monto Banco</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Registro Contable (ERP)</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px] text-right">Monto Diario</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody className="divide-y divide-border/50">
@@ -266,18 +311,18 @@ export function ReconciliationClient({
                                             <TableCell className="px-10 py-6">
                                                 {m.status === 'matched' ? (
                                                     <Badge className="bg-emerald-50 text-emerald-700 pointer-events-none gap-2 border-emerald-200 font-black uppercase text-[8px] tracking-[0.15em] py-2 px-4 shadow-sm rounded-full">
-                                                        <CheckCircle2 className="w-3.5 h-3.5"/> Consolidado V2
+                                                        <CheckCircle2 className="w-3.5 h-3.5"/> Match 1:1
                                                     </Badge>
                                                 ) : (
                                                     <Badge className="bg-rose-50 text-rose-700 pointer-events-none border-rose-200 font-black uppercase text-[8px] tracking-[0.15em] py-2 px-4 shadow-sm rounded-full">
-                                                        Pendiente Cruce
+                                                        Pendiente
                                                     </Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell className="px-10 py-6">
                                                 <div className="flex flex-col">
-                                                    <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{m.bankRow.descripcion}</span>
-                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase tracking-widest opacity-60">{m.bankRow.fecha}</span>
+                                                    <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors line-clamp-1">{m.bankRow.descripcion}</span>
+                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase tracking-widest opacity-60">ID: {m.bankRow.id.substring(0,8)} | {m.bankRow.fecha}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right px-10 py-6">
@@ -297,7 +342,7 @@ export function ReconciliationClient({
                                                 ) : (
                                                     <div className="flex items-center gap-2 text-rose-600">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">Auditoría Requerida</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">Sin coincidencia</span>
                                                     </div>
                                                 )}
                                             </TableCell>
@@ -306,7 +351,7 @@ export function ReconciliationClient({
                                                 {m.status === 'matched' ? (
                                                     <span className="font-black text-sm text-primary tracking-tighter">{fCurrency(Number(m.accountingEntry.monto))}</span>
                                                 ): (
-                                                    <span className="text-muted-foreground/30 font-black italic text-[10px] tracking-widest uppercase">Sin Registro</span>
+                                                    <span className="text-muted-foreground/30 font-black italic text-[10px] tracking-widest uppercase">N/A</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -327,7 +372,7 @@ export function ReconciliationClient({
                                 <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
                                     <History className="w-6 h-6 text-emerald-600" />
                                 </div>
-                                <div>
+                                <div className="space-y-1">
                                     <h3 className="text-lg font-black uppercase tracking-tighter text-foreground">Historial de Auditoría Bancaria</h3>
                                     <p className="text-[10px] font-bold text-muted-foreground italic uppercase">Registros blindados y verificados en el Libro Diario</p>
                                 </div>

@@ -42,6 +42,7 @@ export default async function TrialBalancePage() {
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
 
       <TrialBalanceClient 
+        key={activeOrgId}
         organizationId={activeOrgId} 
       />
     </div>
