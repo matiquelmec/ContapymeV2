@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 2.5 (Magallanes 2077 — IA & GPU Local) | **Fecha:** 2026-03-18 | **Estado:** EN DESARROLLO 🚧 — IA Image Pipeline & Redacción Cerrada Integrada 🎨✅
+> **Versión:** 2.7 (Magallanes 2077 — Sello de Integridad) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Hardening & Blindaje Corporativo Integrando 🛡️✅
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -13,6 +13,11 @@
 > **PARA INICIAR EL SISTEMA LOCAL:** Ejecutar `.\start.ps1` desde la raíz del proyecto.
 > - Frontend: http://localhost:3000
 > - Engine API + Docs: http://localhost:8000/docs
+>
+> [!TIP]
+> **AUDITORÍA DE ESQUEMA (SINCRO 21-03):** 
+> El estado maestro de todas las tablas se encuentra consolidado en:
+> `supabase/snapshots/master_snapshot_20260321.sql` (Única Fuente de Verdad del Esquema).
 
 ---
 
@@ -351,9 +356,13 @@ Auditoría del módulo RCV reveló brechas vs versión Master. Plan de restaurac
 - [x] **Triggers de Blindaje**: Implementado `fn_secure_rcv_period()` en PostgreSQL.
 - [x] **Anti-Duplicados**: Restricción `UNIQUE` y lógica de override funcional.
 
-**PASO 7 — Próximos Pasos (Fase 8.3)** `⏳ PLANIFICADO`
+**PASO 7 — Próximos Pasos (Fase 8.3: Hardening & Blindaje Corporativo)** `⏳ PLANIFICADO`
+- [ ] **Validación JWT en Engine**: El Motor Python debe validar el token de Supabase para asegurar que la petición proviene de un usuario autorizado.
+- [ ] **Tests de Estrés Matemático**: Cobertura 100% en `calculators/` con casos de borde (sueldos mínimos, topes UF).
+- [ ] **Atomicidad Contable**: Asegurar que la importación RCV y la generación de asientos ocurran en una transacción única.
+- [ ] **Observabilidad Senior**: Integración de logging centralizado para errores de parsing (SII formatos cambiantes).
+- [ ] **RLS Polished**: Auditoría final de políticas de seguridad a nivel de fila en Supabase.
 - [ ] **Auto-Contabilización**: Generación automática de asientos al subir el CSV sin intervención humana.
-- [ ] **RLS Hardened**: Políticas de seguridad a nivel de fila en Supabase.
 
 #### Principios Rectores Aplicados:
 - **No se rompió nada existente**: `purchase_records`, `sales_records` y `journal_entries` intactos.
@@ -407,6 +416,9 @@ Auditoría del módulo RCV reveló brechas vs versión Master. Plan de restaurac
 | DT-11 | **RCV Sin gráficos ni KPIs**: ~~Sin visualizaciones~~ | ~~Media~~ | ✅ 8.1 |
 | DT-12 | **RCV Tipo 34 ignorado**: ~~Parser no diferenciaba Facturas Exentas~~ | ~~Media~~ | ✅ 8.1 |
 | DT-13 | **RCV Migración DB Pendiente**: ~~Ejecutar `supabase/migrations/20260315000000_rcv_fase81_potenciacion.sql`~~ | ~~Alta~~ | ✅ 8.1 |
+| DT-14 | Seguridad de Engine: Falta validación de JWT/Auth-Token en routers de FastAPI | Crítica | 8.3 |
+| DT-15 | Atomicidad: Importación RCV y Asientos no están bajo transacción única (Riesgo Integridad) | Crítica | 8.3 |
+| DT-16 | Observabilidad: Falta sistema de alertas proactivo ante fallos de parsers (Cambios Formato SII) | Media | 8.3 |
 
 ---
 

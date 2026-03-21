@@ -147,19 +147,38 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-border/30">
-                  {ledgerData.movements.length === 0 ? (
+                  {(ledgerData.movements.length === 0 && ledgerData.saldo_anterior === 0) ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-32">
-                        <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                          <div className="p-6 bg-muted rounded-full">
-                            <ArrowRightLeft className="h-10 w-10 opacity-30" />
+                      <TableCell colSpan={5} className="py-20 text-center">
+                        <div className="flex flex-col items-center gap-4 opacity-40">
+                          <Search className="w-12 h-12 text-muted-foreground stroke-[1]" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-bold tracking-tight text-foreground">
+                              No se detectaron asientos para esta cuenta en el periodo.
+                            </p>
+                            <p className="text-xs text-muted-foreground">Intenta ajustar el rango de fechas o verifica el plan de cuentas.</p>
                           </div>
-                          <span className="text-xs font-black uppercase tracking-widest italic">No se detectaron asientos para esta cuenta en el periodo.</span>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     <>
+                      {ledgerData.saldo_anterior !== 0 && (
+                        <TableRow className="bg-muted/5 font-bold border-b-2 border-primary/10">
+                          <TableCell className="px-10 py-5 text-muted-foreground/40 italic">Apertura</TableCell>
+                          <TableCell className="px-10 py-5">
+                             <div className="flex items-center gap-3">
+                               <RefreshCcw className="w-3 h-3 text-primary/50 animate-spin" />
+                               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Saldo Anterior Heredado (Hitorial)</span>
+                             </div>
+                          </TableCell>
+                          <TableCell className="text-right px-10 py-5 text-muted-foreground/20">—</TableCell>
+                          <TableCell className="text-right px-10 py-5 text-muted-foreground/20">—</TableCell>
+                          <TableCell className={`text-right font-black px-10 py-5 bg-primary/5 ${ledgerData.saldo_anterior >= 0 ? 'text-primary' : 'text-amber-600'}`}>
+                            ${ledgerData.saldo_anterior.toLocaleString('es-CL')}
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {ledgerData.movements.map((m: any, idx: number) => (
                         <TableRow key={idx} className="group border-border/30 hover:bg-primary/[0.02] transition-colors">
                           <TableCell className="px-10 py-6 whitespace-nowrap text-[11px] font-black uppercase tracking-tighter text-muted-foreground/60">

@@ -330,55 +330,80 @@ async def get_trial_balance(organization_id: str, start_date: str, end_date: str
 
 @router.get("/ledger")
 async def get_ledger(organization_id: str, account_code: str, start_date: Optional[str] = None, end_date: Optional[str] = None):
-    """Obtiene el libro mayor (movimientos) de una cuenta específica con saldo acumulado."""
+    """Obtiene el libro mayor con saldo acumulado y SALDO ANTERIOR (Apertura)."""
     db = get_supabase()
+    account_code = account_code.strip()
+    
+    print(f"[AUDITORÍA] Solicitando Mayor para cuenta: {account_code} en Org: {organization_id}")
+    
     try:
-        # 1. Obtener info de la cuenta
+        # 1. Info de la cuenta
         acc_res = db.table("chart_of_accounts").select("nombre, naturaleza").eq("organization_id", organization_id).eq("codigo", account_code).execute()
-        if not acc_res.data:
-            return None # O manejar como 404
+        if not acc_res.data: 
+            print(f"[AUDITORÍA] ! Cuenta {account_code} no encontrada.")
+            return None
+            
         info = acc_res.data[0]
+        nature = info.get("naturaleza", "deudora").lower()
 
-        # 2. Obtener movimientos
+        # 2. CÁLCULO DE SALDO ANTERIOR (Auditoría Histórica)
+        saldo_inicial = 0
+        if start_date and start_date.strip():
+            prev_query = db.table("journal_entry_lines") \
+                .select("monto, tipo, journal_entries!inner(fecha, organization_id)") \
+                .eq("cuenta_codigo", account_code) \
+                .eq("journal_entries.organization_id", organization_id) \
+                .lt("journal_entries.fecha", start_date) \
+                .execute()
+            
+            for m in (prev_query.data or []):
+                monto = int(m.get("monto", 0))
+                # Si es Deudora: Debe suma, Haber resta. Si es Acreedora: Haber suma, Debe resta.
+                es_suma = (m.get("tipo") == "debe" and nature == "deudora") or (m.get("tipo") == "haber" and nature == "acreedora")
+                saldo_inicial += monto if es_suma else -monto
+
+        # 3. Obtener movimientos del periodo actual
         query = db.table("journal_entry_lines") \
-            .select("*, journal_entries!inner(fecha, glosa)") \
-            .eq("journal_entries.organization_id", organization_id) \
-            .eq("cuenta_codigo", account_code)
+            .select("*, journal_entries!inner(fecha, glosa, organization_id)") \
+            .eq("cuenta_codigo", account_code) \
+            .eq("journal_entries.organization_id", organization_id)
         
-        if start_date:
+        if start_date and start_date.strip():
             query = query.gte("journal_entries.fecha", start_date)
-        if end_date:
+        if end_date and end_date.strip():
             query = query.lte("journal_entries.fecha", end_date)
             
-        res = query.order("journal_entries.fecha").execute()
+        res = query.order("fecha", foreign_table="journal_entries", desc=False).execute()
         raw_moves = res.data or []
+        
+        print(f"[AUDITORÍA] ✅ Se encontraron {len(raw_moves)} movimientos + Saldo Anterior de ${saldo_inicial}")
 
-        # 3. Procesar movimientos y calcular saldo acumulado
+        # 4. Procesar movimientos y calcular saldo acumulado
         movements = []
-        saldo_acumulado = 0
+        saldo_acumulado = saldo_inicial
         total_debe = 0
         total_haber = 0
-        nature = info["naturaleza"]
 
         for m in raw_moves:
-            monto = int(m["monto"])
-            es_debe = m["tipo"] == "debe"
+            je = m.get("journal_entries")
+            if isinstance(je, list) and je: je = je[0]
+            if not je: continue
             
-            debe = monto if es_debe else 0
-            haber = 0 if es_debe else monto
+            monto = int(m.get("monto", 0))
+            debe = monto if m.get("tipo") == "debe" else 0
+            haber = 0 if m.get("tipo") == "debe" else monto
             
             total_debe += debe
             total_haber += haber
             
-            # Ajustar saldo según naturaleza
             if nature == "deudora":
                 saldo_acumulado += (debe - haber)
             else:
                 saldo_acumulado += (haber - debe)
                 
             movements.append({
-                "fecha": m["journal_entries"]["fecha"],
-                "glosa": m["journal_entries"]["glosa"],
+                "fecha": je.get("fecha"),
+                "glosa": je.get("glosa", "S/G"),
                 "debe": debe,
                 "haber": haber,
                 "saldo": saldo_acumulado
@@ -388,14 +413,15 @@ async def get_ledger(organization_id: str, account_code: str, start_date: Option
             "account_code": account_code,
             "account_name": info["nombre"],
             "naturaleza": nature,
+            "saldo_anterior": saldo_inicial,
             "movements": movements,
             "total_debe": total_debe,
             "total_haber": total_haber,
             "saldo_final": saldo_acumulado
         }
     except Exception as e:
-        print(f"ERROR get_ledger: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"ERROR CRÍTICO get_ledger: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en auditoría de mayor: {str(e)}")
 
 @router.get("/reports")
 async def get_financial_reports(organization_id: str, year: int, month: Optional[int] = None):
