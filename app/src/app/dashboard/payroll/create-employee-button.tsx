@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { UserPlus, Loader2, Contact, Briefcase, CreditCard, HeartPulse, Building2, Calendar as CalendarIcon, Check, DollarSign } from 'lucide-react'
+import { UserPlus, Loader2, Contact, Briefcase, CreditCard, HeartPulse, Building2, Calendar as CalendarIcon, Check, DollarSign, Zap, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,6 +26,8 @@ export function CreateEmployeeButton() {
   const [horarioContexto, setHorarioContexto] = useState("")
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isScheduleLoading, setIsScheduleLoading] = useState(false)
+  const [targetHoras, setTargetHoras] = useState(42)
+  const [targetDias, setTargetDias] = useState(5)
   
   // Estados para inputs corporativos
   const [sueldoBase, setSueldoBase] = useState("500000")
@@ -60,6 +62,8 @@ export function CreateEmployeeButton() {
     const tEntrada = horaEntrada.split(':').map(Number)
     const tSalida = horaSalida.split(':').map(Number)
     
+    if (tEntrada.length < 2 || tSalida.length < 2) return
+
     const minEntrada = tEntrada[0] * 60 + (tEntrada[1] || 0)
     const minSalida = tSalida[0] * 60 + (tSalida[1] || 0)
     
@@ -79,6 +83,31 @@ export function CreateEmployeeButton() {
     setHorarioDetalle(clausula)
 
   }, [horaEntrada, horaSalida, colacionMinutos, diasSemana, isArt22])
+
+  const aplicarDistribucionLegal = (horasObj: number, diasObj: number = 5) => {
+    const orden = ['lun','mar','mie','jue','vie','sab']
+    setDiasSemana(orden.slice(0, diasObj))
+    
+    // Si la jornada diaria es menor a 5 horas, quizás no es obligatorio 60 min, pero sugerimos 30.
+    // Si es una jornada muy corta, 0.
+    const horasDiarias = horasObj / diasObj
+    const minColacion = horasDiarias > 5 ? 45 : (horasDiarias > 3 ? 30 : 0)
+    setColacionMinutos(minColacion)
+    
+    const minEfectivosDiarios = horasDiarias * 60
+    const minBrutosDiarios = minEfectivosDiarios + minColacion
+    
+    const hEntrada = 9
+    const mEntrada = 0
+    
+    const minSalidaTotales = (hEntrada * 60 + mEntrada) + minBrutosDiarios
+    const hSalida = Math.floor(minSalidaTotales / 60)
+    const mSalida = Math.round(minSalidaTotales % 60)
+    
+    setHoraEntrada(`09:00`)
+    setHoraSalida(`${String(hSalida).padStart(2, '0')}:${String(mSalida).padStart(2, '0')}`)
+    toast.info(`Distribución de ${horasObj}h en ${diasObj} días aplicada.`)
+  }
 
   const toggleDia = (dia: string) => {
     setDiasSemana(prev => 
@@ -172,18 +201,18 @@ export function CreateEmployeeButton() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                     <Contact className="w-3 h-3" /> IDENTIFICACIÓN BÁSICA
                 </Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="nombres" className="text-[10px] font-bold text-muted-foreground">NOMBRES</Label>
-                    <Input id="nombres" name="nombres" required className="bg-white border-border rounded-xl h-12 font-black uppercase text-xs focus:ring-primary shadow-sm" />
+                    <Input id="nombres" name="nombres" required className="bg-slate-50/50 border-border rounded-2xl h-14 font-black uppercase text-xs focus:ring-primary shadow-sm" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="apellido_paterno" className="text-[10px] font-bold text-muted-foreground">APELLIDO PATERNO</Label>
-                    <Input id="apellido_paterno" name="apellido_paterno" required className="bg-white border-border rounded-xl h-12 font-black uppercase text-xs focus:ring-primary shadow-sm" />
+                    <Input id="apellido_paterno" name="apellido_paterno" required className="bg-slate-50/50 border-border rounded-2xl h-14 font-black uppercase text-xs focus:ring-primary shadow-sm" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="apellido_materno" className="text-[10px] font-bold text-muted-foreground">APELLIDO MATERNO (PREVIRED)</Label>
-                    <Input id="apellido_materno" name="apellido_materno" required className="bg-white border-border rounded-xl h-12 font-black uppercase text-xs focus:ring-primary shadow-sm" />
+                    <Label htmlFor="apellido_materno" className="text-[10px] font-bold text-muted-foreground">APELLIDO MATERNO</Label>
+                    <Input id="apellido_materno" name="apellido_materno" required className="bg-slate-50/50 border-border rounded-2xl h-14 font-black uppercase text-xs focus:ring-primary shadow-sm" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2">
@@ -200,11 +229,11 @@ export function CreateEmployeeButton() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                    <div className="space-y-2">
                       <Label htmlFor="email" className="text-[10px] font-bold text-muted-foreground">EMAIL (CONTACTO)</Label>
-                      <Input id="email" name="email" type="email" placeholder="ejemplo@correo.com" className="bg-white border-border rounded-xl h-12 font-black text-xs lowercase focus:ring-primary" />
+                      <Input id="email" name="email" type="email" placeholder="ejemplo@correo.com" className="bg-slate-50/50 border-border rounded-2xl h-14 font-black text-xs lowercase focus:ring-primary" />
                    </div>
                    <div className="space-y-2">
                        <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground">CELULAR / WHATSAPP</Label>
-                       <Input id="phone" name="phone" placeholder="+56 9 XXXX XXXX" className="bg-white border-border rounded-xl h-12 font-black text-xs focus:ring-primary" />
+                       <Input id="phone" name="phone" placeholder="+56 9 XXXX XXXX" className="bg-slate-50/50 border-border rounded-2xl h-14 font-black text-xs focus:ring-primary" />
                    </div>
                 </div>
 
@@ -274,6 +303,60 @@ export function CreateEmployeeButton() {
 
                 {!isArt22 ? (
                   <div className="space-y-8 animate-in fade-in zoom-in duration-300">
+                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-[9px] font-black text-primary uppercase flex items-center gap-2">
+                                <Zap className="w-4 h-4" /> PRESETS Y JORNADA OBJETIVO
+                            </Label>
+                            <div className="flex gap-2">
+                                {[42, 40, 30].map(h => (
+                                    <Button 
+                                        key={h}
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => aplicarDistribucionLegal(h, 5)}
+                                        className="h-8 rounded-lg text-[9px] font-black border-slate-100 px-3 hover:border-primary hover:text-primary transition-all"
+                                    >
+                                        {h}H
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-dashed border-slate-100">
+                             <div className="space-y-3">
+                                <Label className="text-[9px] font-black text-slate-400 uppercase">HORAS TOTALES</Label>
+                                <Input 
+                                    type="number" 
+                                    value={targetHoras} 
+                                    onChange={(e) => setTargetHoras(parseInt(e.target.value) || 0)}
+                                    className="h-12 rounded-xl font-black text-sm bg-slate-50 border-0 focus:ring-primary shadow-inner"
+                                />
+                             </div>
+                             <div className="space-y-3">
+                                <Label className="text-[9px] font-black text-slate-400 uppercase">DÍAS A DISTRIBUIR (MAX 6)</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        type="number" 
+                                        min="1" 
+                                        max="6" 
+                                        value={targetDias} 
+                                        onChange={(e) => setTargetDias(parseInt(e.target.value) || 0)}
+                                        className="h-12 rounded-xl font-black text-sm bg-slate-50 border-0 focus:ring-primary shadow-inner flex-1"
+                                    />
+                                    <Button 
+                                        type="button"
+                                        onClick={() => aplicarDistribucionLegal(targetHoras, targetDias)}
+                                        className="h-12 rounded-xl bg-slate-800 text-white font-black text-[10px] uppercase px-5 hover:bg-black transition-all"
+                                    >
+                                        DISTRIBUIR
+                                    </Button>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="space-y-3">
                             <Label className="text-[9px] font-black text-slate-400 uppercase ml-1">HORARIO</Label>
@@ -354,18 +437,46 @@ export function CreateEmployeeButton() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2">
                     <DollarSign className="w-3 h-3" /> ESTRUCTURA SALARIAL
                 </Label>
-                <div className="space-y-2">
-                  <Label htmlFor="sueldo_base" className="text-[10px] font-bold text-muted-foreground">SUELDO BASE NOMINAL ($)</Label>
-                  <Input 
-                    id="sueldo_base" 
-                    name="sueldo_base" 
-                    type="number" 
-                    min="0" 
-                    value={sueldoBase} 
-                    onChange={(e) => setSueldoBase(e.target.value)} 
-                    required 
-                    className="bg-white border-border rounded-xl h-12 font-black font-mono text-xs focus:ring-primary shadow-sm" 
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sueldo_base" className="text-[10px] font-bold text-muted-foreground">SUELDO BASE NOMINAL ($)</Label>
+                    <Input 
+                      id="sueldo_base" 
+                      name="sueldo_base" 
+                      type="number" 
+                      min="0" 
+                      value={sueldoBase} 
+                      onChange={(e) => setSueldoBase(e.target.value)} 
+                      required 
+                      className="bg-slate-50/50 border-border rounded-2xl h-14 font-black font-mono text-sm focus:ring-primary shadow-sm" 
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-6 pt-6 border-t border-dashed border-border/50">
+                    <div className="space-y-3">
+                      <Label htmlFor="asignacion_colacion" className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                         <div className="w-5 h-5 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                            <Clock className="w-3 h-3 text-orange-600" />
+                         </div>
+                         Asignación Colación Mensual ($)
+                      </Label>
+                      <Input id="asignacion_colacion" name="asignacion_colacion" type="number" defaultValue="0" className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="asignacion_movilizacion" className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                         <div className="w-5 h-5 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                            <MapPin className="w-3 h-3 text-blue-600" />
+                         </div>
+                         Asignación Movilización Mensual ($)
+                      </Label>
+                      <Input id="asignacion_movilizacion" name="asignacion_movilizacion" type="number" defaultValue="0" className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bono_fijo" className="text-[10px] font-bold text-muted-foreground uppercase">Bono Fijo Mensual ($)</Label>
+                    <Input id="bono_fijo" name="bono_fijo" type="number" defaultValue="0" className="bg-slate-50/50 border-border rounded-2xl h-14 font-black font-mono text-sm focus:ring-primary shadow-sm" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tipo_contrato" className="text-[10px] font-bold text-muted-foreground">TIPO DE CONTRATO</Label>

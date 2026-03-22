@@ -1,11 +1,21 @@
 'use server'
 
-export async function exportPreviredAction(organizationId: string, periodo: string) {
+import { getActiveOrganizationId } from './organizations'
+
+export async function exportPreviredAction(clientOrgId: string, periodo: string) {
   try {
+    // BLINDAJE DE SEGURIDAD: Nunca confiar en el ID enviado desde el cliente.
+    // Extraemos el organization_id directamente desde la cookie HttpOnly encriptada.
+    const activeOrgId = await getActiveOrganizationId()
+    
+    if (!activeOrgId) {
+      return { success: false, error: 'Sesión no válida o sin empresa activa.' }
+    }
+
     const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
     
     // El periodo debe venir como YYYY-MM-01
-    const response = await fetch(`${engineUrl}/api/v1/previred/export-previred/${organizationId}?periodo=${periodo}`, {
+    const response = await fetch(`${engineUrl}/api/v1/previred/export-previred/${activeOrgId}?periodo=${periodo}`, {
       method: 'GET',
       cache: 'no-store'
     })
@@ -20,7 +30,7 @@ export async function exportPreviredAction(organizationId: string, periodo: stri
     return { 
       success: true, 
       content: text,
-      filename: `previred_${organizationId.substring(0,4)}_${periodo}.txt` 
+      filename: `previred_${activeOrgId.substring(0,4)}_${periodo}.txt` 
     }
 
   } catch (err: any) {

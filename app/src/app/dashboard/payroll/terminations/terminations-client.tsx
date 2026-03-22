@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { 
   FileText, 
-  Download, 
   Trash2, 
-  Printer, 
   CheckCircle2, 
   Clock, 
   Plus, 
@@ -17,9 +15,10 @@ import {
   History, 
   ShieldAlert,
   Gavel,
-  FileWarning
+  FileWarning,
+  FileDown
 } from 'lucide-react'
-import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction } from '@/actions/terminations'
+import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction, downloadTerminationDocAction } from '@/actions/terminations'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { TerminationDialog } from './termination-dialog'
@@ -59,6 +58,8 @@ export default function TerminationsClient({
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerLoading, setViewerLoading] = useState(false)
   const [documentContent, setDocumentContent] = useState<{title: string, content: string} | null>(null)
+  const [currentViewerId, setCurrentViewerId] = useState<string | null>(null)
+  const [currentViewerType, setCurrentViewerType] = useState<string | null>(null)
 
   const handleFinalize = async (id: string, employeeId: string, endDate: string, name: string) => {
     toast(`¿Confirmar finalización oficial para ${name}?`, {
@@ -83,15 +84,25 @@ export default function TerminationsClient({
     })
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    toast(`¿Seguro de eliminar el borrador para ${name}?`, {
+  const handleDelete = async (id: string, name: string, status: string) => {
+    const isSigned = status === 'firmado'
+    const title = isSigned 
+        ? `🔥 ALERTA DE RIESGO: ¿ELIMINAR PROTOCOLO DE ${name.toUpperCase()}?`
+        : `¿Seguro de eliminar el borrador para ${name}?`
+    
+    const description = isSigned
+        ? "ADVERTENCIA: Este registro ya fue protocolizado. Su eliminación borrará evidencia legal y contable histórica. Esta acción es definitiva."
+        : "Se eliminarán los cálculos proyectados de este borrador."
+
+    toast(title, {
+        description: description,
         action: {
-            label: 'ELIMINAR',
+            label: isSigned ? 'SÍ, ELIMINAR TODO' : 'ELIMINAR',
             onClick: async () => {
                 setLoadingDelete(id)
                 const res = await deleteTerminationAction(id)
                 if (res.success) {
-                  toast.success('Registro de finiquito removido.')
+                  toast.success('Registro de finiquito eliminado del sistema.')
                 } else {
                   toast.error(res.error || 'Error al eliminar')
                 }
@@ -109,6 +120,8 @@ export default function TerminationsClient({
     setViewerLoading(true)
     setViewerOpen(true)
     setDocumentContent(null)
+    setCurrentViewerId(id)
+    setCurrentViewerType(type)
     
     try {
       const res = await getTerminationDocumentAction(id, type)
@@ -123,6 +136,28 @@ export default function TerminationsClient({
       setViewerOpen(false)
     } finally {
       setViewerLoading(false)
+    }
+  }
+
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const handleDownload = async (id: string, type: string) => {
+    setDownloadingId(`${id}-${type}`)
+    try {
+      const res = await downloadTerminationDocAction(id, type)
+      if (res.success && res.base64Doc) {
+        const link = document.createElement('a')
+        link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${res.base64Doc}`
+        link.download = res.filename || `documento_${type}.docx`
+        link.click()
+        toast.success('Documento Word generado con éxito.')
+      } else {
+        toast.error(res.error || 'No se pudo generar el documento Word.')
+      }
+    } catch (err) {
+      toast.error('Error al descargar el archivo.')
+    } finally {
+      setDownloadingId(null)
     }
   }
 
@@ -157,45 +192,62 @@ export default function TerminationsClient({
 
       {/* Document Viewer Dialog Standardized */}
       <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
-        <DialogContent className="max-w-4xl bg-card border-border shadow-2xl rounded-[2.5rem] p-0 overflow-hidden ring-1 ring-black/5 flex flex-col max-h-[90vh]">
-          <div className="h-2 w-full bg-gradient-to-r from-rose-600 via-rose-300 to-transparent" />
-          <DialogHeader className="p-10 pb-6 border-b border-border bg-muted/5">
-            <div className="flex items-center gap-4 mb-2">
-                <div className="p-3 bg-rose-50 rounded-2xl border border-rose-100">
-                    <Printer className="h-6 w-6 text-rose-600" />
+        <DialogContent className="max-w-[95vw] md:max-w-4xl bg-card border-border shadow-2xl rounded-[2.5rem] p-0 overflow-hidden ring-1 ring-black/5 flex flex-col h-[90vh]">
+          <div className="h-1.5 w-full bg-gradient-to-r from-rose-600 via-rose-300 to-transparent shrink-0" />
+          
+          <DialogHeader className="p-6 md:p-10 pb-4 border-b border-border bg-muted/5 shrink-0 print:hidden">
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-rose-50 rounded-2xl border border-rose-100 hidden sm:block">
+                    <FileText className="h-6 w-6 text-rose-600" />
                 </div>
                 <div className="space-y-0.5 text-left">
-                    <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">
+                    <DialogTitle className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tight">
                         {viewerLoading ? "PROCESANDO INSTRUMENTO..." : documentContent?.title}
                     </DialogTitle>
-                    <DialogDescription className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] italic">
+                    <DialogDescription className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] italic">
                         PREVISUALIZACIÓN DE DOCUMENTO LEGAL NORMATIVO
                     </DialogDescription>
                 </div>
             </div>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto p-12 bg-white text-slate-900 font-sans leading-relaxed text-sm antialiased scrollbar-thin scrollbar-thumb-slate-200">
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 bg-slate-100/50 scrollbar-thin scrollbar-thumb-slate-200 print:bg-white print:p-0 print:overflow-visible">
             {viewerLoading ? (
-              <div className="flex flex-col items-center justify-center h-96 gap-6 text-muted-foreground">
-                <Loader2 className="h-16 w-16 animate-spin text-rose-600 opacity-20" />
-                <p className="font-black uppercase text-xs tracking-widest text-center max-w-xs leading-relaxed italic opacity-40">
-                    SINTETIZANDO CLÁUSULAS LEGALES DESDE EL MOTOR DE RRHH...
+              <div className="flex flex-col items-center justify-center h-full gap-6 text-muted-foreground print:hidden">
+                <Loader2 className="h-12 w-12 animate-spin text-rose-600 opacity-20" />
+                <p className="font-black uppercase text-[10px] tracking-[0.3em] text-center max-w-xs leading-relaxed italic opacity-40">
+                    SINTETIZANDO CLÁUSULAS LEGALES...
                 </p>
               </div>
             ) : (
-                <div className="whitespace-pre-wrap font-serif text-base text-justify selection:bg-rose-100">
-                    {documentContent?.content}
+                <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-sm p-[15mm] md:p-[25mm] relative overflow-hidden ring-1 ring-black/5 print:shadow-none print:my-0 print:p-[20mm] print:max-w-none print:ring-0">
+                    {/* Watermark/Texture subtle */}
+                    <div className="absolute inset-0 opacity-[0.012] pointer-events-none select-none flex items-center justify-center rotate-[-35deg] print:hidden">
+                        <p className="text-[80px] md:text-[120px] font-black tracking-tighter leading-none text-center">CONTAPYME V2<br/>MAGALLANES 2077</p>
+                    </div>
+
+                    <div className="relative z-10 whitespace-pre-wrap font-serif text-[14px] md:text-[15px] leading-[1.7] text-slate-800 text-justify selection:bg-rose-100/50 tracking-tight antialiased">
+                        {documentContent?.content}
+                    </div>
                 </div>
             )}
           </div>
 
-          <DialogFooter className="p-10 pt-6 border-t border-border bg-muted/5 flex gap-4">
-            <Button variant="ghost" onClick={() => setViewerOpen(false)} className="text-[10px] font-black uppercase tracking-widest flex-1 h-14 rounded-2xl">
+          <DialogFooter className="p-6 md:p-8 bg-muted/5 border-t border-border flex flex-col sm:flex-row gap-3 md:gap-4 shrink-0 print:hidden">
+            <Button variant="outline" onClick={() => setViewerOpen(false)} className="text-[10px] font-black uppercase tracking-widest h-12 md:h-14 rounded-2xl flex-1 border-2">
               CERRAR VISOR
             </Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-xs tracking-widest h-14 px-12 rounded-[1.5rem] shadow-2xl shadow-emerald-600/30 hover:scale-[1.03] active:scale-95 transition-all flex-1 gap-3" onClick={() => window.print()}>
-              <Printer className="h-5 w-5" /> IMPRIMIR EXPEDIENTE
+            <Button 
+                disabled={downloadingId !== null || !currentViewerId || !currentViewerType}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-xs tracking-widest h-12 md:h-14 px-8 md:px-12 rounded-[1.2rem] shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex-1 gap-2" 
+                onClick={() => handleDownload(currentViewerId!, currentViewerType!)}
+            >
+                {downloadingId ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                    <FileDown className="h-4 w-4 md:h-5 md:w-5" />
+                )}
+                {downloadingId ? "GENERANDO WORD..." : "DESCARGAR WORD (.DOCX)"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -312,13 +364,18 @@ export default function TerminationsClient({
                               onClick={() => handleViewDocument(t.id, 'finiquito')}
                               title="Ver Borrador Finiquito"
                           >
-                              <Printer className="h-5 w-5" />
+                              <Gavel className="h-5 w-5" />
                           </Button>
                           <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-10 w-10 text-rose-600 hover:bg-rose-50 rounded-xl transition-all" 
-                              onClick={() => handleDelete(t.id, `${t.employees?.nombres} ${t.employees?.apellido_paterno}`)}
+                              className={cn(
+                                "h-10 w-10 rounded-xl transition-all",
+                                t.status === 'firmado' 
+                                  ? "text-rose-900/20 hover:text-rose-600 hover:bg-rose-50" 
+                                  : "text-rose-600 hover:bg-rose-50"
+                              )}
+                              onClick={() => handleDelete(t.id, `${t.employees?.nombres} ${t.employees?.apellido_paterno}`, t.status)}
                               disabled={loadingDelete === t.id}
                           >
                             {loadingDelete === t.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}

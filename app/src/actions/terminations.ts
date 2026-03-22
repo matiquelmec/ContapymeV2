@@ -127,9 +127,36 @@ export async function finalizeTerminationAction(terminationId: string, employeeI
         revalidatePath('/dashboard/payroll/terminations')
         
         return { success: true }
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.error('Action error finalizing termination:', error)
-        return { success: false, error: errorMessage }
+    } catch (error: any) {
+        const errorMessage = error?.message || error?.details || (typeof error === 'object' ? JSON.stringify(error) : String(error));
+        console.error('Action error finalizing termination:', error);
+        return { success: false, error: errorMessage };
     }
+}
+
+export async function downloadTerminationDocAction(terminationId: string, docType: string) {
+  try {
+    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
+    const response = await fetch(`${engineUrl}/api/v1/terminations/${terminationId}/download/${docType}`, {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }));
+      return { success: false, error: err.detail };
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+    return { 
+      success: true, 
+      base64Doc: base64,
+      filename: `${docType}_${terminationId.substring(0,8)}.docx` 
+    };
+
+  } catch (err: any) {
+    return { success: false, error: `Error de red: ${err.message}` };
+  }
 }

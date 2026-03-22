@@ -48,14 +48,33 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
         except:
             sueldo_palabras = "MONTO NO ESPECIFICADO"
 
-        meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-        hoy = date.today()
-        fecha_legal = f"{hoy.day} de {meses[hoy.month-1]} de {hoy.year}"
+        def format_date_cl(date_val):
+            if not date_val: return "NO ESPECIFICADA"
+            try:
+                if isinstance(date_val, str):
+                    d = datetime.strptime(date_val[:10], "%Y-%m-%d")
+                else:
+                    d = date_val
+                meses_cl = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+                return f"{d.day} de {meses_cl[d.month-1]} de {d.year}"
+            except:
+                return str(date_val)
+
+        fecha_legal = format_date_cl(date.today())
         ciudad = org.get('comuna', 'Punta Arenas').upper()
 
         def clean_rut(r):
             if not r: return ""
-            return r.replace(".", "").replace(" ", "").upper()
+            # Formatear RUT con puntos y guion si es posible
+            r = r.replace(".", "").replace("-", "").replace(" ", "").upper()
+            if len(r) > 1:
+                body = r[:-1]
+                dv = r[-1]
+                # we could add dots, but clean strings are safer for templates sometimes
+                # Let's use points for professional look
+                formatted_body = "{:,}".format(int(body)).replace(",", ".")
+                return f"{formatted_body}-{dv}"
+            return r
 
         def safe_upper(v, default=""):
             if v is None: return default.upper()
@@ -74,17 +93,20 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
             'EMPLEADO_RUT': clean_rut(emp.get('rut', '')),
             'EMPLEADO_NACIONALIDAD': safe_upper(emp.get('nacionalidad'), 'CHILENA'),
             'EMPLEADO_ESTADO_CIVIL': safe_upper(emp.get('estado_civil'), 'SOLTERO(A)'),
-            'EMPLEADO_FECHA_NAC': str(emp.get('birth_date', '')),
+            'EMPLEADO_FECHA_NAC': format_date_cl(emp.get('birth_date')),
             'EMPLEADO_DIRECCION': safe_upper(emp.get('address') or emp.get('direccion'), 'DOMICILIO CONOCIDO'),
             'EMPLEADO_COMUNA': safe_upper(emp.get('city'), 'PUNTA ARENAS'),
             'EMPLEADO_REGION': safe_upper(emp.get('region'), 'MAGALLANES'),
-            'FECHA_INGRESO': str(emp.get('fecha_ingreso', '')),
+            'FECHA_INGRESO': format_date_cl(emp.get('fecha_ingreso')),
             'CARGO': safe_upper(emp.get('cargo'), 'Trabajador'),
             'DESCRIPCION_CARGO': description or emp.get('descripcion_cargo') or 'SEGÚN SE ESTIPULA EN EL MANUAL DE FUNCIONES INTERNO.',
             'SUELDO_BASE': sueldo_formateado,
             'SUELDO_PALABRAS': sueldo_palabras,
             'HORAS_SEMANALES': emp.get('horas_semanales', 42),
             'HORARIO': safe_upper(emp.get('horario_detalle'), 'JORNADA ORDINARIA LEGAL'),
+            'PREVISION_SALUD': safe_upper(emp.get('prevision_salud'), 'FONASA'),
+            'AFP': safe_upper(emp.get('afp'), 'HABITAT'),
+            'AFC_ACTIVO': 'SI' if emp.get('afc_active') else 'NO',
             'FECHA_ACTUAL': fecha_legal
         }
 
@@ -109,7 +131,7 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
         try:
             fecha_inicio = emp.get('fecha_ingreso')
             if not fecha_inicio:
-                fecha_inicio = str(hoy)
+                fecha_inicio = str(date.today())
                 
             contract_record = {
                 "organization_id": org_id,

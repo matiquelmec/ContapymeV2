@@ -14,7 +14,9 @@ from calculators.chilean_payroll import (
     calcular_liquidacion,
     to_db_dict,
 )
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -84,6 +86,8 @@ async def process_payroll(req: PayrollRequest):
             .execute()
 
         employees = emp_res.data or []
+        logger.info(f"🔍 Procesando nómina {req.periodo}. Encontrados {len(employees)} empleados activos en DB.")
+        
         if not employees:
             return {
                 "success": True,
@@ -96,6 +100,13 @@ async def process_payroll(req: PayrollRequest):
         advertencias_totales = []
 
         for emp in employees:
+            # Blindaje extra: Si por algún motivo el driver trajo un inactivo, lo saltamos
+            if not emp.get("activo", True):
+                continue
+            
+            nome_completo = f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}"
+            logger.info(f"   ⚙️  Procesando: {nome_completo} (RUT: {emp.get('rut')})")
+            
             # Resolver comisión AFP del empleado
             afp_comision_pct = 1.27  # default Hábitat
             afp_code = emp.get("afp", "HABITAT")
@@ -160,6 +171,5 @@ async def process_payroll(req: PayrollRequest):
         }
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error en proceso de nómina: {str(e)}")
+        logger.exception("Error en proceso de nómina")
+        raise HTTPException(status_code=500, detail=str(e))

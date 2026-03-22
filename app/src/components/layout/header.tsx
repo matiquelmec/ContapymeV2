@@ -7,12 +7,13 @@ import { signOut } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { getUserOrganizations, setActiveOrganization, getActiveOrganizationId } from '@/actions/organizations'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 export function Header() {
   const [organizations, setOrganizations] = useState<any[]>([])
   const [activeOrgId, setActiveOrgId] = useState<string>('')
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     async function loadData() {
@@ -29,8 +30,24 @@ export function Header() {
     setActiveOrgId(value)
     await setActiveOrganization(value)
     toast.success('Empresa cambiada correctamente')
-    // No necesitamos reload total si usamos revalidatePath, pero router.refresh ayuda a refrescar los RSC
-    router.refresh()
+    
+    // Lógica inteligente de ruteo post-cambio:
+    const segments = pathname.split('/').filter(Boolean)
+    let targetPath = pathname
+
+    if (segments.length >= 4) {
+      // 1. Si estamos en un DETALLE (ej. /dashboard/payroll/liquidations/123)
+      //    Te devuelve a la raíz del módulo (ej. /dashboard/payroll) 
+      //    como se acordó previamente para evitar errores al cambiar de empresa.
+      targetPath = `/${segments[0]}/${segments[1]}`
+    } else {
+      // 2. Si estamos en una SECCIÓN PRINCIPAL (ej. /dashboard/accounting/rcv)
+      //    Te mantiene en la misma sección para no interrumpir el flujo.
+      targetPath = '/' + segments.slice(0, 3).join('/')
+    }
+    
+    // Forzamos un hard-reload para asegurar que todos los datos y el layout se limpien de la caché
+    window.location.href = targetPath || '/dashboard'
   }
 
   return (

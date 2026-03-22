@@ -233,7 +233,7 @@ Puesta en marcha productiva de alto estrés.
 - [ ] Pruebas unitarias `calculators/` con pytest (casos extremos: SIS, topes UF, impuesto).
 - [ ] Reemplazar copias locales por CI/CD: Vercel (app) + Railway/Render (engine).
 - [ ] Automatizar Worker de Indicadores con cron en producción.
-- [x] **Hardening Maestro (Sincro Total) 🛡️**: Aislamiento total de multitenencia en BD sincronizado con `master_snapshot_20260321.sql`.
+- [x] **Hardening Maestro (Sincro Total) 🛡️**: Aislamiento total de multitenencia en BD sincronizado con `master_snapshot_20260322.sql`.
 - [x] **Adopción Estética Luxury ERP 🏛️**: Refactorización de componentes críticos (Finiquitos, Payroll) hacia un diseño de alta gama.
 - [ ] Roles granulares: owner / accountant / viewer con permisos diferenciados.
 - [ ] Módulo de Auditoría y Logs: Registro de acciones críticas.

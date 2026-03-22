@@ -1,16 +1,36 @@
+import React from 'react'
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PlusCircle, FileText, UserPlus, Users as UsersIcon, TrendingUp, DollarSign, Calendar as CalendarIcon, Briefcase, RefreshCcw } from 'lucide-react'
+import { 
+  PlusCircle, 
+  FileText, 
+  UserPlus, 
+  Users as UsersIcon, 
+  TrendingUp, 
+  DollarSign, 
+  Calendar as CalendarIcon, 
+  Briefcase, 
+  RefreshCcw,
+  CheckCircle2
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatRUT } from '@/lib/utils/rut'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 import { CreateEmployeeButton } from './create-employee-button'
 import { ProcessPayrollButton } from './process-payroll-button'
 import { GenerateContractButton } from './generate-contract-button'
 import { ExportPreviredButton } from './export-previred-button'
 import { TerminateEmployeeButton } from './terminate-button'
+import { DeleteEmployeeButton } from './delete-employee-button'
+import { EditEmployeeButton } from './edit-employee-button'
+import { DeleteLiquidationButton } from './delete-liquidation-button'
+import { ApproveLiquidationButton } from './approve-liquidation-button'
+import { PayrollPeriodSelector } from './payroll-period-selector'
+import { getActiveOrganizationId } from '@/actions/organizations'
 
 // ==========================================
 // HELPERS & SUBCOMPONENTS
@@ -20,16 +40,16 @@ const formatCLP = (amount: number) =>
 
 function KPIItem({ label, value, sub, icon: Icon, color, borderColor }: any) {
     return (
-        <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`}>
+        <Card className={cn("bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 group hover:scale-[1.02] transition-all", borderColor)}>
         <CardContent className="p-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-2 leading-none">{label}</p>
-              <p className={`text-3xl font-black tracking-tighter ${color}`}>{value}</p>
+              <p className={cn("text-3xl font-black tracking-tighter", color)}>{value}</p>
               {sub && <p className="text-[11px] text-muted-foreground/60 font-bold italic mt-2">{sub}</p>}
             </div>
             <div className={`p-4 rounded-2xl bg-muted/30 border border-border group-hover:bg-white transition-colors`}>
-              <Icon className={`w-8 h-8 ${color} opacity-40 group-hover:opacity-100 transition-opacity`} />
+              <Icon className={cn("w-8 h-8 opacity-40 group-hover:opacity-100 transition-opacity", color)} />
             </div>
           </div>
         </CardContent>
@@ -37,10 +57,20 @@ function KPIItem({ label, value, sub, icon: Icon, color, borderColor }: any) {
     )
 }
 
-export default async function PayrollPage() {
-  const supabase = await createClient()
+export default async function PayrollPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const params = await searchParams
+  const currentYear = new Date().getFullYear().toString()
+  const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0')
+  
+  const selectedYear = (params.year as string) || currentYear
+  const selectedMonth = (params.month as string) || currentMonth
+  const selectedPeriod = `${selectedYear}-${selectedMonth}-01`
 
-  const { getActiveOrganizationId } = await import('@/actions/organizations')
+  const supabase = await createClient()
   const activeOrgId = await getActiveOrganizationId()
 
   if (!activeOrgId) {
@@ -75,7 +105,7 @@ export default async function PayrollPage() {
         <div className="flex gap-3 flex-wrap">
           <ExportPreviredButton 
             organizationId={activeOrgId} 
-             periodo="2026-03-01" 
+             periodo={selectedPeriod} 
           />
           <CreateEmployeeButton />
           <ProcessPayrollButton />
@@ -101,12 +131,12 @@ export default async function PayrollPage() {
             sub="Proyección de sueldos base" 
         />
         <KPIItem 
-            label="Próximo Cierre" 
-            value="31 MAR" 
+            label="Detalle Periodo" 
+            value={`${selectedMonth}/${selectedYear}`} 
             icon={CalendarIcon} 
             color="text-amber-600" 
             borderColor="border-amber-600"
-            sub="Periodo Marzo 2026" 
+            sub="Vista de Remuneraciones" 
         />
         <KPIItem 
             label="Estado Motor" 
@@ -179,11 +209,18 @@ export default async function PayrollPage() {
                         <TableCell className="px-10 py-6 text-right">
                           <div className="flex flex-col items-end gap-2">
                             <GenerateContractButton employeeId={emp.id} />
-                            <TerminateEmployeeButton 
-                              employeeId={emp.id} 
-                              employeeName={`${emp.nombres} ${emp.apellido_paterno}`}
-                              organizationId={activeOrgId}
-                            />
+                            <div className="flex items-center gap-2">
+                                <TerminateEmployeeButton 
+                                  employeeId={emp.id} 
+                                  employeeName={`${emp.nombres} ${emp.apellido_paterno}`}
+                                  organizationId={activeOrgId}
+                                />
+                                 <EditEmployeeButton employee={emp} />
+                                <DeleteEmployeeButton 
+                                  employeeId={emp.id} 
+                                  employeeName={`${emp.nombres} ${emp.apellido_paterno}`} 
+                                />
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -217,10 +254,11 @@ export default async function PayrollPage() {
                         RESULTADOS DE PROCESAMIENTO — MÓDULO ALGORÍTMICO INTEGRADO
                     </CardDescription>
                 </div>
+                <PayrollPeriodSelector />
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <LiquidationsTable orgId={activeOrgId} />
+            <LiquidationsTable orgId={activeOrgId} year={selectedYear} month={selectedMonth} />
           </CardContent>
         </Card>
       </div>
@@ -228,9 +266,19 @@ export default async function PayrollPage() {
   )
 }
 
-async function LiquidationsTable({ orgId }: { orgId: string }) {
+async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: string, month: string }) {
   const supabase = await createClient()
-  
+
+  // Normalizar el mes a 2 dígitos siempre (ej: "3" -> "03")
+  const paddedMonth = month.padStart(2, '0')
+
+  // El campo 'periodo' es de tipo DATE en PostgreSQL (ej: '2026-03-01').
+  // .like() no funciona en DATE columns. Usamos un rango de fechas exacto.
+  const dateStart = `${year}-${paddedMonth}-01`
+  // Calcular el último día del mes correctamente
+  const lastDay = new Date(parseInt(year), parseInt(paddedMonth), 0).getDate()
+  const dateEnd = `${year}-${paddedMonth}-${lastDay}`
+
   const { data: liquidations } = await supabase
     .from('liquidations')
     .select(`
@@ -241,66 +289,119 @@ async function LiquidationsTable({ orgId }: { orgId: string }) {
       )
     `)
     .eq('organization_id', orgId)
+    .gte('periodo', dateStart)
+    .lte('periodo', dateEnd)
     .order('created_at', { ascending: false })
 
   if (!liquidations || liquidations.length === 0) {
     return (
-      <div className="text-center py-20 text-muted-foreground border-2 border-dashed border-border m-6 rounded-2xl bg-muted/5">
-        <p className="font-black uppercase text-xs tracking-widest italic opacity-60">Aún no se han generado liquidaciones para este periodo.</p>
+      <div className="text-center py-24 text-muted-foreground border-2 border-dashed border-border m-10 rounded-[2rem] bg-muted/5">
+        <div className="bg-muted/20 p-8 rounded-full mb-6 border border-border inline-block mx-auto">
+            <CalendarIcon className="w-12 h-12 text-muted-foreground/20" />
+        </div>
+        <p className="font-black uppercase text-xs tracking-widest italic opacity-60">
+            No hay liquidaciones procesadas para {month}/{year}.
+        </p>
+        <p className="text-[10px] font-bold mt-2">Utilice el botón superior para procesar la nómina de este periodo.</p>
       </div>
     )
   }
 
+  // Totales para el banner inteligente
+  const totalNeto = liquidations.reduce((acc, l) => acc + Number(l.sueldo_liquido), 0)
+  const totalDescuentos = liquidations.reduce((acc, l) => acc + Number(l.total_descuentos), 0)
+  const totalCosto = liquidations.reduce((acc, l) => acc + Number(l.total_haberes_brutos), 0)
+
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/30 border-border">
-            <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Identidad Empleado</TableHead>
-            <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Haberes Brutos</TableHead>
-            <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Deducciones Legales</TableHead>
-            <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Neto Liquidado</TableHead>
-            <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Estado Auditoría</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="divide-y divide-border/50">
-          {liquidations.map((liq) => (
-            <TableRow key={liq.id} className="border-border hover:bg-emerald-600/[0.02] transition-colors group">
-              <TableCell className="px-10 py-6">
-                <div className="flex flex-col">
-                    <span className="font-black text-foreground uppercase text-xs tracking-tight group-hover:text-emerald-700 transition-colors">
-                        {liq.employees?.nombres} {liq.employees?.apellido_paterno}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/60 font-bold uppercase italic mt-0.5">Ref: {liq.id.slice(0,8)}</span>
-                </div>
-              </TableCell>
-              <TableCell className="px-10 py-6">
-                <span className="font-mono text-sm font-black text-foreground">
-                    {formatCLP(Number(liq.total_haberes_brutos))}
-                </span>
-              </TableCell>
-              <TableCell className="px-10 py-6">
-                <span className="font-mono text-sm font-black text-rose-600">
-                    -{formatCLP(Number(liq.total_descuentos))}
-                </span>
-              </TableCell>
-              <TableCell className="px-10 py-6">
-                <div className="bg-emerald-50 border border-emerald-100 p-2 rounded-xl inline-block">
-                    <span className="font-mono text-sm font-black text-emerald-700">
-                        {formatCLP(Number(liq.sueldo_liquido))}
-                    </span>
-                </div>
-              </TableCell>
-              <TableCell className="px-10 py-6 text-right">
-                <span className="inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black bg-amber-600 text-white shadow-xl shadow-amber-600/20 uppercase tracking-[0.2em]">
-                  <RefreshCcw className="w-3 h-3 mr-2 animate-spin-slow" />
-                  {liq.status}
-                </span>
-              </TableCell>
+    <div className="space-y-0">
+      {/* BANNER DE RESUMEN INTELIGENTE */}
+      <div className="grid grid-cols-3 gap-0 border-b border-border bg-emerald-600/5">
+        <div className="px-10 py-6 border-r border-border/50">
+            <p className="text-[9px] font-black text-emerald-700 uppercase tracking-widest mb-1">Total Neto Pagado</p>
+            <p className="text-xl font-black text-emerald-900 tracking-tighter">{formatCLP(totalNeto)}</p>
+        </div>
+        <div className="px-10 py-6 border-r border-border/50">
+            <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Total Retenciones</p>
+            <p className="text-xl font-black text-rose-900 tracking-tighter">{formatCLP(totalDescuentos)}</p>
+        </div>
+        <div className="px-10 py-6">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Costo Empresa (Bruto)</p>
+            <p className="text-xl font-black text-slate-900 tracking-tighter">{formatCLP(totalCosto)}</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 border-border">
+              <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Identidad Empleado</TableHead>
+              <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Haberes Brutos</TableHead>
+              <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Deducciones Legales</TableHead>
+              <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Neto Liquidado</TableHead>
+              <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-7">Estado Auditoría</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {liquidations.map((liq) => (
+              <TableRow key={liq.id} className="border-border hover:bg-emerald-600/[0.02] transition-colors group">
+                <TableCell className="px-10 py-6">
+                  <div className="flex flex-col">
+                      <span className="font-black text-foreground uppercase text-xs tracking-tight group-hover:text-emerald-700 transition-colors">
+                          {liq.employees?.nombres} {liq.employees?.apellido_paterno}
+                      </span>
+                      <span className="font-mono text-[10px] text-emerald-700/70 font-black tracking-widest mt-0.5">
+                          {liq.folio_number || '—'}
+                      </span>
+                  </div>
+                </TableCell>
+                <TableCell className="px-10 py-6">
+                  <span className="font-mono text-sm font-black text-foreground">
+                      {formatCLP(Number(liq.total_haberes_brutos))}
+                  </span>
+                </TableCell>
+                <TableCell className="px-10 py-6">
+                  <span className="font-mono text-sm font-black text-rose-600">
+                      -{formatCLP(Number(liq.total_descuentos))}
+                  </span>
+                </TableCell>
+                <TableCell className="px-10 py-6">
+                  <div className="bg-emerald-50 border border-emerald-100 p-2 rounded-xl inline-block">
+                      <span className="font-mono text-sm font-black text-emerald-700">
+                          {formatCLP(Number(liq.sueldo_liquido))}
+                      </span>
+                  </div>
+                </TableCell>
+                <TableCell className="px-10 py-6 text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    <span className={cn(
+                      "inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black shadow-xl uppercase tracking-[0.2em] transition-all",
+                      liq.status === 'aprobada' 
+                        ? "bg-emerald-600 text-white shadow-emerald-600/20" 
+                        : "bg-amber-600 text-white shadow-amber-600/20"
+                    )}>
+                      {liq.status === 'aprobada' ? (
+                        <CheckCircle2 className="w-3 h-3 mr-2" />
+                      ) : (
+                        <RefreshCcw className="w-3 h-3 mr-2 animate-spin-slow" />
+                      )}
+                      {liq.status}
+                    </span>
+                    {liq.status === 'borrador' && (
+                      <ApproveLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
+                    )}
+                    <Link href={`/dashboard/payroll/liquidations/${liq.folio_number || liq.id}`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 text-primary">
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <DeleteLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
