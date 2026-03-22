@@ -14,6 +14,12 @@ from calculators.chilean_payroll import (
     calcular_liquidacion,
     to_db_dict,
 )
+from calculators.national_params import (
+    TOPE_AFP_UF, TOPE_SALUD_UF, TOPE_AFC_UF,
+    SIS_PCT, SUELDO_MINIMO,
+    AFC_INDEFINIDO_TRABAJADOR_PCT, AFC_INDEFINIDO_EMPRESA_PCT, AFC_FIJO_EMPRESA_PCT,
+    get_afp_comision,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,16 +36,15 @@ async def process_payroll(req: PayrollRequest):
     """
     Endpoint del Motor Matemático para procesar liquidaciones en lote.
     
-    Para cada empleado activo de la organización:
-      1. Obtiene la configuración previsional de la organización
-      2. Obtiene el valor UF y UTM actuales desde economic_indicators
-      3. Invoca el motor puro de chilean_payroll.py
-      4. Hace upsert en la tabla `liquidations`
+    ARQUITECTURA AUTÓNOMA:
+      - Parámetros NACIONALES → Se toman de national_params.py (autónomos)
+      - Parámetros de EMPRESA → Se leen de organization_payroll_settings (manuales)
+      - Indicadores (UF/UTM) → Se buscan en economic_indicators por fecha (históricos)
     """
     db = get_supabase()
 
     try:
-        # ── 1. Configuración previsional de la organización ──────────────────
+        # ── 1. Configuración de la EMPRESA (solo lo que es único por organización) ──
         cfg_res = db.table("organization_payroll_settings") \
             .select("*") \
             .eq("organization_id", req.org_id) \
@@ -48,14 +53,18 @@ async def process_payroll(req: PayrollRequest):
 
         cfg = cfg_res.data or {}
 
-        # ── 2. Indicadores económicos (UF y UTM) ─────────────────────────────
-        uf_valor = 38_000.0
-        utm_valor = 67_294.0
+        # ── 2. Indicadores económicos Dinámicos (UF y UTM por Periodo) ────────
+        target_period_start = f"{req.periodo}-01"
+        uf_valor = 38000.0  # Fallback de emergencia
+        utm_valor = 67294.0 # Fallback de emergencia
 
         try:
             ind_res = db.table("economic_indicators") \
                 .select("codigo, valor") \
                 .in_("codigo", ["uf", "utm"]) \
+                .lte("fecha", target_period_start) \
+                .order("fecha", desc=True) \
+                .limit(2) \
                 .execute()
 
             for ind in (ind_res.data or []):
@@ -63,19 +72,24 @@ async def process_payroll(req: PayrollRequest):
                     uf_valor = float(ind["valor"])
                 elif ind["codigo"] == "utm":
                     utm_valor = float(ind["valor"])
-        except Exception:
-            pass  # Usar defaults si no hay indicadores
+            
+            logger.info(f"📊 Indicadores aplicados para {req.periodo}: UF=${uf_valor}, UTM=${utm_valor}")
+        except Exception as e:
+            logger.warning(f"⚠️ Usando indicadores de emergencia por fallo en DB: {e}")
 
-        # ── 3. Construir PayrollSettings desde la configuración ───────────────
+        # ── 3. Construir PayrollSettings (NACIONALES autónomos + EMPRESA manuales) ──
         settings = PayrollSettings(
             uf_valor=uf_valor,
-            uf_tope_afp=float(cfg.get("uf_tope_afp", 87.8)),
-            uf_tope_salud=float(cfg.get("uf_tope_salud", 83.3)),
-            sueldo_minimo=int(cfg.get("sueldo_minimo", 529_000)),
-            afc_indefinido_trabajador_pct=float(cfg.get("afc_indefinido_trabajador_pct", 0.6)),
-            afc_indefinido_empresa_pct=float(cfg.get("afc_indefinido_empresa_pct", 2.4)),
-            afc_fijo_empresa_pct=float(cfg.get("afc_fijo_empresa_pct", 3.0)),
-            afp_sis_pct=float(cfg.get("afp_sis_pct", 1.49)),
+            # Topes NACIONALES (autónomos desde national_params.py)
+            uf_tope_afp=TOPE_AFP_UF,
+            uf_tope_salud=TOPE_SALUD_UF,
+            uf_tope_afc=TOPE_AFC_UF,
+            sueldo_minimo=SUELDO_MINIMO,
+            # Tasas NACIONALES
+            afp_sis_pct=SIS_PCT,
+            afc_indefinido_trabajador_pct=AFC_INDEFINIDO_TRABAJADOR_PCT,
+            afc_indefinido_empresa_pct=AFC_INDEFINIDO_EMPRESA_PCT,
+            afc_fijo_empresa_pct=AFC_FIJO_EMPRESA_PCT,
         )
 
         # ── 4. Traer empleados activos ────────────────────────────────────────
@@ -108,37 +122,59 @@ async def process_payroll(req: PayrollRequest):
             logger.info(f"   ⚙️  Procesando: {nome_completo} (RUT: {emp.get('rut')})")
             
             # Resolver comisión AFP del empleado
-            afp_comision_pct = 1.27  # default Hábitat
-            afp_code = emp.get("afp", "HABITAT")
-            salud_code = emp.get("prevision_salud", "FONASA")
-            salud_pct = 7.0
-
+            afp_code = (emp.get("afp") or "HABITAT").upper()
+            salud_code = (emp.get("prevision_salud") or "FONASA").upper()
+            
+            # Comisión: primero buscar en config de empresa, fallback a national_params
+            afp_comision_pct = get_afp_comision(afp_code)
             if cfg.get("afp_configs"):
                 for afp in cfg["afp_configs"]:
                     if afp.get("code") == afp_code:
-                        afp_comision_pct = float(afp.get("commission_pct", 1.27))
+                        afp_comision_pct = float(afp.get("commission_pct", afp_comision_pct))
                         break
 
-            if cfg.get("health_configs"):
-                for h in cfg["health_configs"]:
-                    if h.get("code") == salud_code:
-                        salud_pct = float(h.get("plan_pct", 7.0))
-                        break
+            # Plan de salud: se lee del empleado (0 = FONASA, >0 = plan Isapre en UF)
+            plan_salud_uf = float(emp.get("plan_salud_uf", 0))
+
+            # ── 5.1. Obtener contrato vigente para el período (INTELIGENCIA v2) ───
+            # Usamos el último día del mes para determinar qué contrato rige.
+            # (Ejemplo: si hay un aumento el 15, rige el nuevo sueldo para ese mes).
+            from datetime import datetime, date
+            import calendar
+            
+            try:
+                year_part, month_part = map(int, req.periodo.split("-"))
+                last_day = calendar.monthrange(year_part, month_part)[1]
+                target_date_str = f"{req.periodo}-{last_day}"
+                
+                # Intentamos usar la función de DB RPC
+                effective_res = db.rpc("get_effective_contract_data", {
+                    "p_employee_id": emp["id"],
+                    "p_target_date": target_date_str
+                }).execute()
+                
+                eff = effective_res.data or {}
+                # Mezclamos emp con los datos efectivos (prioridad a eff)
+                emp_effective = {**emp, **eff}
+            except Exception as e:
+                logger.warning(f"Error al obtener contrato efectivo para {emp.get('id')}: {e}")
+                emp_effective = emp
 
             emp_input = EmployeeInput(
-                sueldo_base=int(emp.get("sueldo_base", 0)),
-                tipo_contrato=emp.get("tipo_contrato", "indefinido"),
+                sueldo_base=int(emp_effective.get("sueldo_base", 0)),
+                tipo_contrato=emp_effective.get("tipo_contrato", "indefinido"),
                 afp_code=afp_code,
                 afp_comision_pct=afp_comision_pct,
                 salud_code=salud_code,
-                salud_pct=salud_pct,
-                gratificacion_legal=bool(emp.get("gratificacion_legal", True)),
-                asignacion_movilizacion=int(emp.get("asignacion_movilizacion", 0)),
-                asignacion_colacion=int(emp.get("asignacion_colacion", 0)),
-                horas_extra=int(emp.get("horas_extra_pendientes", 0)),
-                family_allowances=int(emp.get("family_allowances", 0)),
-                afc_active=bool(emp.get("afc_active", True)),
-                horas_semanales=int(emp.get("horas_semanales", 42)),
+                salud_pct=7.0,  # Siempre 7% legal (national_params)
+                plan_salud_uf=plan_salud_uf,
+                gratificacion_legal=bool(emp_effective.get("gratificacion_legal", True)),
+                asignacion_movilizacion=int(emp_effective.get("asignacion_movilizacion", 0)),
+                asignacion_colacion=int(emp_effective.get("asignacion_colacion", 0)),
+                horas_extra=int(emp_effective.get("horas_extra_pendientes", 0)),
+                family_allowances=int(emp_effective.get("family_allowances", 0)),
+                afc_active=bool(emp_effective.get("afc_active", True)),
+                horas_semanales=int(emp_effective.get("horas_semanales", 42)),
             )
 
             result = calcular_liquidacion(emp_input, settings, utm_valor)

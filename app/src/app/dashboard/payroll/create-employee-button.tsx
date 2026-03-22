@@ -50,6 +50,8 @@ export function CreateEmployeeButton() {
   const [region, setRegion] = useState("")
   const [numeroCargas, setNumeroCargas] = useState(0)
   const [afcActivo, setAfcActivo] = useState(true)
+  const [saludSeleccionada, setSaludSeleccionada] = useState("Fonasa")
+  const [planSaludUf, setPlanSaludUf] = useState("0")
 
   // Motor de cálculo de jornada legal (Chilerised)
   useEffect(() => {
@@ -516,11 +518,9 @@ export function CreateEmployeeButton() {
                           <SelectItem key={afp} value={afp} className="font-black text-[10px] uppercase">{afp}</SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
+                           <div className="space-y-2">
                     <Label htmlFor="prevision_salud" className="text-[10px] font-bold text-muted-foreground font-black uppercase">PREVISIÓN DE SALUD</Label>
-                    <Select name="prevision_salud" defaultValue="Fonasa">
+                    <Select name="prevision_salud" defaultValue="Fonasa" onValueChange={(val) => setSaludSeleccionada(val || "Fonasa")}>
                       <SelectTrigger className="bg-white border-border rounded-xl h-12 font-black uppercase text-[10px] tracking-widest focus:ring-primary shadow-sm">
                         <SelectValue placeholder="Seleccione" />
                       </SelectTrigger>
@@ -528,11 +528,35 @@ export function CreateEmployeeButton() {
                         <SelectItem value="Fonasa" className="font-black text-[10px] uppercase">Fonasa (7%)</SelectItem>
                         <SelectItem value="Consalud" className="font-black text-[10px] uppercase">Isapre Consalud</SelectItem>
                         <SelectItem value="Colmena" className="font-black text-[10px] uppercase">Isapre Colmena</SelectItem>
-                        <SelectItem value="CruzBlanca" className="font-black text-[10px] uppercase">Isapre CruzBlanca</SelectItem>
+                        <SelectItem value="CruzBlanca" className="font-black text-[10px] uppercase">Isapre Cruz Blanca</SelectItem>
                         <SelectItem value="Banmedica" className="font-black text-[10px] uppercase">Isapre Banmédica</SelectItem>
-                        <SelectItem value="VidaTres" className="font-black text-[10px] uppercase">Isapre VidaTres</SelectItem>
+                        <SelectItem value="VidaTres" className="font-black text-[10px] uppercase">Isapre Vida Tres</SelectItem>
+                        <SelectItem value="NuevaMasvida" className="font-black text-[10px] uppercase">Isapre Nueva Masvida</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  {saludSeleccionada !== "Fonasa" && (
+                    <div className="space-y-2 p-4 bg-blue-50/80 rounded-2xl border-2 border-blue-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <Label className="text-[10px] font-black text-blue-700 uppercase flex items-center gap-2">
+                        <HeartPulse className="w-3 h-3" /> Plan Isapre (UF/mes)
+                      </Label>
+                      <Input 
+                        name="plan_salud_uf" 
+                        type="number" 
+                        step="0.01"
+                        value={planSaludUf} 
+                        onChange={(e) => setPlanSaludUf(e.target.value)}
+                        placeholder="Ej: 3.5" 
+                        className="h-12 rounded-xl font-black font-mono text-sm bg-white border-blue-200 focus:ring-blue-300 shadow-sm" 
+                      />
+                      <p className="text-[9px] text-blue-500 italic mt-1 ml-1">
+                        Valor del plan pactado con la Isapre. Si el 7% legal no lo cubre, la diferencia se descuenta automáticamente.
+                      </p>
+                    </div>
+                  )}
+                  {saludSeleccionada === "Fonasa" && (
+                    <input type="hidden" name="plan_salud_uf" value="0" />
+                  )}               </Select>
                   </div>
                  </div>
               </div>

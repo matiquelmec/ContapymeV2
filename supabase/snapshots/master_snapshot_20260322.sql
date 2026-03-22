@@ -1,10 +1,10 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
--- SINCRO: 2026-03-22 06:00 (Sincronización Total Maestro 🛡️ - Cascades & Unique Constraints)
+-- SINCRO FINAL DEL DÍA: 2026-03-22 (Hardening Total de Seguridad Multi-tenant)
 
 CREATE TABLE public.account_mapping_rules (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  organization_id uuid,
+  organization_id uuid NOT NULL,
   context text NOT NULL,
   account_id uuid,
   is_active boolean DEFAULT true,
@@ -49,7 +49,7 @@ CREATE TABLE public.bank_reconciliations (
   reconciled_by uuid,
   status text DEFAULT 'reconciled'::text,
   notes text,
-  organization_id uuid,
+  organization_id uuid NOT NULL,
   CONSTRAINT bank_reconciliations_pkey PRIMARY KEY (id),
   CONSTRAINT bank_reconciliations_bank_line_id_fkey FOREIGN KEY (bank_line_id) REFERENCES public.bank_statement_lines(id),
   CONSTRAINT bank_reconciliations_reconciled_by_fkey FOREIGN KEY (reconciled_by) REFERENCES auth.users(id),
@@ -69,7 +69,7 @@ CREATE TABLE public.bank_statement_lines (
   is_reconciled boolean DEFAULT false,
   external_id text,
   created_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
+  organization_id uuid NOT NULL,
   CONSTRAINT bank_statement_lines_pkey PRIMARY KEY (id),
   CONSTRAINT bank_statement_lines_statement_id_fkey FOREIGN KEY (statement_id) REFERENCES public.bank_statements(id),
   CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id),
@@ -111,7 +111,7 @@ CREATE TABLE public.chart_of_accounts (
   codigo character varying NOT NULL,
   nombre text NOT NULL,
   descripcion text,
-  nivel integer NOT NULL CHECK (nivel >= 1 AND nivel <= 4),
+  nivel integer NOT NULL CHECK (nivel >= 1 AND nivel <= 5),
   parent_codigo character varying,
   tipo text NOT NULL,
   naturaleza text NOT NULL DEFAULT 'deudora'::text,
@@ -121,9 +121,26 @@ CREATE TABLE public.chart_of_accounts (
   CONSTRAINT chart_of_accounts_pkey PRIMARY KEY (id),
   CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
+CREATE TABLE public.contract_modifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL,
+  employee_id uuid NOT NULL,
+  effective_date date NOT NULL,
+  modification_type text NOT NULL CHECK (modification_type = ANY (ARRAY['salary_change'::text, 'hours_change'::text, 'position_change'::text, 'contract_type_change'::text, 'other'::text])),
+  changes jsonb NOT NULL DEFAULT '{}'::jsonb,
+  old_values jsonb NOT NULL DEFAULT '{}'::jsonb,
+  reason text,
+  document_reference_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT contract_modifications_pkey PRIMARY KEY (id),
+  CONSTRAINT contract_modifications_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT contract_modifications_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id),
+  CONSTRAINT contract_modifications_document_fkey FOREIGN KEY (document_reference_id) REFERENCES public.employment_contracts(id)
+);
 CREATE TABLE public.economic_indicators (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  codigo character varying NOT NULL UNIQUE,
+  codigo character varying NOT NULL,
   nombre text NOT NULL,
   valor numeric NOT NULL,
   fecha date NOT NULL,
@@ -147,7 +164,7 @@ CREATE TABLE public.employee_documents (
 CREATE TABLE public.employee_terminations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
-  employee_id uuid NOT NULL UNIQUE,
+  employee_id uuid NOT NULL,
   fecha_inicio date NOT NULL,
   fecha_termino date NOT NULL,
   causal_despido text NOT NULL,
@@ -214,8 +231,9 @@ CREATE TABLE public.employees (
   asignacion_colacion bigint DEFAULT 0,
   asignacion_movilizacion bigint DEFAULT 0,
   bono_fijo bigint DEFAULT 0,
+  plan_salud_uf numeric DEFAULT 0,
   CONSTRAINT employees_pkey PRIMARY KEY (id),
-  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.employment_contracts (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -251,10 +269,10 @@ CREATE TABLE public.f29_box_details (
   value numeric NOT NULL,
   box_type text DEFAULT 'determinativo'::text,
   created_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
+  organization_id uuid NOT NULL,
   CONSTRAINT f29_box_details_pkey PRIMARY KEY (id),
-  CONSTRAINT f29_box_details_f29_id_fkey FOREIGN KEY (f29_id) REFERENCES public.f29_forms(id) ON DELETE CASCADE,
-  CONSTRAINT f29_box_details_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT f29_box_details_f29_id_fkey FOREIGN KEY (f29_id) REFERENCES public.f29_forms(id),
+  CONSTRAINT f29_box_details_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.f29_forms (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -277,7 +295,7 @@ CREATE TABLE public.f29_forms (
   ventas_netas bigint DEFAULT 0,
   prestamo_solidario bigint DEFAULT 0,
   CONSTRAINT f29_forms_pkey PRIMARY KEY (id),
-  CONSTRAINT f29_forms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT f29_forms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.fixed_assets (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -308,7 +326,7 @@ CREATE TABLE public.journal_entries (
   numero_asiento integer,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT journal_entries_pkey PRIMARY KEY (id),
-  CONSTRAINT journal_entries_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT journal_entries_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.journal_entry_lines (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -319,9 +337,9 @@ CREATE TABLE public.journal_entry_lines (
   monto bigint NOT NULL CHECK (monto > 0),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   account_id uuid,
-  organization_id uuid,
+  organization_id uuid NOT NULL,
   CONSTRAINT journal_entry_lines_pkey PRIMARY KEY (id),
-  CONSTRAINT journal_entry_lines_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.journal_entries(id) ON DELETE CASCADE,
+  CONSTRAINT journal_entry_lines_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.journal_entries(id),
   CONSTRAINT journal_entry_lines_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id),
   CONSTRAINT journal_entry_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
@@ -368,11 +386,12 @@ CREATE TABLE public.liquidations (
   asignacion_familiar bigint DEFAULT 0,
   bono_extra bigint DEFAULT 0,
   folio_number text NOT NULL,
+  salud_voluntaria bigint DEFAULT 0,
+  salud_total bigint DEFAULT 0,
   CONSTRAINT liquidations_pkey PRIMARY KEY (id),
-  CONSTRAINT liquidations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE,
-  CONSTRAINT liquidations_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE,
-  CONSTRAINT liquidations_account_id_neto_fkey FOREIGN KEY (account_id_neto) REFERENCES public.chart_of_accounts(id),
-  CONSTRAINT unique_employee_period_org UNIQUE (organization_id, employee_id, periodo)
+  CONSTRAINT liquidations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT liquidations_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id),
+  CONSTRAINT liquidations_account_id_neto_fkey FOREIGN KEY (account_id_neto) REFERENCES public.chart_of_accounts(id)
 );
 CREATE TABLE public.organization_members (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -382,24 +401,14 @@ CREATE TABLE public.organization_members (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   permissions jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT organization_members_pkey PRIMARY KEY (id),
-  CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE,
-  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+  CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.organization_payroll_settings (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL UNIQUE,
   afp_configs jsonb NOT NULL DEFAULT '[]'::jsonb,
   health_configs jsonb NOT NULL DEFAULT '[]'::jsonb,
-  uf_tope_afp numeric DEFAULT 87.8,
-  uf_tope_salud numeric DEFAULT 83.3,
-  sueldo_minimo bigint DEFAULT 529000,
-  limite_asignacion_familiar bigint DEFAULT 1000000,
-  asignacion_tramo_a bigint DEFAULT 13596,
-  asignacion_tramo_b bigint DEFAULT 8397,
-  asignacion_tramo_c bigint DEFAULT 2798,
-  afc_indefinido_trabajador_pct numeric DEFAULT 0.6,
-  afc_indefinido_empresa_pct numeric DEFAULT 2.4,
-  afc_fijo_empresa_pct numeric DEFAULT 3.0,
   mutual_code character varying DEFAULT 'ACHS'::character varying,
   caja_compensacion_code character varying DEFAULT ''::character varying,
   rep_legal_nombre text DEFAULT ''::text,
@@ -409,7 +418,7 @@ CREATE TABLE public.organization_payroll_settings (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT organization_payroll_settings_pkey PRIMARY KEY (id),
-  CONSTRAINT organization_payroll_settings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT organization_payroll_settings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.organizations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -454,9 +463,23 @@ CREATE TABLE public.payroll_book_details (
   otros_descuentos bigint DEFAULT 0,
   total_descuentos bigint DEFAULT 0,
   sueldo_liquido bigint DEFAULT 0,
+  afp_nom character varying,
+  salud_nom character varying,
+  asig_familiar bigint DEFAULT 0,
+  afc_trab bigint DEFAULT 0,
+  afc_emp bigint DEFAULT 0,
+  sis_emp bigint DEFAULT 0,
+  descuento_afp_total bigint DEFAULT 0,
+  fecha_inicio date,
+  fecha_termino date,
+  causal_termino character varying,
+  region_prestacion character varying,
+  comuna_prestacion character varying,
+  sobresueldo bigint DEFAULT 0,
+  salud_voluntaria bigint DEFAULT 0,
   CONSTRAINT payroll_book_details_pkey PRIMARY KEY (id),
-  CONSTRAINT payroll_book_details_payroll_book_id_fkey FOREIGN KEY (payroll_book_id) REFERENCES public.payroll_books(id) ON DELETE CASCADE,
-  CONSTRAINT payroll_book_details_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE
+  CONSTRAINT payroll_book_details_payroll_book_id_fkey FOREIGN KEY (payroll_book_id) REFERENCES public.payroll_books(id),
+  CONSTRAINT payroll_book_details_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id)
 );
 CREATE TABLE public.payroll_books (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -473,7 +496,7 @@ CREATE TABLE public.payroll_books (
   generated_at timestamp with time zone NOT NULL DEFAULT now(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT payroll_books_pkey PRIMARY KEY (id),
-  CONSTRAINT payroll_books_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT payroll_books_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
@@ -482,7 +505,7 @@ CREATE TABLE public.profiles (
   preferences jsonb DEFAULT '{}'::jsonb,
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.purchase_records (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -503,8 +526,8 @@ CREATE TABLE public.purchase_records (
   es_suma boolean DEFAULT true,
   import_id uuid,
   CONSTRAINT purchase_records_pkey PRIMARY KEY (id),
-  CONSTRAINT purchase_records_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id) ON DELETE SET NULL,
-  CONSTRAINT purchase_records_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT purchase_records_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id),
+  CONSTRAINT purchase_records_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.rcv_imports (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -518,7 +541,7 @@ CREATE TABLE public.rcv_imports (
   error_log jsonb DEFAULT '[]'::jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT rcv_imports_pkey PRIMARY KEY (id),
-  CONSTRAINT rcv_imports_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT rcv_imports_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.regional_news (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -556,8 +579,8 @@ CREATE TABLE public.sales_records (
   es_suma boolean DEFAULT true,
   import_id uuid,
   CONSTRAINT sales_records_pkey PRIMARY KEY (id),
-  CONSTRAINT sales_records_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id) ON DELETE SET NULL,
-  CONSTRAINT sales_records_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE
+  CONSTRAINT sales_records_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id),
+  CONSTRAINT sales_records_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.termination_causes (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -573,3 +596,11 @@ CREATE TABLE public.termination_causes (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT termination_causes_pkey PRIMARY KEY (id)
 );
+
+-- UNIQUE CONSTRAINTS (DB Hardening Fase 8.1)
+ALTER TABLE public.chart_of_accounts ADD CONSTRAINT uq_chart_of_accounts_org_codigo UNIQUE (organization_id, codigo);
+ALTER TABLE public.employees ADD CONSTRAINT uq_employees_org_rut UNIQUE (organization_id, rut);
+ALTER TABLE public.liquidations ADD CONSTRAINT uq_liquidations_emp_periodo UNIQUE (employee_id, periodo);
+ALTER TABLE public.f29_forms ADD CONSTRAINT uq_f29_org_periodo UNIQUE (organization_id, periodo);
+ALTER TABLE public.rcv_imports ADD CONSTRAINT uq_rcv_org_periodo_tipo UNIQUE (organization_id, periodo, tipo);
+ALTER TABLE public.centralized_account_config ADD CONSTRAINT uq_centralized_org_modulo_trx UNIQUE (organization_id, module_name, transaction_type);

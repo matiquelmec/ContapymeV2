@@ -10,24 +10,42 @@ import {
   Save, 
   Building2, 
   Stethoscope, 
-  ArrowUpCircle, 
   Users2, 
   ShieldCheck,
   RefreshCcw,
   Plus,
   Trash2,
-  Zap,
   Info,
   CheckCircle2,
   AlertTriangle,
   Gavel,
-  History,
-  TrendingUp,
   DollarSign,
-  Users
+  Cpu,
+  Lock
 } from "lucide-react";
 import { savePayrollSettings } from "@/actions/payroll-settings";
 import { toast } from "sonner";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Parámetros Nacionales (solo lectura, sincronizados con national_params.py)
+// Estos valores son definidos por ley y el motor los aplica AUTÓNOMAMENTE.
+// Se muestran aquí solo para referencia del usuario.
+// ═══════════════════════════════════════════════════════════════════════════════
+const NATIONAL_PARAMS = {
+  tope_afp_uf: 84.3,
+  tope_salud_uf: 84.3,
+  tope_afc_uf: 126.6,
+  sis_pct: 1.49,
+  sueldo_minimo: 529000,
+  afp_cotizacion_pct: 10.0,
+  salud_legal_pct: 7.0,
+  afc_indef_trab: 0.6,
+  afc_indef_emp: 2.4,
+  afc_fijo_emp: 3.0,
+  asig_tramo_a: 21243,
+  asig_tramo_b: 14516,
+  asig_tramo_c: 4590,
+};
 
 export default function SettingsClient({ organizationId, initialSettings }: { organizationId: string, initialSettings: any }) {
   const [loading, setLoading] = useState(false);
@@ -35,16 +53,6 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
     organization_id: organizationId,
     afp_configs: [],
     health_configs: [],
-    uf_tope_afp: 87.8,
-    uf_tope_salud: 83.3,
-    sueldo_minimo: 529000,
-    limite_asignacion_familiar: 1000000,
-    asignacion_tramo_a: 13596,
-    asignacion_tramo_b: 8397,
-    asignacion_tramo_c: 2798,
-    afc_indefinido_trabajador_pct: 0.6,
-    afc_indefinido_empresa_pct: 2.4,
-    afc_fijo_empresa_pct: 3.0,
     mutual_code: 'ACHS',
     caja_compensacion_code: '',
     rep_legal_nombre: '',
@@ -60,16 +68,6 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
         organization_id: organizationId,
         afp_configs: [],
         health_configs: [],
-        uf_tope_afp: 87.8,
-        uf_tope_salud: 83.3,
-        sueldo_minimo: 529000,
-        limite_asignacion_familiar: 1000000,
-        asignacion_tramo_a: 13596,
-        asignacion_tramo_b: 8397,
-        asignacion_tramo_c: 2798,
-        afc_indefinido_trabajador_pct: 0.6,
-        afc_indefinido_empresa_pct: 2.4,
-        afc_fijo_empresa_pct: 3.0,
         mutual_code: 'ACHS',
         caja_compensacion_code: '',
         rep_legal_nombre: '',
@@ -96,44 +94,6 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLoadDefaults2025 = () => {
-    toast.info("Inyectando parámetros legales Previred 2025...", {
-        icon: <Zap className="w-5 h-5 text-blue-500" />
-    });
-    setForm({
-      ...form,
-      uf_tope_afp: 87.8,
-      uf_tope_salud: 131.4,
-      sueldo_minimo: 529000,
-      limite_asignacion_familiar: 1335433,
-      asignacion_tramo_a: 21243,
-      asignacion_tramo_b: 14516,
-      asignacion_tramo_c: 4590,
-      afc_indefinido_trabajador_pct: 0.6,
-      afc_indefinido_empresa_pct: 2.4,
-      afc_fijo_empresa_pct: 3.0,
-      afp_configs: [
-        { name: "CAPITAL", code: "CAPITAL", commission_pct: 1.44, sis_pct: 1.49, active: true },
-        { name: "CUPRUM", code: "CUPRUM", commission_pct: 1.44, sis_pct: 1.49, active: true },
-        { name: "HABITAT", code: "HABITAT", commission_pct: 1.27, sis_pct: 1.49, active: true },
-        { name: "PLANVITAL", code: "PLANVITAL", commission_pct: 1.16, sis_pct: 1.49, active: true },
-        { name: "PROVIDA", code: "PROVIDA", commission_pct: 1.45, sis_pct: 1.49, active: true },
-        { name: "MODELO", code: "MODELO", commission_pct: 0.58, sis_pct: 1.49, active: true },
-        { name: "UNO", code: "UNO", commission_pct: 0.69, sis_pct: 1.49, active: true }
-      ],
-      health_configs: [
-        { name: "FONASA", code: "FONASA", plan_pct: 7.0, active: true },
-        { name: "CONSALUD", code: "CONSALUD", plan_pct: 7.0, active: true },
-        { name: "COLMENA", code: "COLMENA", plan_pct: 7.0, active: true },
-        { name: "CRUZ BLANCA", code: "CRUZ_BLANCA", plan_pct: 7.0, active: true },
-        { name: "BANMEDICA", code: "BANMEDICA", plan_pct: 7.0, active: true },
-        { name: "VIDA TRES", code: "VIDA_TRES", plan_pct: 7.0, active: true },
-        { name: "NUEVA MASVIDA", code: "NUEVA_MASVIDA", plan_pct: 7.0, active: true }
-      ]
-    });
-    toast.success("Parámetros 2025 inyectados. ¡Sincronice para persistir!");
   };
 
   const addAfp = () => {
@@ -165,66 +125,53 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
         <div className="p-6 bg-blue-50/50 border-2 border-blue-100 rounded-[2rem] flex items-center gap-4 shadow-xl shadow-blue-500/5 max-w-2xl">
             <Info className="h-6 w-6 text-blue-600 shrink-0" />
             <p className="text-[11px] font-black uppercase tracking-tight text-blue-900 italic opacity-70">
-                Asegure que los parámetros coincidan con los publicados por Previred para el mes de proceso. 
-                Los cambios afectan retroactivamente a las liquidaciones no cerradas.
+                Los parámetros legales nacionales (topes, SIS, sueldo mínimo) se aplican automáticamente 
+                por el motor de cálculo. Esta página configura solo lo exclusivo de su empresa.
             </p>
         </div>
-        <div className="flex gap-4 w-full md:w-auto">
-            <Button 
-                onClick={handleLoadDefaults2025} 
-                variant="outline" 
-                className="flex-1 md:flex-none h-14 rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-black uppercase text-[10px] tracking-widest gap-3 shadow-lg shadow-emerald-500/5 transition-all"
-            >
-                <Zap className="h-4 w-4" /> AUTO-CONFIG 2025
-            </Button>
-            <Button 
-                onClick={handleSave} 
-                disabled={loading} 
-                className="flex-1 md:flex-none h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] px-10 shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all gap-3"
-            >
-                {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                SINCRONIZAR CAMBIOS
-            </Button>
-        </div>
+        <Button 
+            onClick={handleSave} 
+            disabled={loading} 
+            className="h-14 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] px-10 shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all gap-3"
+        >
+            {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            GUARDAR CONFIGURACIÓN
+        </Button>
       </div>
 
       <Tabs defaultValue="afp" className="w-full">
-        <TabsList className="bg-muted/10 p-2 h-auto rounded-[2rem] border border-border/50 grid grid-cols-2 md:grid-cols-5 gap-2 mb-10 overflow-hidden shadow-inner">
+        <TabsList className="bg-muted/10 p-2 h-auto rounded-[2rem] border border-border/50 grid grid-cols-2 md:grid-cols-4 gap-2 mb-10 overflow-hidden shadow-inner">
           <TabsTrigger value="afp" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
             <Building2 className="h-4 w-4 opacity-40" /> AFP
           </TabsTrigger>
           <TabsTrigger value="salud" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
             <Stethoscope className="h-4 w-4 opacity-40" /> SALUD
           </TabsTrigger>
-          <TabsTrigger value="topes" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
-            <ArrowUpCircle className="h-4 w-4 opacity-40" /> TOPES
-          </TabsTrigger>
-          <TabsTrigger value="asignaciones" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
-            <Users2 className="h-4 w-4 opacity-40" /> ASIG.
-          </TabsTrigger>
           <TabsTrigger value="empresa" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
             <ShieldCheck className="h-4 w-4 opacity-40" /> ENTIDAD
           </TabsTrigger>
+          <TabsTrigger value="autonomo" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
+            <Cpu className="h-4 w-4 opacity-40" /> AUTÓNOMO
+          </TabsTrigger>
         </TabsList>
 
-        {/* ===== CONTENIDO TABS ===== */}
-        
+        {/* ===== AFP ===== */}
         <TabsContent value="afp" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
           <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10">
             <CardHeader className="bg-muted/5 border-b border-border p-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="space-y-1">
                 <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Administradoras de Fondos (AFP)</CardTitle>
                 <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                    CONFIGURACIÓN DE COMISIONES Y TASAS SIS VIGENTES
+                    LISTADO DE AFPs HABILITADAS — COT. OBLIGATORIA: 10% + COMISIÓN | SIS: {NATIONAL_PARAMS.sis_pct}% (AUTÓNOMO)
                 </CardDescription>
               </div>
               <Button onClick={addAfp} variant="outline" className="h-12 px-6 rounded-xl border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 font-black uppercase text-[10px] tracking-widest gap-2">
-                <Plus className="h-4 w-4" /> AÑADIR ADMINISTRADORA
+                <Plus className="h-4 w-4" /> AÑADIR AFP
               </Button>
             </CardHeader>
             <CardContent className="p-10 space-y-6">
               {form.afp_configs.map((afp: any, idx: number) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:bg-white hover:border-primary/20 shadow-sm relative overflow-hidden">
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:bg-white hover:border-primary/20 shadow-sm relative overflow-hidden">
                   <div className="md:col-span-2 space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE DE INSTITUCIÓN</Label>
                     <Input 
@@ -244,24 +191,10 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                       type="number" 
                       step="0.01" 
                       value={afp.commission_pct} 
-                      className="h-12 bg-white border-border rounded-xl font-black text-xs' focus:ring-primary/20 shadow-sm"
+                      className="h-12 bg-white border-border rounded-xl font-black text-xs focus:ring-primary/20 shadow-sm"
                       onChange={(e) => {
                         const next = [...form.afp_configs];
                         next[idx].commission_pct = parseFloat(e.target.value);
-                        setForm({...form, afp_configs: next});
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">SIS (%)</Label>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      value={afp.sis_pct} 
-                      className="h-12 bg-white border-border rounded-xl font-black text-xs focus:ring-primary/20 shadow-sm text-primary"
-                      onChange={(e) => {
-                        const next = [...form.afp_configs];
-                        next[idx].sis_pct = parseFloat(e.target.value);
                         setForm({...form, afp_configs: next});
                       }}
                     />
@@ -283,20 +216,21 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                   <div className="bg-muted/20 p-6 rounded-full inline-block mb-4">
                     <AlertTriangle className="w-12 h-12 text-muted-foreground/20" />
                   </div>
-                  <p className="font-black uppercase text-sm tracking-[0.2em] opacity-40 italic italic">Sin administradoras configuradas.</p>
+                  <p className="font-black uppercase text-sm tracking-[0.2em] opacity-40 italic">Sin administradoras configuradas.</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ===== SALUD ===== */}
         <TabsContent value="salud" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
           <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500/10 transition-all">
             <CardHeader className="bg-muted/5 border-b border-border p-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="space-y-1">
                 <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Instituciones de Salud</CardTitle>
                 <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                    CONGIGURACIÓN DE FONASA E ISAPRES REGULADAS
+                    FONASA E ISAPRES HABILITADAS — COTIZACIÓN LEGAL: {NATIONAL_PARAMS.salud_legal_pct}% (AUTÓNOMO)
                 </CardDescription>
               </div>
               <Button onClick={addHealth} variant="outline" className="h-12 px-6 rounded-xl border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-black uppercase text-[10px] tracking-widest gap-2">
@@ -305,7 +239,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
             </CardHeader>
             <CardContent className="p-10 space-y-6">
               {form.health_configs.map((h: any, idx: number) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:border-blue-200 hover:bg-white shadow-sm">
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:border-blue-200 hover:bg-white shadow-sm">
                   <div className="md:col-span-2 space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE DE ENTIDAD SALUD</Label>
                     <Input 
@@ -316,20 +250,6 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                          const next = [...form.health_configs];
                          next[idx].name = e.target.value;
                          setForm({...form, health_configs: next});
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TASA LEGAL/PACTADA (%)</Label>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      value={h.plan_pct} 
-                      className="h-12 bg-white border-border rounded-xl font-black text-xs focus:ring-blue-200 shadow-sm text-blue-700"
-                      onChange={(e) => {
-                        const next = [...form.health_configs];
-                        next[idx].plan_pct = parseFloat(e.target.value);
-                        setForm({...form, health_configs: next});
                       }}
                     />
                   </div>
@@ -344,124 +264,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
           </Card>
         </TabsContent>
 
-        <TabsContent value="topes" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-purple-500/10">
-              <CardHeader className="bg-muted/5 border-b border-border p-10">
-                <CardTitle className="text-xl font-black text-foreground uppercase tracking-tight">Topes Imponibles (UF)</CardTitle>
-                <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                    BASES MÁXIMAS PARA COTIZACIONES PREVISIONALES
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-10 space-y-8">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TOPE AFP / SALUD (UF)</Label>
-                  <Input 
-                    type="number" 
-                    step="0.1" 
-                    value={form.uf_tope_afp} 
-                    className="h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-purple-200 shadow-sm px-6"
-                    onChange={(e) => setForm({...form, uf_tope_afp: parseFloat(e.target.value)})}
-                  />
-                  <p className="text-[10px] text-muted-foreground italic ml-1">Actualizado anualmente por la Superintendencia.</p>
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TOPE SEGURO CESANTÍA (UF)</Label>
-                  <Input 
-                    type="number" 
-                    step="0.1" 
-                    value={form.uf_tope_salud} 
-                    className="h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-purple-200 shadow-sm px-6"
-                    onChange={(e) => setForm({...form, uf_tope_salud: parseFloat(e.target.value)})}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500/10">
-              <CardHeader className="bg-muted/5 border-b border-border p-10">
-                <CardTitle className="text-xl font-black text-foreground uppercase tracking-tight flex items-center gap-3">
-                    <DollarSign className="w-5 h-5 text-emerald-600" /> Rentas Mínimas
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                    SUELDOS MÍNIMOS Y LÍMITES FISCALES VIGENTES
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-10 space-y-8">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">SUELDO MÍNIMO MENSUAL (CLP)</Label>
-                  <Input 
-                    type="number" 
-                    value={form.sueldo_minimo} 
-                    className="h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-emerald-200 shadow-sm px-6 text-emerald-700"
-                    onChange={(e) => setForm({...form, sueldo_minimo: parseInt(e.target.value)})}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">LÍMITE ASIG. FAMILIAR (CLP)</Label>
-                  <Input 
-                    type="number" 
-                    value={form.limite_asignacion_familiar} 
-                    className="h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-emerald-200 shadow-sm px-6"
-                    onChange={(e) => setForm({...form, limite_asignacion_familiar: parseInt(e.target.value)})}
-                  />
-                  <p className="text-[10px] text-muted-foreground italic ml-1">Tope mensual para el derecho a tramos de asignación.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="asignaciones" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
-          <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-amber-500/10">
-            <CardHeader className="bg-muted/5 border-b border-border p-10">
-              <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Tramos de Asignación Familiar</CardTitle>
-              <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                  MONTOS A PAGAR POR CARGA SEGÚN ESCALA SALARIAL FISCAL
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                <div className="space-y-4 p-8 bg-amber-50/50 rounded-3xl border-2 border-amber-100 shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-amber-900">TRAMO A</Label>
-                    <span className="text-[10px] font-bold text-amber-600 bg-white px-3 py-1 rounded-full border border-amber-100 italic">Rentas bajas</span>
-                  </div>
-                  <Input 
-                    type="number" 
-                    value={form.asignacion_tramo_a} 
-                    className="h-14 bg-white border-amber-200 rounded-2xl font-black text-xl text-center focus:ring-amber-200 shadow-sm"
-                    onChange={(e) => setForm({...form, asignacion_tramo_a: parseInt(e.target.value)})}
-                  />
-                </div>
-                <div className="space-y-4 p-8 bg-slate-50 rounded-3xl border-2 border-border shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">TRAMO B</Label>
-                    <span className="text-[10px] font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-border italic">Rentas medias</span>
-                  </div>
-                  <Input 
-                    type="number" 
-                    value={form.asignacion_tramo_b} 
-                    className="h-14 bg-white border-border rounded-2xl font-black text-xl text-center focus:ring-primary/20 shadow-sm"
-                    onChange={(e) => setForm({...form, asignacion_tramo_b: parseInt(e.target.value)})}
-                  />
-                </div>
-                <div className="space-y-4 p-8 bg-rose-50/50 rounded-3xl border-2 border-rose-100 shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-rose-900">TRAMO C</Label>
-                    <span className="text-[10px] font-bold text-rose-600 bg-white px-3 py-1 rounded-full border border-rose-100 italic">Rentas altas</span>
-                  </div>
-                  <Input 
-                    type="number" 
-                    value={form.asignacion_tramo_c} 
-                    className="h-14 bg-white border-rose-200 rounded-2xl font-black text-xl text-center focus:ring-rose-200 shadow-sm"
-                    onChange={(e) => setForm({...form, asignacion_tramo_c: parseInt(e.target.value)})}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
+        {/* ===== EMPRESA ===== */}
         <TabsContent value="empresa" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 transition-all">
@@ -539,6 +342,113 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* ===== PARÁMETROS AUTÓNOMOS (Solo Lectura) ===== */}
+        <TabsContent value="autonomo" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
+          <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500/10">
+            <CardHeader className="bg-muted/5 border-b border-border p-10">
+              <div className="space-y-2">
+                <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight flex items-center gap-3">
+                  <Cpu className="w-6 h-6 text-emerald-600" /> 
+                  Motor Autónomo — Parámetros Nacionales
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
+                    ESTOS VALORES SON APLICADOS AUTOMÁTICAMENTE POR EL MOTOR DE CÁLCULO. NO REQUIEREN INTERVENCIÓN.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Topes Imponibles */}
+                <div className="space-y-6 p-8 bg-emerald-50/50 rounded-3xl border-2 border-emerald-100">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800 flex items-center gap-2">
+                    <Lock className="h-3 w-3" /> Topes Imponibles (UF)
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">AFP / Salud</span>
+                      <span className="text-sm font-black text-emerald-700">{NATIONAL_PARAMS.tope_afp_uf} UF</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Seg. Cesantía</span>
+                      <span className="text-sm font-black text-emerald-700">{NATIONAL_PARAMS.tope_afc_uf} UF</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tasas Legales */}
+                <div className="space-y-6 p-8 bg-blue-50/50 rounded-3xl border-2 border-blue-100">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-800 flex items-center gap-2">
+                    <Lock className="h-3 w-3" /> Tasas Legales (%)
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">AFP Obligatorio</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.afp_cotizacion_pct}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Salud Legal</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.salud_legal_pct}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">SIS (Empresa)</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.sis_pct}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">AFC Trabajador (Indef.)</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.afc_indef_trab}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">AFC Empresa (Indef.)</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.afc_indef_emp}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">AFC Empresa (Fijo)</span>
+                      <span className="text-sm font-black text-blue-700">{NATIONAL_PARAMS.afc_fijo_emp}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Asignaciones y Mínimos */}
+                <div className="space-y-6 p-8 bg-amber-50/50 rounded-3xl border-2 border-amber-100">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-800 flex items-center gap-2">
+                    <Lock className="h-3 w-3" /> Mínimos y Asignaciones
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Sueldo Mínimo</span>
+                      <span className="text-sm font-black text-amber-700">${NATIONAL_PARAMS.sueldo_minimo.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Asig. Tramo A</span>
+                      <span className="text-sm font-black text-amber-700">${NATIONAL_PARAMS.asig_tramo_a.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Asig. Tramo B</span>
+                      <span className="text-sm font-black text-amber-700">${NATIONAL_PARAMS.asig_tramo_b.toLocaleString("es-CL")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Asig. Tramo C</span>
+                      <span className="text-sm font-black text-amber-700">${NATIONAL_PARAMS.asig_tramo_c.toLocaleString("es-CL")}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 p-6 bg-muted/10 rounded-2xl border border-border/50 flex items-start gap-4">
+                <Cpu className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Motor de Cálculo Autónomo</p>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Estos valores están codificados en <code className="bg-muted/30 px-1.5 py-0.5 rounded text-[9px] font-mono">national_params.py</code> y 
+                    se aplican automáticamente a cada liquidación. Para actualizar (ej: cambio de sueldo mínimo), 
+                    contacte al administrador del sistema. La UF y UTM se obtienen dinámicamente de los indicadores económicos.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

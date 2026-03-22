@@ -44,10 +44,10 @@ def calculate_years_of_service(start_date: date, end_date: date):
     }
 
 def calculate_proportional_holidays_precise(start_date: date, end_date: date):
+    # Fórmula estricta de vacaciones proporcionales DT (Días corridos * (1.25/30))
     delta = end_date - start_date
     total_days = delta.days + 1
-    months = total_days / 30.41
-    proportional_days = months * 1.25
+    proportional_days = (total_days / 30.0) * 1.25
     return round(proportional_days, 2)
 
 @router.post("/calculate")
@@ -60,7 +60,16 @@ async def calculate_termination(req: TerminationRequest):
             raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
         fecha_ingreso = date.fromisoformat(emp["fecha_ingreso"])
-        sueldo_base = emp["sueldo_base"]
+        
+        # Base de Cálculo Finiquito (Art. 172 CT):
+        # Sueldo Base + Gratificación + Colación + Movilización (Valores Fijos y Constantes)
+        base_calculo = emp.get("sueldo_base", 0) + emp.get("asignacion_colacion", 0) + emp.get("asignacion_movilizacion", 0)
+        if emp.get("gratificacion_legal", True):
+            # Asumimos el tope de ~200.000 como referencia base si no hay DB
+            base_calculo += min(int(emp.get("sueldo_base", 0) * 0.25), 209000)
+            
+        # El sueldo diario para vacaciones usa solo Sueldo Base (Art. 71)
+        sueldo_base = emp.get("sueldo_base", 0)
         
         uf_value = 37000 
         try:
@@ -107,14 +116,16 @@ async def calculate_termination(req: TerminationRequest):
         
         monto_anos_servicio = 0
         if requires_severance and severance_calculation_type == "years_service":
-            monto_anos_servicio = sueldo_base * time_stats["severance_years"]
-            tope_330_uf = int(uf_value * 330)
-            if monto_anos_servicio > tope_330_uf:
-                monto_anos_servicio = tope_330_uf
+            # TOPE LEGAL ART 172: El tope mensual para indemnizaciones es 90 UF
+            tope_90_uf = int(uf_value * 90)
+            base_indemnizacion = min(base_calculo, tope_90_uf)
+            monto_anos_servicio = base_indemnizacion * time_stats["severance_years"]
 
         monto_mes_aviso = 0
         if requires_notice and not req.aviso_previo:
-            monto_mes_aviso = sueldo_base
+            tope_90_uf_aviso = int(uf_value * 90)
+            base_aviso = min(base_calculo, tope_90_uf_aviso)
+            monto_mes_aviso = base_aviso
 
         total_compensations = pending_salary_amount + monto_vacaciones + monto_anos_servicio + monto_mes_aviso + req.pending_overtime_amount + req.other_bonuses
         
@@ -136,7 +147,7 @@ async def calculate_termination(req: TerminationRequest):
             "proportional_vacation_days": float(proportional_days),
             "proportional_vacation_amount": int(monto_vacaciones),
             "severance_years_service": float(time_stats["severance_years"]),
-            "severance_monthly_salary": int(sueldo_base),
+            "severance_monthly_salary": int(min(base_calculo, int(uf_value * 90))),
             "notice_indemnification_amount": int(monto_mes_aviso),
             "pending_overtime_amount": req.pending_overtime_amount,
             "other_bonuses_amount": req.other_bonuses,
@@ -351,12 +362,14 @@ async def download_docx(termination_id: str, doc_type: str):
             
             doc.add_paragraph("\nSin otro particular, saluda atentamente a Ud.\n\n")
             
-            # Firma
-            firma = doc.add_paragraph()
-            firma.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            firma.add_run("__________________________\n").bold = True
-            firma.add_run("FIRMA EMPLEADOR\n")
-            firma.add_run(f"{org.get('nombre', 'CONTAPYME V2')}")
+            # Pie de página Premium
+            doc.add_paragraph("\n")
+            footer_p = doc.add_paragraph()
+            footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = footer_p.add_run(f"Documento generado por el sistema de gestión laboral Contapymepuq\n{org.get('nombre', 'Empresa')} — {org.get('comuna', 'Punta Arenas')}")
+            run.font.size = Pt(8)
+            run.italic = True
+            run.font.color.rgb = RGBColor(128, 128, 128) # Gris profesional
 
         elif doc_type == "finiquito":
             title = doc.add_paragraph()
@@ -414,6 +427,15 @@ async def download_docx(termination_id: str, doc_type: str):
             f2.alignment = WD_ALIGN_PARAGRAPH.CENTER
             f2.add_run("__________________________\nFIRMA EMPLEADOR\n").bold = True
             f2.add_run(f"{org.get('nombre', '---')}")
+
+            # Pie de página Premium
+            doc.add_paragraph("\n\n")
+            footer_p = doc.add_paragraph()
+            footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = footer_p.add_run(f"Documento generado por el sistema de gestión laboral Contapymepuq\n{org.get('nombre', 'Empresa')} — {org.get('comuna', 'Punta Arenas')}")
+            run.font.size = Pt(8)
+            run.italic = True
+            run.font.color.rgb = RGBColor(128, 128, 128) # Gris profesional
 
         # Guardar en archivo temporal
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")

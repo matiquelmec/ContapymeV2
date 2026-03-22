@@ -16,8 +16,11 @@ import {
   ShieldAlert,
   Gavel,
   FileWarning,
-  FileDown
+  FileDown,
+  AlertTriangle,
+  ArrowRight
 } from 'lucide-react'
+import Link from 'next/link'
 import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction, downloadTerminationDocAction } from '@/actions/terminations'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -47,13 +50,16 @@ function formatDate(date: string) {
 export default function TerminationsClient({ 
   terminations, 
   employees,
-  organizationId
+  organizationId,
+  settings
 }: { 
   terminations: any[], 
   employees: any[],
-  organizationId: string
+  organizationId: string,
+  settings: any
 }) {
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null)
+  const hasLegalRep = settings?.rep_legal_nombre && settings?.rep_legal_rut;
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerLoading, setViewerLoading] = useState(false)
@@ -165,6 +171,31 @@ export default function TerminationsClient({
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700 outline-none">
+      {!hasLegalRep && (
+        <Card className="border-amber-200 bg-amber-50/50 rounded-3xl shadow-xl shadow-amber-500/5 animate-pulse">
+          <CardContent className="p-8">
+            <div className="flex items-start gap-6">
+              <div className="p-4 bg-amber-100 rounded-2xl border border-amber-200 shadow-sm">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <h3 className="font-black text-amber-900 uppercase text-xs tracking-widest">Configuración Institucional Requerida</h3>
+                <p className="text-sm text-amber-700 font-medium italic">
+                  No se ha detectado un <strong>Representante Legal</strong> activo. 
+                  La validez jurídica de los finiquitos y cartas de aviso requiere completar este registro.
+                </p>
+                <div className="pt-3">
+                  <a href="/dashboard/payroll/settings">
+                    <Button variant="outline" size="sm" className="bg-white border-amber-300 text-amber-700 hover:bg-amber-100 font-black uppercase text-[10px] tracking-widest rounded-xl px-6 h-10 shadow-sm transition-all hover:scale-105 active:scale-95">
+                      Configurar Entidad <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {/* ===== PANEL DE ACCIONES ===== */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">

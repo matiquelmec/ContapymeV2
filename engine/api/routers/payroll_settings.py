@@ -5,39 +5,53 @@ from core.database import get_supabase
 
 router = APIRouter()
 
-# ─── Defaults Previred Agosto 2025 ────────────────────────────────────────────
+# ─── Defaults Previred 2025/2026 (Verificados con Previred.com) ───────────────
+# NOTA: El SIS (Seguro de Invalidez y Sobrevivencia) es una tasa ÚNICA licitada
+# por periodo. Desde julio 2024 la tasa vigente es 1.49% para todas las AFP.
+# Las comisiones son variables por AFP y se actualizan mensualmente.
 DEFAULT_AFP_CONFIGS = [
-    {"name": "AFP Capital",   "code": "CAPITAL",  "commission_pct": 1.44, "sis_pct": 1.88, "active": True},
-    {"name": "AFP Cuprum",    "code": "CUPRUM",   "commission_pct": 1.44, "sis_pct": 1.88, "active": True},
-    {"name": "AFP Hábitat",   "code": "HABITAT",  "commission_pct": 1.27, "sis_pct": 1.88, "active": True},
-    {"name": "AFP PlanVital", "code": "PLANVITAL","commission_pct": 1.16, "sis_pct": 1.88, "active": True},
-    {"name": "AFP ProVida",   "code": "PROVIDA",  "commission_pct": 1.45, "sis_pct": 1.88, "active": True},
-    {"name": "AFP Modelo",    "code": "MODELO",   "commission_pct": 0.58, "sis_pct": 1.88, "active": True},
-    {"name": "AFP Uno",       "code": "UNO",      "commission_pct": 0.49, "sis_pct": 1.88, "active": True},
+    {"name": "AFP Capital",   "code": "CAPITAL",   "commission_pct": 1.44, "sis_pct": 1.49, "active": True},
+    {"name": "AFP Cuprum",    "code": "CUPRUM",    "commission_pct": 1.44, "sis_pct": 1.49, "active": True},
+    {"name": "AFP Hábitat",   "code": "HABITAT",   "commission_pct": 1.27, "sis_pct": 1.49, "active": True},
+    {"name": "AFP PlanVital", "code": "PLANVITAL", "commission_pct": 1.16, "sis_pct": 1.49, "active": True},
+    {"name": "AFP ProVida",   "code": "PROVIDA",   "commission_pct": 1.45, "sis_pct": 1.49, "active": True},
+    {"name": "AFP Modelo",    "code": "MODELO",    "commission_pct": 0.58, "sis_pct": 1.49, "active": True},
+    {"name": "AFP Uno",       "code": "UNO",       "commission_pct": 0.69, "sis_pct": 1.49, "active": True},
 ]
 
+# NOTA: En Chile, la cotización LEGAL de salud es siempre 7%.
+# Las Isapres cobran un plan en UF ADICIONAL al 7%, pero para efectos
+# del motor de cálculo, el descuento mínimo obligatorio es 7%.
+# El plan pactado (en UF) se maneja a nivel de ficha del empleado.
 DEFAULT_HEALTH_CONFIGS = [
-    {"name": "FONASA",               "code": "FONASA",    "plan_pct": 7.0,  "active": True},
-    {"name": "Banmédica",            "code": "BANMEDICA", "plan_pct": 8.5,  "active": True},
-    {"name": "Consalud",             "code": "CONSALUD",  "plan_pct": 8.2,  "active": True},
-    {"name": "Cruz Blanca",          "code": "CRUZBLANCA","plan_pct": 8.8,  "active": True},
-    {"name": "Vida Tres",            "code": "VIDATRES",  "plan_pct": 8.3,  "active": True},
-    {"name": "Colmena Golden Cross", "code": "COLMENA",   "plan_pct": 8.6,  "active": True},
+    {"name": "FONASA",         "code": "FONASA",        "plan_pct": 7.0,  "active": True},
+    {"name": "Banmédica",      "code": "BANMEDICA",     "plan_pct": 7.0,  "active": True},
+    {"name": "Consalud",       "code": "CONSALUD",      "plan_pct": 7.0,  "active": True},
+    {"name": "Cruz Blanca",    "code": "CRUZBLANCA",    "plan_pct": 7.0,  "active": True},
+    {"name": "Vida Tres",      "code": "VIDATRES",      "plan_pct": 7.0,  "active": True},
+    {"name": "Colmena",        "code": "COLMENA",       "plan_pct": 7.0,  "active": True},
+    {"name": "Nueva Masvida",  "code": "NUEVA_MASVIDA", "plan_pct": 7.0,  "active": True},
 ]
 
 DEFAULT_SETTINGS = {
     "afp_configs": DEFAULT_AFP_CONFIGS,
     "health_configs": DEFAULT_HEALTH_CONFIGS,
-    "uf_tope_afp": 87.8,
-    "uf_tope_salud": 83.3,
+    # Topes Imponibles (Fuente: Superintendencia de Pensiones, vigente 2025)
+    "uf_tope_afp": 84.3,              # UF — Tope imponible AFP y Salud
+    "uf_tope_salud": 84.3,            # UF — Mismo tope para salud (DL 3500)
+    "uf_tope_afc": 126.6,             # UF — Tope Seguro de Cesantía (Ley 19.728)
+    # Sueldo Mínimo (Ley vigente)
     "sueldo_minimo": 529000,
-    "limite_asignacion_familiar": 1000000,
-    "asignacion_tramo_a": 13596,
-    "asignacion_tramo_b": 8397,
-    "asignacion_tramo_c": 2798,
+    # Asignación Familiar (Montos por carga, vigentes 2025)
+    "limite_asignacion_familiar": 1335433,
+    "asignacion_tramo_a": 21243,
+    "asignacion_tramo_b": 14516,
+    "asignacion_tramo_c": 4590,
+    # AFC — Seguro de Cesantía (Ley 19.728)
     "afc_indefinido_trabajador_pct": 0.6,
     "afc_indefinido_empresa_pct": 2.4,
     "afc_fijo_empresa_pct": 3.0,
+    # Entidad
     "mutual_code": "ACHS",
     "caja_compensacion_code": "",
     "rep_legal_nombre": "",

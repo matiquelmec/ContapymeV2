@@ -19,6 +19,21 @@ AFP_CODES = {
     'UNO': '35'
 }
 
+# Códigos Vigentes de Instituciones de Salud (Isapres Previred)
+ISAPRE_CODES = {
+    'BANMEDICA': '99',
+    'CHUQUICAMATA': '63',
+    'COLMENA': '67',
+    'CONSALUD': '71',
+    'CRUZBLANCA': '78',
+    'FUSAT': '80',
+    'MASVIDA': '88',
+    'NUEVA MASVIDA': '88',
+    'VIDATRES': '81',
+    'ESENCIAL': '108',
+    'FUNDACION': '62'
+}
+
 def clean_text(text: str) -> str:
     """Elimina acentos y caracteres especiales para cumplir con validador Previred."""
     if not text: return ""
@@ -150,22 +165,34 @@ async def export_previred(organization_id: str, periodo: str):
             fields[28] = str(int(liq.get('sis_empresa', 0) or liq.get('seguro_invalidez', 0))) # Campo 29
             fields[30] = str(int(liq.get('afp_comision', 0))) # Campo 31: Comisión AFP
 
-            # 62-74: Salud
+            # 62-81: Instituciones de Salud (Isapre / Fonasa)
             salud_nom = (emp.get('prevision_salud') or "FONASA").upper()
             is_fonasa = "FONASA" in salud_nom
             
             if is_fonasa:
-                fields[74] = "7" 
+                fields[74] = "7" # Tasa Fonasa
                 fields[63] = str(imponible_salud)
                 fields[69] = str(int(liq.get('salud', 0))) 
             else:
-                # Isapre (Asumimos código 1 por ahora, el resto ceros)
-                fields[74] = "1" 
-                fields[79] = str(int(liq.get('salud', 0))) 
+                # Isapre Map Oficial Previred
+                isapre_code = ISAPRE_CODES.get(salud_nom, "99") # Default Banmedica
+                plan_uf = float(emp.get('plan_salud_uf', 0) or liq.get('calculo_snapshot', {}).get('plan_salud_uf', 0))
+                
+                fields[62] = isapre_code                  # Campo 63: Código Institución Salud
+                fields[64] = str(imponible_salud)         # Campo 65: Renta Imponible Salud
+                fields[65] = "2" if plan_uf > 0 else "1"  # Campo 66: Moneda (2=UF, 1=Pesos)
+                
+                # Formato pactado a 2 o 4 decimales según Previred, sin punto
+                pactado = f"{plan_uf:06.4f}".replace(".", "") if plan_uf > 0 else str(int(liq.get('salud', 0)))
+                fields[66] = pactado                      # Campo 67: Cotización Pactada
+                
+                fields[67] = str(int(liq.get('salud', 0)))               # Campo 68: Cotización Obligatoria Legal (7%)
+                fields[68] = str(int(liq.get('salud_voluntaria', 0)))    # Campo 69: Cotización Adicional Voluntaria
+                fields[69] = str(int(liq.get('salud_total', 0)))         # Campo 70: Monto Total Paztado (Obl+Vol)
 
             # 83-93: CCAF (Caja de Compensación)
             fields[82] = ccaf_code
-            fields[89] = fields[69] if is_fonasa else "0" # Salud vía CCAF
+            fields[89] = fields[69] if is_fonasa else "0" # Salud vía CCAF (Solo Fonasa retiene a través de Caja)
 
             # 94-96: Mutualidad
             fields[93] = str(int(imponible * 0.0095)) # Campo 94: Ley de Accidentes (~0.95%)

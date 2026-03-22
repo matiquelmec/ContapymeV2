@@ -43,6 +43,13 @@ export default async function TerminationsPage() {
     .select('id, nombres, apellido_paterno, rut')
     .eq('organization_id', orgId)
 
+  // Fetch settings for institutional consistency
+  const { data: settings } = await supabase
+    .from('organization_payroll_settings')
+    .select('*')
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
   return (
     <div className="space-y-10 animate-in fade-in zoom-in duration-700">
       {/* ===== CABECERA PREMIUM ===== */}
@@ -62,6 +69,7 @@ export default async function TerminationsPage() {
         terminations={terminations || []} 
         employees={employees || []} 
         organizationId={orgId}
+        settings={settings}
       />
     </div>
   );

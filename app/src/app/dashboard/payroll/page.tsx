@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 
 import { CreateEmployeeButton } from './create-employee-button'
 import { ProcessPayrollButton } from './process-payroll-button'
+import { CentralizePayrollButton } from './centralize-payroll-button'
 import { GenerateContractButton } from './generate-contract-button'
 import { ExportPreviredButton } from './export-previred-button'
 import { TerminateEmployeeButton } from './terminate-button'
@@ -109,6 +110,7 @@ export default async function PayrollPage({
           />
           <CreateEmployeeButton />
           <ProcessPayrollButton />
+          <CentralizePayrollButton />
         </div>
       </div>
 

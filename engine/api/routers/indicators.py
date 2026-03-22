@@ -42,29 +42,34 @@ async def update_indicators():
                 resp.raise_for_status()
                 data = resp.json()
 
-                # El valor del día es el primero del array "serie"
+                # En lugar de solo el último, enviamos como una serie temporal
                 serie = data.get("serie", [])
                 if not serie:
                     errores.append(f"{codigo}: sin datos")
                     continue
 
-                valor = serie[0].get("valor", 0)
-                fecha_valor = serie[0].get("fecha", hoy)[:10]  # Solo YYYY-MM-DD
+                # Procesamos los últimos 31 días (un mes completo) para robustecer el histórico
+                batch = []
+                for entry in serie[:31]:
+                    valor = entry.get("valor", 0)
+                    fecha_valor = entry.get("fecha")[:10]  # YYYY-MM-DD
+                    
+                    batch.append({
+                        "codigo": codigo,
+                        "nombre": nombre,
+                        "valor": float(valor),
+                        "fecha": fecha_valor,
+                        "fuente": "mindicador.cl",
+                        "updated_at": "now()"
+                    })
 
-                # Upsert en Supabase (actualiza si ya existe el código)
-                db.table("economic_indicators").upsert({
-                    "codigo": codigo,
-                    "nombre": nombre,
-                    "valor": float(valor),
-                    "fecha": fecha_valor,
-                    "fuente": "mindicador.cl",
-                    "updated_at": "now()"
-                }, on_conflict="codigo").execute()
+                # Upsert masivo basado en la nueva restricción única (codigo, fecha)
+                db.table("economic_indicators").upsert(batch, on_conflict="codigo, fecha").execute()
 
                 actualizados.append({
                     "codigo": codigo,
-                    "valor": valor,
-                    "fecha": fecha_valor
+                    "nombre": nombre,
+                    "registros": len(batch)
                 })
 
             except Exception as e:

@@ -235,6 +235,7 @@ Puesta en marcha productiva de alto estrés.
 - [ ] Automatizar Worker de Indicadores con cron en producción.
 - [x] **Hardening Maestro (Sincro Total) 🛡️**: Aislamiento total de multitenencia en BD sincronizado con `master_snapshot_20260322.sql`.
 - [x] **Adopción Estética Luxury ERP 🏛️**: Refactorización de componentes críticos (Finiquitos, Payroll) hacia un diseño de alta gama.
+- [x] **Centralización de Nómina IFRS 🤖**: Inyección automática y dinámica del árbol de cuentas completo de RRHH en BD, garantizando cuadratura perfecta por empresa con idempotencia estructurada.
 - [ ] Roles granulares: owner / accountant / viewer con permisos diferenciados.
 - [ ] Módulo de Auditoría y Logs: Registro de acciones críticas.
 - [ ] Stress-Test y validaciones unitarias (pytest + Vitest).

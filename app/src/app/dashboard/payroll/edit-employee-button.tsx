@@ -68,6 +68,8 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
   const [colacion, setColacion] = useState(employee.asignacion_colacion?.toString() || "0")
   const [movilizacion, setMovilizacion] = useState(employee.asignacion_movilizacion?.toString() || "0")
   const [bonoFijo, setBonoFijo] = useState(employee.bono_fijo?.toString() || "0")
+  const [saludSeleccionada, setSaludSeleccionada] = useState(employee.prevision_salud || "Fonasa")
+  const [planSaludUf, setPlanSaludUf] = useState(employee.plan_salud_uf?.toString() || "0")
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -261,7 +263,11 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                          </div>
                          <div className="space-y-2">
                             <Label className="text-[10px] font-black text-slate-400 uppercase">Salud</Label>
-                            <Select name="prevision_salud" defaultValue={employee.prevision_salud || "Fonasa"}>
+                            <Select 
+                              name="prevision_salud" 
+                              defaultValue={saludSeleccionada}
+                              onValueChange={(val) => setSaludSeleccionada(val)}
+                            >
                                <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]">
                                 <SelectValue />
                               </SelectTrigger>
@@ -269,9 +275,35 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                                 <SelectItem value="Fonasa">Fonasa</SelectItem>
                                 <SelectItem value="Consalud">Isapre Consalud</SelectItem>
                                 <SelectItem value="Colmena">Isapre Colmena</SelectItem>
+                                <SelectItem value="CruzBlanca">Isapre Cruz Blanca</SelectItem>
+                                <SelectItem value="Banmedica">Isapre Banmédica</SelectItem>
+                                <SelectItem value="VidaTres">Isapre Vida Tres</SelectItem>
+                                <SelectItem value="NuevaMasvida">Isapre Nueva Masvida</SelectItem>
                               </SelectContent>
                             </Select>
                          </div>
+                         {saludSeleccionada !== "Fonasa" && (
+                           <div className="space-y-2 p-4 bg-blue-50/80 rounded-2xl border-2 border-blue-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                             <Label className="text-[10px] font-black text-blue-700 uppercase flex items-center gap-2">
+                               <HeartPulse className="w-3 h-3" /> Plan Isapre (UF/mes)
+                             </Label>
+                             <Input 
+                               name="plan_salud_uf" 
+                               type="number" 
+                               step="0.01"
+                               value={planSaludUf} 
+                               onChange={(e) => setPlanSaludUf(e.target.value)}
+                               placeholder="Ej: 3.5" 
+                               className="h-12 rounded-xl font-black font-mono text-sm bg-white border-blue-200 focus:ring-blue-300 shadow-sm" 
+                             />
+                             <p className="text-[9px] text-blue-500 italic mt-1 ml-1">
+                               Valor del plan pactado con la Isapre. Si el 7% legal no lo cubre, la diferencia se descuenta automáticamente.
+                             </p>
+                           </div>
+                         )}
+                         {saludSeleccionada === "Fonasa" && (
+                           <input type="hidden" name="plan_salud_uf" value="0" />
+                         )}
                       </div>
                    </div>
                 </div>

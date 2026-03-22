@@ -36,17 +36,18 @@ class PayrollSettings:
     # AFP
     afp_tasa_cotizacion_pct: float = 10.0        # % obligatorio fondo (DL 3500)
     afp_comision_pct: float = 1.27               # % comisión afiliado (variable por AFP)
-    afp_sis_pct: float = 1.49                    # % SIS pagado por empresa (reforma 2008)
-    uf_tope_afp: float = 87.8                    # UF tope imponible AFP
+    afp_sis_pct: float = 1.49                    # % SIS pagado por empresa (licitación vigente)
+    uf_tope_afp: float = 84.3                    # UF tope imponible AFP (Sup. Pensiones 2025)
     # Salud
     salud_pct: float = 7.0                       # % salud obligatorio (FONASA base)
-    uf_tope_salud: float = 83.3                  # UF tope imponible salud
+    uf_tope_salud: float = 84.3                  # UF tope imponible salud (mismo que AFP)
     # AFC (Seguro Cesantía) — Ley 19.728
     afc_indefinido_trabajador_pct: float = 0.6   # % trabajador contrato indefinido
     afc_indefinido_empresa_pct: float = 2.4      # % empresa contrato indefinido
     afc_fijo_empresa_pct: float = 3.0            # % empresa contrato a plazo fijo
+    uf_tope_afc: float = 126.6                   # UF tope imponible AFC (Ley 19.728)
     # Legales
-    sueldo_minimo: int = 529_000                 # $CLP Agosto 2025
+    sueldo_minimo: int = 529_000                 # $CLP vigente 2025
     uf_valor: float = 38_000.0                   # Valor UF del día (se actualiza desde DB)
 
 
@@ -58,7 +59,8 @@ class EmployeeInput:
     afp_code: str = "HABITAT"
     afp_comision_pct: float = 1.27
     salud_code: str = "FONASA"
-    salud_pct: float = 7.0
+    salud_pct: float = 7.0                       # Piso legal obligatorio
+    plan_salud_uf: float = 0.0                   # Plan Isapre en UF (0 = FONASA, solo 7%)
     # Haberes adicionales
     gratificacion_legal: bool = True             # Si aplica gratificación art. 50 CT
     asignacion_movilizacion: int = 0
@@ -91,7 +93,9 @@ class LiquidacionResult:
     # ── Descuentos legales ─────────────────────────────────────────────────────
     afp: int = 0                                 # Cotización obligatoria AFP
     afp_comision: int = 0                        # Comisión AFP
-    salud: int = 0                               # Cotización salud
+    salud: int = 0                               # Cotización salud obligatoria (7%)
+    salud_voluntaria: int = 0                    # Cotización adicional Isapre (plan - 7%)
+    salud_total: int = 0                         # Total descuento salud real
     afc_trabajador: int = 0                      # Seguro Cesantía (trabajador)
     impuesto_unico: int = 0                      # IRPF Segunda Categoría
     total_descuentos_legales: int = 0
@@ -162,35 +166,32 @@ def calcular_impuesto_unico(renta_imponible: int, utm_valor: float) -> int:
 # 3. CALCULADORA DE HABERES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def calcular_gratificacion_legal(sueldo_base: int) -> int:
+def calcular_gratificacion_legal(sueldo_base: int, sueldo_minimo: int) -> int:
     """
-    Calcula la gratificación mensual según Art. 50 del Código del Trabajo.
-    
-    El empleador paga el 25% del sueldo base mensual como gratificación,
-    con tope de 4.75 IMM (Ingreso Mínimo Mensual) anuales = ~396.75 UF/año.
-    El tope mensual simple = (4.75 * IMM) / 12. Para 2025 con IMM=529.000:
-    tope_mensual = (4.75 * 529.000) / 12 ≈ 209.437 CLP/mes.
-    
-    Returns:
-        Gratificación en CLP, topada según ley.
+    Calcula la gratificación mensual dinámica según Art. 50 del Código del Trabajo.
+    Tope mensual = (4.75 * Ingreso Mínimo Mensual) / 12.
     """
-    TOPE_MENSUAL_2025 = 209_437  # (4.75 * 529.000) / 12
+    tope_mensual = int((4.75 * sueldo_minimo) / 12)
     gratif = int(sueldo_base * 0.25)
-    return min(gratif, TOPE_MENSUAL_2025)
+    return min(gratif, tope_mensual)
 
 
 def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 44) -> int:
     """
     Calcula el valor de horas extras (Art. 32 CT).
-    Fórmula estándar: (Sueldo / (Horas_Semanales * 4.3333)) * 1.5
+    Fórmula oficial Dirección del Trabajo: (Sueldo / 30) * 7 / Horas_Semanales * 1.5
     """
-    if horas <= 0:
+    if horas <= 0 or horas_semanales <= 0:
         return 0
     
-    # El factor 4.3333 representa el número de semanas promedio en un mes
-    valor_hora_ordinaria = sueldo_base / (horas_semanales * 4.3333)
+    # Sueldo semanal = sueldo / 30 * 7
+    sueldo_semanal = (sueldo_base / 30.0) * 7.0
+    # Valor hora ordinaria
+    valor_hora_ordinaria = sueldo_semanal / float(horas_semanales)
+    
+    # Recargo legal del 50%
     valor_hora_extra = valor_hora_ordinaria * 1.50
-    return int(valor_hora_extra * horas)
+    return int(round(valor_hora_extra * horas))
 
 
 def calcular_asignacion_familiar(base_imponible: int, num_cargas: int) -> int:
@@ -286,7 +287,7 @@ def calcular_liquidacion(
 
     gratificacion = 0
     if emp.gratificacion_legal:
-        gratificacion = int(calcular_gratificacion_legal(emp.sueldo_base) * factor_dias)
+        gratificacion = int(calcular_gratificacion_legal(emp.sueldo_base, settings.sueldo_minimo) * factor_dias)
 
     horas_extra_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra, emp.horas_semanales)
     
@@ -326,18 +327,36 @@ def calcular_liquidacion(
     # Comisión AFP (variable por AFP)
     descuento_afp_comision = int(base_afp * (emp.afp_comision_pct / 100))
     
-    # Salud: 7% FONASA o % Isapre
-    descuento_salud = int(base_salud * (emp.salud_pct / 100))
+    # Salud: Lógica dual FONASA vs Isapre
+    # - FONASA: siempre 7% del imponible topado
+    # - ISAPRE: max(7% del imponible, plan_uf × valor_uf)
+    descuento_salud_legal = int(base_salud * (7.0 / 100))  # Piso obligatorio 7%
+    descuento_salud_voluntaria = 0
+    
+    if emp.plan_salud_uf > 0 and emp.salud_code != "FONASA":
+        # Trabajador con Isapre: el descuento real es el plan en UF
+        plan_en_pesos = int(emp.plan_salud_uf * settings.uf_valor)
+        if plan_en_pesos > descuento_salud_legal:
+            descuento_salud_voluntaria = plan_en_pesos - descuento_salud_legal
+        descuento_salud = max(descuento_salud_legal, plan_en_pesos)
+    else:
+        # FONASA o sin plan pactado: solo el 7%
+        descuento_salud = descuento_salud_legal
 
     # AFC: Seguro de Cesantía (trabajador)
+    # La base AFC tiene su propio tope legal: 126.6 UF (Ley 19.728)
+    tope_afc_pesos = int(settings.uf_tope_afc * settings.uf_valor)
+    base_afc = min(base_bruta_imponible, tope_afc_pesos)
+    
     descuento_afc_trab = 0
     if emp.afc_active:
         if emp.tipo_contrato == "indefinido":
-            descuento_afc_trab = int(base_bruta_imponible * (settings.afc_indefinido_trabajador_pct / 100))
+            descuento_afc_trab = int(base_afc * (settings.afc_indefinido_trabajador_pct / 100))
         # Contrato fijo: solo paga la empresa (0% trabajador)
     
-    # Base imponible para impuesto = bruto - AFP - Salud - AFC
-    base_impuesto = base_bruta_imponible - descuento_afp - descuento_afp_comision - descuento_salud - descuento_afc_trab
+    # Base imponible para impuesto = bruto - AFP - Salud Legal (7%) - AFC
+    # NOTA LEGAL (SII): La cotización voluntaria de Isapre (adicional al 7%) NO rebaja la base tributable
+    base_impuesto = base_bruta_imponible - descuento_afp - descuento_afp_comision - descuento_salud_legal - descuento_afc_trab
     base_impuesto = max(0, base_impuesto)
     res.base_imponible_impuesto = base_impuesto
 
@@ -346,7 +365,9 @@ def calcular_liquidacion(
 
     res.afp = descuento_afp
     res.afp_comision = descuento_afp_comision
-    res.salud = descuento_salud
+    res.salud = descuento_salud_legal
+    res.salud_voluntaria = descuento_salud_voluntaria
+    res.salud_total = descuento_salud
     res.afc_trabajador = descuento_afc_trab
     res.impuesto_unico = impuesto
     res.total_descuentos_legales = (
@@ -356,13 +377,13 @@ def calcular_liquidacion(
 
     # ── 4. CARGOS EMPRESA ─────────────────────────────────────────────────────
 
-    # AFC empresa
+    # AFC empresa (misma base topada a 126.6 UF)
     afc_empresa = 0
     if emp.afc_active:
         if emp.tipo_contrato == "indefinido":
-            afc_empresa = int(base_bruta_imponible * (settings.afc_indefinido_empresa_pct / 100))
+            afc_empresa = int(base_afc * (settings.afc_indefinido_empresa_pct / 100))
         else:
-            afc_empresa = int(base_bruta_imponible * (settings.afc_fijo_empresa_pct / 100))
+            afc_empresa = int(base_afc * (settings.afc_fijo_empresa_pct / 100))
 
     # SIS — Seguro de Invalidez y Sobrevivencia (pagado 100% por empresa)
     sis_empresa = int(base_afp * (settings.afp_sis_pct / 100))
@@ -403,6 +424,8 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "afp": res.afp,
         "afp_comision": res.afp_comision,
         "salud": res.salud,
+        "salud_voluntaria": res.salud_voluntaria,
+        "salud_total": res.salud_total,
         "afc_trabajador": res.afc_trabajador,
         "impuesto_unico": res.impuesto_unico,
         "total_descuentos": res.total_descuentos_legales,

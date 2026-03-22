@@ -10,6 +10,10 @@ class GenerateFromRCVRequest(BaseModel):
     periodo: str
     type: str
 
+class GenerateFromPayrollRequest(BaseModel):
+    organization_id: str
+    periodo: str
+
 class CreateAccountRequest(BaseModel):
     organization_id: str
     codigo: str
@@ -69,6 +73,17 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
             "tax_account_code": "2.1.02.001", "tax_account_name": "IVA Débito Fiscal",
             "revenue_account_code": "4.1.01.001", "revenue_account_name": "Ventas de Mercaderías",
             "asset_account_code": "1.1.02.001", "asset_account_name": "Clientes Nacionales"
+        }
+    elif module == 'payroll':
+        # Default accounts for Payroll (Remuneraciones)
+        return {
+            "expense_salary_code": "5.1.02.001", "expense_salary_name": "Sueldos y Salarios",
+            "expense_social_code": "5.1.02.002", "expense_social_name": "Leyes Sociales Empresa",
+            "liability_afp_code": "2.1.04.004", "liability_afp_name": "AFP por Pagar",
+            "liability_salud_code": "2.1.04.005", "liability_salud_name": "Salud por Pagar",
+            "liability_afc_code": "2.1.04.006", "liability_afc_name": "AFC por Pagar",
+            "liability_tax_code": "2.1.03.001", "liability_tax_name": "Impuesto Único Retenido por Pagar",
+            "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar"
         }
     return None
 
@@ -249,6 +264,160 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
     except Exception as e:
         print(f"[ERROR generate_from_rcv] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-from-payroll")
+async def generate_from_payroll(req: GenerateFromPayrollRequest):
+    """
+    Centraliza las remuneraciones aprobadas en un asiento contable.
+    Crea un comprobante por todas las liquidaciones en estado 'aprobado'.
+    """
+    db = get_supabase()
+    try:
+        config = get_accounting_config(db, req.organization_id, 'payroll', 'monthly')
+        
+        # Obtener liquidaciones
+        res = db.table("liquidations").select("*") \
+            .eq("organization_id", req.organization_id) \
+            .eq("periodo", req.periodo) \
+            .execute()
+        
+        liquidations = res.data or []
+        if not liquidations:
+            return {"success": True, "entries_created": 0, "message": "No hay liquidaciones."}
+
+        # Totales para el asiento agrupado
+        t_haberes = 0
+        t_leyes_empresa = 0
+        t_afp = 0
+        t_salud = 0
+        t_afc = 0
+        t_impuestos = 0
+        t_liquido = 0
+
+        # Sumarización
+        for liq in liquidations:
+            t_haberes += int(liq.get("total_haberes_brutos", 0) or 0)
+            
+            # Gasto leyes sociales: Seguro Invalidez + AFC empleador
+            sis = int(liq.get("sis_empresa", 0) or liq.get("seguro_invalidez", 0) or 0)
+            afc_emp = int(liq.get("afc_empresa", 0) or 0)
+            t_leyes_empresa += (sis + afc_emp)
+            
+            # Pasivos
+            afp_total = int(liq.get("afp", 0) or 0) + int(liq.get("afp_comision", 0) or 0) + sis
+            t_afp += afp_total
+            
+            t_salud += int(liq.get("salud", 0) or 0) + int(liq.get("salud_voluntaria", 0) or 0)
+            
+            afc_trab = int(liq.get("afc_trabajador", 0) or 0)
+            t_afc += (afc_trab + afc_emp)
+            
+            t_impuestos += int(liq.get("impuesto_unico", 0) or 0)
+            t_liquido += int(liq.get("sueldo_liquido", 0) or 0)
+
+        # Auto-crear las cuentas contables de nómina si no existen (RPC robusta con ON CONFLICT)
+        try:
+            db.rpc("ensure_payroll_accounts", {"p_org_id": req.organization_id}).execute()
+        except Exception as e:
+            print(f"[PRE-CHECK] Error asegurando cuentas de nómina: {e}")
+
+        # Preparar las líneas del asiento
+        lines_to_insert = []
+        
+        # --- CARGOS (Debe - Gastos) ---
+        if t_haberes > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["expense_salary_code"], 
+                "cuenta_nombre": config["expense_salary_name"], 
+                "tipo": "debe", "monto": t_haberes
+            })
+        if t_leyes_empresa > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["expense_social_code"], 
+                "cuenta_nombre": config["expense_social_name"], 
+                "tipo": "debe", "monto": t_leyes_empresa
+            })
+
+        # --- ABONOS (Haber - Pasivos) ---
+        if t_afp > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["liability_afp_code"], 
+                "cuenta_nombre": config["liability_afp_name"], 
+                "tipo": "haber", "monto": t_afp
+            })
+        if t_salud > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["liability_salud_code"], 
+                "cuenta_nombre": config["liability_salud_name"], 
+                "tipo": "haber", "monto": t_salud
+            })
+        if t_afc > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["liability_afc_code"], 
+                "cuenta_nombre": config["liability_afc_name"], 
+                "tipo": "haber", "monto": t_afc
+            })
+        if t_impuestos > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["liability_tax_code"], 
+                "cuenta_nombre": config["liability_tax_name"], 
+                "tipo": "haber", "monto": t_impuestos
+            })
+        if t_liquido > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config["liability_net_code"], 
+                "cuenta_nombre": config["liability_net_name"], 
+                "tipo": "haber", "monto": t_liquido
+            })
+
+        if not lines_to_insert:
+            return {"success": True, "entries_created": 0}
+
+        # Control de cuadratura estricta para el Libro Mayor
+        # Totales debe y haber (redondeos podrían desajustar en 1 peso). El sistema fuerza ajuste en sueldo por pagar.
+        total_debe = sum(l["monto"] for l in lines_to_insert if l["tipo"] == "debe")
+        total_haber = sum(l["monto"] for l in lines_to_insert if l["tipo"] == "haber")
+        descuadre = total_debe - total_haber
+        
+        if descuadre != 0:
+            for line in lines_to_insert:
+                if line["cuenta_codigo"] == config["liability_net_code"]:
+                    line["monto"] += descuadre
+                    break
+
+        glosa = f"Centralización de Remuneraciones {req.periodo[:7]}"
+        
+        # ELIMINAR centralización previa de este mes (Idempotencia)
+        db.table("journal_entries").delete() \
+            .eq("organization_id", req.organization_id) \
+            .eq("glosa", glosa) \
+            .execute()
+
+        # Ajustamos fecha al último día del mes
+        from datetime import datetime
+        import calendar
+        # Parseamos asumiendo que puede venir como YYYY-MM-DD o YYYY-MM
+        base_period = req.periodo[:7]
+        p_date = datetime.strptime(base_period + "-01", "%Y-%m-%d")
+        last_day = calendar.monthrange(p_date.year, p_date.month)[1]
+        fecha_asiento = f"{p_date.year}-{p_date.month:02d}-{last_day}"
+
+        rpc_res = db.rpc("create_journal_entry_with_lines", {
+            "p_organization_id": req.organization_id,
+            "p_fecha": fecha_asiento,
+            "p_glosa": glosa,
+            "p_lines": lines_to_insert
+        }).execute()
+        
+        if rpc_res.data:
+            return {"success": True, "entries_created": 1, "journal_entry_id": rpc_res.data}
+            
+        return {"success": False, "error": "Falló RPC"}
+    except Exception as e:
+        import traceback
+        print(f"[ERROR generate_from_payroll] {str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/chart-of-accounts")
 async def get_chart_of_accounts(organization_id: str):

@@ -15,11 +15,8 @@ export async function generateContractAction(employeeId: string) {
     const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
     
     // 2. Call Python Engine to generate the DOCX
-    const response = await fetch(`${engineUrl}/api/v1/documents/generate-contract/${employeeId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+    const response = await fetch(`${engineUrl}/api/v1/documents/generate?employee_id=${employeeId}&type=contrato`, {
+      method: 'GET',
       cache: 'no-store'
     })
 

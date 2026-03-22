@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate/${employeeId}?type=${type}&description=${encodeURIComponent(description)}`, {
-      method: "POST",
+    const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate?employee_id=${employeeId}&type=${type}&description=${encodeURIComponent(description)}`, {
+      method: "GET",
     });
 
     if (!response.ok) {

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
@@ -12,36 +13,20 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
-  FileText, 
-  Plus, 
-  Download, 
-  UserPlus,
-  Sparkles,
-  Bot,
-  RefreshCcw as RefreshIcon,
+  FileText,
+  Download,
   AlertTriangle,
   ArrowRight,
   Zap,
   ShieldCheck,
   History,
-  FileBadge
+  Settings2
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { ModificationsDialog } from "@/components/modifications-dialog";
 
 interface Employee {
   id: string;
@@ -64,40 +49,44 @@ export default function ContractsClient({
 }) {
   const router = useRouter();
   const hasLegalRep = settings?.rep_legal_nombre && settings?.rep_legal_rut;
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedEmp, setSelectedEmp] = useState<string>("");
-  const [docType, setDocType] = useState<string>("contrato");
-  const [open, setOpen] = useState(false);
+  // Modificaciones state
+  const [modTarget, setModTarget] = useState<{id: string, name: string, data: any} | null>(null);
+  const [modOpen, setModOpen] = useState(false);
+  
+  // 🧠 Algoritmo de Consolidación Inteligente (Deduplicación de Clase Mundial)
+  const processedContracts = useMemo(() => {
+    // 1. Ordenar por creación (más reciente primero)
+    const sorted = [...initialContracts].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
-  const handleDownload = async () => {
-    if (!selectedEmp) {
-      toast.error("Seleccione un empleado");
-      return;
+    const result: any[] = [];
+    const contractFoundFor = new Set();
+
+    for (const doc of sorted) {
+      if (doc.tipo_documento === 'contrato') {
+        // Solo un registro MAESTRO de contrato por empleado
+        if (!contractFoundFor.has(doc.employee_id)) {
+          result.push(doc);
+          contractFoundFor.add(doc.employee_id);
+        }
+      } else {
+        // Los Anexos son eventos legales independientes, se muestran todos
+        result.push(doc);
+      }
     }
+    return result;
+  }, [initialContracts]);
 
-    setIsGenerating(true);
-    try {
-      const response = await fetch(`/api/documents/generate?employee_id=${selectedEmp}&type=${docType}`);
-      
-      if (!response.ok) throw new Error("Error al generar el documento");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${docType}_${selectedEmp}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      setOpen(false);
-      toast.success("Documento laboral sintetizado y descargado.");
-      router.refresh();
-    } catch (error) {
-      toast.error("Fallo crítico en la generación documental.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const activeContractsCount = useMemo(() => {
+    // Filtrar por empleados UNICOS, de tipo CONTRATO, y que estén ACTIVOS
+    const uniqueActiveEmployees = new Set(
+      processedContracts
+        .filter(c => c.tipo_documento === 'contrato' && c.employees?.activo === true)
+        .map(c => c.employee_id)
+    );
+    return uniqueActiveEmployees.size;
+  }, [processedContracts]);
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -131,7 +120,7 @@ export default function ContractsClient({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <KPIItem 
             label="Contratos Activos" 
-            value={String(employees.length)} 
+            value={String(activeContractsCount)} 
             icon={ShieldCheck} 
             color="text-blue-600" 
             borderColor="border-blue-600"
@@ -163,80 +152,6 @@ export default function ContractsClient({
                 HISTORIAL DE CONTRATOS Y ANEXOS LEGALES GENERADOS POR EL SISTEMA
             </CardDescription>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger 
-              render={
-                <Button className="bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] rounded-2xl h-12 px-8 shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all">
-                  <Plus className="h-5 w-5 mr-2" /> NUEVO DOCUMENTO
-                </Button>
-              }
-            />
-            <DialogContent className="sm:max-w-[550px] bg-card border-border shadow-2xl rounded-[2.5rem] p-0 overflow-hidden ring-1 ring-black/5">
-              <div className="h-2 w-full bg-gradient-to-r from-primary via-blue-500 to-transparent" />
-              <DialogHeader className="p-10 pb-6 border-b border-border bg-muted/5">
-                <div className="flex items-center gap-4 mb-2">
-                    <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-                        <FileBadge className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="space-y-0.5 text-left">
-                        <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Síntesis Documental</DialogTitle>
-                        <DialogDescription className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] italic">
-                            GENERACIÓN DE INSTRUMENTOS LABORALES SEGÚN NORMATIVA
-                        </DialogDescription>
-                    </div>
-                </div>
-              </DialogHeader>
-              <div className="p-10 space-y-8">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TRABAJADOR SELECCIONADO</label>
-                    <select 
-                      className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
-                      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
-                      value={selectedEmp}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedEmp(e.target.value)}
-                    >
-                      <option value="" disabled>--- Seleccione Colaborador ---</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id} className="font-sans">
-                          {emp.nombres} {emp.apellido_paterno} — {emp.rut}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-4 pt-4">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TIPO DE INSTRUMENTO</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button 
-                        variant={docType === 'contrato' ? 'default' : 'outline'}
-                        onClick={() => setDocType('contrato')}
-                        className={`h-14 font-black uppercase text-[10px] tracking-[0.15em] rounded-2xl shadow-lg transition-all ${docType === 'contrato' ? 'shadow-primary/20 scale-[1.02]' : 'border-border/60 hover:border-primary/40 opacity-70 hover:opacity-100'}`}
-                      >
-                        <FileText className="h-5 w-5 mr-3" /> Contrato de Trabajo
-                      </Button>
-                      <Button 
-                        variant={docType === 'anexo' ? 'default' : 'outline'}
-                        onClick={() => setDocType('anexo')}
-                        className={`h-14 font-black uppercase text-[10px] tracking-[0.15em] rounded-2xl shadow-lg transition-all ${docType === 'anexo' ? 'shadow-primary/20 scale-[1.02]' : 'border-border/60 hover:border-primary/40 opacity-70 hover:opacity-100'}`}
-                      >
-                        <UserPlus className="h-5 w-5 mr-3" /> Anexo de Contrato
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="p-10 pt-0">
-                <Button 
-                  onClick={handleDownload} 
-                  disabled={isGenerating || !selectedEmp} 
-                  className="w-full h-14 bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] rounded-[1.5rem] shadow-2xl shadow-primary/30 hover:scale-[1.03] active:scale-95 transition-all gap-4"
-                >
-                  {isGenerating ? <RefreshIcon className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                  {isGenerating ? "PROCESANDO..." : "EMITIR DOCUMENTO (.DOCX)"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -250,52 +165,80 @@ export default function ContractsClient({
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-border/50">
-                {initialContracts.map((contract) => (
+                {processedContracts.map((contract) => (
                   <TableRow key={contract.id} className="border-border hover:bg-primary/[0.01] transition-colors group">
                     <TableCell className="px-10 py-6">
                         <div className="flex flex-col">
-                            <span className="font-black text-foreground uppercase text-xs tracking-tight group-hover:text-primary transition-colors">
+                            <span className={`font-black uppercase text-xs tracking-tight transition-colors ${contract.employees?.activo === false ? 'text-muted-foreground/40 line-through' : 'text-foreground group-hover:text-primary'}`}>
                                 {contract.employees?.nombres} {contract.employees?.apellido_paterno}
                             </span>
-                            <span className="text-[10px] text-muted-foreground/60 font-bold uppercase italic mt-0.5">RUT: {contract.employees?.rut}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground/60 font-bold uppercase italic">RUT: {contract.employees?.rut}</span>
+                                {contract.employees?.activo === false && (
+                                    <Badge variant="outline" className="text-[8px] h-4 bg-muted text-muted-foreground border-border font-black uppercase tracking-tighter">DESVINCULADO</Badge>
+                                )}
+                            </div>
                         </div>
                     </TableCell>
                     <TableCell className="px-10 py-6">
-                        <span className={`inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border ${contract.tipo_documento === 'contrato' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
-                            {contract.tipo_documento}
-                        </span>
+                        <Badge className={cn(
+                            "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border",
+                            contract.tipo_documento === 'contrato' 
+                                ? "bg-blue-50 text-blue-700 border-blue-100" 
+                                : "bg-purple-50 text-purple-700 border-purple-100"
+                        )}>
+                            {contract.tipo_documento === 'contrato' ? '📜 CONTRATO BASE' : '📝 ANEXO LEGAL'}
+                        </Badge>
                     </TableCell>
                     <TableCell className="px-10 py-6">
-                        <span className="font-mono text-xs font-black text-foreground/70">
+                        <span className="font-mono text-xs font-black text-foreground/70 uppercase">
                             {new Date(contract.created_at).toLocaleDateString()}
                         </span>
                     </TableCell>
                     <TableCell className="px-10 py-6 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-12 h-12 rounded-2xl transition-all"
-                        onClick={async () => {
-                           toast.info("Regenerando documento histórico...");
-                           try {
-                             const response = await fetch(`/api/documents/generate?employee_id=${contract.employee_id}&type=${contract.tipo_documento}`);
-                             if (!response.ok) throw new Error("Error interno");
-                             const blob = await response.blob();
-                             const url = window.URL.createObjectURL(blob);
-                             const a = document.createElement("a");
-                             a.href = url;
-                             a.download = `${contract.tipo_documento}_REGEN.docx`;
-                             document.body.appendChild(a);
-                             a.click();
-                             window.URL.revokeObjectURL(url);
-                             toast.success("Descarga completada correctamente.");
-                           } catch (error) {
-                             toast.error("Error al recuperar el registro.");
-                           }
-                        }}
-                      >
-                        <Download className="h-5 w-5" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 w-11 h-11 rounded-xl transition-all"
+                            onClick={() => {
+                            setModTarget({
+                                id: contract.employee_id,
+                                name: `${contract.employees?.nombres} ${contract.employees?.apellido_paterno}`,
+                                data: contract.employees
+                            });
+                            setModOpen(true);
+                            }}
+                            title="Gestionar Modificaciones"
+                        >
+                            <Settings2 className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-11 h-11 rounded-xl transition-all"
+                            onClick={async () => {
+                            const toastId = toast.loading("Sintetizando documento legal...");
+                            try {
+                                const response = await fetch(`/api/documents/generate?employee_id=${contract.employee_id}&type=${contract.tipo_documento}`);
+                                if (!response.ok) throw new Error("Recurso no disponible");
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `${contract.tipo_documento}_${contract.employees?.apellido_paterno}_REGEN.docx`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                toast.success("Documento recuperado con éxito.", { id: toastId });
+                            } catch (error) {
+                                toast.error("Error al recuperar el registro.", { id: toastId });
+                            }
+                            }}
+                        >
+                            <Download className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -314,6 +257,18 @@ export default function ContractsClient({
           </div>
         </CardContent>
       </Card>
+
+      {/* MODAL DE HISTORIAL Y MODIFICACIONES */}
+      {modTarget && (
+        <ModificationsDialog 
+          employeeId={modTarget.id}
+          employeeName={modTarget.name}
+          organizationId={organizationId}
+          currentData={modTarget.data}
+          isOpen={modOpen}
+          onClose={() => setModOpen(false)}
+        />
+      )}
     </div>
   );
 }
