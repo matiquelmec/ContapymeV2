@@ -19,7 +19,7 @@ import {
   Gavel,
   FileWarning
 } from 'lucide-react'
-import { deleteTerminationAction, getTerminationDocumentAction } from '@/actions/terminations'
+import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction } from '@/actions/terminations'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { TerminationDialog } from './termination-dialog'
@@ -60,6 +60,29 @@ export default function TerminationsClient({
   const [viewerLoading, setViewerLoading] = useState(false)
   const [documentContent, setDocumentContent] = useState<{title: string, content: string} | null>(null)
 
+  const handleFinalize = async (id: string, employeeId: string, endDate: string, name: string) => {
+    toast(`¿Confirmar finalización oficial para ${name}?`, {
+        description: 'Esto marcará al empleado como INACTIVO y cerrará el periodo legal.',
+        action: {
+            label: 'FINALIZAR',
+            onClick: async () => {
+                const res = await finalizeTerminationAction(id, employeeId, endDate)
+                if (res.success) {
+                  toast.success(`Desvinculación de ${name} procesada correctamente.`, {
+                    icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  })
+                } else {
+                  toast.error(res.error || 'Error al finalizar')
+                }
+            }
+        },
+        cancel: {
+            label: 'CANCELAR',
+            onClick: () => {}
+        }
+    })
+  }
+
   const handleDelete = async (id: string, name: string) => {
     toast(`¿Seguro de eliminar el borrador para ${name}?`, {
         action: {
@@ -76,7 +99,8 @@ export default function TerminationsClient({
             }
         },
         cancel: {
-            label: 'CANCELAR'
+            label: 'CANCELAR',
+            onClick: () => {}
         }
     })
   }
@@ -261,6 +285,17 @@ export default function TerminationsClient({
                     </TableCell>
                     <TableCell className="px-10 py-6 text-right">
                       <div className="flex justify-end gap-2">
+                          {t.status === 'borrador' && (
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-10 w-10 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                onClick={() => handleFinalize(t.id, t.employee_id, t.fecha_termino, `${t.employees?.nombres} ${t.employees?.apellido_paterno}`)}
+                                title="Finalizar Desvinculación"
+                            >
+                                <CheckCircle2 className="h-5 w-5" />
+                            </Button>
+                          )}
                           <Button 
                               variant="ghost" 
                               size="icon" 

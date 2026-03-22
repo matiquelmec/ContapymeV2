@@ -125,6 +125,9 @@ async def process_payroll(req: PayrollRequest):
                 asignacion_movilizacion=int(emp.get("asignacion_movilizacion", 0)),
                 asignacion_colacion=int(emp.get("asignacion_colacion", 0)),
                 horas_extra=int(emp.get("horas_extra_pendientes", 0)),
+                family_allowances=int(emp.get("family_allowances", 0)),
+                afc_active=bool(emp.get("afc_active", True)),
+                horas_semanales=int(emp.get("horas_semanales", 42)),
             )
 
             result = calcular_liquidacion(emp_input, settings, utm_valor)
@@ -137,20 +140,13 @@ async def process_payroll(req: PayrollRequest):
 
             liq_data = to_db_dict(result, req.org_id, emp["id"], req.periodo)
 
-            # Upsert: un solo procesamiento por empleado por mes
-            exist = db.table("liquidations") \
-                .select("id") \
-                .eq("employee_id", emp["id"]) \
-                .eq("periodo", req.periodo) \
-                .execute()
-
-            if exist.data:
-                db.table("liquidations") \
-                    .update(liq_data) \
-                    .eq("id", exist.data[0]["id"]) \
-                    .execute()
-            else:
-                db.table("liquidations").insert(liq_data).execute()
+            # ── 6. Guardado Atómico (Blindaje Maestro) ──────────────────────────
+            # Usar upsert con el conflicto definido en la base de datos (org, emp, periodo)
+            # Esto evita duplicados incluso en condiciones de carrera.
+            db.table("liquidations").upsert(
+                liq_data, 
+                on_conflict="organization_id,employee_id,periodo"
+            ).execute()
 
             processed_count += 1
 

@@ -6,13 +6,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const employeeId = searchParams.get("employee_id");
   const type = searchParams.get("type") || "contrato";
+  const description = searchParams.get("description") || "";
 
   if (!employeeId) {
     return NextResponse.json({ error: "Missing employee_id" }, { status: 400 });
   }
 
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate/${employeeId}?type=${type}`, {
+    const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate/${employeeId}?type=${type}&description=${encodeURIComponent(description)}`, {
       method: "POST",
     });
 

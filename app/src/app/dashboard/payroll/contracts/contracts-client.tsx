@@ -42,7 +42,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { generateJobDescription } from "@/actions/ai-assistant";
 
 interface Employee {
   id: string;
@@ -69,23 +68,6 @@ export default function ContractsClient({
   const [selectedEmp, setSelectedEmp] = useState<string>("");
   const [docType, setDocType] = useState<string>("contrato");
   const [open, setOpen] = useState(false);
-  const [jobTitle, setJobTitle] = useState("");
-  const [aiDescription, setAiDescription] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-
-  const handleGenerateAiDescription = async () => {
-    if (!jobTitle) return toast.error("Ingrese un nombre de cargo");
-    setIsAiLoading(true);
-    try {
-      const desc = await generateJobDescription(jobTitle);
-      setAiDescription(desc);
-      toast.success("Descripción generada por el motor de IA.");
-    } catch (error) {
-      toast.error("Error al generar descripción por IA.");
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
 
   const handleDownload = async () => {
     if (!selectedEmp) {
@@ -330,63 +312,6 @@ export default function ContractsClient({
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* ===== ASISTENTE IA PREMIUM ===== */}
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500/10">
-        <CardHeader className="bg-muted/5 border-b border-border p-10">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-blue-600 text-white rounded-[2rem] shadow-xl shadow-blue-600/20">
-                <Sparkles className="h-7 w-7" />
-            </div>
-            <div className="space-y-1">
-                <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Asistente IA: Generador de Perfiles</CardTitle>
-                <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
-                    OPTIMIZACIÓN INTELIGENTE DE DESCRIPTORES Y RESPONSABILIDADES LABORALES
-                </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-10 space-y-8">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1 space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE DEL CARGO A REDACTAR</Label>
-                <Input 
-                    placeholder="Ej: Analista de Finanzas Senior" 
-                    className="h-14 bg-white border-border rounded-2xl font-black uppercase text-xs focus:ring-blue-500 shadow-sm px-6" 
-                    value={jobTitle}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobTitle(e.target.value)}
-                />
-            </div>
-            <div className="flex items-end">
-                <Button 
-                    onClick={handleGenerateAiDescription} 
-                    disabled={isAiLoading} 
-                    variant="secondary" 
-                    className="h-14 bg-blue-600 text-white font-black uppercase text-xs tracking-[0.15em] rounded-2xl px-10 shadow-xl shadow-blue-600/20 hover:scale-[1.03] transition-all group"
-                >
-                {isAiLoading ? <RefreshIcon className="h-5 w-5 animate-spin mr-3" /> : <Bot className="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform" />}
-                SUGERIR DESCRIPCIÓN
-                </Button>
-            </div>
-          </div>
-          {aiDescription && (
-            <div className="p-8 bg-blue-50/50 border-2 border-blue-100 rounded-[2rem] text-sm text-slate-700 animate-in fade-in zoom-in duration-500 shadow-inner relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Sparkles className="w-20 h-20 text-blue-600 rotate-12" />
-                </div>
-                <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-2 h-8 bg-blue-600 rounded-full" />
-                        <p className="font-black uppercase text-xs tracking-widest text-blue-900 leading-none">Análisis Predictivo para {jobTitle}</p>
-                    </div>
-                    <div className="text-slate-700 leading-relaxed font-medium italic bg-white/60 p-6 rounded-2xl border border-blue-50 shadow-sm whitespace-pre-wrap">
-                        {aiDescription}
-                    </div>
-                </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

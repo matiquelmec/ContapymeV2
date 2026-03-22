@@ -12,8 +12,8 @@ router = APIRouter()
 # Las plantillas vivirán en la carpeta engine/templates/
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates")
 
-@router.post("/generate/{employee_id}")
-async def generate_document(employee_id: str, type: str = "contrato"):
+@router.post("/generate-contract/{employee_id}")
+async def generate_document(employee_id: str, type: str = "contrato", description: str = ""):
     """
     Genera un Contrato o Anexo de Trabajo inteligente.
     Convierte montos a palabras, formatea fechas legales y limpia datos.
@@ -72,11 +72,19 @@ async def generate_document(employee_id: str, type: str = "contrato"):
             'REP_LEGAL_CARGO': safe_upper(settings.get('rep_legal_cargo'), 'GERENTE GENERAL'),
             'EMPLEADO_NOMBRE': f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')} {emp.get('apellido_materno', '')}".strip().upper(),
             'EMPLEADO_RUT': clean_rut(emp.get('rut', '')),
-            'EMPLEADO_DIRECCION': safe_upper(emp.get('direccion'), 'DOMICILIO CONOCIDO'),
+            'EMPLEADO_NACIONALIDAD': safe_upper(emp.get('nacionalidad'), 'CHILENA'),
+            'EMPLEADO_ESTADO_CIVIL': safe_upper(emp.get('estado_civil'), 'SOLTERO(A)'),
+            'EMPLEADO_FECHA_NAC': str(emp.get('birth_date', '')),
+            'EMPLEADO_DIRECCION': safe_upper(emp.get('address') or emp.get('direccion'), 'DOMICILIO CONOCIDO'),
+            'EMPLEADO_COMUNA': safe_upper(emp.get('city'), 'PUNTA ARENAS'),
+            'EMPLEADO_REGION': safe_upper(emp.get('region'), 'MAGALLANES'),
             'FECHA_INGRESO': str(emp.get('fecha_ingreso', '')),
             'CARGO': safe_upper(emp.get('cargo'), 'Trabajador'),
+            'DESCRIPCION_CARGO': description or emp.get('descripcion_cargo') or 'SEGÚN SE ESTIPULA EN EL MANUAL DE FUNCIONES INTERNO.',
             'SUELDO_BASE': sueldo_formateado,
             'SUELDO_PALABRAS': sueldo_palabras,
+            'HORAS_SEMANALES': emp.get('horas_semanales', 42),
+            'HORARIO': safe_upper(emp.get('horario_detalle'), 'JORNADA ORDINARIA LEGAL'),
             'FECHA_ACTUAL': fecha_legal
         }
 
@@ -111,6 +119,7 @@ async def generate_document(employee_id: str, type: str = "contrato"):
                 "fecha_inicio": fecha_inicio,
                 "sueldo_base": sueldo_base or 0,
                 "cargo": emp.get('cargo') or 'Trabajador',
+                "descripcion_cargo": description or '',
                 "status": "generado"
             }
             db.table("employment_contracts").insert(contract_record).execute()

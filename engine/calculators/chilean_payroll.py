@@ -67,6 +67,9 @@ class EmployeeInput:
     bono_extra: int = 0                          # Bonos no habituales
     # Control
     dias_trabajados: int = 30                    # Para cálculo proporcional
+    horas_semanales: int = 42                    # Jornada semanal (Chile 2026: 42h)
+    family_allowances: int = 0                   # Número de cargas familiares
+    afc_active: bool = True                      # Si aplica seguro de cesantía
     mes_proceso: Optional[str] = None            # "YYYY-MM"
 
 
@@ -98,6 +101,7 @@ class LiquidacionResult:
     total_cargos_empresa: int = 0
     # ── Resultado ──────────────────────────────────────────────────────────────
     sueldo_liquido: int = 0
+    asignacion_familiar: int = 0
     dias_trabajados: int = 30
     # ── Metadata ──────────────────────────────────────────────────────────────
     afp_code: str = ""
@@ -175,18 +179,46 @@ def calcular_gratificacion_legal(sueldo_base: int) -> int:
     return min(gratif, TOPE_MENSUAL_2025)
 
 
-def calcular_hora_extra(sueldo_base: int, horas: int, dias_mes: int = 30) -> int:
+def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 44) -> int:
     """
-    Calcula el valor de horas extras (Art. 32 CT: 50% recargo sobre hora ordinaria).
-    
-    Returns:
-        Monto total de horas extras en CLP.
+    Calcula el valor de horas extras (Art. 32 CT).
+    Fórmula estándar: (Sueldo / (Horas_Semanales * 4.3333)) * 1.5
     """
     if horas <= 0:
         return 0
-    valor_hora_ordinaria = sueldo_base / (dias_mes * 8)  # Jornada 8 horas
+    
+    # El factor 4.3333 representa el número de semanas promedio en un mes
+    valor_hora_ordinaria = sueldo_base / (horas_semanales * 4.3333)
     valor_hora_extra = valor_hora_ordinaria * 1.50
     return int(valor_hora_extra * horas)
+
+
+def calcular_asignacion_familiar(base_imponible: int, num_cargas: int) -> int:
+    """
+    Calcula el monto de Asignación Familiar según tramo de renta (Cargas Familiares).
+    Valores vigentes 2025.
+    """
+    if num_cargas <= 0:
+        return 0
+        
+    # Tramos de renta imponible (Referencial 2025)
+    TRAMO_A = 539_330
+    TRAMO_B = 787_747
+    TRAMO_C = 1_228_614
+    
+    # Montos por carga
+    MONTO_A = 21_463
+    MONTO_B = 13_169
+    MONTO_C = 4_161
+    
+    if base_imponible <= TRAMO_A:
+        return MONTO_A * num_cargas
+    elif base_imponible <= TRAMO_B:
+        return MONTO_B * num_cargas
+    elif base_imponible <= TRAMO_C:
+        return MONTO_C * num_cargas
+    else:
+        return 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -256,7 +288,7 @@ def calcular_liquidacion(
     if emp.gratificacion_legal:
         gratificacion = int(calcular_gratificacion_legal(emp.sueldo_base) * factor_dias)
 
-    horas_extra_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra)
+    horas_extra_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra, emp.horas_semanales)
     
     # Colación y movilización: NO son imponibles (Art. 41 CT), se suman al final
     colacion = emp.asignacion_colacion
@@ -265,13 +297,19 @@ def calcular_liquidacion(
     # Base bruta imponible (sin ingresos NO imponibles)
     base_bruta_imponible = sueldo_base + gratificacion + horas_extra_monto + emp.bono_extra
 
+    # Asignación familiar (No imponible)
+    # Se calcula sobre la renta del mes ANTERIOR legalmente, pero aquí usamos la actual
+    # como aproximación si no hay histórico.
+    asig_familiar = calcular_asignacion_familiar(base_bruta_imponible, emp.family_allowances)
+
     res.sueldo_base = sueldo_base
     res.gratificacion = gratificacion
     res.horas_extra_monto = horas_extra_monto
     res.asignacion_colacion = colacion
     res.asignacion_movilizacion = movilizacion
+    res.asignacion_familiar = asig_familiar
     res.bono_extra = emp.bono_extra
-    res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion
+    res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + asig_familiar
 
     # ── 2. BASES IMPONIBLES ────────────────────────────────────────────────────
 
@@ -292,11 +330,12 @@ def calcular_liquidacion(
     descuento_salud = int(base_salud * (emp.salud_pct / 100))
 
     # AFC: Seguro de Cesantía (trabajador)
-    if emp.tipo_contrato == "indefinido":
-        descuento_afc_trab = int(base_bruta_imponible * (settings.afc_indefinido_trabajador_pct / 100))
-    else:
-        descuento_afc_trab = 0  # Contrato fijo: solo paga la empresa
-
+    descuento_afc_trab = 0
+    if emp.afc_active:
+        if emp.tipo_contrato == "indefinido":
+            descuento_afc_trab = int(base_bruta_imponible * (settings.afc_indefinido_trabajador_pct / 100))
+        # Contrato fijo: solo paga la empresa (0% trabajador)
+    
     # Base imponible para impuesto = bruto - AFP - Salud - AFC
     base_impuesto = base_bruta_imponible - descuento_afp - descuento_afp_comision - descuento_salud - descuento_afc_trab
     base_impuesto = max(0, base_impuesto)
@@ -318,10 +357,12 @@ def calcular_liquidacion(
     # ── 4. CARGOS EMPRESA ─────────────────────────────────────────────────────
 
     # AFC empresa
-    if emp.tipo_contrato == "indefinido":
-        afc_empresa = int(base_bruta_imponible * (settings.afc_indefinido_empresa_pct / 100))
-    else:
-        afc_empresa = int(base_bruta_imponible * (settings.afc_fijo_empresa_pct / 100))
+    afc_empresa = 0
+    if emp.afc_active:
+        if emp.tipo_contrato == "indefinido":
+            afc_empresa = int(base_bruta_imponible * (settings.afc_indefinido_empresa_pct / 100))
+        else:
+            afc_empresa = int(base_bruta_imponible * (settings.afc_fijo_empresa_pct / 100))
 
     # SIS — Seguro de Invalidez y Sobrevivencia (pagado 100% por empresa)
     sis_empresa = int(base_afp * (settings.afp_sis_pct / 100))
@@ -352,6 +393,7 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "asignacion_movilizacion": res.asignacion_movilizacion,
         "bono_colacion": res.asignacion_colacion,  # Redundancia por compatibilidad
         "bono_movilizacion": res.asignacion_movilizacion, # Redundancia por compatibilidad
+        "asignacion_familiar": res.asignacion_familiar,
         "horas_extra_monto": res.horas_extra_monto,
         "bono_extra": res.bono_extra,
         "total_haberes_brutos": res.total_haberes_brutos,

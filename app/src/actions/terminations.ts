@@ -100,3 +100,36 @@ export async function getTerminationCausesAction() {
         return { success: false, error: errorMessage }
     }
 }
+export async function finalizeTerminationAction(terminationId: string, employeeId: string, endDate: string) {
+    try {
+        const supabase = await createClient()
+        
+        // 1. Marcar el finiquito como firmado
+        const { error: termError } = await supabase
+            .from('employee_terminations')
+            .update({ status: 'firmado' })
+            .eq('id', terminationId)
+        
+        if (termError) throw termError
+
+        // 2. Desactivar al empleado
+        const { error: empError } = await supabase
+            .from('employees')
+            .update({ 
+                activo: false, 
+                fecha_termino: endDate 
+            })
+            .eq('id', employeeId)
+        
+        if (empError) throw empError
+
+        revalidatePath('/dashboard/payroll')
+        revalidatePath('/dashboard/payroll/terminations')
+        
+        return { success: true }
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Action error finalizing termination:', error)
+        return { success: false, error: errorMessage }
+    }
+}

@@ -33,6 +33,20 @@ export async function createEmployee(formData: FormData) {
     afp: formData.get('afp') as string,
     prevision_salud: formData.get('prevision_salud') as string,
     fecha_ingreso: formData.get('fecha_ingreso') as string,
+    descripcion_cargo: formData.get('descripcion_cargo') as string || '',
+    horas_semanales: parseInt(formData.get('horas_semanales') as string || '44', 10),
+    horario_detalle: formData.get('horario_detalle') as string || '',
+    nacionalidad: formData.get('nacionalidad') as string || 'Chilena',
+    sexo: formData.get('sexo') as string || 'Masculino',
+    estado_civil: formData.get('estado_civil') as string || 'Soltero(a)',
+    birth_date: formData.get('birth_date') as string || null,
+    address: formData.get('address') as string || '',
+    city: formData.get('city') as string || '',
+    region: formData.get('region') as string || '',
+    family_allowances: parseInt(formData.get('family_allowances') as string || '0', 10),
+    afc_active: formData.get('afc_active') === 'on',
+    email: formData.get('email') as string || '',
+    phone: formData.get('phone') as string || '',
     activo: true
   }
 
