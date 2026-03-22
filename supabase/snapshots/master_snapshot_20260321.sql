@@ -1,6 +1,6 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
--- SINCRO: 2026-03-21 03:00 (Magallanes 2077)
+-- SINCRO: 2026-03-21 23:45 (Sincronización Total Maestro 🛡️)
 
 CREATE TABLE public.account_mapping_rules (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -14,77 +14,78 @@ CREATE TABLE public.account_mapping_rules (
   CONSTRAINT account_mapping_rules_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id)
 );
 CREATE TABLE public.bank_accounts (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    organization_id uuid NOT NULL,
-    bank_name text NOT NULL,
-    account_number text NOT NULL,
-    account_type text DEFAULT 'corriente'::text,
-    currency text DEFAULT 'CLP'::text,
-    chart_account_id uuid,
-    is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT bank_accounts_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE,
-    CONSTRAINT bank_accounts_chart_account_id_fkey FOREIGN KEY (chart_account_id) REFERENCES public.chart_of_accounts(id),
-    CONSTRAINT bank_accounts_org_bank_acc_key UNIQUE (organization_id, bank_name, account_number)
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL,
+  bank_name text NOT NULL,
+  account_number text NOT NULL,
+  account_type text DEFAULT 'corriente'::text,
+  currency text DEFAULT 'CLP'::text,
+  chart_account_id uuid,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_accounts_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT bank_accounts_chart_account_id_fkey FOREIGN KEY (chart_account_id) REFERENCES public.chart_of_accounts(id)
 );
 CREATE TABLE public.bank_mapping_rules (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    organization_id uuid NOT NULL,
-    search_pattern text NOT NULL,
-    target_account_id uuid,
-    is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT bank_mapping_rules_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_mapping_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-    CONSTRAINT bank_mapping_rules_target_account_id_fkey FOREIGN KEY (target_account_id) REFERENCES public.chart_of_accounts(id)
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL,
+  search_pattern text NOT NULL,
+  target_account_id uuid,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_mapping_rules_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_mapping_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT bank_mapping_rules_target_account_id_fkey FOREIGN KEY (target_account_id) REFERENCES public.chart_of_accounts(id)
 );
 CREATE TABLE public.bank_reconciliations (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    bank_line_id uuid NOT NULL,
-    journal_entry_id uuid NOT NULL,
-    match_type text DEFAULT 'manual'::text,
-    confidence_score double precision DEFAULT 1.0,
-    reconciled_at timestamp with time zone DEFAULT now(),
-    reconciled_by uuid,
-    CONSTRAINT bank_reconciliations_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_reconciliations_bank_line_id_fkey FOREIGN KEY (bank_line_id) REFERENCES public.bank_statement_lines(id) ON DELETE CASCADE,
-    CONSTRAINT bank_reconciliations_journal_entry_id_fkey FOREIGN KEY (journal_entry_id) REFERENCES public.journal_entries(id) ON DELETE CASCADE,
-    CONSTRAINT bank_reconciliations_bank_line_id_key UNIQUE (bank_line_id)
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_line_id uuid UNIQUE,
+  journal_entry_line_id uuid NOT NULL UNIQUE,
+  match_type text DEFAULT 'manual'::text CHECK (match_type = ANY (ARRAY['manual'::text, 'automatic'::text, 'ai_suggested'::text])),
+  confidence_score double precision DEFAULT 1.0,
+  reconciled_at timestamp with time zone DEFAULT now(),
+  reconciled_by uuid,
+  status text DEFAULT 'reconciled'::text,
+  notes text,
+  organization_id uuid,
+  CONSTRAINT bank_reconciliations_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_reconciliations_bank_line_id_fkey FOREIGN KEY (bank_line_id) REFERENCES public.bank_statement_lines(id),
+  CONSTRAINT bank_reconciliations_reconciled_by_fkey FOREIGN KEY (reconciled_by) REFERENCES auth.users(id),
+  CONSTRAINT bank_reconciliations_journal_entry_line_id_fkey FOREIGN KEY (journal_entry_line_id) REFERENCES public.journal_entry_lines(id),
+  CONSTRAINT bank_reconciliations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.bank_statement_lines (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    statement_id uuid,
-    bank_account_id uuid NOT NULL,
-    fecha date NOT NULL,
-    descripcion text NOT NULL,
-    monto bigint NOT NULL,
-    tipo text NOT NULL,
-    referencia_bancaria text,
-    rut_tercero text,
-    is_reconciled boolean DEFAULT false,
-    external_id text,
-    organization_id uuid REFERENCES public.organizations(id),
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT bank_statement_lines_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_statement_lines_statement_id_fkey FOREIGN KEY (statement_id) REFERENCES public.bank_statements(id) ON DELETE CASCADE,
-    CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id),
-    CONSTRAINT bank_statement_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  statement_id uuid,
+  bank_account_id uuid NOT NULL,
+  fecha date NOT NULL,
+  descripcion text NOT NULL,
+  monto bigint NOT NULL,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['cargo'::text, 'abono'::text])),
+  referencia_bancaria text,
+  rut_tercero text,
+  is_reconciled boolean DEFAULT false,
+  external_id text,
+  created_at timestamp with time zone DEFAULT now(),
+  organization_id uuid,
+  CONSTRAINT bank_statement_lines_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_statement_lines_statement_id_fkey FOREIGN KEY (statement_id) REFERENCES public.bank_statements(id),
+  CONSTRAINT bank_statement_lines_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id),
+  CONSTRAINT bank_statement_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE INDEX IF NOT EXISTS idx_bsl_org_id ON public.bank_statement_lines(organization_id);
 CREATE TABLE public.bank_statements (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    bank_account_id uuid NOT NULL,
-    period date NOT NULL,
-    file_name text,
-    original_balance bigint DEFAULT 0,
-    final_balance bigint DEFAULT 0,
-    status text DEFAULT 'processed'::text,
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT bank_statements_pkey PRIMARY KEY (id),
-    CONSTRAINT bank_statements_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id) ON DELETE CASCADE,
-    CONSTRAINT bank_statements_acc_period_unique UNIQUE (bank_account_id, period)
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_account_id uuid NOT NULL,
+  period date NOT NULL,
+  file_name text,
+  original_balance bigint DEFAULT 0,
+  final_balance bigint DEFAULT 0,
+  status text DEFAULT 'processed'::text CHECK (status = ANY (ARRAY['pending'::text, 'processed'::text, 'archived'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_statements_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_statements_bank_account_id_fkey FOREIGN KEY (bank_account_id) REFERENCES public.bank_accounts(id)
 );
 CREATE TABLE public.centralized_account_config (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -118,10 +119,8 @@ CREATE TABLE public.chart_of_accounts (
   activo boolean DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT chart_of_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT chart_of_accounts_org_code_unique UNIQUE (organization_id, codigo)
+  CONSTRAINT chart_of_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE INDEX IF NOT EXISTS idx_coa_org_id ON public.chart_of_accounts(organization_id);
 CREATE TABLE public.economic_indicators (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   codigo character varying NOT NULL UNIQUE,
@@ -185,7 +184,6 @@ CREATE TABLE public.employees (
   nombres text NOT NULL,
   apellido_paterno text NOT NULL,
   apellido_materno text,
-  fecha_nacimiento date,
   fecha_ingreso date NOT NULL,
   fecha_termino date,
   cargo text,
@@ -196,15 +194,26 @@ CREATE TABLE public.employees (
   afp text,
   prevision_salud text,
   monto_isapre bigint DEFAULT 0,
-  cargas_familiares integer DEFAULT 0,
   activo boolean NOT NULL DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  descripcion_cargo text,
+  birth_date date,
+  address text,
+  city character varying,
+  region character varying,
+  family_allowances integer DEFAULT 0,
+  afc_active boolean DEFAULT true,
+  email character varying,
+  phone character varying,
+  sexo character varying,
+  estado_civil character varying,
+  nacionalidad character varying DEFAULT 'Chilena'::character varying,
+  horas_semanales integer DEFAULT 42,
+  horario_detalle text,
   CONSTRAINT employees_pkey PRIMARY KEY (id),
-  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT employees_org_rut_unique UNIQUE (organization_id, rut)
+  CONSTRAINT employees_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE INDEX IF NOT EXISTS idx_emp_org_id ON public.employees(organization_id);
 CREATE TABLE public.employment_contracts (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -215,7 +224,7 @@ CREATE TABLE public.employment_contracts (
   fecha_termino_fijo date,
   sueldo_base bigint NOT NULL,
   cargo text NOT NULL,
-  jornada_horas integer DEFAULT 45,
+  jornada_horas integer DEFAULT 42,
   gratificacion_tipo text DEFAULT 'legal'::text,
   lugar_trabajo text,
   descripcion_cargo text,
@@ -238,12 +247,12 @@ CREATE TABLE public.f29_box_details (
   description text,
   value numeric NOT NULL,
   box_type text DEFAULT 'determinativo'::text,
-  organization_id uuid REFERENCES public.organizations(id),
   created_at timestamp with time zone DEFAULT now(),
+  organization_id uuid,
   CONSTRAINT f29_box_details_pkey PRIMARY KEY (id),
-  CONSTRAINT f29_box_details_f29_id_fkey FOREIGN KEY (f29_id) REFERENCES public.f29_forms(id)
+  CONSTRAINT f29_box_details_f29_id_fkey FOREIGN KEY (f29_id) REFERENCES public.f29_forms(id),
+  CONSTRAINT f29_box_details_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE INDEX IF NOT EXISTS idx_bd_org_id ON public.f29_box_details(organization_id);
 CREATE TABLE public.f29_forms (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -307,13 +316,12 @@ CREATE TABLE public.journal_entry_lines (
   monto bigint NOT NULL CHECK (monto > 0),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   account_id uuid,
-  organization_id uuid REFERENCES public.organizations(id),
+  organization_id uuid,
   CONSTRAINT journal_entry_lines_pkey PRIMARY KEY (id),
   CONSTRAINT journal_entry_lines_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.journal_entries(id),
   CONSTRAINT journal_entry_lines_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.chart_of_accounts(id),
   CONSTRAINT journal_entry_lines_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE INDEX IF NOT EXISTS idx_jl_org_id ON public.journal_entry_lines(organization_id);
 CREATE TABLE public.liquidations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   organization_id uuid NOT NULL,
@@ -354,6 +362,8 @@ CREATE TABLE public.liquidations (
   salud_code character varying DEFAULT ''::character varying,
   uf_valor_usado numeric DEFAULT 0,
   dias_trabajados integer DEFAULT 30,
+  asignacion_familiar bigint DEFAULT 0,
+  bono_extra bigint DEFAULT 0,
   CONSTRAINT liquidations_pkey PRIMARY KEY (id),
   CONSTRAINT liquidations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT liquidations_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id),
@@ -557,7 +567,10 @@ CREATE TABLE public.termination_causes (
   category character varying NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT termination_causes_pkey PRIMARY KEY (id)
-);CREATE OR REPLACE FUNCTION update_updated_at_column()
+);
+
+-- TRIGGERS DE INTEGRIDAD Y AUDITORÍA CONTABLE
+CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -569,6 +582,7 @@ CREATE TRIGGER tr_update_org_timestamp BEFORE UPDATE ON public.organizations FOR
 CREATE TRIGGER tr_update_emp_timestamp BEFORE UPDATE ON public.employees FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER tr_update_fixed_timestamp BEFORE UPDATE ON public.fixed_assets FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
+-- MOTOR DE LLENADO AUTOMÁTICO DE MULTITENENCIA (organization_id)
 CREATE OR REPLACE FUNCTION fill_org_id_from_parent()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -579,6 +593,8 @@ BEGIN
             SELECT organization_id INTO NEW.organization_id FROM public.bank_accounts WHERE id = NEW.bank_account_id;
         ELSIF TG_TABLE_NAME = 'f29_box_details' THEN
             SELECT organization_id INTO NEW.organization_id FROM public.f29_forms WHERE id = NEW.f29_id;
+        ELSIF TG_TABLE_NAME = 'bank_reconciliations' THEN
+            SELECT organization_id INTO NEW.organization_id FROM public.journal_entry_lines WHERE id = NEW.journal_entry_line_id;
         END IF;
     END IF;
     RETURN NEW;
@@ -588,3 +604,4 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER tr_fill_org_jl BEFORE INSERT ON public.journal_entry_lines FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
 CREATE TRIGGER tr_fill_org_bank BEFORE INSERT ON public.bank_statement_lines FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
 CREATE TRIGGER tr_fill_org_f29 BEFORE INSERT ON public.f29_box_details FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
+CREATE TRIGGER tr_fill_org_reconciliation BEFORE INSERT ON public.bank_reconciliations FOR EACH ROW EXECUTE PROCEDURE fill_org_id_from_parent();
