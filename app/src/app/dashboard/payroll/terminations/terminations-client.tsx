@@ -223,7 +223,7 @@ export default function TerminationsClient({
                 <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-sm p-[15mm] md:p-[25mm] relative overflow-hidden ring-1 ring-black/5 print:shadow-none print:my-0 print:p-[20mm] print:max-w-none print:ring-0">
                     {/* Watermark/Texture subtle */}
                     <div className="absolute inset-0 opacity-[0.012] pointer-events-none select-none flex items-center justify-center rotate-[-35deg] print:hidden">
-                        <p className="text-[80px] md:text-[120px] font-black tracking-tighter leading-none text-center">CONTAPYME V2<br/>MAGALLANES 2077</p>
+                        <p className="text-[80px] md:text-[120px] font-black tracking-tighter leading-none text-center">CONTAPYMEPUQ<br/>MAGALLANES 2077</p>
                     </div>
 
                     <div className="relative z-10 whitespace-pre-wrap font-serif text-[14px] md:text-[15px] leading-[1.7] text-slate-800 text-justify selection:bg-rose-100/50 tracking-tight antialiased">

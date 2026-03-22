@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { FileWarning } from 'lucide-react'
 
 export const metadata = {
-  title: 'Finiquitos - Contapyme V2'
+  title: 'Finiquitos - Contapymepuq'
 }
 
 export default async function TerminationsPage() {

@@ -419,5 +419,6 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "uf": res.uf_valor_usado,
             "tipo_contrato": res.tipo_contrato,
             "afp_code": res.afp_code
-        }
+        },
+        "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }

@@ -30,7 +30,7 @@ function formatName(name: string) {
   return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-const FOLIO_REGEX = /^LIQ-\d{6}-\d{4}$/
+const FOLIO_REGEX = /^LIQ-/i
 
 export default function LiquidationDetailPage() {
   const params = useParams()
@@ -103,7 +103,7 @@ export default function LiquidationDetailPage() {
 
     // Encabezado empresa
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14)
-    doc.text(organization?.nombre || 'ContaPyme V2', 20, 20)
+    doc.text(organization?.nombre || 'Contapymepuq', 20, 20)
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10)
     doc.text(`RUT: ${organization?.rut_empresa || ''}`, 20, 26)
     doc.text(`Giro: ${organization?.giro || ''}`, 20, 31)
@@ -197,7 +197,7 @@ export default function LiquidationDetailPage() {
 
     // Footer
     doc.setFontSize(7); doc.setTextColor(150)
-    doc.text(`Documento generado por ContaPyme V2 | Emisión: ${new Date().toLocaleString('es-CL')}`, 105, 285, { align: 'center' })
+    doc.text(`Documento generado por Contapymepuq | Emisión: ${new Date().toLocaleString('es-CL')}`, 105, 285, { align: 'center' })
 
     return doc
   }
