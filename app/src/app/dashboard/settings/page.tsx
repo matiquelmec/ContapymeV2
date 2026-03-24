@@ -53,9 +53,9 @@ export default async function GlobalSettingsPage() {
       <SettingsPageClient 
         organizationId={orgId}
         userEmail={user.email || ""}
-        initialProfile={profile}
-        initialOrganization={organization}
-        initialMembers={members}
+        initialProfile={JSON.parse(JSON.stringify(profile))}
+        initialOrganization={JSON.parse(JSON.stringify(organization))}
+        initialMembers={JSON.parse(JSON.stringify(members))}
       />
     </div>
   );

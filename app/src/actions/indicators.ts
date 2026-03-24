@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function getLatestIndicators() {
   const supabase = await createClient()
@@ -11,7 +12,6 @@ export async function getLatestIndicators() {
       .select('*')
     
     if (error) {
-      // Solo loguear si hay un error real y no es un problema de sesión expirada
       if (error.code !== 'PGRST116') { 
         console.warn('[Indicators] Nota: Usando valores de referencia (fuera de línea).', error.message || '');
       }
@@ -26,10 +26,8 @@ export async function getLatestIndicators() {
 
 export async function updateIndicators() {
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-    const res = await fetch(`${engineUrl}/api/v1/indicators/update`, {
+    const res = await engineFetch('/api/v1/indicators/update', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
     })
 

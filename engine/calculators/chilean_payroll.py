@@ -329,13 +329,16 @@ def calcular_liquidacion(
     
     # Salud: Lógica dual FONASA vs Isapre
     # - FONASA: siempre 7% del imponible topado
-    # - ISAPRE: max(7% del imponible, plan_uf × valor_uf)
+    # - ISAPRE: max(7% del imponible, plan_uf × valor_uf), topado al imponible salud
     descuento_salud_legal = int(base_salud * (7.0 / 100))  # Piso obligatorio 7%
     descuento_salud_voluntaria = 0
     
     if emp.plan_salud_uf > 0 and emp.salud_code != "FONASA":
         # Trabajador con Isapre: el descuento real es el plan en UF
         plan_en_pesos = int(emp.plan_salud_uf * settings.uf_valor)
+        # TOPE: El descuento total de salud no puede superar la base imponible de salud
+        # En la práctica, si el plan excede el imponible, el empleador asume la diferencia
+        plan_en_pesos = min(plan_en_pesos, base_salud)
         if plan_en_pesos > descuento_salud_legal:
             descuento_salud_voluntaria = plan_en_pesos - descuento_salud_legal
         descuento_salud = max(descuento_salud_legal, plan_en_pesos)
@@ -393,7 +396,20 @@ def calcular_liquidacion(
     res.total_cargos_empresa = afc_empresa + sis_empresa
 
     # ── 5. SUELDO LÍQUIDO ─────────────────────────────────────────────────────
-    res.sueldo_liquido = res.total_haberes_brutos - res.total_descuentos_legales
+    liquido = res.total_haberes_brutos - res.total_descuentos_legales
+    
+    # PROTECCIÓN: El sueldo líquido no puede ser negativo. Si lo es,
+    # se genera una advertencia (puede indicar un plan de Isapre desproporcionado
+    # o muy pocos días trabajados). En producción, el empleador debe revisar.
+    if liquido < 0:
+        res.advertencias.append(
+            f"⚠️ Líquido negativo (${liquido:,}). Descuentos exceden haberes. "
+            f"Posible causa: plan de salud elevado ({emp.plan_salud_uf} UF) con pocos días ({emp.dias_trabajados})."
+        )
+        liquido = 0
+    
+    res.sueldo_liquido = liquido
+
 
     return res
 

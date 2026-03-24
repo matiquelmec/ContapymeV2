@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
-const ENGINE_URL = process.env.ENGINE_URL || "http://localhost:8000";
+import { engineFetch } from "@/lib/engine-client";
 
 export async function getBankAccounts(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/bank/accounts?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/bank/accounts?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) return [];
@@ -25,9 +24,8 @@ export async function createBankAccount(data: {
   chart_account_id?: string;
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/bank/accounts`, {
+    const response = await engineFetch(`/api/v1/bank/accounts`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error("Error al crear cuenta bancaria");
@@ -40,8 +38,7 @@ export async function createBankAccount(data: {
 
 export async function analyzeBankStatementAction(formData: FormData) {
   try {
-    // El formData ya debe contener organization_id y bank_account_id desde el cliente
-    const response = await fetch(`${ENGINE_URL}/api/v1/bank/analyze`, {
+    const response = await engineFetch(`/api/v1/bank/analyze`, {
       method: "POST",
       body: formData,
     });
@@ -65,9 +62,8 @@ export async function saveReconciliationAction(data: {
   }>;
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/bank/save-reconciliation`, {
+    const response = await engineFetch(`/api/v1/bank/save-reconciliation`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     
@@ -89,7 +85,7 @@ export async function saveReconciliationAction(data: {
 
 export async function getBankMappingRules(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/bank/rules/${organizationId}`, {
+    const response = await engineFetch(`/api/v1/bank/rules/${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) return [];
@@ -97,5 +93,30 @@ export async function getBankMappingRules(organizationId: string) {
   } catch (error) {
     console.error("error getBankMappingRules:", error);
     return [];
+  }
+}
+
+export async function reconcileWithAdjustmentAction(data: {
+  bank_line_id: string;
+  account_code: string;
+  account_name: string;
+  organization_id: string;
+}) {
+  try {
+    const response = await engineFetch(`/api/v1/bank/reconcile-with-adjustment`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.detail || "Error al procesar ajuste bancario");
+    }
+    
+    revalidatePath("/dashboard/reconciliation");
+    return { success: true, message: result.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
   }
 }

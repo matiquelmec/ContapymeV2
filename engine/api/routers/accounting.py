@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from core.database import get_supabase
+from core.auth import verify_token
+from core.logger import log_activity
 
 router = APIRouter()
 
@@ -87,8 +89,25 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
         }
     return None
 
+def get_mapping_account(db, org_id: str, context: str):
+    """Busca una cuenta específica mapeada para un contexto (ej: RUT)."""
+    if not context: return None
+    res = db.table("account_mapping_rules").select("account_id, chart_of_accounts(codigo, nombre)") \
+        .eq("organization_id", org_id) \
+        .eq("context", context) \
+        .eq("is_active", True) \
+        .execute()
+    if res.data and len(res.data) > 0:
+        acc = res.data[0].get("chart_of_accounts")
+        if acc:
+            return {"codigo": acc["codigo"], "nombre": acc["nombre"]}
+    return None
+
 @router.post("/generate-from-rcv")
-async def generate_from_rcv(req: GenerateFromRCVRequest):
+async def generate_from_rcv(
+    req: GenerateFromRCVRequest,
+    current_user: dict = Depends(verify_token)
+):
     db = get_supabase()
     try:
         # Normalizar periodo globalmente para la función
@@ -115,7 +134,13 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
             '112': 'Nota de Crédito Export.'
         }
 
-        count = 0
+        def to_int(val):
+            try: return int(float(val or 0))
+            except: return 0
+
+        # ===== BATCH ATÓMICO: Recopilamos TODOS los asientos antes de insertarlos =====
+        batch_entries = []
+
         if req.type == 'purchases':
             res = db.table("purchase_records").select("*") \
                 .eq("organization_id", req.organization_id) \
@@ -125,71 +150,50 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
             records = res.data or []
             
             for rec in records:
-                # Aseguramos conversión a int robusta
-                def to_int(val):
-                    try: return int(float(val or 0))
-                    except: return 0
-
                 monto_total = to_int(rec.get("monto_total"))
                 if monto_total == 0:
-                    print(f"Saltando registro Folio {rec.get('folio')} por monto $0")
                     continue
+
+                rut_emisor = str(rec.get("rut_emisor", ""))
+                mapping_acc = get_mapping_account(db, req.organization_id, rut_emisor)
+                
+                gasto_code = mapping_acc["codigo"] if mapping_acc else config["revenue_account_code"]
+                gasto_name = mapping_acc["nombre"] if mapping_acc else config["revenue_account_name"]
 
                 es_suma = rec.get("es_suma", True)
                 tipo_doc_id = str(rec.get("tipo_documento", "33"))
                 doc_name = doc_names.get(tipo_doc_id, f"Doc.{tipo_doc_id}")
                 partner = rec.get('razon_social_emisor', 'S/N')
                 glosa = f"{doc_name} Folio {rec['folio']} - {partner}"
-                
-                if not es_suma:
-                    glosa = f"[AJUSTE] {glosa}"
+                if not es_suma: glosa = f"[AJUSTE] {glosa}"
 
-                monto_neto = int(rec.get("monto_neto", 0) or 0)
-                monto_exento = int(rec.get("monto_exento", 0) or 0)
-                monto_iva = int(rec.get("monto_iva", 0) or 0)
+                monto_neto = to_int(rec.get("monto_neto"))
+                monto_exento = to_int(rec.get("monto_exento"))
+                monto_iva = to_int(rec.get("monto_iva"))
                 monto_base = monto_neto + monto_exento
 
                 if abs(monto_base + monto_iva) != abs(monto_total):
                     monto_base = abs(monto_total) - abs(monto_iva)
 
-                lines_to_insert = []
+                lines = []
                 tipo_gasto = "debe" if es_suma else "haber"
                 tipo_pasivo = "haber" if es_suma else "debe"
 
                 if monto_base != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["revenue_account_code"], 
-                        "cuenta_nombre": config["revenue_account_name"], 
-                        "tipo": tipo_gasto, "monto": abs(monto_base)
-                    })
-                
+                    lines.append({"cuenta_codigo": gasto_code, "cuenta_nombre": gasto_name, "tipo": tipo_gasto, "monto": abs(monto_base)})
                 if monto_iva != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["tax_account_code"], 
-                        "cuenta_nombre": config["tax_account_name"], 
-                        "tipo": tipo_gasto, "monto": abs(monto_iva)
-                    })
-                
+                    lines.append({"cuenta_codigo": config["tax_account_code"], "cuenta_nombre": config["tax_account_name"], "tipo": tipo_gasto, "monto": abs(monto_iva)})
                 if monto_total != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["asset_account_code"], 
-                        "cuenta_nombre": config["asset_account_name"], 
-                        "tipo": tipo_pasivo, "monto": abs(monto_total)
-                    })
+                    lines.append({"cuenta_codigo": config["asset_account_code"], "cuenta_nombre": config["asset_account_name"], "tipo": tipo_pasivo, "monto": abs(monto_total)})
 
-                if lines_to_insert:
-                    # USAR RPC PARA ATOMICIDAD (Insertar cabecera + líneas en un solo paso DB)
-                    rpc_res = db.rpc("create_journal_entry_with_lines", {
-                        "p_organization_id": req.organization_id,
-                        "p_fecha": rec["fecha_docto"],
-                        "p_glosa": glosa,
-                        "p_lines": lines_to_insert
-                    }).execute()
-                    
-                    if rpc_res.data:
-                        eid = rpc_res.data
-                        db.table("purchase_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                        count += 1
+                if lines:
+                    batch_entries.append({
+                        "fecha": rec["fecha_docto"],
+                        "glosa": glosa,
+                        "record_id": rec["id"],
+                        "record_table": "purchase_records",
+                        "lines": lines
+                    })
 
         elif req.type == 'sales':
             res = db.table("sales_records").select("*") \
@@ -200,70 +204,101 @@ async def generate_from_rcv(req: GenerateFromRCVRequest):
             records = res.data or []
             
             for rec in records:
-                monto_total = int(rec.get("monto_total", 0) or 0)
+                monto_total = to_int(rec.get("monto_total"))
                 if monto_total == 0:
                     continue
+
+                rut_receptor = str(rec.get("rut_receptor", ""))
+                mapping_acc = get_mapping_account(db, req.organization_id, rut_receptor)
+                
+                ingreso_code = mapping_acc["codigo"] if mapping_acc else config["revenue_account_code"]
+                ingreso_name = mapping_acc["nombre"] if mapping_acc else config["revenue_account_name"]
 
                 es_suma = rec.get("es_suma", True)
                 tipo_doc_id = str(rec.get("tipo_documento", "33"))
                 doc_name = doc_names.get(tipo_doc_id, f"Doc.{tipo_doc_id}")
                 partner = rec.get('razon_social_receptor', 'S/N')
                 glosa = f"{doc_name} Folio {rec['folio']} - {partner}"
+                if not es_suma: glosa = f"[AJUSTE] {glosa}"
 
-                if not es_suma:
-                    glosa = f"[AJUSTE] {glosa}"
-
-                monto_neto = int(rec.get("monto_neto", 0) or 0)
-                monto_exento = int(rec.get("monto_exento", 0) or 0)
-                monto_iva = int(rec.get("monto_iva", 0) or 0)
+                monto_neto = to_int(rec.get("monto_neto"))
+                monto_exento = to_int(rec.get("monto_exento"))
+                monto_iva = to_int(rec.get("monto_iva"))
                 monto_base = monto_neto + monto_exento
 
                 if abs(monto_base + monto_iva) != abs(monto_total):
                     monto_base = abs(monto_total) - abs(monto_iva)
 
-                lines_to_insert = []
+                lines = []
                 tipo_activo = "debe" if es_suma else "haber"
                 tipo_ingreso = "haber" if es_suma else "debe"
 
                 if monto_total != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["asset_account_code"], 
-                        "cuenta_nombre": config["asset_account_name"], 
-                        "tipo": tipo_activo, "monto": abs(monto_total)
-                    })
-                
+                    lines.append({"cuenta_codigo": config["asset_account_code"], "cuenta_nombre": config["asset_account_name"], "tipo": tipo_activo, "monto": abs(monto_total)})
                 if monto_iva != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["tax_account_code"], 
-                        "cuenta_nombre": config["tax_account_name"], 
-                        "tipo": tipo_ingreso, "monto": abs(monto_iva)
-                    })
-                
+                    lines.append({"cuenta_codigo": config["tax_account_code"], "cuenta_nombre": config["tax_account_name"], "tipo": tipo_ingreso, "monto": abs(monto_iva)})
                 if monto_base != 0:
-                    lines_to_insert.append({
-                        "cuenta_codigo": config["revenue_account_code"], 
-                        "cuenta_nombre": config["revenue_account_name"], 
-                        "tipo": tipo_ingreso, "monto": abs(monto_base)
+                    lines.append({"cuenta_codigo": ingreso_code, "cuenta_nombre": ingreso_name, "tipo": tipo_ingreso, "monto": abs(monto_base)})
+
+                if lines:
+                    batch_entries.append({
+                        "fecha": rec["fecha_docto"],
+                        "glosa": glosa,
+                        "record_id": rec["id"],
+                        "record_table": "sales_records",
+                        "lines": lines
                     })
 
-                if lines_to_insert:
-                    # USAR RPC PARA ATOMICIDAD
-                    rpc_res = db.rpc("create_journal_entry_with_lines", {
-                        "p_organization_id": req.organization_id,
-                        "p_fecha": rec["fecha_docto"],
-                        "p_glosa": glosa,
-                        "p_lines": lines_to_insert
-                    }).execute()
-                    
-                    if rpc_res.data:
-                        eid = rpc_res.data
-                        db.table("sales_records").update({"journal_entry_id": eid}).eq("id", rec["id"]).execute()
-                        count += 1
+        # ===== EJECUTAR BATCH ATÓMICO =====
+        count = 0
+        if batch_entries:
+            try:
+                rpc_res = db.rpc("batch_create_journal_entries", {
+                    "p_organization_id": req.organization_id,
+                    "p_entries": batch_entries
+                }).execute()
+                
+                if rpc_res.data and rpc_res.data.get("success"):
+                    count = rpc_res.data.get("entries_created", 0)
+            except Exception as batch_err:
+                # Fallback: si la RPC batch no existe todavía, usar método legacy individual
+                print(f"[WARN] batch_create_journal_entries no disponible, usando fallback individual: {batch_err}")
+                for entry in batch_entries:
+                    try:
+                        rpc_res = db.rpc("create_journal_entry_with_lines", {
+                            "p_organization_id": req.organization_id,
+                            "p_fecha": entry["fecha"],
+                            "p_glosa": entry["glosa"],
+                            "p_lines": entry["lines"]
+                        }).execute()
+                        
+                        if rpc_res.data:
+                            table = entry["record_table"]
+                            db.table(table).update({"journal_entry_id": rpc_res.data}).eq("id", entry["record_id"]).execute()
+                            count += 1
+                    except Exception as e_inner:
+                        print(f"[ERROR] Fallback entry failed: {e_inner}")
+
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="generate_accounting_from_rcv",
+            organization_id=req.organization_id,
+            user_id=current_user.get("id"),
+            entity_type="accounting_period",
+            entity_id=f"{req.organization_id}_{req.periodo}_{req.type}",
+            details={
+                "periodo": req.periodo,
+                "type": req.type,
+                "entries_created": count,
+                "mode": "batch_atomic" if batch_entries and count == len(batch_entries) else "legacy_fallback"
+            }
+        )
 
         return {"success": True, "entries_created": count}
     except Exception as e:
         print(f"[ERROR generate_from_rcv] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/generate-from-payroll")
 async def generate_from_payroll(req: GenerateFromPayrollRequest):

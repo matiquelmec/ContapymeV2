@@ -6,6 +6,9 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from parsers.f29_plumber import parse_f29_pdf
 from core.database import get_supabase
+from core.auth import verify_token
+from core.logger import log_activity, log_system_error
+from fastapi import Depends
 
 router = APIRouter(tags=["Formulario 29"])
 
@@ -20,7 +23,7 @@ class F29Response(BaseModel):
     error: str | None = None
 
 @router.post("/process", response_model=F29Response)
-async def process_f29(payload: ProcessF29Request):
+async def process_f29(payload: ProcessF29Request, current_user: dict = Depends(verify_token)):
     """
     Endpoint de alta intensidad de CPU. 
     1. Descarga el PDF temporalmente desde Supabase Storage.
@@ -44,8 +47,27 @@ async def process_f29(payload: ProcessF29Request):
         parse_result = await run_in_threadpool(parse_f29_pdf, temp_path)
         
         if not parse_result.get("success"):
+            log_system_error(
+                category="F29_PARSER",
+                message=parse_result.get("error", "Error desconocido"),
+                organization_id=payload.org_id,
+                details={"storage_path": payload.storage_path}
+            )
             raise HTTPException(status_code=422, detail=parse_result.get("error"))
             
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="process_f29_pdf",
+            organization_id=payload.org_id,
+            user_id=current_user.get("id"),
+            entity_type="f29_form",
+            entity_id=payload.storage_path,
+            details={
+                "method": "pdfplumber",
+                "success": True
+            }
+        )
+
         return F29Response(
             success=True, 
             data=parse_result["data"],
@@ -60,20 +82,20 @@ async def process_f29(payload: ProcessF29Request):
             os.remove(temp_path)
 
 @router.get("/debug/all")
-async def debug_all_f29():
+async def debug_all_f29(current_user: dict = Depends(verify_token)):
     db = get_supabase()
     result = db.table("f29_forms").select("*").execute()
     return {"total": len(result.data), "data": result.data}
 
 @router.delete("/{f29_id}")
-async def delete_f29_record(f29_id: str):
+async def delete_f29_record(f29_id: str, current_user: dict = Depends(verify_token)):
     """Elimina un registro de F29 por su ID."""
     db = get_supabase()
     result = db.table("f29_forms").delete().eq("id", f29_id).execute()
     return {"success": True, "message": f"Registro {f29_id} eliminado."}
 
 @router.get("/analysis/history")
-async def get_f29_history(organization_id: str, limit: int = 12):
+async def get_f29_history(organization_id: str, limit: int = 12, current_user: dict = Depends(verify_token)):
     """
     Recupera el historial de F29 y calcula variaciones porcentuales (Tendencias).
     """

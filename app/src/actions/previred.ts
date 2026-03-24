@@ -1,6 +1,7 @@
 'use server'
 
 import { getActiveOrganizationId } from './organizations'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function exportPreviredAction(clientOrgId: string, periodo: string) {
   try {
@@ -11,11 +12,9 @@ export async function exportPreviredAction(clientOrgId: string, periodo: string)
     if (!activeOrgId) {
       return { success: false, error: 'Sesión no válida o sin empresa activa.' }
     }
-
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
     
     // El periodo debe venir como YYYY-MM-01
-    const response = await fetch(`${engineUrl}/api/v1/previred/export-previred/${activeOrgId}?periodo=${periodo}`, {
+    const response = await engineFetch(`/api/v1/previred/export-previred/${activeOrgId}?periodo=${periodo}`, {
       method: 'GET',
       cache: 'no-store'
     })

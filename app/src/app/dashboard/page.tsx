@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
-import { TrendingUp, DollarSign, Building2, BarChart3, Clock, AlertCircle, FileText, Users } from 'lucide-react'
+import { TrendingUp, DollarSign, Building2, BarChart3, Clock, AlertCircle, FileText, Users, Rocket, CheckCircle2 } from 'lucide-react'
 import { UpdateIndicatorsButton } from './components/update-indicators-button'
 import { ExecutiveDashboardClient } from './executive-dashboard-client'
 
@@ -58,6 +58,12 @@ export default async function DashboardPage() {
       })
     : null
 
+  // Onboarding metrics
+  const hasIndicators = (indicators || []).length > 0;
+  const hasEmployees = (totalEmpleados || 0) > 0;
+  const hasF29 = (totalF29 || 0) > 0;
+  const showOnboardingChecklist = !hasIndicators || !hasEmployees || !hasF29;
+
   return (
     <div className="space-y-12 animate-in fade-in zoom-in duration-700">
 
@@ -76,6 +82,47 @@ export default async function DashboardPage() {
         </div>
         <UpdateIndicatorsButton />
       </div>
+
+      {/* ===== CHECKLIST DE ONBOARDING ===== */}
+      {showOnboardingChecklist && (
+        <section className="bg-gradient-to-br from-primary/10 via-emerald-500/5 to-transparent border border-primary/20 rounded-3xl p-8 shadow-inner shadow-primary/5">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="bg-primary/20 p-3 rounded-2xl text-primary">
+              <Rocket className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-foreground tracking-tight">¡Bienvenido a Contapyme V2! 🚀</h2>
+              <p className="text-muted-foreground text-sm font-medium">Te recomendamos completar estos primeros pasos para dejar tu empresa 100% operativa:</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={`p-5 rounded-2xl border-2 transition-colors ${hasIndicators ? 'bg-emerald-50 border-emerald-200' : 'bg-card border-dashed border-border'}`}>
+              <div className="flex items-center gap-3 mb-2">
+                {hasIndicators ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />}
+                <h3 className={`font-bold ${hasIndicators ? 'text-emerald-800' : 'text-foreground'}`}>Sincroniza Indicadores</h3>
+              </div>
+              <p className={`text-xs ${hasIndicators ? 'text-emerald-600/80' : 'text-muted-foreground'}`}>Haz clic en "Sincronizar Indicadores" arriba para descargar la UF y UTM del día.</p>
+            </div>
+
+            <div className={`p-5 rounded-2xl border-2 transition-colors ${hasF29 ? 'bg-emerald-50 border-emerald-200' : 'bg-card border-dashed border-border'}`}>
+              <div className="flex items-center gap-3 mb-2">
+                {hasF29 ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />}
+                <h3 className={`font-bold ${hasF29 ? 'text-emerald-800' : 'text-foreground'}`}>Sube tu F29</h3>
+              </div>
+              <p className={`text-xs ${hasF29 ? 'text-emerald-600/80' : 'text-muted-foreground'}`}>Sube tu primer Formulario 29 en PDF y nuestro motor Python extraerá los datos y asientos.</p>
+            </div>
+
+            <div className={`p-5 rounded-2xl border-2 transition-colors ${hasEmployees ? 'bg-emerald-50 border-emerald-200' : 'bg-card border-dashed border-border'}`}>
+              <div className="flex items-center gap-3 mb-2">
+                {hasEmployees ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />}
+                <h3 className={`font-bold ${hasEmployees ? 'text-emerald-800' : 'text-foreground'}`}>Registra Empleados</h3>
+              </div>
+              <p className={`text-xs ${hasEmployees ? 'text-emerald-600/80' : 'text-muted-foreground'}`}>Visita el módulo de Remuneraciones para dar de alta a tu equipo.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ===== INDICADORES ECONÓMICOS ===== */}
       <section className="space-y-5">

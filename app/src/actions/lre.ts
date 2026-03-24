@@ -1,13 +1,11 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-const ENGINE_URL = process.env.ENGINE_URL || "http://localhost:8000";
+import { engineFetch } from "@/lib/engine-client";
 
 export async function getLREBooks(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/payroll/lre/list?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/payroll/lre/list?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     
@@ -32,9 +30,8 @@ export async function generateLREAction(formData: {
   company_rut: string;
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/payroll/lre/generate`, {
+    const response = await engineFetch('/api/v1/payroll/lre/generate', {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
 
@@ -50,7 +47,7 @@ export async function generateLREAction(formData: {
 
 export async function exportLREAction(bookId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/payroll/lre/export/${bookId}`);
+    const response = await engineFetch(`/api/v1/payroll/lre/export/${bookId}`);
     if (!response.ok) throw new Error("Error al exportar LRE");
     
     const blob = await response.text(); // CSV as text

@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 3.0 (Magallanes 2077 — Sincro Total 🛡️💎) | **Fecha:** 2026-03-21 | **Estado:** EN DESARROLLO 🚧 — Blindaje Multitenencia & Estética Luxury 🏛️🏦
+> **Versión:** 3.1 (Magallanes 2077 — Sincro Total 🛡️💎) | **Fecha:** 2026-03-23 | **Estado:** EN DESARROLLO 🚧 — Blindaje Multitenencia & Estética Luxury 🏛️🏦
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -15,9 +15,9 @@
 > - Engine API + Docs: http://localhost:8000/docs
 >
 > [!TIP]
-> **AUDITORÍA DE ESQUEMA (SINCRO 21-03 FINAL):** 
+> **AUDITORÍA DE ESQUEMA (SINCRO 23-03 FINAL):** 
 > El estado maestro de todas las tablas se encuentra consolidado en:
-> `supabase/snapshots/master_snapshot_20260321.sql` (Única Fuente de Verdad Sincronizada).
+> `supabase/snapshots/master_snapshot_20260323.sql` (Única Fuente de Verdad Sincronizada).
 
 ---
 
@@ -89,9 +89,14 @@ Extensa lógica progresiva y normativa chilena completa con **Estética Instituc
     - **Acciones:** Procesar nómina individual/masiva, exportar Previred, generar contratos DOCX.
 *   **Python Engine:** `calculators/chilean_payroll.py` — Motor puro con tabla IRPF SII progresiva, topes AFP/Salud por UF, gratificación legal topada (Art. 50 CT), AFC, SIS y cargos empresa. Soporta cálculos complejos de finiquitos (Vacaciones proporcionales, Indemnización por años de servicio, Mes de Aviso).
 
-### 3.4 🏢 Módulo de Activos Fijos (Depreciación IFRS)
-*   **Python Engine:** Cálculos en *batch* sobre tablas PostgreSQL. Genera asientos contables propuestos de depreciación.
-*   **Next.js:** Listados de activos, valores residuales y activos próximos a expirar.
+### 3.4 🏢 Módulo de Activos Fijos (Depreciación e Inventario IFRS) — [ESTADO: ✅ INTEGRADO]
+Sistema centralizado para el control de propiedad, planta y equipo (PPE) bajo normativa IIFRS/NIC16.
+*   **Python Engine (`api/routers/assets.py`):** Cálculos automatizados de depreciación (Lineal y Acelerada) con protecciones anti-duplicación por periodo.
+    - **Centralización Atómica:** Inyección de asientos contables mediante la RPC `create_journal_entry_with_lines`, vinculando el gasto (`5.1.03.001`) contra la depreciación acumulada (`1.1.05.001`) de forma automática.
+    - **Trazabilidad:** Cada asiento del Libro Diario guarda el `fixed_asset_id` para auditorías históricas.
+*   **Next.js (Luxury UI):** Dashboard de activos con visualización de valor libro, valor residual y depreciación acumulada.
+    - **Gestión de Inventario Física:** Control detallado de metadatos: Categoría, Marca, Modelo, Ubicación y Responsable asignado.
+    - **Acciones Rápidas:** Botón de "Ejecutar Depreciación" que gatilla el cierre contable del módulo en un solo clic.
 
 ### 3.5 📉 Módulo Indicadores Económicos
 *   **Python Engine:** `workers/indicators_scheduler.py` — APScheduler que corre **automáticamente Lun-Vie a las 09:00 AM (hora Santiago)** consultando mindicador.cl y almacenando en Supabase. También se ejecuta al iniciar el servidor (lifespan FastAPI).
@@ -116,6 +121,11 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
     - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Awareness).
     - **Orden Cronológico:** Priorización automática de los periodos más recientes.
     - **Integridad:** Sincronizado con triggers SQL y lógica de aislamiento por organización.
+*   **3.9 🚀 Módulo de Onboarding Institucional (UX Premium)**
+    - **Paso 1: Perfil Profesional:** Captura de datos extendidos del contador (Teléfono, Especialidad/Rol).
+    - **Paso 2: Constitución de Empresa:** Registro de RUT, Nombre, Giro y **Régimen Tributario** (Pro Pyme, General, etc.).
+    - **Paso 3: Aprovisionamiento Automático:** Ejecución de RPCs para sembrar el Plan de Cuentas estándar Chile y la Configuración Previsional (AFPs/Isapres) de forma atómica.
+    - **Paso 4: Activación:** Marcado de `onboarding_completed` y redirección al Dashboard operativo.
 
 ---
 
@@ -227,18 +237,22 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 
 ### FASE 1 - 7 ✅ COMPLETADAS (Módulos Core e Infraestructura Base)
 
-### FASE 8: Optimización y Lanzamiento Corporativo (EN PROCESO)
-Puesta en marcha productiva de alto estrés.
-- [x] **Company Switcher** real en el Header (multi-empresa activa con cambio de contexto).
-- [ ] Pruebas unitarias `calculators/` con pytest (casos extremos: SIS, topes UF, impuesto).
-- [ ] Reemplazar copias locales por CI/CD: Vercel (app) + Railway/Render (engine).
-- [ ] Automatizar Worker de Indicadores con cron en producción.
-- [x] **Hardening Maestro (Sincro Total) 🛡️**: Aislamiento total de multitenencia en BD sincronizado con `master_snapshot_20260322.sql`.
-- [x] **Adopción Estética Luxury ERP 🏛️**: Refactorización de componentes críticos (Finiquitos, Payroll) hacia un diseño de alta gama.
-- [x] **Centralización de Nómina IFRS 🤖**: Inyección automática y dinámica del árbol de cuentas completo de RRHH en BD, garantizando cuadratura perfecta por empresa con idempotencia estructurada.
-- [ ] Roles granulares: owner / accountant / viewer con permisos diferenciados.
-- [ ] Módulo de Auditoría y Logs: Registro de acciones críticas.
-- [ ] Stress-Test y validaciones unitarias (pytest + Vitest).
+## 🗓️ Hoja de Ruta (Q1-Q2 2026)
+
+### Fase 8: Hardening Maestro (Sincro Total) 🛡️ — **100% COMPLETADO**
+*   [x] **Auditoría Virtual B2B:** Registro de acciones críticas (Logs) y visualización en Settings.
+*   [x] **Roles Granulares:** Implementación de RBAC (Owner/Admin/Accountant) en Engine y Frontend.
+*   [x] **Invitaciones de Equipo:** Sistema de invitaciones vía email y gestión de miembros (Activo).
+*   [x] **Stress-Test:** Validaciones masivas del Payroll Calculator (1000+ iters) y pruebas unitarias.
+*   [x] **Automatización de Indicadores:** Worker cronometrado (APScheduler) integrado en el Lifespan.
+*   [x] **Sincronización de Esquema:** Generación de snapshots SQL y validación de tipos TS.
+*   [x] **Flujo de Onboarding:** Implementación de registro paso a paso con seeding automático de configuración.
+*   [x] **CI/CD Ready:** Dockerfile y railway.json configurados para despliegue automático.
+
+### Fase 9: Post-Lanzamiento y Mantenimiento 💎 — **EN PROCESO**
+*   [ ] **Seguridad Avanzada:** Copias de seguridad automáticas (Supabase PITR).
+*   [ ] **Multi-divisa:** Soporte para activos fijos en USD/EUR y conversión en tiempo real.
+*   [x] **Motor de Auditoría Proactiva:** Auditoría cruzada en F29 y Payroll (Implementado).
 
 ---
 
@@ -255,17 +269,19 @@ Puesta en marcha productiva de alto estrés.
 | Asistente IA Descriptores de Cargo | ✅ Completado |
 | Reportes Financieros (EE.RR, Balance) | ✅ Completado |
 | Company Switcher activo | ✅ Completado |
-| Roles y permisos granulares | ⏳ Fase 8 |
+| Roles y permisos granulares | ✅ Completado (Fase 8) |
 
 ---
 
 ## 🔧 8. DEUDAS TÉCNICAS CONOCIDAS
 
-| ID | Descripción | Severidad | Fase |
+| ID | Descripción | Severidad | Estado |
 |---|---|---|---|
-| DT-14 | Seguridad de Engine: Falta validación de JWT/Auth-Token en routers de FastAPI | Crítica | 8.3 |
-| DT-15 | Atomicidad: Importación RCV y Asientos no están bajo transacción única (Riesgo Integridad) | Crítica | 8.3 |
-| DT-16 | Observabilidad: Falta sistema de alertas proactivo ante fallos de parsers (Cambios Formato SII) | Media | 8.3 |
+| DT-14 | Seguridad de Engine: Auth Middleware JWT implementado | Crítica | **✅ CUMPLIDO** |
+| DT-17 | Auditoría: Tabla `audit_logs` y motor de logging centralizado | Crítica | **✅ CUMPLIDO** |
+| DT-15 | Atomicidad: Importación RCV y Asientos bajo transacción única (`batch_create_journal_entries` RPC) | Crítica | **✅ CUMPLIDO** |
+| DT-16 | Observabilidad: `log_system_error()` registra fallos de parsers (F29, RCV) en Bitácora Central | Media | **✅ CUMPLIDO** |
+
 
 ---
 

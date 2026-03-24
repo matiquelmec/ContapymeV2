@@ -2,12 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-const ENGINE_URL = process.env.ENGINE_URL || "http://localhost:8000";
+import { engineFetch } from "@/lib/engine-client";
 
 export async function getChartOfAccounts(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) throw new Error("Error al obtener plan de cuentas");
@@ -20,7 +19,7 @@ export async function getChartOfAccounts(organizationId: string) {
 
 export async function initializeChartAction(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/initialize?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts/initialize?organization_id=${organizationId}`, {
       method: "POST",
     });
     const result = await response.json();
@@ -41,7 +40,7 @@ export async function generateAccountingFromRCV(formData: {
   type: 'purchases' | 'sales';
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/generate-from-rcv`, {
+    const response = await engineFetch(`/api/v1/accounting/generate-from-rcv`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
@@ -59,11 +58,11 @@ export async function generateAccountingFromRCV(formData: {
 
 export async function getLedger(organizationId: string, accountCode: string, startDate?: string, endDate?: string) {
   try {
-    let url = `${ENGINE_URL}/api/v1/accounting/ledger?organization_id=${organizationId}&account_code=${accountCode}`;
+    let url = `/api/v1/accounting/ledger?organization_id=${organizationId}&account_code=${accountCode}`;
     if (startDate) url += `&start_date=${startDate}`;
     if (endDate) url += `&end_date=${endDate}`;
 
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await engineFetch(url, { cache: 'no-store' });
     if (!response.ok) {
         const err = await response.json();
         throw new Error(err.detail || "Error al obtener libro mayor");
@@ -77,8 +76,8 @@ export async function getLedger(organizationId: string, accountCode: string, sta
 
 export async function getTrialBalance(organizationId: string, startDate: string, endDate: string) {
   try {
-    const response = await fetch(
-      `${ENGINE_URL}/api/v1/accounting/trial-balance?organization_id=${organizationId}&start_date=${startDate}&end_date=${endDate}`,
+    const response = await engineFetch(
+      `/api/v1/accounting/trial-balance?organization_id=${organizationId}&start_date=${startDate}&end_date=${endDate}`,
       { cache: 'no-store' }
     );
     if (!response.ok) throw new Error("Error al obtener balance de comprobación");
@@ -91,10 +90,10 @@ export async function getTrialBalance(organizationId: string, startDate: string,
 
 export async function getFinancialReports(organizationId: string, year: number, month?: number) {
   try {
-    let url = `${ENGINE_URL}/api/v1/accounting/reports?organization_id=${organizationId}&year=${year}`;
+    let url = `/api/v1/accounting/reports?organization_id=${organizationId}&year=${year}`;
     if (month) url += `&month=${month}`;
 
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await engineFetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error("Error al obtener reportes financieros");
     return await response.json();
   } catch (error) {
@@ -114,7 +113,7 @@ export async function createAccountAction(data: {
   descripcion?: string;
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -133,7 +132,7 @@ export async function createAccountAction(data: {
 
 export async function updateAccountAction(accountId: string, data: any) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/${accountId}`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts/${accountId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -152,7 +151,7 @@ export async function updateAccountAction(accountId: string, data: any) {
 
 export async function getChartStats(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/stats?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts/stats?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) return null;
@@ -165,7 +164,7 @@ export async function getChartStats(organizationId: string) {
 
 export async function deleteAccountAction(accountId: string, organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/chart-of-accounts/${accountId}?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/chart-of-accounts/${accountId}?organization_id=${organizationId}`, {
       method: "DELETE",
     });
     
@@ -182,7 +181,7 @@ export async function deleteAccountAction(accountId: string, organizationId: str
 
 export async function getAccountingConfig(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/config?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/config?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) return [];
@@ -195,7 +194,7 @@ export async function getAccountingConfig(organizationId: string) {
 
 export async function updateAccountingConfigAction(configId: string, data: any) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/config/${configId}`, {
+    const response = await engineFetch(`/api/v1/accounting/config/${configId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -216,7 +215,7 @@ export async function updateAccountingConfigAction(configId: string, data: any) 
 
 export async function getMappingRules(organizationId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules?organization_id=${organizationId}`, {
+    const response = await engineFetch(`/api/v1/accounting/mapping-rules?organization_id=${organizationId}`, {
       cache: 'no-store'
     });
     if (!response.ok) return [];
@@ -233,7 +232,7 @@ export async function createMappingRuleAction(data: {
   account_id: string;
 }) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules`, {
+    const response = await engineFetch(`/api/v1/accounting/mapping-rules`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -252,7 +251,7 @@ export async function createMappingRuleAction(data: {
 
 export async function deleteMappingRuleAction(ruleId: string) {
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/accounting/mapping-rules/${ruleId}`, {
+    const response = await engineFetch(`/api/v1/accounting/mapping-rules/${ruleId}`, {
       method: "DELETE",
     });
     

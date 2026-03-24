@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveOrganizationId } from './organizations'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function processPayroll(period?: string) {
   const supabase = await createClient()
@@ -20,13 +21,9 @@ export async function processPayroll(period?: string) {
   try {
     const now = new Date()
     const currentPeriod = period || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
 
-    const res = await fetch(`${engineUrl}/api/v1/payroll/process`, {
+    const res = await engineFetch('/api/v1/payroll/process', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         org_id: activeOrgId,
         periodo: currentPeriod

@@ -3,8 +3,10 @@ import time
 import uuid
 from datetime import date
 from io import StringIO
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from core.database import get_supabase
+from core.auth import verify_token
+from core.logger import log_activity, log_system_error
 from typing import Optional, List, Dict, Any
 
 router = APIRouter()
@@ -109,7 +111,13 @@ def _get_val(row_clean: dict, key: str, default: any = "") -> any:
 # IMPORTACIÃN
 # ==========================================
 @router.post("/import-purchases")
-async def import_purchases(organization_id: str, periodo: str, force: bool = False, file: UploadFile = File(...)):
+async def import_purchases(
+    organization_id: str, 
+    periodo: str, 
+    force: bool = False, 
+    file: UploadFile = File(...),
+    current_user: dict = Depends(verify_token)
+):
     db = get_supabase()
     try:
         # Normalizar periodo (YYYY-MM -> YYYY-MM-01)
@@ -125,8 +133,7 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         if file_rut and org_rut and _formatear_rut(file_rut) != org_rut:
              raise HTTPException(
                 status_code=400,
-                detail=f"ERROR DE SEGURIDAD: El archivo pertenece al RUT {file_rut}, "
-                       f"pero estÃ¡s intentando subirlo a la empresa con RUT {org_rut}."
+                detail=f"Carga Bloqueada: El Archivo RCV pertenece al contribuyente RUT {file_rut}, lo cual no coincide con la instancia activa (RUT {org_rut})."
             )
 
         # 2. VALIDACIÃN DE DUPLICADOS: Solo bloquear si existe una carga EXITOSA (>0 docs)
@@ -240,14 +247,48 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
             except Exception as e:
                 errors.append(f"Fila {row_num}: {str(e)}")
 
+        if errors:
+            # ACTUALIZAR ESTADO DE FALLO (ATOMICIDAD: No se insertan records)
+            db.table("rcv_imports").update({
+                "total_docs": 0,
+                "failed_docs": len(records) + len(errors),
+                "error_log": errors[:50]
+            }).eq("id", import_id).execute()
+            
+            log_system_error(
+                category="RCV_PURCHASES_PARSER",
+                message=f"Importación ABORTADA: {len(errors)} errores",
+                organization_id=organization_id,
+                details={"errors": errors[:5], "file": file.filename}
+            )
+            raise HTTPException(
+                status_code=422,
+                detail=f"Importación ABORTADA. Se encontraron {len(errors)} errores. Por favor corrige el archivo y reintenta. Ejemplos: {errors[:3]}"
+            )
+
         if records:
             db.table("purchase_records").upsert(records, on_conflict="organization_id,folio,rut_emisor,periodo").execute()
 
         db.table("rcv_imports").update({
-            "total_docs": len(records) + len(errors),
-            "failed_docs": len(errors),
-            "error_log": errors[:50]
+            "total_docs": len(records),
+            "failed_docs": 0,
+            "error_log": []
         }).eq("id", import_id).execute()
+
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="import_rcv_purchases",
+            organization_id=organization_id,
+            user_id=current_user.get("id"),
+            entity_type="rcv_import",
+            entity_id=import_id,
+            details={
+                "periodo": periodo,
+                "file_name": file.filename,
+                "total_docs": len(records),
+                "failed_docs": len(errors)
+            }
+        )
 
         return {
             "success": True,
@@ -262,7 +303,13 @@ async def import_purchases(organization_id: str, periodo: str, force: bool = Fal
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/import-sales")
-async def import_sales(organization_id: str, periodo: str, force: bool = False, file: UploadFile = File(...)):
+async def import_sales(
+    organization_id: str, 
+    periodo: str, 
+    force: bool = False, 
+    file: UploadFile = File(...),
+    current_user: dict = Depends(verify_token)
+):
     db = get_supabase()
     try:
         # 0. BLINDAJE: Obtener RUT de la organizaciÃ³n
@@ -274,8 +321,7 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
         if file_rut and org_rut and _formatear_rut(file_rut) != org_rut:
              raise HTTPException(
                 status_code=400,
-                detail=f"ERROR DE SEGURIDAD: El archivo pertenece al RUT {file_rut}, "
-                       f"pero estÃ¡s intentando subirlo a la empresa con RUT {org_rut}."
+                detail=f"Carga Bloqueada: El Archivo RCV pertenece al contribuyente RUT {file_rut}, lo cual no coincide con la instancia activa (RUT {org_rut})."
             )
 
         # Normalizar periodo (YYYY-MM -> YYYY-MM-01)
@@ -391,13 +437,32 @@ async def import_sales(organization_id: str, periodo: str, force: bool = False, 
             except Exception as e:
                 errors.append(f"Fila {row_num}: {str(e)}")
 
+        if errors:
+            # ACTUALIZAR ESTADO DE FALLO (ATOMICIDAD: No se insertas records)
+            db.table("rcv_imports").update({
+                "total_docs": 0,
+                "failed_docs": len(records) + len(errors),
+                "error_log": errors[:50]
+            }).eq("id", import_id).execute()
+            
+            log_system_error(
+                category="RCV_SALES_PARSER",
+                message=f"Importación ABORTADA: {len(errors)} errores",
+                organization_id=organization_id,
+                details={"errors": errors[:5], "file": file.filename}
+            )
+            raise HTTPException(
+                status_code=422,
+                detail=f"Importación ABORTADA. Se encontraron {len(errors)} errores en ventas. Por favor corrige el archivo y reintenta. Ejemplos: {errors[:3]}"
+            )
+
         if records:
             db.table("sales_records").upsert(records, on_conflict="organization_id,folio,rut_receptor,periodo").execute()
 
         db.table("rcv_imports").update({
-            "total_docs": len(records) + len(errors),
-            "failed_docs": len(errors),
-            "error_log": errors[:50]
+            "total_docs": len(records),
+            "failed_docs": 0,
+            "error_log": []
         }).eq("id", import_id).execute()
 
         return {

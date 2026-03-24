@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,12 +12,13 @@ export const metadata: Metadata = {
 }
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; success?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   const error = params.error
+  const success = params.success
 
   return (
     <div className="w-full max-w-md">
@@ -74,6 +76,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               />
             </div>
 
+            {success && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 animate-in fade-in slide-in-from-top-1">
+                <p className="text-emerald-700 text-sm font-medium">{decodeURIComponent(success)}</p>
+              </div>
+            )}
+
             {error && (
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3 animate-in fade-in slide-in-from-top-1">
                 <p className="text-destructive text-sm font-medium">{decodeURIComponent(error)}</p>
@@ -87,6 +95,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               Ingresar al Sistema
             </Button>
           </form>
+
+          <div className="mt-6 space-y-3 text-center">
+            <Link href="/reset-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              ¿Olvidaste tu contraseña?
+            </Link>
+            <p className="text-sm text-muted-foreground">
+              ¿No tienes cuenta?{' '}
+              <Link href="/register" className="text-primary font-bold hover:underline transition-colors">
+                Regístrate aquí
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
 

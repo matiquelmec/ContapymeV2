@@ -9,11 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Save, UserCircle, Building2, Users2, Shield, Loader2, 
-  CheckCircle2, Mail, Phone, MapPin, FileText, Globe, UserCog 
+  CheckCircle2, Mail, Phone, MapPin, FileText, Globe, UserCog,
+  History, Fingerprint, Activity, Plus, Trash2, X, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
+import { inviteMember, deleteInvitation, getPendingInvitations } from "@/actions/members";
+import { getAuditLogs, getAuditActions } from "@/actions/audit";
 import { formatRUT, cleanRUT } from "@/lib/utils/rut";
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, 
+  DialogTrigger, DialogDescription, DialogFooter 
+} from "@/components/ui/dialog";
+import { 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from "@/components/ui/select";
 
 export default function SettingsPageClient({ 
   organizationId, 
@@ -30,6 +40,13 @@ export default function SettingsPageClient({
 }) {
   const [loadingOrg, setLoadingOrg] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditActions, setAuditActions] = useState<string[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", role: "viewer" });
+  const [loadingInvite, setLoadingInvite] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
     full_name: initialProfile?.full_name || "",
@@ -126,8 +143,20 @@ export default function SettingsPageClient({
         <TabsTrigger value="perfil" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
           <UserCircle className="w-4 h-4 opacity-40" /> MI PERFIL
         </TabsTrigger>
-        <TabsTrigger value="equipo" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
+        <TabsTrigger value="equipo" onClick={async () => {
+          const invs = await getPendingInvitations(organizationId);
+          setPendingInvitations(invs);
+        }} className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
           <Users2 className="w-4 h-4 opacity-40" /> EQUIPO B2B
+        </TabsTrigger>
+        <TabsTrigger value="auditoria" onClick={async () => {
+          setLoadingAudit(true);
+          const [logs, actions] = await Promise.all([getAuditLogs({ limit: 50 }), getAuditActions()]);
+          setAuditLogs(logs);
+          setAuditActions(actions);
+          setLoadingAudit(false);
+        }} className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
+          <History className="w-4 h-4 opacity-40" /> AUDITORÍA
         </TabsTrigger>
       </TabsList>
 
@@ -332,13 +361,84 @@ export default function SettingsPageClient({
                 USUARIOS CON ACCESO ACTIVO Y SU ROL DENTRO DEL SISTEMA RLS
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              disabled
-              className="h-12 px-8 rounded-2xl border-border/50 opacity-40 cursor-not-allowed font-black uppercase text-[10px] tracking-widest"
-            >
-              INVITAR MIEMBRO (PRÓXIMAMENTE)
-            </Button>
+            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+              <DialogTrigger 
+                render={
+                  <Button
+                    variant="outline"
+                    className="h-12 px-8 rounded-2xl border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> INVITAR MIEMBRO
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-[425px] bg-card border-border rounded-[2rem] shadow-2xl p-8">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="text-xl font-black uppercase tracking-tight">Invitar al Equipo B2B</DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                    LOS MIEMBROS RECIBIRÁN ACCESO INSTANTÁNEO BAJO EL PROTOCOLO RLS.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">EMAIL DEL PROFESIONAL</Label>
+                    <PInput 
+                      placeholder="ejemplo@contapyme.cl"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ROL ASIGNADO</Label>
+                    <Select 
+                      value={inviteForm.role} 
+                      onValueChange={(val) => setInviteForm({ ...inviteForm, role: val })}
+                    >
+                      <SelectTrigger className="h-14 rounded-2xl border-2 border-border/50 font-bold uppercase text-[10px] tracking-widest">
+                        <SelectValue placeholder="Seleccionar Rol" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border rounded-xl shadow-xl">
+                        <SelectItem value="viewer" className="font-black text-[10px] uppercase">Viewer (Solo Lectura)</SelectItem>
+                        <SelectItem value="accountant" className="font-black text-[10px] uppercase">Accountant (Operativo)</SelectItem>
+                        <SelectItem value="admin" className="font-black text-[10px] uppercase text-primary">Admin (Gestión Total)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter className="mt-8 flex gap-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setIsInviteOpen(false)}
+                    className="flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest"
+                  >
+                    CANCELAR
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      if (!inviteForm.email) return toast.error("Ingresa un email");
+                      setLoadingInvite(true);
+                      const res = await inviteMember(organizationId, inviteForm.email, inviteForm.role);
+                      setLoadingInvite(false);
+                      if (res.success) {
+                        toast.success("Invitación enviada correctamente");
+                        setInviteForm({ email: "", role: "viewer" });
+                        setIsInviteOpen(false);
+                        // Refrescar invitaciones pendientes
+                        const pending = await getPendingInvitations(organizationId);
+                        setPendingInvitations(pending);
+                      } else {
+                        toast.error(res.error || "Error al enviar invitación");
+                      }
+                    }}
+                    disabled={loadingInvite}
+                    className="flex-2 h-14 bg-primary text-primary-foreground rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 gap-3"
+                  >
+                    {loadingInvite ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    ENVIAR INVITACIÓN
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -393,6 +493,139 @@ export default function SettingsPageClient({
                 </TableBody>
               </Table>
             </div>
+
+            {/* INVITACIONES PENDIENTES */}
+            {pendingInvitations && pendingInvitations.length > 0 && (
+              <div className="mt-10 border-t border-border/50 pt-10 pb-10">
+                <div className="px-10 mb-6 flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
+                    <Send className="w-3 h-3" /> INVITACIONES PENDIENTES
+                  </h4>
+                  <span className="text-[9px] font-black text-primary/40 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">EXPIRES IN 7 DAYS</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableBody>
+                      {pendingInvitations.map((inv: any) => (
+                        <TableRow key={inv.id} className="border-border bg-muted/5 group">
+                          <TableCell className="px-10 py-5">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-foreground text-xs">{inv.email}</span>
+                              <span className="text-[9px] text-muted-foreground/60 uppercase font-bold mt-0.5">Enviada el {new Date(inv.invited_at).toLocaleDateString()}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex px-3 py-1 bg-muted rounded-lg text-[9px] font-black uppercase tracking-widest text-muted-foreground border border-border/50">
+                              {inv.role}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right px-10">
+                             <Button 
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
+                              onClick={async () => {
+                                const res = await deleteInvitation(inv.id);
+                                if (res.success) {
+                                  toast.success("Invitación cancelada");
+                                  setPendingInvitations(pendingInvitations.filter(i => i.id !== inv.id));
+                                }
+                              }}
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* ===== TAB: AUDITORÍA ===== */}
+      <TabsContent value="auditoria" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
+        <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500/10">
+          <CardHeader className="bg-muted/5 border-b border-border p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Registro de Auditoría (Audit Log)</CardTitle>
+              <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
+                TRAZABILIDAD DE ACCIONES CRÍTICAS, MODIFICACIONES Y SEGURIDAD B2B
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loadingAudit ? (
+              <div className="h-64 flex items-center justify-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">Consultando Caja Negra...</span>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 border-border">
+                      <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6 w-[250px]">Fecha / Hora</TableHead>
+                      <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6">Usuario Profesional</TableHead>
+                      <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6">Acción Ejecutada</TableHead>
+                      <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6">Detalles Técnicos</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border/50">
+                    {auditLogs && auditLogs.length > 0 ? (
+                      auditLogs.map((log: any) => (
+                        <TableRow key={log.id} className="border-border hover:bg-emerald-600/[0.01] transition-colors group">
+                          <TableCell className="px-10 py-6">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-mono text-[11px] font-black text-foreground">
+                                {new Date(log.created_at).toLocaleDateString()}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-bold italic opacity-60">
+                                {new Date(log.created_at).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-10 py-6">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-muted/20 rounded-xl border border-border/50">
+                                <Fingerprint className="w-4 h-4 text-primary opacity-40" />
+                              </div>
+                              <span className="font-black text-foreground uppercase text-xs tracking-tight">
+                                {log.profiles?.full_name || 'Sistema Contapyme'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-10 py-6">
+                            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-muted/10 border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-tight text-foreground shadow-sm">
+                              <Activity className="w-3 h-3 text-emerald-500" /> {log.action.replace(/_/g, ' ')}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-10 py-6 text-right">
+                             <div className="flex flex-col items-end gap-1">
+                               <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">
+                                {log.entity_type || 'GLOBAL'}
+                               </span>
+                               <span className="text-[9px] font-mono text-muted-foreground/40 leading-none">
+                                {log.ip_address || 'Internal RPC'}
+                               </span>
+                             </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-40 text-center text-muted-foreground font-bold italic">
+                          No hay registros de actividad en la caja negra corporativa.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </TabsContent>

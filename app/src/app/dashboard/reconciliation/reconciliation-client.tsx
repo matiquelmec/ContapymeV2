@@ -7,7 +7,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark, Plus } from 'lucide-react'
-import { analyzeBankStatementAction, saveReconciliationAction } from '@/actions/bank-reconciliation'
+import { analyzeBankStatementAction, saveReconciliationAction, reconcileWithAdjustmentAction } from '@/actions/bank-reconciliation'
 import { toast } from 'sonner'
 import { fCurrency } from '@/lib/utils'
 
@@ -67,6 +67,36 @@ export function ReconciliationClient({
         return Array.isArray(br) ? br[0]?.[field] : br[field];
     }
 
+    const handleQuickAdjustment = async (bankRowId: string, desc: string) => {
+        const proceed = confirm(`¿Desea generar un asiento de Gasto Bancario por este movimiento?\n\n"${desc}"`)
+        if (!proceed) return
+
+        setLoading(true)
+        try {
+            const result = await reconcileWithAdjustmentAction({
+                bank_line_id: bankRowId,
+                account_code: "5.1.05.001", 
+                account_name: "Gastos y Comisiones Bancarias",
+                organization_id: organizationId
+            })
+
+            if (result.success) {
+                toast.success("Asiento de ajuste generado y conciliado.")
+                setMatches(prev => prev.map(m => 
+                    m.bankRow.id === bankRowId 
+                    ? { ...m, status: 'matched', confidence: 1.0, accountingEntry: { id: 'NEW', account_name: 'AJUSTE: Gasto Bancario', monto: m.bankRow.monto, journal_entries: { numero_asiento: 'NUEVO' } } } 
+                    : m
+                ))
+            } else {
+                throw new Error(result.error)
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Error al crear ajuste")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0]
         if (!selectedFile) return
@@ -94,9 +124,8 @@ export function ReconciliationClient({
                 throw new Error(result.error)
             }
 
-            // Entradas contables pedientes de esta cuenta (o genéricas si no hay filtro aún)
             const pendingEntries = accountingEntries.filter(ae => 
-                !ae.bank_reconciliations || ae.bank_reconciliations.length === 0
+                !ae.bank_reconciliations || (Array.isArray(ae.bank_reconciliations) ? ae.bank_reconciliations.length === 0 : false)
             )
 
             const foundMatches: ReconciliationMatch[] = result.data.transactions.map((bt: BankTransaction) => {
@@ -122,7 +151,7 @@ export function ReconciliationClient({
     }
 
     const handleSave = async () => {
-        const matchedItems = matches.filter(m => m.status === 'matched' && m.accountingEntry)
+        const matchedItems = matches.filter(m => m.status === 'matched' && m.accountingEntry && m.accountingEntry.id !== 'NEW')
         if (matchedItems.length === 0) return
 
         setLoading(true)
@@ -156,7 +185,6 @@ export function ReconciliationClient({
     return (
         <div className="space-y-12 animate-in fade-in duration-700" suppressHydrationWarning={true}>
             
-            {/* Cabecera de Configuración Bancaria */}
             <div className="flex flex-col md:flex-row gap-6 items-center">
                 <div className="w-full md:w-80">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 block">Cuenta Bancaria Activa</label>
@@ -173,14 +201,8 @@ export function ReconciliationClient({
                         </SelectContent>
                     </Select>
                 </div>
-                {bankAccounts.length === 0 && (
-                     <div className="flex-1 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-[10px] font-black uppercase text-amber-700 leading-relaxed italic">
-                        ⚠️ No tiene cuentas bancarias configuradas. Ingrese una en la configuración para habilitar la persistencia avanzada.
-                     </div>
-                )}
             </div>
 
-            {/* Zona de Carga Premium */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-2 bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary">
                     <CardContent className="p-8 space-y-6">
@@ -230,17 +252,9 @@ export function ReconciliationClient({
                             {loading ? <CircleDashed className="w-6 h-6 animate-spin" /> : <ArrowRightLeft className="w-6 h-6" />}
                             {loading ? 'PERSISTIENDO Y ANALIZANDO...' : 'EJECUTAR CRUCE PERSISTENTE'}
                         </Button>
-
-                        {error && (
-                            <div className="p-4 bg-rose-50 border-2 border-rose-100 rounded-2xl flex items-center gap-4 text-rose-700 font-bold text-xs uppercase animate-in slide-in-from-top-2">
-                                <XCircle className="w-5 h-5 flex-shrink-0" />
-                                {error}
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 
-                {/* Resumen Lateral */}
                 <div className="space-y-6">
                     <Card className="bg-white border-border shadow-xl rounded-[2.5rem] overflow-hidden">
                         <CardContent className="p-8">
@@ -260,7 +274,7 @@ export function ReconciliationClient({
                                 </div>
                             </div>
 
-                            {matches.some(m => m.status === 'matched') && !loading && (
+                            {matches.some(m => m.status === 'matched' && m.accountingEntry && m.accountingEntry.id !== 'NEW') && !loading && (
                                 <Button 
                                     onClick={handleSave}
                                     className="w-full mt-8 h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest rounded-3xl shadow-lg shadow-emerald-500/20 gap-3"
@@ -269,40 +283,23 @@ export function ReconciliationClient({
                                     Confirmar Blindaje
                                 </Button>
                             )}
-                            
-                            <div className="mt-8 pt-8 border-t border-border flex items-center gap-4">
-                                <div className="p-3 bg-primary/5 rounded-xl">
-                                    <Search className="w-5 h-5 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase text-foreground tracking-tight">Persistencia Master</p>
-                                    <p className="text-[9px] font-bold text-muted-foreground italic leading-tight">Mapeo ID a ID blindado en Base de Datos.</p>
-                                </div>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            {/* Resultado de la Conciliación Actual */}
             {matches.length > 0 && (
                 <Card className="bg-card border-border shadow-2xl overflow-hidden rounded-[2.5rem] border-t-8 border-t-primary/20 animate-in slide-in-from-bottom-6 duration-500">
                     <CardContent className="p-0">
-                        <div className="p-6 bg-muted/20 border-b border-border flex justify-between items-center">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-3">
-                                <Landmark className="w-5 h-5 text-primary" />
-                                Cruce Algorítmico Persistente
-                            </h3>
-                        </div>
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/30 border-b border-border">
                                         <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px]">Estado</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Detalle Cartola (DB-Link)</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px] text-right">Monto Banco</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Registro Contable (ERP)</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px] text-right">Monto Diario</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Detalle Cartola</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[180px] text-right">Monto</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Registro ERP</TableHead>
+                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 w-[120px] text-center">Acción</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody className="divide-y divide-border/50">
@@ -311,7 +308,7 @@ export function ReconciliationClient({
                                             <TableCell className="px-10 py-6">
                                                 {m.status === 'matched' ? (
                                                     <Badge className="bg-emerald-50 text-emerald-700 pointer-events-none gap-2 border-emerald-200 font-black uppercase text-[8px] tracking-[0.15em] py-2 px-4 shadow-sm rounded-full">
-                                                        <CheckCircle2 className="w-3.5 h-3.5"/> Match 1:1
+                                                        <CheckCircle2 className="w-3.5 h-3.5"/> Match OK
                                                     </Badge>
                                                 ) : (
                                                     <Badge className="bg-rose-50 text-rose-700 pointer-events-none border-rose-200 font-black uppercase text-[8px] tracking-[0.15em] py-2 px-4 shadow-sm rounded-full">
@@ -321,37 +318,34 @@ export function ReconciliationClient({
                                             </TableCell>
                                             <TableCell className="px-10 py-6">
                                                 <div className="flex flex-col">
-                                                    <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors line-clamp-1">{m.bankRow.descripcion}</span>
-                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase tracking-widest opacity-60">ID: {m.bankRow.id.substring(0,8)} | {m.bankRow.fecha}</span>
+                                                    <span className="text-foreground font-black uppercase text-xs tracking-tight truncate max-w-[300px]">{m.bankRow.descripcion}</span>
+                                                    <span className="text-muted-foreground text-[10px] font-bold italic mt-1 uppercase opacity-60">{m.bankRow.fecha}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right px-10 py-6">
-                                                <span className={`font-black text-sm tracking-tighter ${m.bankRow.tipo === 'abono' ? 'text-primary' : 'text-rose-600'}`}>
-                                                    {m.bankRow.tipo === 'cargo' ? '-' : '+'}{fCurrency(m.bankRow.monto)}
-                                                </span>
+                                            <TableCell className="text-right px-10 py-6 font-black text-sm tracking-tighter">
+                                                {fCurrency(m.bankRow.monto)}
                                             </TableCell>
-                                            
                                             <TableCell className="px-10 py-6">
                                                 {m.status === 'matched' ? (
                                                     <div className="flex flex-col">
-                                                        <span className="text-foreground font-black uppercase text-xs tracking-tight">Asiento #{m.accountingEntry.journal_entries.numero_asiento || m.accountingEntry.journal_entries.id.substring(0,8).toUpperCase()}</span>
-                                                        <span className="text-muted-foreground text-[10px] font-bold uppercase truncate max-w-[200px] mt-1 tracking-widest opacity-60">
-                                                            {m.accountingEntry.cuenta_nombre}
-                                                        </span>
+                                                        <span className="text-foreground font-black uppercase text-[10px]">{m.accountingEntry.account_name}</span>
+                                                        <span className="text-muted-foreground text-[9px] font-bold uppercase opacity-60">Asiento: {m.accountingEntry.journal_entries.numero_asiento || 'N/A'}</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="flex items-center gap-2 text-rose-600">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">Sin coincidencia</span>
-                                                    </div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">Sin coincidencia</span>
                                                 )}
                                             </TableCell>
-                                            
-                                            <TableCell className="text-right px-10 py-6 bg-muted/5 group-hover:bg-primary/[0.03] transition-colors border-l border-border/30">
-                                                {m.status === 'matched' ? (
-                                                    <span className="font-black text-sm text-primary tracking-tighter">{fCurrency(Number(m.accountingEntry.monto))}</span>
-                                                ): (
-                                                    <span className="text-muted-foreground/30 font-black italic text-[10px] tracking-widest uppercase">N/A</span>
+                                            <TableCell className="px-10 py-6 text-center">
+                                                {m.status === 'unmatched' && (
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm"
+                                                        onClick={() => handleQuickAdjustment(m.bankRow.id, m.bankRow.descripcion)}
+                                                        className="h-9 px-4 rounded-xl border-primary/20 text-primary font-black uppercase text-[9px] hover:bg-primary hover:text-white transition-all gap-2"
+                                                    >
+                                                        <Plus className="w-3 h-3" />
+                                                        + Gasto
+                                                    </Button>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -363,60 +357,35 @@ export function ReconciliationClient({
                 </Card>
             )}
 
-            {/* Historial de Conciliaciones Pasadas */}
             {reconciledEntries.length > 0 && (
                 <Card className="bg-card border-border shadow-2xl overflow-hidden rounded-[2.5rem] border-t-8 border-t-emerald-500/20 animate-in slide-in-from-bottom-10 duration-700">
                     <CardContent className="p-0">
                         <div className="p-8 bg-emerald-50/50 border-b border-border flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                                    <History className="w-6 h-6 text-emerald-600" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-lg font-black uppercase tracking-tighter text-foreground">Historial de Auditoría Bancaria</h3>
-                                    <p className="text-[10px] font-bold text-muted-foreground italic uppercase">Registros blindados y verificados en el Libro Diario</p>
-                                </div>
-                            </div>
-                            <Badge className="bg-emerald-600 text-white font-black px-4 py-2 rounded-xl shadow-lg shadow-emerald-600/20 border-none uppercase text-[10px]">
-                                {reconciledEntries.length} Registros Consolidados
-                            </Badge>
+                             <h3 className="text-lg font-black uppercase tracking-tighter text-foreground flex items-center gap-4">
+                                <History className="w-6 h-6 text-emerald-600" />
+                                Historial de Auditoría Bancaria
+                             </h3>
                         </div>
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/30 border-b border-border">
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Fecha Conciliación</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 text-center">Referencia ERP</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6">Glosa Auditoría</TableHead>
-                                        <TableHead className="text-foreground/60 font-black uppercase text-[10px] tracking-widest px-10 py-6 text-right">Monto Auditado</TableHead>
+                                        <TableHead className="px-10 py-6 font-black uppercase text-[10px]">Fecha</TableHead>
+                                        <TableHead className="px-10 py-6 font-black uppercase text-[10px]">Glosa</TableHead>
+                                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] text-right">Monto</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {reconciledEntries.map((ae, i) => (
-                                        <TableRow key={i} className="border-border hover:bg-emerald-500/[0.02] transition-all">
-                                            <TableCell className="px-10 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="text-foreground font-black uppercase text-xs">
-                                                        {new Date(getBRVal(ae, 'reconciled_at') || ae.created_at).toLocaleDateString()}
-                                                    </span>
-                                                    <span className="text-[10px] font-bold text-emerald-600 uppercase italic">Verificado V2</span>
-                                                </div>
+                                        <TableRow key={i} className="border-border">
+                                            <TableCell className="px-10 py-6 font-bold text-xs">
+                                                {new Date(getBRVal(ae, 'reconciled_at') || ae.created_at).toLocaleDateString()}
                                             </TableCell>
-                                            <TableCell className="px-10 py-6 text-center">
-                                                <Badge variant="outline" className="font-black uppercase text-[9px] border-border bg-white py-1 px-3 rounded-lg">
-                                                    Asiento #{ae.journal_entries.numero_asiento || ae.id.substring(0,8).toUpperCase()}
-                                                </Badge>
+                                            <TableCell className="px-10 py-6 font-black uppercase text-xs">
+                                                {getBRVal(ae, 'notes') || ae.glosa || 'Sin observaciones'}
                                             </TableCell>
-                                            <TableCell className="px-10 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="text-foreground font-bold text-xs uppercase">{getBRVal(ae, 'notes') || 'Sin observaciones'}</span>
-                                                    <span className="text-[10px] text-muted-foreground font-bold italic truncate max-w-[300px] mt-1 uppercase tracking-widest">Cuenta: {ae.cuenta_nombre}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="px-10 py-6 text-right">
-                                                <span className="font-black text-sm text-emerald-600 tracking-tighter">
-                                                    {fCurrency(Number(ae.monto))}
-                                                </span>
+                                            <TableCell className="px-10 py-6 text-right font-black text-emerald-600 tracking-tighter">
+                                                {fCurrency(Number(ae.monto))}
                                             </TableCell>
                                         </TableRow>
                                     ))}

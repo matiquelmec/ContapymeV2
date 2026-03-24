@@ -75,9 +75,37 @@ export function CreateAssetButton() {
                 />
               </div>
 
+              {/* DETALLES DE INVENTARIO */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CATEGORÍA</Label>
+                  <Input name="categoria" placeholder="Ej: Tecnología" className="h-12 bg-white border-border rounded-2xl font-bold text-sm px-6" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">MARCA</Label>
+                  <Input name="marca" placeholder="Ej: Apple" className="h-12 bg-white border-border rounded-2xl font-bold text-sm px-6" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">MODELO</Label>
+                  <Input name="modelo" placeholder="Ej: M3 Max" className="h-12 bg-white border-border rounded-2xl font-bold text-sm px-6" />
+                </div>
+              </div>
+
+              {/* UBICACIÓN Y RESPONSABLE */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">UBICACIÓN</Label>
+                  <Input name="ubicacion" placeholder="Ej: Oficina Central" className="h-12 bg-white border-border rounded-2xl font-bold text-sm px-6" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">RESPONSABLE</Label>
+                  <Input name="responsable" placeholder="Ej: Juan Pérez" className="h-12 bg-white border-border rounded-2xl font-bold text-sm px-6" />
+                </div>
+              </div>
+
               {/* DESCRIPCIÓN */}
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">DESCRIPCIÓN / NÚMERO DE SERIE (OPCIONAL)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">DESCRIPCIÓN / NOTAS (OPCIONAL)</Label>
                 <Input
                   id="descripcion"
                   name="descripcion"
@@ -128,7 +156,7 @@ export function CreateAssetButton() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">VALOR RESIDUAL ($)</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">VALOR RES. ($)</Label>
                   <Input
                     id="valor_residual"
                     name="valor_residual"
@@ -153,12 +181,13 @@ export function CreateAssetButton() {
               </div>
 
               {/* NOTA */}
-              <div className="bg-blue-50/50 border-2 border-blue-100 rounded-3xl p-5 flex items-start gap-4">
-                <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                <p className="text-[10px] text-blue-900/70 font-black uppercase tracking-tight italic leading-relaxed">
-                  La cuota de depreciación mensual se calculará al guardar. Ejemplo: activo de $1.000.000 / 60 meses = <strong>$16.667/mes</strong>.
+              <div className="bg-emerald-50/50 border-2 border-emerald-100 rounded-3xl p-5 flex items-start gap-4">
+                <Info className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+                <p className="text-[10px] text-emerald-900/70 font-black uppercase tracking-tight italic leading-relaxed">
+                  El sistema generará el <strong>Asiento Contable</strong> de depreciación automáticamente cada vez que se ejecute el proceso de cierre mensual.
                 </p>
               </div>
+
             </div>
 
             <DialogFooter className="flex gap-4 pt-2">

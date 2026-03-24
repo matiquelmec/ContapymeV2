@@ -8,25 +8,37 @@ import { Button } from '@/components/ui/button'
 import { getUserOrganizations, setActiveOrganization, getActiveOrganizationId } from '@/actions/organizations'
 import { toast } from 'sonner'
 import { useRouter, usePathname } from 'next/navigation'
+import { Plus } from 'lucide-react'
+import { NewCompanyModal } from './new-company-modal'
 
 export function Header() {
   const [organizations, setOrganizations] = useState<any[]>([])
   const [activeOrgId, setActiveOrgId] = useState<string>('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
+  const loadData = async () => {
+    const orgs = await getUserOrganizations()
+    const activeId = await getActiveOrganizationId()
+    setOrganizations(orgs)
+    if (activeId) setActiveOrgId(activeId)
+  }
+
   useEffect(() => {
-    async function loadData() {
-      const orgs = await getUserOrganizations()
-      const activeId = await getActiveOrganizationId()
-      setOrganizations(orgs)
-      if (activeId) setActiveOrgId(activeId)
-    }
     loadData()
   }, [])
 
   const handleOrgChange = async (value: string | null) => {
     if (!value || value === 'none') return
+    
+    // Si quiere crear una nueva empresa, abre el modal
+    if (value === 'new_org') {
+      setIsModalOpen(true)
+      return
+    }
+
+    // Flujo normal de cambio de empresa
     setActiveOrgId(value)
     await setActiveOrganization(value)
     toast.success('Empresa cambiada correctamente')
@@ -36,13 +48,8 @@ export function Header() {
     let targetPath = pathname
 
     if (segments.length >= 4) {
-      // 1. Si estamos en un DETALLE (ej. /dashboard/payroll/liquidations/123)
-      //    Te devuelve a la raíz del módulo (ej. /dashboard/payroll) 
-      //    como se acordó previamente para evitar errores al cambiar de empresa.
       targetPath = `/${segments[0]}/${segments[1]}`
     } else {
-      // 2. Si estamos en una SECCIÓN PRINCIPAL (ej. /dashboard/accounting/rcv)
-      //    Te mantiene en la misma sección para no interrumpir el flujo.
       targetPath = '/' + segments.slice(0, 3).join('/')
     }
     
@@ -74,6 +81,13 @@ export function Header() {
               ) : (
                 <SelectItem value="none" disabled>No hay empresas</SelectItem>
               )}
+              
+              <div className="h-px bg-border my-1" />
+              <SelectItem value="new_org" className="text-primary font-black uppercase text-[10px] tracking-widest cursor-pointer hover:bg-primary/5 focus:bg-primary/10">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> CREAR NUEVA EMPRESA
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -90,6 +104,12 @@ export function Header() {
           <AvatarFallback className="bg-primary text-primary-foreground font-black uppercase text-xs">CO</AvatarFallback>
         </Avatar>
       </div>
+
+      <NewCompanyModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen}
+        onSuccess={loadData}
+      />
     </header>
   )
 }

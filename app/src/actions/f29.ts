@@ -1,8 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-
-const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8000'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function processF29Document(storagePath: string, periodo: string, orgId: string) {
   const supabase = await createClient()
@@ -13,9 +12,8 @@ export async function processF29Document(storagePath: string, periodo: string, o
   }
 
   try {
-    const res = await fetch(`${ENGINE_URL}/api/v1/f29/process`, {
+    const res = await engineFetch(`/api/v1/f29/process`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         storage_path: storagePath,
         org_id: orgId
@@ -62,9 +60,9 @@ export async function processF29Document(storagePath: string, periodo: string, o
 
 export async function getF29History(organizationId: string) {
   try {
-    const url = `${ENGINE_URL}/api/v1/f29/analysis/history?organization_id=${organizationId}`
+    const url = `/api/v1/f29/analysis/history?organization_id=${organizationId}`
 
-    const response = await fetch(url, {
+    const response = await engineFetch(url, {
       cache: 'no-store'
     })
     

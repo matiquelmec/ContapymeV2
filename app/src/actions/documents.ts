@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function generateContractAction(employeeId: string) {
   try {
@@ -11,11 +12,9 @@ export async function generateContractAction(employeeId: string) {
     if (!session) {
       return { success: false, error: 'No autorizado' }
     }
-
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
     
     // 2. Call Python Engine to generate the DOCX
-    const response = await fetch(`${engineUrl}/api/v1/documents/generate?employee_id=${employeeId}&type=contrato`, {
+    const response = await engineFetch(`/api/v1/documents/generate?employee_id=${employeeId}&type=contrato`, {
       method: 'GET',
       cache: 'no-store'
     })

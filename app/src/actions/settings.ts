@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { recordAuditAction } from "@/actions/audit";
 
 // ============================================
 // PROFILE ACTIONS
@@ -19,10 +20,7 @@ export async function getProfile() {
     .single();
 
   if (error) {
-    // Si no existe el perfil (PGRST116), podemos ignorar sin lanzar un error.
-    if (error.code === "PGRST116") {
-      return null;
-    }
+    if (error.code === "PGRST116") return null;
     console.error("Error fetching profile:", JSON.stringify(error));
     return null;
   }
@@ -47,6 +45,14 @@ export async function updateProfile(formData: { full_name: string, avatar_url?: 
     console.error("Error updating profile:", error);
     return { success: false, error: error.message };
   }
+
+  // AUDIT LOG
+  await recordAuditAction({
+    action: "UPDATE_PROFILE",
+    entity_type: "PROFILE",
+    entity_id: user.id,
+    details: { full_name: formData.full_name }
+  });
 
   revalidatePath("/dashboard/settings");
   return { success: true };
@@ -108,6 +114,14 @@ export async function updateOrganization(orgId: string, formData: any) {
     return { success: false, error: error.message };
   }
 
+  // AUDIT LOG
+  await recordAuditAction({
+    action: "UPDATE_ORG_SETTINGS",
+    entity_type: "ORGANIZATION",
+    entity_id: orgId,
+    details: { nombre: formData.nombre } // Solo guardamos el nombre en detalles para el log breve
+  });
+
   revalidatePath("/dashboard/settings");
   return { success: true };
 }
@@ -119,7 +133,6 @@ export async function updateOrganization(orgId: string, formData: any) {
 export async function getOrganizationMembers(orgId: string) {
   const supabase = await createClient();
   
-  // Paso 1: Obtenemos los miembros
   const { data: members, error: membersError } = await supabase
     .from("organization_members")
     .select("id, role, created_at, user_id")
@@ -133,7 +146,6 @@ export async function getOrganizationMembers(orgId: string) {
 
   if (!members || members.length === 0) return [];
 
-  // Paso 2: Obtenemos los perfiles de esos miembros
   const userIds = members.map(m => m.user_id);
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
@@ -142,10 +154,8 @@ export async function getOrganizationMembers(orgId: string) {
 
   if (profilesError) {
     console.error("Error fetching profiles for members:", JSON.stringify(profilesError));
-    // Continuamos, mapearemos a nulo
   }
 
-  // Paso 3: Combinar (JOIN manual)
   const merged = members.map(m => {
     const p = (profiles || []).find(profile => profile.id === m.user_id);
     return {

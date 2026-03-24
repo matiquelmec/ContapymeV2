@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { engineFetch } from '@/lib/engine-client'
 
 // Crear un activo fijo nuevo
 export async function createAsset(formData: FormData) {
@@ -24,10 +25,8 @@ export async function createAsset(formData: FormData) {
 
   // Llamar al Engine Python para crear con los cálculos iniciales
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-    const res = await fetch(`${engineUrl}/api/v1/assets/create`, {
+    const res = await engineFetch('/api/v1/assets/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         organization_id: activeOrgId,
         nombre,
@@ -37,7 +36,12 @@ export async function createAsset(formData: FormData) {
         vida_util_meses,
         valor_residual,
         metodo_depreciacion,
-        condicion: 'activo'
+        condicion: 'activo',
+        categoria: formData.get('categoria') as string,
+        marca: formData.get('marca') as string,
+        modelo: formData.get('modelo') as string,
+        ubicacion: formData.get('ubicacion') as string,
+        responsable: formData.get('responsable') as string
       })
     })
 
@@ -67,12 +71,10 @@ export async function depreciateAssets() {
   if (!activeOrgId) return { success: false, error: 'No se encontró empresa activa.' }
 
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
     const periodo = new Date().toISOString().split('T')[0].substring(0, 8) + '01'
 
-    const res = await fetch(`${engineUrl}/api/v1/assets/depreciate`, {
+    const res = await engineFetch('/api/v1/assets/depreciate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ org_id: activeOrgId, periodo })
     })
 

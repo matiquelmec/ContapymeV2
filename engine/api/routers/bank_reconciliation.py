@@ -5,8 +5,9 @@ from datetime import date
 import pandas as pd
 import io
 import re
-import uuid
 from core.database import get_supabase
+from core.auth import verify_token
+from core.logger import log_activity
 
 router = APIRouter()
 
@@ -29,7 +30,7 @@ class ReconciliationSaveRequest(BaseModel):
     organization_id: str
 
 @router.get("/accounts")
-async def get_bank_accounts(organization_id: str):
+async def get_bank_accounts(organization_id: str, current_user: dict = Depends(verify_token)):
     """Obtiene las cuentas bancarias de la empresa."""
     db = get_supabase()
     try:
@@ -39,7 +40,7 @@ async def get_bank_accounts(organization_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/accounts")
-async def create_bank_account(req: BankAccountRequest):
+async def create_bank_account(req: BankAccountRequest, current_user: dict = Depends(verify_token)):
     """Registra una nueva cuenta bancaria."""
     db = get_supabase()
     try:
@@ -54,7 +55,8 @@ async def create_bank_account(req: BankAccountRequest):
 async def analyze_bank_statement(
     file: UploadFile = File(...),
     organization_id: Optional[str] = None,
-    bank_account_id: Optional[str] = None
+    bank_account_id: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
 ):
     """
     Analiza una cartola bancaria, la persiste en la DB y extrae movimientos para el cruce.
@@ -124,6 +126,19 @@ async def analyze_bank_statement(
             insert_res = db.table("bank_statement_lines").insert(lines_to_save).execute()
             transactions = insert_res.data or []
 
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="upload_bank_statement",
+            organization_id=organization_id,
+            user_id=current_user.get("id"),
+            entity_type="bank_statement",
+            entity_id=statement_id,
+            details={
+                "file_name": file.filename,
+                "transactions_count": len(transactions)
+            }
+        )
+
         return {
             "success": True,
             "statement_id": statement_id,
@@ -135,7 +150,7 @@ async def analyze_bank_statement(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/pending-lines/{bank_account_id}")
-async def get_pending_bank_lines(bank_account_id: str):
+async def get_pending_bank_lines(bank_account_id: str, current_user: dict = Depends(verify_token)):
     """Obtiene movimientos bancarios cargados que aún no están conciliables."""
     db = get_supabase()
     try:
@@ -148,48 +163,122 @@ async def get_pending_bank_lines(bank_account_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/save-reconciliation")
-async def save_reconciliation(req: ReconciliationSaveRequest):
+@router.post("/reconcile-with-adjustment")
+async def reconcile_with_adjustment(req: Dict[str, Any], current_user: dict = Depends(verify_token)):
     """
-    Persistencia de cruce: bank_line_id <-> journal_entry_line_id.
+    Crea un asiento de ajuste (ej: gasto bancario) y concilia al mismo tiempo.
+    Evita que el contador tenga que salir de la pantalla de conciliación.
     """
     db = get_supabase()
     try:
-        data_to_insert = []
-        bank_line_ids = []
-        
-        for match in req.matches:
-            data_to_insert.append({
-                "bank_line_id": match.bank_line_id,
-                "journal_entry_line_id": match.journal_entry_line_id,
-                "organization_id": req.organization_id,
-                "match_type": "automatic" if match.status == 'matched' else "manual",
-                "status": "reconciled",
-                "notes": match.notes or f"Autoconciliación V2 — {date.today()}"
-            })
-            bank_line_ids.append(match.bank_line_id)
-            
-        if not data_to_insert:
-            return {"success": True, "count": 0}
+        bank_line_id = req.get("bank_line_id")
+        adjustment_account_code = req.get("account_code") # Ej: 5.1.05.001 (Gastos Bancarios)
+        adjustment_account_name = req.get("account_name", "Gasto/Comisión Bancaria")
+        org_id = req.get("organization_id")
 
-        # 1. Guardar en tabla de conciliaciones
-        db.table("bank_reconciliations").insert(data_to_insert).execute()
+        if not bank_line_id or not adjustment_account_code or not org_id:
+            raise HTTPException(status_code=400, detail="Faltan parámetros requeridos.")
+
+        # 1. Obtener datos de la línea de cartola y la cuenta banco vinculada
+        line_res = db.table("bank_statement_lines") \
+            .select("*, bank_accounts(chart_account_id, bank_name)") \
+            .eq("id", bank_line_id) \
+            .single() \
+            .execute()
         
-        # 2. Marcar líneas de cartola como conciliadas
-        if bank_line_ids:
-            db.table("bank_statement_lines").update({"is_reconciled": True}).in_("id", bank_line_ids).execute()
+        line = line_res.data
+        if not line:
+            raise HTTPException(status_code=404, detail="Línea de cartola no encontrada.")
+
+        bacc = line.get("bank_accounts", {})
+        bank_chart_id = bacc.get("chart_account_id")
         
+        # Necesitamos el CÓDIGO de la cuenta banco para el asiento
+        bank_account_res = db.table("chart_of_accounts") \
+            .select("codigo, nombre") \
+            .eq("id", bank_chart_id) \
+            .single() \
+            .execute()
+        
+        bank_coa = bank_account_res.data
+        if not bank_coa:
+            raise HTTPException(status_code=400, detail="La cuenta bancaria no tiene una cuenta contable vinculada.")
+
+        # 2. Definir lógica Debe/Haber (IFRS)
+        # Si es CARGO en banco (salida de dinero): Gasto (Debe) contra Banco (Haber)
+        # Si es ABONO en banco (entrada de dinero): Banco (Debe) contra Ingreso (Haber)
+        monto = line["monto"]
+        if line["tipo"] == "cargo":
+            debe_acc = {"codigo": adjustment_account_code, "nombre": adjustment_account_name}
+            haber_acc = {"codigo": bank_coa["codigo"], "nombre": bank_coa["nombre"]}
+        else:
+            debe_acc = {"codigo": bank_coa["codigo"], "nombre": bank_coa["nombre"]}
+            haber_acc = {"codigo": adjustment_account_code, "nombre": adjustment_account_name}
+
+        # 3. Preparar líneas del asiento
+        journal_lines = [
+            {"cuenta_codigo": debe_acc["codigo"], "cuenta_nombre": debe_acc["nombre"], "tipo": "debe", "monto": monto},
+            {"cuenta_codigo": haber_acc["codigo"], "cuenta_nombre": haber_acc["nombre"], "tipo": "haber", "monto": monto}
+        ]
+
+        # 4. Inyectar Asiento vía RPC REUTILIZABLE
+        journal_id = db.rpc("create_journal_entry_with_lines", {
+            "p_organization_id": org_id,
+            "p_fecha": line["fecha"],
+            "p_glosa": f"Ajuste Bancario: {line['descripcion']}",
+            "p_lines": journal_lines
+        }).execute().data
+
+        # 5. Obtener ID de la línea del asiento (asociaremos la línea del banco con la línea del banco en el asiento)
+        # Buscamos la línea del asiento que corresponde a la cuenta BANCO (para conciliar contra ella)
+        new_entry_lines = db.table("journal_entry_lines") \
+            .select("id") \
+            .eq("entry_id", journal_id) \
+            .eq("cuenta_codigo", bank_coa["codigo"]) \
+            .single() \
+            .execute()
+        
+        journal_line_id = new_entry_lines.data["id"]
+
+        # 6. Guardar Conciliación (Blindaje Maestro)
+        db.table("bank_reconciliations").insert({
+            "bank_line_id": bank_line_id,
+            "journal_entry_line_id": journal_line_id,
+            "organization_id": org_id,
+            "match_type": "automatic",
+            "status": "reconciled",
+            "notes": f"Ajuste automático generado desde Conciliación Bancaria."
+        }).execute()
+
+        # 7. Marcar línea de cartola como conciliada
+        db.table("bank_statement_lines").update({"is_reconciled": True}).eq("id", bank_line_id).execute()
+
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="reconcile_with_adjustment",
+            organization_id=org_id,
+            user_id=current_user.get("id"),
+            entity_type="bank_reconciliation",
+            entity_id=journal_id,
+            details={
+                "bank_line_id": bank_line_id,
+                "account_code": adjustment_account_code,
+                "amount": monto
+            }
+        )
+
         return {
-            "success": True, 
-            "message": f"Se han blindado {len(data_to_insert)} movimientos exitosamente."
+            "success": True,
+            "journal_id": journal_id,
+            "message": "Asiento de ajuste generado y conciliado exitosamente."
         }
-        
+
     except Exception as e:
-        print(f"ERROR save_reconciliation: {str(e)}")
+        print(f"ERROR reconcile_with_adjustment: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/rules/{organization_id}")
-async def get_mapping_rules(organization_id: str):
+async def get_mapping_rules(organization_id: str, current_user: dict = Depends(verify_token)):
     """Consulta las reglas de pre-mapeo inteligente."""
     db = get_supabase()
     try:

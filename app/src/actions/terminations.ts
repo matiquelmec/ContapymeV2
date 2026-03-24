@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../lib/supabase/server'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function calculateTerminationAction(data: {
   employee_id: string,
@@ -14,13 +15,8 @@ export async function calculateTerminationAction(data: {
   other_bonuses: number
 }) {
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-    
-    const response = await fetch(`${engineUrl}/api/v1/terminations/calculate`, {
+    const response = await engineFetch('/api/v1/terminations/calculate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify(data),
       cache: 'no-store'
     })
@@ -65,8 +61,7 @@ export async function deleteTerminationAction(terminationId: string) {
 
 export async function getTerminationDocumentAction(terminationId: string, docType: string) {
     try {
-        const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-        const response = await fetch(`${engineUrl}/api/v1/terminations/${terminationId}/document/${docType}`, {
+        const response = await engineFetch(`/api/v1/terminations/${terminationId}/document/${docType}`, {
             cache: 'no-store'
         })
         
@@ -84,8 +79,7 @@ export async function getTerminationDocumentAction(terminationId: string, docTyp
 
 export async function getTerminationCausesAction() {
     try {
-        const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-        const response = await fetch(`${engineUrl}/api/v1/terminations/causes`, {
+        const response = await engineFetch('/api/v1/terminations/causes', {
             cache: 'no-store'
         })
         
@@ -136,8 +130,7 @@ export async function finalizeTerminationAction(terminationId: string, employeeI
 
 export async function downloadTerminationDocAction(terminationId: string, docType: string) {
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
-    const response = await fetch(`${engineUrl}/api/v1/terminations/${terminationId}/download/${docType}`, {
+    const response = await engineFetch(`/api/v1/terminations/${terminationId}/download/${docType}`, {
       method: 'GET',
       cache: 'no-store'
     });

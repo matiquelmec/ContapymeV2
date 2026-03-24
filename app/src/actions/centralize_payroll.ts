@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveOrganizationId } from './organizations'
+import { engineFetch } from '@/lib/engine-client'
 
 export async function centralizePayroll(period: string) {
   const supabase = await createClient()
@@ -17,16 +18,11 @@ export async function centralizePayroll(period: string) {
 
   // 3. Disparar centralización al Backend
   try {
-    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000'
-
     // Mantener string de periodo a YYYY-MM-DD igual que process_payroll
     const sqlPeriod = period.length === 7 ? `${period}-01` : period;
 
-    const res = await fetch(`${engineUrl}/api/v1/accounting/generate-from-payroll`, {
+    const res = await engineFetch('/api/v1/accounting/generate-from-payroll', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         organization_id: activeOrgId,
         periodo: sqlPeriod

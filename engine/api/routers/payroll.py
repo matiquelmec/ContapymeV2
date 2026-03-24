@@ -14,6 +14,9 @@ from calculators.chilean_payroll import (
     calcular_liquidacion,
     to_db_dict,
 )
+from core.auth import verify_token
+from core.logger import log_activity
+from fastapi import Depends
 from calculators.national_params import (
     TOPE_AFP_UF, TOPE_SALUD_UF, TOPE_AFC_UF,
     SIS_PCT, SUELDO_MINIMO,
@@ -32,7 +35,7 @@ class PayrollRequest(BaseModel):
 
 
 @router.post("/process")
-async def process_payroll(req: PayrollRequest):
+async def process_payroll(req: PayrollRequest, current_user: dict = Depends(verify_token)):
     """
     Endpoint del Motor Matemático para procesar liquidaciones en lote.
     
@@ -196,6 +199,91 @@ async def process_payroll(req: PayrollRequest):
             ).execute()
 
             processed_count += 1
+
+        # ── 7. CENTRALIZACIÓN CONTABLE AUTOMÁTICA (Integración IFRS) ──────────
+        if processed_count > 0:
+            try:
+                # 7.1. Obtener totales agregados del periodo recién guardado
+                totals_res = db.table("liquidations") \
+                    .select("total_haberes_brutos.sum(), afc_empresa.sum(), sis_empresa.sum(), afp.sum(), afp_comision.sum(), salud_total.sum(), afc_trabajador.sum(), impuesto_unico.sum(), sueldo_liquido.sum()") \
+                    .eq("organization_id", req.org_id) \
+                    .eq("periodo", req.periodo) \
+                    .maybe_single() \
+                    .execute()
+                
+                # Nota: PostgREST no siempre soporta agregaciones directas en select
+                # Si falla, traemos todo y sumamos en Python (más seguro por compatibilidad)
+                if not totals_res.data:
+                    all_liq = db.table("liquidations") \
+                        .select("*") \
+                        .eq("organization_id", req.org_id) \
+                        .eq("periodo", req.periodo) \
+                        .execute()
+                    
+                    data = all_liq.data or []
+                    sums = {
+                        "bruto": sum(l.get("total_haberes_brutos", 0) for l in data),
+                        "afc_emp": sum(l.get("afc_empresa", 0) for l in data),
+                        "sis_emp": sum(l.get("sis_empresa", 0) for l in data),
+                        "afp_total": sum(l.get("afp", 0) + l.get("afp_comision", 0) for l in data),
+                        "salud": sum(l.get("salud_total", 0) for l in data),
+                        "afc_trab": sum(l.get("afc_trabajador", 0) for l in data),
+                        "impuesto": sum(l.get("impuesto_unico", 0) for l in data),
+                        "liquido": sum(l.get("sueldo_liquido", 0) for l in data),
+                    }
+                else:
+                    # Si el servidor soporta agregaciones (Supabase RPC o View)
+                    sums = totals_res.data # (Simulado, usaremos el fallback por seguridad)
+
+                # 7.2. Definir Líneas del Asiento de Centralización
+                # Glosa institucional
+                glosa_centralizacion = f"Centralización Remuneraciones Periodo {req.periodo}"
+                
+                journal_lines = [
+                    # GASTOS (Debe)
+                    {"cuenta_codigo": "5.1.02.001", "cuenta_nombre": "Sueldos y Salarios", "tipo": "debe", "monto": sums["bruto"]},
+                    {"cuenta_codigo": "5.1.02.002", "cuenta_nombre": "Leyes Sociales Empresa", "tipo": "debe", "monto": sums["afc_emp"] + sums["sis_emp"]},
+                    
+                    # PASIVOS (Haber)
+                    {"cuenta_codigo": "2.1.04.004", "cuenta_nombre": "AFP por Pagar", "tipo": "haber", "monto": sums["afp_total"]},
+                    {"cuenta_codigo": "2.1.04.005", "cuenta_nombre": "Salud por Pagar", "tipo": "haber", "monto": sums["salud"]},
+                    {"cuenta_codigo": "2.1.04.006", "cuenta_nombre": "AFC por Pagar", "tipo": "haber", "monto": sums["afc_trab"] + sums["afc_emp"]},
+                    {"cuenta_codigo": "2.1.03.001", "cuenta_nombre": "Impuesto Único por Pagar", "tipo": "haber", "monto": sums["impuesto"]},
+                    {"cuenta_codigo": "2.1.04.001", "cuenta_nombre": "Sueldos por Pagar", "tipo": "haber", "monto": sums["liquido"]},
+                ]
+
+                # 7.3. Inyectar Asiento vía RPC
+                # Usamos el último día del mes para la fecha contable
+                last_day = calendar.monthrange(int(req.periodo.split("-")[0]), int(req.periodo.split("-")[1]))[1]
+                fecha_asiento = f"{req.periodo}-{last_day}"
+
+                db.rpc("create_journal_entry_with_lines", {
+                    "p_organization_id": req.org_id,
+                    "p_fecha": fecha_asiento,
+                    "p_glosa": glosa_centralizacion,
+                    "p_lines": journal_lines
+                }).execute()
+
+                logger.info(f"🏦 Asiento de centralización generado exitosamente para {req.periodo}")
+
+            except Exception as ex_cont:
+                logger.error(f"❌ Error al centralizar contablemente la nómina: {ex_cont}")
+                advertencias_totales.append(f"⚠️ Nómina procesada pero falló la creación del asiento contable: {ex_cont}")
+
+        # REGISTRAR EN BITÁCORA (AUDIT LOG)
+        log_activity(
+            action="process_payroll_bulk",
+            organization_id=req.org_id,
+            user_id=current_user.get("id"),
+            entity_type="payroll_period",
+            entity_id=f"{req.org_id}_{req.periodo}",
+            details={
+                "processed_count": processed_count,
+                "uf_usada": uf_valor,
+                "utm_usada": utm_valor,
+                "has_warnings": len(advertencias_totales) > 0
+            }
+        )
 
         return {
             "success": True,

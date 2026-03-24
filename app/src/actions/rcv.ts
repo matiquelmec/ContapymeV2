@@ -1,8 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-
-const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8000'
+import { engineFetch } from '@/lib/engine-client'
 
 // ==========================================
 // IMPORTACIÓN
@@ -19,8 +18,8 @@ export async function importRCVAction(
   try {
     const endpoint = type === 'purchases' ? 'import-purchases' : 'import-sales'
 
-    const response = await fetch(
-      `${ENGINE_URL}/api/v1/rcv/${endpoint}?organization_id=${organizationId}&periodo=${periodo}&force=${force}`,
+    const response = await engineFetch(
+      `/api/v1/rcv/${endpoint}?organization_id=${organizationId}&periodo=${periodo}&force=${force}`,
       {
         method: 'POST',
         body: formData,
@@ -30,7 +29,15 @@ export async function importRCVAction(
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }))
-      return { success: false, error: err.detail }
+      let errMsg = 'Error en el servidor'
+      if (typeof err.detail === 'string') {
+        errMsg = err.detail
+      } else if (Array.isArray(err.detail)) {
+        errMsg = err.detail.map((e: any) => e.msg).join(', ')
+      } else if (err.detail) {
+        errMsg = JSON.stringify(err.detail)
+      }
+      return { success: false, error: errMsg }
     }
 
     const result = await response.json()
@@ -59,15 +66,13 @@ export async function getTopVendors(
   limit: number = 10
 ) {
   try {
-    const url = new URL(`${ENGINE_URL}/api/v1/rcv/analysis/top-vendors`)
-    url.searchParams.append('organization_id', organizationId)
-    url.searchParams.append('limit', String(limit))
-    if (periodo) url.searchParams.append('periodo', periodo)
-
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const url = `/api/v1/rcv/analysis/top-vendors?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}`
+    
+    const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
     return await response.json()
-  } catch {
+  } catch (err) {
+    console.error("Error en getTopVendors:", err)
     return []
   }
 }
@@ -79,15 +84,13 @@ export async function getTopCustomers(
   limit: number = 10
 ) {
   try {
-    const url = new URL(`${ENGINE_URL}/api/v1/rcv/analysis/top-customers`)
-    url.searchParams.append('organization_id', organizationId)
-    url.searchParams.append('limit', String(limit))
-    if (periodo) url.searchParams.append('periodo', periodo)
+    const url = `/api/v1/rcv/analysis/top-customers?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}`
 
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
     return await response.json()
-  } catch {
+  } catch (err) {
+    console.error("Error en getTopCustomers:", err)
     return []
   }
 }
@@ -99,11 +102,9 @@ export async function getTopCustomers(
 /** KPIs del período: montos compras/ventas, proveedores/clientes únicos, balance */
 export async function getRCVSummary(organizationId: string, periodo?: string) {
   try {
-    const url = new URL(`${ENGINE_URL}/api/v1/rcv/analysis/summary`)
-    url.searchParams.append('organization_id', organizationId)
-    if (periodo) url.searchParams.append('periodo', periodo)
+    const url = `/api/v1/rcv/analysis/summary?organization_id=${organizationId}${periodo ? `&periodo=${periodo}` : ''}`
 
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return null
     return await response.json()
   } catch {
@@ -118,10 +119,10 @@ export async function getRCVSummary(organizationId: string, periodo?: string) {
 /** Lista de períodos (YYYY-MM-01) que tienen datos de compras o ventas */
 export async function getAvailablePeriodos(organizationId: string) {
   try {
-    const url = new URL(`${ENGINE_URL}/api/v1/rcv/periodos`)
-    url.searchParams.append('organization_id', organizationId)
-
-    const response = await fetch(url.toString(), { cache: 'no-store' })
+    const response = await engineFetch(
+      `/api/v1/rcv/periodos?organization_id=${organizationId}`,
+      { cache: 'no-store' }
+    )
     if (!response.ok) return []
     return await response.json()
   } catch {
@@ -136,17 +137,16 @@ export async function getAvailablePeriodos(organizationId: string) {
 /** Historial de lotes importados, agrupado por (periodo, tipo) */
 export async function getRCVHistory(organizationId: string, limit: number = 30) {
   try {
-    const url = new URL(`${ENGINE_URL}/api/v1/rcv/history`)
-    url.searchParams.append('organization_id', organizationId)
-    url.searchParams.append('limit', String(limit))
-
-    const response = await fetch(url.toString(), { cache: 'no-store' })
-    if (!response.ok) return []
-    return await response.json()
-  } catch {
-    return []
-  }
-}
+    const response = await engineFetch(
+       `/api/v1/rcv/history?organization_id=${organizationId}&limit=${limit}`,
+       { cache: 'no-store' }
+     )
+     if (!response.ok) return []
+     return await response.json()
+   } catch {
+     return []
+   }
+ }
 // ==========================================
 // CONSOLIDADO (PARA RENDIMIENTO)
 // ==========================================
