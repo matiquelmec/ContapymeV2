@@ -117,8 +117,10 @@ export async function finalizeTerminationAction(terminationId: string, employeeI
         
         if (empError) throw empError
 
+        revalidatePath('/dashboard')
         revalidatePath('/dashboard/payroll')
         revalidatePath('/dashboard/payroll/terminations')
+        revalidatePath('/dashboard/payroll/contracts')
         
         return { success: true }
     } catch (error: any) {

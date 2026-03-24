@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,23 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { 
-  FileText,
-  Download,
-  AlertTriangle,
-  ArrowRight,
-  Zap,
-  ShieldCheck,
-  History,
-  Settings2
-} from "lucide-react";
+    History, 
+    Zap, 
+    Download, 
+    AlertTriangle, 
+    FileText, 
+    Settings2, 
+    ShieldCheck, 
+    FileCheck2, 
+    Waves,
+    ArrowRight,
+    ExternalLink,
+    Loader2
+} from 'lucide-react';
 import { toast } from "sonner";
 import Link from "next/link";
-import { ModificationsDialog } from "@/components/modifications-dialog";
+import { generateContractAction } from "@/actions/documents";
+import { ModificationsDialog } from "@/components/modifications-dialog"
 
 interface Employee {
   id: string;
@@ -52,8 +57,13 @@ export default function ContractsClient({
   // Modificaciones state
   const [modTarget, setModTarget] = useState<{id: string, name: string, data: any} | null>(null);
   const [modOpen, setModOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
-  // 🧠 Algoritmo de Consolidación Inteligente (Deduplicación de Clase Mundial)
   const processedContracts = useMemo(() => {
     // 1. Ordenar por creación (más reciente primero)
     const sorted = [...initialContracts].sort((a, b) => 
@@ -62,7 +72,7 @@ export default function ContractsClient({
 
     const result: any[] = [];
     const contractFoundFor = new Set();
-
+    
     for (const doc of sorted) {
       if (doc.tipo_documento === 'contrato') {
         // Solo un registro MAESTRO de contrato por empleado
@@ -87,6 +97,16 @@ export default function ContractsClient({
     );
     return uniqueActiveEmployees.size;
   }, [processedContracts]);
+
+  const lastGenerationDate = useMemo(() => {
+    if (!isClient || initialContracts.length === 0) return 'N/A';
+    const sorted = [...initialContracts].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return new Date(sorted[0].created_at).toLocaleDateString("es-CL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+    });
+  }, [initialContracts, isClient]);
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -118,30 +138,31 @@ export default function ContractsClient({
 
       {/* ===== CUADRO DE MANDO RÁPIDO ===== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <KPIItem 
-            label="Contratos Activos" 
-            value={String(activeContractsCount)} 
-            icon={ShieldCheck} 
-            color="text-blue-600" 
-            borderColor="border-blue-600"
-            sub="Documentación vigente controlada" 
-          />
-          <KPIItem 
-            label="Última Generación" 
-            value={initialContracts.length > 0 ? new Date(initialContracts[0].created_at).toLocaleDateString() : 'N/A'} 
-            icon={History} 
-            color="text-purple-600" 
-            borderColor="border-purple-600"
-            sub="Actividad documental reciente" 
-          />
-          <KPIItem 
-            label="Tasa de Digitalización" 
-            value="100%" 
-            icon={Zap} 
-            color="text-emerald-600" 
-            borderColor="border-emerald-600"
-            sub="Certificación de flujo sin papel" 
-          />
+        <KPIItem 
+          label="Contratos Activos" 
+          value={activeContractsCount.toString()} 
+          icon={<FileCheck2 className="h-4 w-4" />} 
+          color="text-emerald-600"
+          borderColor="border-emerald-600"
+          sub="Documentación vigente controlada"
+        />
+        <KPIItem 
+          label="Última Generación" 
+          value={lastGenerationDate} 
+          icon={<Zap className="h-4 w-4" />} 
+          color="text-purple-600"
+          borderColor="border-purple-600"
+          sub="Actividad documental reciente"
+          suppressHydrationWarning={true}
+        />
+        <KPIItem 
+          label="Tasa de Digitalización" 
+          value="100%" 
+          icon={<Waves className="h-4 w-4" />} 
+          color="text-blue-600"
+          borderColor="border-blue-600"
+          sub="Certificación de flujo sin papel"
+        />
       </div>
 
       <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 transition-all">
@@ -191,7 +212,7 @@ export default function ContractsClient({
                         </Badge>
                     </TableCell>
                     <TableCell className="px-10 py-6">
-                        <span className="font-mono text-xs font-black text-foreground/70 uppercase">
+                        <span className="font-mono text-xs font-black text-foreground/70 uppercase" suppressHydrationWarning={true}>
                             {new Date(contract.created_at).toLocaleDateString()}
                         </span>
                     </TableCell>
@@ -217,26 +238,38 @@ export default function ContractsClient({
                             variant="ghost" 
                             size="icon" 
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-11 h-11 rounded-xl transition-all"
+                            disabled={loadingId === contract.id}
                             onClick={async () => {
-                            const toastId = toast.loading("Sintetizando documento legal...");
-                            try {
-                                const response = await fetch(`/api/documents/generate?employee_id=${contract.employee_id}&type=${contract.tipo_documento}`);
-                                if (!response.ok) throw new Error("Recurso no disponible");
-                                const blob = await response.blob();
+                              const toastId = toast.loading("Sintetizando documento legal...");
+                              setLoadingId(contract.id);
+                              try {
+                                const result = await generateContractAction(contract.employee_id);
+                                if (!result.success || !result.base64Doc) {
+                                  throw new Error(result.error || "Falla en la generación del documento");
+                                }
+
+                                const blob = await (await fetch(`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${result.base64Doc}`)).blob();
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement("a");
                                 a.href = url;
-                                a.download = `${contract.tipo_documento}_${contract.employees?.apellido_paterno}_REGEN.docx`;
+                                a.download = result.filename || `${contract.employees?.apellido_paterno}_${contract.tipo_documento}.docx`;
                                 document.body.appendChild(a);
                                 a.click();
                                 window.URL.revokeObjectURL(url);
                                 toast.success("Documento recuperado con éxito.", { id: toastId });
-                            } catch (error) {
-                                toast.error("Error al recuperar el registro.", { id: toastId });
-                            }
+                              } catch (error: any) {
+                                console.error("Error en descarga Kardex:", error);
+                                toast.error(`Error: ${error.message}`, { id: toastId });
+                               } finally {
+                                setLoadingId(null);
+                              }
                             }}
                         >
-                            <Download className="h-5 w-5" />
+                            {loadingId === contract.id ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Download className="h-5 w-5" />
+                            )}
                         </Button>
                       </div>
                     </TableCell>
@@ -276,18 +309,20 @@ export default function ContractsClient({
 // ==========================================
 // HELPERS & SUBCOMPONENTS
 // ==========================================
-function KPIItem({ label, value, sub, icon: Icon, color, borderColor }: any) {
+function KPIItem({ label, value, sub, icon, color, borderColor, suppressHydrationWarning }: any) {
     return (
         <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`}>
         <CardContent className="p-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-2 leading-none">{label}</p>
-              <p className={`text-3xl font-black tracking-tighter ${color}`}>{value}</p>
+              <p className={`text-3xl font-black tracking-tighter ${color}`} suppressHydrationWarning={suppressHydrationWarning}>
+                {value}
+              </p>
               {sub && <p className="text-[11px] text-muted-foreground/60 font-bold italic mt-2">{sub}</p>}
             </div>
-            <div className={`p-4 rounded-2xl bg-muted/30 border border-border group-hover:bg-white transition-colors`}>
-              <Icon className={`w-8 h-8 ${color} opacity-40 group-hover:opacity-100 transition-opacity`} />
+            <div className={`p-4 rounded-2xl bg-muted/30 border border-border group-hover:bg-primary/10 transition-colors ${color}`}>
+              {icon}
             </div>
           </div>
         </CardContent>

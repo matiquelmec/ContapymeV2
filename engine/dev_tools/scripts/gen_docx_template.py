@@ -81,17 +81,18 @@ def create_contract_template():
     p1 = cells[0].paragraphs[0]
     p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p1.add_run('__________________________\n').bold = True
-    p1.add_run('{{EMPRESA_NOMBRE}}\n').bold = True
-    p1.add_run('RUT: {{EMPRESA_RUT}}\n')
-    p1.add_run('EMPLEADOR')
+    p1.add_run('FIRMA EMPLEADOR\n').bold = True
+    p1.add_run('{{REP_LEGAL_NOMBRE}}\n')
+    p1.add_run('RUT: {{REP_LEGAL_RUT}}\n')
+    p1.add_run('p.p. {{EMPRESA_NOMBRE}}').italic = True
 
     # Firma Trabajador
     p2 = cells[1].paragraphs[0]
     p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p2.add_run('__________________________\n').bold = True
-    p2.add_run('{{EMPLEADO_NOMBRE}}\n').bold = True
-    p2.add_run('RUT: {{EMPLEADO_RUT}}\n')
-    p2.add_run('TRABAJADOR')
+    p2.add_run('FIRMA TRABAJADOR\n').bold = True
+    p2.add_run('{{EMPLEADO_NOMBRE}}\n')
+    p2.add_run('RUT: {{EMPLEADO_RUT}}')
 
     # Pie de Página (SELLO DE CALIDAD)
     section = doc.sections[0]
@@ -188,16 +189,17 @@ def create_annex_template():
     p1 = cells[0].paragraphs[0]
     p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p1.add_run('__________________________\n').bold = True
-    p1.add_run('{{EMPRESA_NOMBRE}}\n').bold = True
-    p1.add_run('RUT: {{EMPRESA_RUT}}\n')
-    p1.add_run('EMPLEADOR')
+    p1.add_run('FIRMA EMPLEADOR\n').bold = True
+    p1.add_run('{{REP_LEGAL_NOMBRE}}\n')
+    p1.add_run('RUT: {{REP_LEGAL_RUT}}\n')
+    p1.add_run('p.p. {{EMPRESA_NOMBRE}}').italic = True
 
     p2 = cells[1].paragraphs[0]
     p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p2.add_run('__________________________\n').bold = True
-    p2.add_run('{{EMPLEADO_NOMBRE}}\n').bold = True
-    p2.add_run('RUT: {{EMPLEADO_RUT}}\n')
-    p2.add_run('TRABAJADOR')
+    p2.add_run('FIRMA TRABAJADOR\n').bold = True
+    p2.add_run('{{EMPLEADO_NOMBRE}}\n')
+    p2.add_run('RUT: {{EMPLEADO_RUT}}')
 
     # Pie de Página (SELLO DE CALIDAD ANEXO)
     section = doc.sections[0]

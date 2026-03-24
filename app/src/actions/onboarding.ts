@@ -93,14 +93,16 @@ export async function seedChartOfAccounts(organizationId: string) {
 // PASO 3.5: Seed de Configuración Previsional
 // (AFPs + Isapres oficiales Chile 2025)
 // ────────────────────────────────────────────────
-export async function seedPayrollSettings(organizationId: string) {
+export async function seedPayrollSettings(organizationId: string, repLegalNombre: string, repLegalRut: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) throw new Error('No autenticado')
 
   const { error } = await supabase.rpc('seed_payroll_settings', {
-    p_org_id: organizationId
+    p_org_id: organizationId,
+    p_rep_nombre: repLegalNombre,
+    p_rep_rut: repLegalRut
   })
 
   if (error) {

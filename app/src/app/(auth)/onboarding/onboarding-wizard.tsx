@@ -41,6 +41,8 @@ export default function OnboardingWizard() {
   const [direccion, setDireccion] = useState('')
   const [comuna, setComuna] = useState('')
   const [regimen, setRegimen] = useState('pro_pyme')
+  const [repLegalNombre, setRepLegalNombre] = useState('')
+  const [repLegalRut, setRepLegalRut] = useState('')
 
   // Step 3 data
   const [planType, setPlanType] = useState('standard')
@@ -78,8 +80,8 @@ export default function OnboardingWizard() {
       setSeeded(true)
     }
 
-    // Seed de AFPs e Isapres → SIEMPRE, independiente del plan contable
-    await seedPayrollSettings(orgId)
+    // Seed de AFPs e Isapres + Rep Legal → SIEMPRE
+    await seedPayrollSettings(orgId, repLegalNombre, repLegalRut)
 
     setLoading(false)
     setStep(4)
@@ -203,9 +205,10 @@ export default function OnboardingWizard() {
                     onChange={e => setRegimen(e.target.value)}
                     className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
                   >
-                    <option value="pro_pyme">Pro Pyme General</option>
-                    <option value="general">Régimen General</option>
-                    <option value="14d3">14D-3 Transparencia</option>
+                    <option value="pro_pyme">14 D N°3 - Pro Pyme General</option>
+                    <option value="pro_pyme_transparente">14 D N°8 - Pro Pyme Transparente</option>
+                    <option value="parcialmente_integrado">14 A - Parcialmente Integrado</option>
+                    <option value="renta_presunta">Renta Presunta</option>
                   </select>
                 </div>
               </div>
@@ -227,6 +230,31 @@ export default function OnboardingWizard() {
                   <Input value={comuna} onChange={e => setComuna(e.target.value)} placeholder="Punta Arenas" className="h-11" />
                 </div>
               </div>
+
+              {/* Sección Representante Legal */}
+              <div className="pt-4 border-t border-border mt-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Representante Legal (Para Firmas)</p>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-50 italic">Opcional</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Nombre Completo</Label>
+                    <Input value={repLegalNombre} onChange={e => setRepLegalNombre(e.target.value)} placeholder="Ej: Juan Pérez" className="h-11 bg-primary/5 shadow-inner" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">RUT Personal</Label>
+                    <Input 
+                      value={repLegalRut} 
+                      onChange={e => setRepLegalRut(formatRut(e.target.value))} 
+                      placeholder="12.XXX.XXX-X" 
+                      className="h-11 bg-primary/5 shadow-inner"
+                      maxLength={12} 
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 mt-4">
                 <Button variant="outline" onClick={() => { setStep(1); setError('') }} className="h-11 flex-1">
                   <ArrowLeft className="w-4 h-4 mr-2" /> Atrás

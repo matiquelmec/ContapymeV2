@@ -231,6 +231,11 @@ async def generate_document_text(termination_id: str, doc_type: str):
         org_res = db.table("organizations").select("*").eq("id", org_id).single().execute()
         org = org_res.data or {}
         
+        config_res = db.table("organization_payroll_settings").select("*").eq("organization_id", org_id).maybe_single().execute()
+        config = config_res.data or {}
+        rep_nombre = config.get("rep_legal_nombre", "________________")
+        rep_rut = config.get("rep_legal_rut", "________________")
+        
         hoy = format_date_spanish(date.today())
         
         # Robust date formatting helper
@@ -264,7 +269,7 @@ async def generate_document_text(termination_id: str, doc_type: str):
                         f"según consta en certificados adjuntos.\n\n"
                         f"Finalmente, agradecemos su desempeño y compromiso durante el período en que le correspondió cumplir funciones en nuestra institución.\n\n"
                         f"Sin otro particular, saluda atentamente a Ud.\n\n"
-                        f"__________________________\nFIRMA EMPLEADOR\n{org.get('nombre', 'CONTAPYME V2')}"
+                        f"__________________________\nFIRMA EMPLEADOR\n{rep_nombre}\nRUT: {rep_rut}\np.p. {org.get('nombre', 'CONTAPYME V2')}"
                     )
                 }
             }
@@ -290,9 +295,15 @@ async def generate_document_text(termination_id: str, doc_type: str):
                         f"TERCERO: El trabajador declara recibir en este acto, a su entera satisfacción, la suma total indicada, "
                         f"no teniendo reclamo alguno que formular en contra de su empleador derivado de la relación laboral que los unió.\n\n"
                         f"CUARTO: Las partes otorgan el más amplio, completo y recíproco finiquito.\n\n"
-                        f"__________________________          __________________________\n"
-                        f"    FIRMA TRABAJADOR                    FIRMA EMPLEADOR\n"
-                        f"        {emp.get('rut', '---')}                     {org.get('nombre', '---')}"
+                        f"__________________________\n"
+                        f"FIRMA EMPLEADOR\n"
+                        f"{rep_nombre}\n"
+                        f"RUT: {rep_rut}\n"
+                        f"p.p. {org.get('nombre', '---')}\n\n"
+                        f"__________________________\n"
+                        f"FIRMA TRABAJADOR\n"
+                        f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}\n"
+                        f"RUT: {emp.get('rut', '---')}\n"
                     )
                 }
             }
@@ -311,8 +322,15 @@ async def download_docx(termination_id: str, doc_type: str):
             raise HTTPException(status_code=404, detail="Finiquito no encontrado")
         
         emp = term.get("employees", {})
-        org_res = db.table("organizations").select("*").eq("id", term["organization_id"]).single().execute()
+        org_id = term["organization_id"]
+
+        org_res = db.table("organizations").select("*").eq("id", org_id).single().execute()
         org = org_res.data or {}
+
+        config_res = db.table("organization_payroll_settings").select("*").eq("organization_id", org_id).maybe_single().execute()
+        config = config_res.data or {}
+        rep_nombre = config.get("rep_legal_nombre", "________________")
+        rep_rut = config.get("rep_legal_rut", "________________")
         
         # Obtener textos (reutilizando la lógica anterior o generando nuevos)
         hoy = format_date_spanish(date.today())
@@ -420,13 +438,16 @@ async def download_docx(termination_id: str, doc_type: str):
             
             f1 = cells[0].paragraphs[0]
             f1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            f1.add_run("__________________________\nFIRMA TRABAJADOR\n").bold = True
-            f1.add_run(f"RUT: {emp['rut']}")
+            f1.add_run("__________________________\nFIRMA EMPLEADOR\n").bold = True
+            f1.add_run(f"{rep_nombre}\n")
+            f1.add_run(f"RUT: {rep_rut}\n")
+            f1.add_run(f"p.p. {org.get('nombre', 'CONTAPYME V2')}").italic = True
             
             f2 = cells[1].paragraphs[0]
             f2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            f2.add_run("__________________________\nFIRMA EMPLEADOR\n").bold = True
-            f2.add_run(f"{org.get('nombre', '---')}")
+            f2.add_run("__________________________\nFIRMA TRABAJADOR\n").bold = True
+            f2.add_run(f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}\n")
+            f2.add_run(f"RUT: {emp.get('rut', '---')}")
 
             # Pie de página Premium
             doc.add_paragraph("\n\n")

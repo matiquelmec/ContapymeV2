@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const ENGINE_URL = process.env.ENGINE_URL || "http://localhost:8000";
 
@@ -11,9 +12,20 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // El motor usa POST para generación
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) {
+      return NextResponse.json({ error: "Sesión no válida o expirada" }, { status: 401 });
+    }
+
+    // El motor usa GET para generación de anexos
     const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate-annex?mod_id=${modId}`, {
       method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
     });
 
     if (!response.ok) {

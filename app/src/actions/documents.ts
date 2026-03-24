@@ -14,7 +14,7 @@ export async function generateContractAction(employeeId: string) {
     }
     
     // 2. Call Python Engine to generate the DOCX
-    const response = await engineFetch(`/api/v1/documents/generate?employee_id=${employeeId}&type=contrato`, {
+    const response = await engineFetch(`/api/v1/documents/generate?employee_id=${employeeId}&type=contrato&v=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store'
     })

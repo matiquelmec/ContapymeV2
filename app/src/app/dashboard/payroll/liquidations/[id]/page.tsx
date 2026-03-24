@@ -189,9 +189,19 @@ export default function LiquidationDetailPage() {
     doc.setFontSize(8); doc.setFont('helvetica', 'bold')
     doc.text('FIRMA EMPLEADOR', 60, y + 5, { align: 'center' })
     doc.text('FIRMA TRABAJADOR', 150, y + 5, { align: 'center' })
-    doc.setFont('helvetica', 'normal')
-    doc.text(settings?.rep_legal_nombre || 'Representante Legal', 60, y + 10, { align: 'center' })
-    doc.text(formatRUT(settings?.rep_legal_rut || ''), 60, y + 14, { align: 'center' })
+    
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
+    // Bloque Empleador (Representante + Empresa)
+    const repName = settings?.rep_legal_nombre || 'Representante Legal'
+    const repRut = settings?.rep_legal_rut ? formatRUT(settings.rep_legal_rut) : 'RUT: ________'
+    
+    doc.text(repName, 60, y + 10, { align: 'center' })
+    doc.text(repRut, 60, y + 14, { align: 'center' })
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(7)
+    doc.text(`p.p. ${organization?.nombre}`, 60, y + 18, { align: 'center' })
+
+    // Bloque Trabajador
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
     doc.text(fullName, 150, y + 10, { align: 'center' })
     doc.text(formatRUT(emp?.rut), 150, y + 14, { align: 'center' })
 

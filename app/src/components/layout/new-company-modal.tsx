@@ -21,7 +21,8 @@ export function NewCompanyModal({
 }) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    rut: '', nombre: '', giro: '', direccion: '', comuna: '', regimen: 'pro_pyme'
+    rut: '', nombre: '', giro: '', direccion: '', comuna: '', regimen: 'pro_pyme',
+    repLegalNombre: '', repLegalRut: ''
   })
 
   // Formateador automático del RUT 🇨🇱
@@ -33,6 +34,16 @@ export function NewCompanyModal({
       value = `${body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
     }
     setFormData({ ...formData, rut: value })
+  }
+
+  const handleRepRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9kK]/g, '')
+    if (value.length > 1) {
+      const body = value.slice(0, -1)
+      const dv = value.slice(-1).toUpperCase()
+      value = `${body.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
+    }
+    setFormData({ ...formData, repLegalNombre: formData.repLegalNombre, repLegalRut: value })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,9 +61,9 @@ export function NewCompanyModal({
       const resCuentas = await seedChartOfAccounts(resOrg.organizationId)
       if (!resCuentas.success) throw new Error(resCuentas.error)
 
-      // 3. Sembrar configuración previsional (AFPs + Isapres)
+      // 3. Sembrar configuración previsional (AFPs + Isapres + Representante)
       toast.loading('Configurando instituciones previsionales...', { id: 'new-org' })
-      await seedPayrollSettings(resOrg.organizationId)
+      await seedPayrollSettings(resOrg.organizationId, formData.repLegalNombre, formData.repLegalRut)
 
       toast.success('Empresa Corporativa creada exitosamente.', { id: 'new-org' })
       onSuccess()
@@ -116,6 +127,21 @@ export function NewCompanyModal({
                   <SelectItem value="renta_presunta">Renta Presunta</SelectItem>
                 </SelectContent>
               </Select>
+            </div> { /* Fin sección Régimen */ }
+
+            {/* Nueva Sección: Representante Legal */}
+            <div className="pt-4 border-t border-border mt-2 space-y-4">
+               <Label className="text-[10px] font-black uppercase tracking-widest text-primary/60">Representante Legal (Para Firmas)</Label>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Nombre Completo</Label>
+                    <Input placeholder="Juan Pérez" value={formData.repLegalNombre} onChange={e => setFormData({...formData, repLegalNombre: e.target.value})} className="h-10 bg-muted/30" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">RUT Personal</Label>
+                    <Input placeholder="12.345.678-9" value={formData.repLegalRut} onChange={handleRepRutChange} maxLength={12} className="h-10 bg-muted/30 font-mono" />
+                  </div>
+               </div>
             </div>
           </div>
 

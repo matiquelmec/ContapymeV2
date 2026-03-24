@@ -26,7 +26,7 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
         result = db.table("employees") \
             .select("*, organizations(*)") \
             .eq("id", employee_id) \
-            .single() \
+            .maybe_single() \
             .execute()
 
         emp = result.data
@@ -34,11 +34,21 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
             raise HTTPException(status_code=404, detail="Empleado no encontrado")
             
         org = emp.get('organizations', {})
-        org_id = org.get('id')
-
+        if isinstance(org, list) and len(org) > 0:
+            org = org[0]
+        
+        # Fallback: si por alguna razón PostgREST no lo anidó bien, usamos el ID directo
+        org_id = org.get('id') or emp.get('organization_id')
+        print(f"🔹 PROCESANDO DOC: Emp={employee_id} | Org={org_id}")
+        
         # 2. Cargar parámetros legales (Rep Legal)
-        settings_res = db.table("organization_payroll_settings").select("*").eq("organization_id", org_id).maybe_single().execute()
-        settings = settings_res.data or {}
+        settings = {}
+        if org_id:
+            settings_res = db.table("organization_payroll_settings").select("*").eq("organization_id", org_id).maybe_single().execute()
+            settings = settings_res.data or {}
+            print(f"✅ SETTINGS CARGADOS: {settings.get('rep_legal_nombre', 'SIN NOMBRE')}")
+        else:
+            print("⚠️ ADVERTENCIA: No se detectó Org ID para el empleado.")
 
         # 3. Lógica "Inteligente": Transformación de datos (UPGRADE CLASE MUNDIAL)
         def to_words(amount):
@@ -104,9 +114,9 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
             'EMPRESA_GIRO': safe_upper(org.get('giro'), 'ACTIVIDADES DE CONTABILIDAD'),
             'CIUDAD': safe_upper(org.get('comuna'), 'PUNTA ARENAS'),
             
-            'REP_LEGAL_NOMBRE': safe_upper(settings.get('rep_legal_nombre'), ''),
-            'REP_LEGAL_RUT': clean_rut(settings.get('rep_legal_rut', '')),
-            'REP_LEGAL_CARGO': safe_upper(settings.get('rep_legal_cargo'), 'GERENTE GENERAL'),
+            'REP_LEGAL_NOMBRE': safe_upper(settings.get('rep_legal_nombre') or settings.get('rep_nombre'), ''),
+            'REP_LEGAL_RUT': clean_rut(settings.get('rep_legal_rut') or settings.get('rep_rut', '')),
+            'REP_LEGAL_CARGO': safe_upper(settings.get('rep_legal_cargo') or settings.get('rep_cargo'), 'GERENTE GENERAL'),
             
             'EMPLEADO_NOMBRE': f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')} {emp.get('apellido_materno', '')}".strip().upper(),
             'EMPLEADO_NOMBRES': safe_upper(emp.get('nombres')),
@@ -144,7 +154,22 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
         # 5. Cargar y renderizar plantilla dinámica
         template_name = "contrato_base.docx" if type == "contrato" else "anexo_base.docx"
         template_path = os.path.join(TEMPLATES_DIR, template_name)
+        abs_path = os.path.abspath(template_path)
+        print(f"📄 CARGANDO PLANTILLA: {abs_path}")
         
+        # Validación de "frescura": ¿tiene los tags nuevos?
+        try:
+            from docx import Document
+            test_doc = Document(template_path)
+            full_text = "".join([p.text for p in test_doc.paragraphs])
+            for t in test_doc.tables:
+                for r in t.rows:
+                    for c in r.cells:
+                        full_text += c.text
+            print(f"🔍 PLACEHOLDER CHECK 'p.p.': {'p.p.' in full_text}")
+        except Exception as e:
+            print(f"❌ Error validando plantilla: {e}")
+            
         if not os.path.exists(template_path):
              # Si no existe, generamos el anexo base también si es necesario
              raise HTTPException(status_code=500, detail=f"Plantilla {template_name} no encontrada. Ejecute generate_docx_template.py primero.")
@@ -160,41 +185,60 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
 
         # 6. Registro Inteligente en DB (Idempotencia / No Duplicados)
         try:
-            fecha_hoy = str(date.today())
+            # Formatear fecha_inicio para que el DB la acepte sin quejas
+            fecha_str = str(emp.get('fecha_ingreso') or date.today())[:10]
             
-            # Buscamos si ya emitimos este tipo de documento HOY para este trabajador
-            existing = db.table("employment_contracts") \
-                .select("id") \
-                .eq("employee_id", employee_id) \
-                .eq("tipo_documento", type) \
-                .eq("fecha_inicio", emp.get('fecha_ingreso', fecha_hoy)) \
-                .maybe_single() \
-                .execute()
+            # 🧠 Log de depuración para confirmar el ID de organización
+            print(f"📊 Intentando registrar en Kardex para Org: {org_id}")
+            
+            if not org_id:
+                raise ValueError("No se pudo identificar la ID de la organización para el registro en Kardex.")
+
+            # Buscamos si ya emitimos este tipo de documento para este trabajador con esta fecha
+            try:
+                res = db.table("employment_contracts") \
+                    .select("id") \
+                    .eq("employee_id", employee_id) \
+                    .eq("tipo_documento", type) \
+                    .eq("fecha_inicio", fecha_str) \
+                    .maybe_single() \
+                    .execute()
+                existing_data = res.data if res else None
+            except:
+                existing_data = None
 
             contract_record = {
                 "organization_id": org_id,
                 "employee_id": employee_id,
                 "tipo_documento": type,
-                "tipo_contrato": emp.get('tipo_contrato') or 'indefinido',
-                "fecha_inicio": emp.get('fecha_ingreso', fecha_hoy),
-                "sueldo_base": sueldo_base or 0,
-                "cargo": emp.get('cargo') or 'Trabajador',
-                "descripcion_cargo": description or '',
+                "tipo_contrato": str(emp.get('tipo_contrato') or 'indefinido'),
+                "fecha_inicio": fecha_str,
+                "sueldo_base": int(sueldo_base or 0),
+                "cargo": str(emp.get('cargo') or 'Trabajador').upper(),
+                "descripcion_cargo": str(description or emp.get('descripcion_cargo') or ''),
                 "status": "generado"
             }
 
-            if existing.data:
+            if existing_data:
                 # Actualizamos el registro existente para no ensuciar el Kardex
                 db.table("employment_contracts") \
                     .update(contract_record) \
-                    .eq("id", existing.data['id']) \
+                    .eq("id", existing_data['id']) \
                     .execute()
             else:
                 # Nuevo registro solo si es la primera vez
                 db.table("employment_contracts").insert(contract_record).execute()
+            
+            print("✅ Registro en Kardex completado con éxito.")
                 
         except Exception as db_err:
-            print(f"⚠️ No se pudo registrar en Kardex: {db_err}")
+            error_msg = f"⚠️ Fallo Kardex: {str(db_err)}"
+            print(error_msg)
+            # Log con ruta absoluta para Windows
+            log_path = r"c:\Users\Matías Riquelme\Desktop\Contapymepuq\engine\kardex_debug.log"
+            with open(log_path, "a", encoding='utf-8') as f:
+                f.write(f"[{datetime.now()}] {error_msg}\n")
+                f.write(f"Record: {contract_record if 'contract_record' in locals() else 'N/A'}\n")
 
         return StreamingResponse(
             iter([mem_file.getvalue()]), 

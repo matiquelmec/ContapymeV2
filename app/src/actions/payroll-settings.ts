@@ -38,5 +38,9 @@ export async function savePayrollSettings(settings: any) {
   }
 
   revalidatePath("/dashboard/payroll/settings");
+  revalidatePath("/dashboard/payroll");
+  revalidatePath("/dashboard/payroll/contracts");
+  revalidatePath("/dashboard/payroll/terminations");
+  
   return { success: true, data };
 }

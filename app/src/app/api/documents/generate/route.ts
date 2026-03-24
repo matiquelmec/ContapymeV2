@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const ENGINE_URL = process.env.ENGINE_URL || "http://localhost:8000";
 
@@ -13,13 +14,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) {
+      return NextResponse.json({ error: "Sesión no válida o expirada" }, { status: 401 });
+    }
+
     const response = await fetch(`${ENGINE_URL}/api/v1/documents/generate?employee_id=${employeeId}&type=${type}&description=${encodeURIComponent(description)}`, {
       method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
     });
 
     if (!response.ok) {
       const err = await response.json();
-      throw new Error(err.detail || "Error in engine");
+      throw new Error(err.detail || "Error in engine (Status: " + response.status + ")");
     }
 
     const blob = await response.blob();

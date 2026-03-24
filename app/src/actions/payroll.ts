@@ -65,7 +65,9 @@ export async function createEmployee(formData: FormData) {
   }
 
   // 4. Refrescar la caché de Next.js para que la tabla se actualice sin recargar la página
+  revalidatePath('/dashboard')
   revalidatePath('/dashboard/payroll')
+  revalidatePath('/dashboard/payroll/contracts')
   
   return { success: true }
 }
@@ -110,6 +112,7 @@ export async function updateEmployee(formData: FormData) {
   if (error) return { success: false, error: `Error DB: ${error.message}` }
 
   revalidatePath('/dashboard/payroll')
+  revalidatePath('/dashboard/payroll/contracts')
   return { success: true }
 }
 
@@ -150,6 +153,7 @@ export async function deleteEmployee(employeeId: string) {
     if (error) return { success: false, error: `Error al eliminar ficha: ${error.message}` }
 
     revalidatePath('/dashboard/payroll')
+    revalidatePath('/dashboard/payroll/contracts')
     return { success: true }
 
   } catch (err: any) {
