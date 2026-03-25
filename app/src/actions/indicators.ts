@@ -5,22 +5,25 @@ import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 
 export async function getLatestIndicators() {
-  const supabase = await createClient()
   try {
-    const { data, error } = await supabase
-      .from('economic_indicators')
-      .select('*')
-    
-    if (error) {
-      if (error.code !== 'PGRST116') { 
-        console.warn('[Indicators] Nota: Usando valores de referencia (fuera de línea).', error.message || '');
+    // Audit: Migrando de acceso directo a Supabase hacia el Engine (Source of Truth)
+    // Cache: Aplicamos 1 hora de revalidación para indicadores del día
+    const response = await engineFetch('/api/v1/indicators/latest', {
+      next: { 
+        revalidate: 3600,
+        tags: ['indicators'] 
       }
-      return { success: false, error: 'Servicio de indicadores temporalmente fuera de línea.' }
+    });
+
+    if (!response.ok) {
+        throw new Error("No se pudo obtener indicadores del motor");
     }
 
-    return { success: true, data }
+    const result = await response.json();
+    return { success: true, data: result.data };
   } catch (err: any) {
-    return { success: false, error: err.message }
+    console.error("[Indicators Action Error]:", err.message);
+    return { success: false, error: err.message };
   }
 }
 

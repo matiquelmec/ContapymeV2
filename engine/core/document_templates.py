@@ -49,21 +49,22 @@ def _html_wrapper(title: str, body: str) -> str:
 </html>"""
 
 
-def _signatures(rep_nombre: str, rep_rut: str, emp_nombre: str, emp_rut: str) -> str:
+def _signatures(rep_nombre: str, rep_rut: str, emp_nombre: str, emp_rut: str, empresa_nombre: str = "CONTAPYME V2") -> str:
     return f"""
     <div class="signatures">
         <div class="signature-block">
             <div class="signature-line">
-                <strong>{rep_nombre}</strong><br>
+                <strong>FIRMA EMPLEADOR</strong><br>
+                {rep_nombre}<br>
                 {format_rut(rep_rut)}<br>
-                <strong>EMPLEADOR</strong>
+                <span style="font-style: italic; font-size: 0.9em;">p.p. {empresa_nombre}</span>
             </div>
         </div>
         <div class="signature-block">
             <div class="signature-line">
-                <strong>{emp_nombre}</strong><br>
-                {format_rut(emp_rut)}<br>
-                <strong>TRABAJADOR</strong>
+                <strong>FIRMA TRABAJADOR</strong><br>
+                {emp_nombre}<br>
+                {format_rut(emp_rut)}
             </div>
         </div>
     </div>"""
@@ -130,7 +131,7 @@ def generate_renovation_annex(
         RUT {format_rut(emp_rut)}, en adelante "el trabajador", han acordado el siguiente anexo:</p>
         {''.join(clausulas)}
     </div>
-    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut)}"""
+    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut, empresa_nombre)}"""
 
     return _html_wrapper(f"Anexo Renovación - {emp_nombre}", body)
 
@@ -178,7 +179,7 @@ def generate_night_shift_annex(
 
         <p>Para constancia, firman en dos ejemplares.</p>
     </div>
-    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut)}"""
+    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut, empresa_nombre)}"""
 
     return _html_wrapper(f"Pacto Trabajo Nocturno - {emp_nombre}", body)
 
@@ -240,7 +241,7 @@ def generate_overtime_agreement(
 
         <p>Para constancia, firman en dos ejemplares.</p>
     </div>
-    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut)}"""
+    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut, empresa_nombre)}"""
 
     return _html_wrapper(f"Pacto Horas Extras - {emp_nombre}", body)
 
@@ -292,7 +293,7 @@ def generate_vacation_certificate(
         <p><strong>Fecha de emisión:</strong> {format_date_es(fecha_anexo)}</p>
         <p>Se extiende en dos ejemplares, quedando uno en poder de cada parte.</p>
     </div>
-    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut)}"""
+    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut, empresa_nombre)}"""
 
     return _html_wrapper(f"Comprobante Feriado - {emp_nombre}", body)
 
@@ -341,7 +342,7 @@ def generate_change_annex(
 
         <p>Para constancia, firman en dos ejemplares de igual tenor y valor.</p>
     </div>
-    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut)}"""
+    {_signatures(rep_nombre, rep_rut, emp_nombre, emp_rut, empresa_nombre)}"""
 
     return _html_wrapper(f"Anexo Modificación - {emp_nombre}", body)
 
@@ -395,14 +396,11 @@ Ref.: {ref}.
 
                               Su feriado proporcional se encontrará a su disposición en el portal de la Dirección del Trabajo.
 
-                Sin otro particular saluda atentamente a Ud.
-
-
-
-
-p.p. {rep_nombre}
-{rep_cargo}
+__________________________
+FIRMA EMPLEADOR
+{rep_nombre}
 RUT N° {format_rut(rep_rut)}
+p.p. {empresa_nombre}
 
 
 

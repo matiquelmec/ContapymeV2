@@ -202,14 +202,21 @@ export default function ContractsClient({
                         </div>
                     </TableCell>
                     <TableCell className="px-10 py-6">
-                        <Badge className={cn(
-                            "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border",
-                            contract.tipo_documento === 'contrato' 
-                                ? "bg-blue-50 text-blue-700 border-blue-100" 
-                                : "bg-purple-50 text-purple-700 border-purple-100"
-                        )}>
-                            {contract.tipo_documento === 'contrato' ? '📜 CONTRATO BASE' : '📝 ANEXO LEGAL'}
-                        </Badge>
+                        <div className="flex flex-col gap-1.5">
+                          <Badge className={cn(
+                              "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border w-fit",
+                              contract.tipo_documento === 'contrato' 
+                                  ? "bg-blue-50 text-blue-700 border-blue-100" 
+                                  : "bg-purple-50 text-purple-700 border-purple-100"
+                          )}>
+                              {contract.tipo_documento === 'contrato' ? '📜 CONTRATO BASE' : '📝 ANEXO LEGAL'}
+                          </Badge>
+                          {contract.status === 'pendiente' && (
+                            <Badge variant="outline" className="w-fit text-[8px] h-4 bg-amber-50 text-amber-700 border-amber-200 font-black uppercase tracking-widest animate-pulse">
+                              ACCIÓN REQUERIDA: GENERAR DOCX
+                            </Badge>
+                          )}
+                        </div>
                     </TableCell>
                     <TableCell className="px-10 py-6">
                         <span className="font-mono text-xs font-black text-foreground/70 uppercase" suppressHydrationWarning={true}>

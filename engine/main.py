@@ -21,24 +21,15 @@ from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
 
 
-# ─── Lifespan: arranque y cierre ordenado del Motor ───────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Gestiona el ciclo de vida del Motor Python.
-    - Al INICIAR: arranca el scheduler de indicadores y el de noticias con IA local.
-    - Al CERRAR: detiene los schedulers limpiamente.
+    Gestiona el ciclo de vida del API Engine.
+    Los procesos de fondo (Workers/Schedulers) se ejecutan ahora
+    de forma independiente en 'run_worker.py' para mayor estabilidad.
     """
-    # Iniciar Workers
-    await start_scheduler()
-    await start_news_worker()
-    
     yield
-    
-    # Detener Workers
-    await stop_scheduler()
-    await stop_news_worker()
+    # Limpieza de recursos de API si fuera necesario
 
 
 # ─── Aplicación FastAPI ────────────────────────────────────────────────────────
@@ -76,7 +67,7 @@ GLOBAL_DEPENDENCIES = [Depends(verify_token)]
 app.include_router(f29.router,              prefix="/api/v1/f29",            tags=["Contabilidad (F29)"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(payroll.router,          prefix="/api/v1/payroll",        tags=["Remuneraciones"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(assets.router,           prefix="/api/v1/assets",         tags=["Activos Fijos"], dependencies=GLOBAL_DEPENDENCIES)
-app.include_router(indicators.router,       prefix="/api/v1/indicators",     tags=["Indicadores Económicos"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(indicators.router,       prefix="/api/v1/indicators",     tags=["Indicadores Económicos"], dependencies=[]) # Público para Landing Page
 app.include_router(documents.router,        prefix="/api/v1/documents",      tags=["Documentos Legales"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(previred.router,         prefix="/api/v1/previred",       tags=["Proceso Previred"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(terminations.router,     prefix="/api/v1/terminations",   tags=["Finiquitos"], dependencies=GLOBAL_DEPENDENCIES)

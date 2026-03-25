@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getRCVDashboardData } from "@/actions/rcv";
+import { formatCLP, formatPeriodo } from "@/lib/rcv-utils";
 
 // Carga dinámica de gráficos para evitar bloqueo de hidratación (SSR: False)
 const AnalysisBarChart = dynamic(() => import("./rcv-charts").then(mod => mod.AnalysisBarChart), { 
@@ -62,23 +63,7 @@ interface DashboardState {
   loading: boolean;
 }
 
-// ==========================================
-// FORMATEADORES (FUERA DEL RENDER PARA RENDIMIENTO)
-// ==========================================
-const clpFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
-
-const formatCLP = (amount: number) => clpFormatter.format(amount);
-
-const formatPeriodo = (periodo: string) => {
-  if (!periodo) return "";
-  const [y, m] = periodo.split("-");
-  const months = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  return `${months[parseInt(m) - 1]} ${y}`;
-};
+// Los formateadores se movieron a @/lib/rcv-utils
 
 function exportToCSV(entities: TopEntity[], type: "proveedores" | "clientes", periodo: string) {
   const rutKey = type === "proveedores" ? "RUT Proveedor" : "RUT Cliente";
@@ -139,22 +124,23 @@ const EntityRow = memo(({ entity, index, type }: { entity: TopEntity, index: num
 });
 EntityRow.displayName = 'EntityRow';
 
-const KPICard = ({ label, value, sub, subValue, icon: Icon, color, borderColor, bgIcon }: any) => (
-  <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`} suppressHydrationWarning>
-    <CardHeader className="p-6 pb-2" suppressHydrationWarning>
+const KPICard = memo(({ label, value, sub, subValue, icon: Icon, color, borderColor, bgIcon, mounted }: any) => (
+  <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`}>
+    <CardHeader className="p-6 pb-2">
       <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] flex items-center gap-2">
          <Icon className={`h-4 w-4 ${color}`} /> {label}
       </CardTitle>
     </CardHeader>
-    <CardContent className="p-6 pt-2" suppressHydrationWarning>
-      <div className="text-3xl font-black tracking-tighter text-foreground truncate" suppressHydrationWarning>{value}</div>
-      <div className="flex items-center justify-between mt-2 border-t border-border pt-2" suppressHydrationWarning>
-           <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest ${bgIcon} shadow-sm border-transparent`} suppressHydrationWarning>{sub}</Badge>
-           <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground" suppressHydrationWarning>{subValue}</span>
+    <CardContent className="p-6 pt-2">
+      <div className="text-3xl font-black tracking-tighter text-foreground truncate">{mounted ? value : '---'}</div>
+      <div className="flex items-center justify-between mt-2 border-t border-border pt-2">
+           <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest ${bgIcon} shadow-sm border-transparent`}>{sub}</Badge>
+           <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{subValue}</span>
       </div>
     </CardContent>
   </Card>
-);
+));
+KPICard.displayName = 'KPICard';
 
 // Los componentes memoizados de Recharts se movieron a rcv-charts.tsx
 
@@ -173,7 +159,7 @@ interface RCVAnalysisProps {
 
 export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisProps) {
   // Iniciar siempre en el periodo más reciente (que ya viene ordenado del servidor)
-  const [selectedPeriodo, setSelectedPeriodo] = useState<string>(initialData?.periods[0]?.periodo || "");
+  const [selectedPeriodo, setSelectedPeriodo] = useState<string>("");
   const [state, setState] = useState<DashboardState>({
     periodos: initialData?.periods || [],
     summary: initialData?.summary || null,
@@ -318,6 +304,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             color="text-primary"
             borderColor="border-primary"
             bgIcon="bg-primary/10 text-primary"
+            mounted={mounted}
           />
           <KPICard
             label="Base Ventas"
@@ -328,6 +315,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             color="text-emerald-600"
             borderColor="border-emerald-500"
             bgIcon="bg-emerald-50 text-emerald-700"
+            mounted={mounted}
           />
           <KPICard
             label="Red Proveedores"
@@ -338,6 +326,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             color="text-blue-600"
             borderColor="border-blue-500"
             bgIcon="bg-blue-50 text-blue-700"
+            mounted={mounted}
           />
           <KPICard
             label="Cartera Clientes"
@@ -348,6 +337,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             color="text-purple-600"
             borderColor="border-purple-500"
             bgIcon="bg-purple-50 text-purple-700"
+            mounted={mounted}
           />
         </div>
       )}

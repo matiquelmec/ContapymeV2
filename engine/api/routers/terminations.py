@@ -380,8 +380,20 @@ async def download_docx(termination_id: str, doc_type: str):
             
             doc.add_paragraph("\nSin otro particular, saluda atentamente a Ud.\n\n")
             
+            # Tabla de firmas para Carta
+            table = doc.add_table(rows=1, cols=1) # Solo empleador en la carta
+            table.autofit = True
+            cell = table.rows[0].cells[0]
+            
+            f1 = cell.paragraphs[0]
+            f1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            f1.add_run("__________________________\nFIRMA EMPLEADOR\n").bold = True
+            f1.add_run(f"{rep_nombre}\n")
+            f1.add_run(f"RUT: {rep_rut}\n")
+            f1.add_run(f"p.p. {org.get('nombre', 'CONTAPYME V2')}").italic = True
+
             # Pie de página Premium
-            doc.add_paragraph("\n")
+            doc.add_paragraph("\n\n")
             footer_p = doc.add_paragraph()
             footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = footer_p.add_run(f"Documento generado por el sistema de gestión laboral Contapymepuq\n{org.get('nombre', 'Empresa')} — {org.get('comuna', 'Punta Arenas')}")

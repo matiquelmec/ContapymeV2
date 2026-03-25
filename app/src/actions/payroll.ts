@@ -55,7 +55,11 @@ export async function createEmployee(formData: FormData) {
   }
 
   // 3. Insertar en Base de Datos
-  const { error: dbErr } = await supabase.from('employees').insert(newEmployee)
+  const { data: createdEmployee, error: dbErr } = await supabase
+    .from('employees')
+    .insert(newEmployee)
+    .select()
+    .single()
 
   if (dbErr) {
     if (dbErr.code === '23505') { // Violación de unicidad en PostgreSQL
@@ -64,7 +68,23 @@ export async function createEmployee(formData: FormData) {
     return { success: false, error: `Error DB: ${dbErr.message}` }
   }
 
-  // 4. Refrescar la caché de Next.js para que la tabla se actualice sin recargar la página
+  // 4. Automatización: Crear registro de contrato inicial en el Kardex
+  // Esto asegura que el empleado aparezca inmediatamente en la lista de contratos
+  if (createdEmployee) {
+    await supabase.from('employment_contracts').insert({
+      organization_id: activeOrgId,
+      employee_id: createdEmployee.id,
+      tipo_documento: 'contrato',
+      tipo_contrato: newEmployee.tipo_contrato,
+      fecha_inicio: newEmployee.fecha_ingreso,
+      sueldo_base: newEmployee.sueldo_base,
+      cargo: newEmployee.cargo.toUpperCase(),
+      descripcion_cargo: newEmployee.descripcion_cargo,
+      status: 'pendiente' // Se marca como pendiente hasta que se descargue el DOCX
+    })
+  }
+
+  // 5. Refrescar la caché de Next.js
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/payroll')
   revalidatePath('/dashboard/payroll/contracts')

@@ -66,7 +66,7 @@ export async function getTopVendors(
   limit: number = 10
 ) {
   try {
-    const url = `/api/v1/rcv/analysis/top-vendors?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}`
+    const url = `/api/v1/rcv/analysis/top-vendors?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
     
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
@@ -84,7 +84,7 @@ export async function getTopCustomers(
   limit: number = 10
 ) {
   try {
-    const url = `/api/v1/rcv/analysis/top-customers?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}`
+    const url = `/api/v1/rcv/analysis/top-customers?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
 
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
@@ -102,7 +102,7 @@ export async function getTopCustomers(
 /** KPIs del período: montos compras/ventas, proveedores/clientes únicos, balance */
 export async function getRCVSummary(organizationId: string, periodo?: string) {
   try {
-    const url = `/api/v1/rcv/analysis/summary?organization_id=${organizationId}${periodo ? `&periodo=${periodo}` : ''}`
+    const url = `/api/v1/rcv/analysis/summary?organization_id=${organizationId}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
 
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return null

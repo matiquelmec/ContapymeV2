@@ -89,19 +89,20 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
         }
     return None
 
-def get_mapping_account(db, org_id: str, context: str):
-    """Busca una cuenta específica mapeada para un contexto (ej: RUT)."""
-    if not context: return None
-    res = db.table("account_mapping_rules").select("account_id, chart_of_accounts(codigo, nombre)") \
+def get_all_mapping_rules(db, org_id: str) -> Dict[str, Dict[str, str]]:
+    """Busca todas las reglas de mapeo para una organización y las devuelve en un mapa."""
+    res = db.table("account_mapping_rules").select("context, chart_of_accounts(codigo, nombre)") \
         .eq("organization_id", org_id) \
-        .eq("context", context) \
         .eq("is_active", True) \
         .execute()
-    if res.data and len(res.data) > 0:
-        acc = res.data[0].get("chart_of_accounts")
-        if acc:
-            return {"codigo": acc["codigo"], "nombre": acc["nombre"]}
-    return None
+    
+    mapping_map = {}
+    for rule in (res.data or []):
+        ctx = rule.get("context")
+        acc = rule.get("chart_of_accounts")
+        if ctx and acc:
+            mapping_map[ctx] = {"codigo": acc["codigo"], "nombre": acc["nombre"]}
+    return mapping_map
 
 @router.post("/generate-from-rcv")
 async def generate_from_rcv(
@@ -118,6 +119,9 @@ async def generate_from_rcv(
         config = get_accounting_config(db, req.organization_id, 'rcv', req.type)
         if not config:
             raise HTTPException(status_code=400, detail=f"No hay configuración contable para {req.type}")
+
+        # Optimizando: obtenemos todas las reglas de una vez (Adiós N+1)
+        mapping_rules = get_all_mapping_rules(db, req.organization_id)
 
         # Mapa de nombres de documentos para la glosa
         doc_names = {
@@ -142,11 +146,19 @@ async def generate_from_rcv(
         batch_entries = []
 
         if req.type == 'purchases':
-            res = db.table("purchase_records").select("*") \
-                .eq("organization_id", req.organization_id) \
-                .eq("periodo", periodo_query) \
-                .is_("journal_entry_id", "null") \
-                .execute()
+            # 1. Identificar el lote (import_id) de este periodo
+            imp_res = db.table("rcv_imports").select("id").eq("organization_id", req.organization_id).eq("periodo", periodo_query).eq("tipo", "purchases").execute()
+            imp_ids = [i["id"] for i in (imp_res.data or [])]
+
+            # 2. Buscar registros por periodo O por pertenencia al lote (import_id)
+            # Esto resuelve el problema de facturas de meses pasados que el trigger movió de periodo
+            query = db.table("purchase_records").select("*").eq("organization_id", req.organization_id).is_("journal_entry_id", "null")
+            
+            if imp_ids:
+                res = query.or_(f"periodo.eq.{periodo_query},import_id.in.({','.join(imp_ids)})").execute()
+            else:
+                res = query.eq("periodo", periodo_query).execute()
+            
             records = res.data or []
             
             for rec in records:
@@ -155,7 +167,7 @@ async def generate_from_rcv(
                     continue
 
                 rut_emisor = str(rec.get("rut_emisor", ""))
-                mapping_acc = get_mapping_account(db, req.organization_id, rut_emisor)
+                mapping_acc = mapping_rules.get(rut_emisor) # Búsqueda O(1) en el mapa local
                 
                 gasto_code = mapping_acc["codigo"] if mapping_acc else config["revenue_account_code"]
                 gasto_name = mapping_acc["nombre"] if mapping_acc else config["revenue_account_name"]
@@ -196,11 +208,18 @@ async def generate_from_rcv(
                     })
 
         elif req.type == 'sales':
-            res = db.table("sales_records").select("*") \
-                .eq("organization_id", req.organization_id) \
-                .eq("periodo", periodo_query) \
-                .is_("journal_entry_id", "null") \
-                .execute()
+            # 1. Identificar el lote (import_id)
+            imp_res = db.table("rcv_imports").select("id").eq("organization_id", req.organization_id).eq("periodo", periodo_query).eq("tipo", "sales").execute()
+            imp_ids = [i["id"] for i in (imp_res.data or [])]
+
+            # 2. Buscar por periodo O lote (permite contabilizar facturas emitidas con fecha anterior)
+            query = db.table("sales_records").select("*").eq("organization_id", req.organization_id).is_("journal_entry_id", "null")
+            
+            if imp_ids:
+                res = query.or_(f"periodo.eq.{periodo_query},import_id.in.({','.join(imp_ids)})").execute()
+            else:
+                res = query.eq("periodo", periodo_query).execute()
+
             records = res.data or []
             
             for rec in records:
@@ -209,7 +228,7 @@ async def generate_from_rcv(
                     continue
 
                 rut_receptor = str(rec.get("rut_receptor", ""))
-                mapping_acc = get_mapping_account(db, req.organization_id, rut_receptor)
+                mapping_acc = mapping_rules.get(rut_receptor) # Búsqueda O(1) en el mapa local
                 
                 ingreso_code = mapping_acc["codigo"] if mapping_acc else config["revenue_account_code"]
                 ingreso_name = mapping_acc["nombre"] if mapping_acc else config["revenue_account_name"]

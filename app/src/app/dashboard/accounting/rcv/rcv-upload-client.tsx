@@ -13,13 +13,9 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { importRCVAction } from "@/actions/rcv";
 import { generateAccountingFromRCV } from "@/actions/accounting";
+import { formatPeriodo, extractPeriodFromFilename } from "@/lib/rcv-utils";
 
-const formatPeriodo = (periodo: string) => {
-  if (!periodo) return "";
-  const [y, m] = periodo.split("-");
-  const months = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  return `${months[parseInt(m) - 1]} ${y}`;
-};
+// Las utilidades se movieron a @/lib/rcv-utils
 
 // ==========================================
 // TIPOS
@@ -201,24 +197,7 @@ const DropZone = ({
 // ==========================================
 // UTILS
 // ==========================================
-function extractPeriodFromFilename(filename: string): string | null {
-  // Busca patrones como 2024_01 o 202401 en el nombre del archivo
-  const pattern1 = /(\d{4})_(\d{2})/; // Formato SII estándar
-  const pattern2 = /(\d{4})(\d{2})/;  // Formato compacto
-  
-  const match1 = filename.match(pattern1);
-  if (match1) return `${match1[1]}-${match1[2]}-01`;
-  
-  const match2 = filename.match(pattern2);
-  if (match2) {
-    const year = parseInt(match2[1]);
-    const month = parseInt(match2[2]);
-    if (year > 2000 && year < 2100 && month >= 1 && month <= 12) {
-      return `${match2[1]}-${match2[2]}-01`;
-    }
-  }
-  return null;
-}
+// La detección se movió a @/lib/rcv-utils
 
 // ==========================================
 // COMPONENTE PRINCIPAL

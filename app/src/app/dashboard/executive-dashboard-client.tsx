@@ -14,7 +14,7 @@ interface DashboardData {
   orgName?: string
   financials: {
     totalSales: number
-    totalPurchases: number
+    totalPayroll: number
     grossMargin: number
     marginPercentage: number
     ebitda: number
@@ -27,6 +27,7 @@ interface DashboardData {
     month: string
     sales: number
     purchases: number
+    payroll: number
     margin: number
   }[]
   executiveSummary: {
@@ -170,16 +171,17 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
         </CardHeader>
         <CardContent className="p-10 relative z-10 space-y-8">
           {/* KPIs financieros */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
               { label: 'Ventas del Giro', value: fCLP(data.financials.totalSales), color: 'text-emerald-700', bg: 'bg-emerald-50/50 border-emerald-100' },
               { label: 'Compras / Costos', value: fCLP(data.financials.totalPurchases), color: 'text-rose-700', bg: 'bg-rose-50/50 border-rose-100' },
+              { label: 'Gasto Personal', value: fCLP(data.financials.totalPayroll), color: 'text-orange-700', bg: 'bg-orange-50/50 border-orange-100' },
               { label: 'Margen Bruto', value: fCLP(data.financials.grossMargin), color: 'text-blue-700', bg: 'bg-blue-50/50 border-blue-100' },
               { label: 'EBITDA Estimado', value: fCLP(data.financials.ebitda), color: 'text-primary', bg: 'bg-primary/5 border-primary/10' },
             ].map(k => (
-              <div key={k.label} className={`p-6 rounded-3xl border-2 ${k.bg}`}>
+              <div key={k.label} className={`p-5 rounded-3xl border-2 ${k.bg}`}>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2">{k.label}</p>
-                <p className={`text-xl font-black tracking-tighter ${k.color} break-all`}>{k.value}</p>
+                <p className={`text-lg font-black tracking-tighter ${k.color} break-all`}>{k.value}</p>
               </div>
             ))}
           </div>
@@ -255,11 +257,12 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
                 data.monthlyTrend.filter(m => m.sales > 0 || m.purchases > 0).map((m) => (
                   <div key={m.month} className="flex justify-between items-center py-3 px-5 hover:bg-muted/30 rounded-2xl transition-colors group">
                     <span className="text-foreground/50 uppercase font-black text-[10px] tracking-[0.25em] w-10 shrink-0">{m.month}</span>
-                    <div className="flex-1 px-4 flex justify-between gap-2">
-                      <span className="text-emerald-600 font-black text-xs tabular-nums">+{fCLP(m.sales)}</span>
-                      <span className="text-rose-600 font-black text-xs tabular-nums">-{fCLP(m.purchases)}</span>
+                    <div className="flex-1 px-4 flex justify-between gap-2 overflow-hidden">
+                      <span className="text-emerald-600 font-black text-[10px] tabular-nums" title="Ventas">V: {fCLP(m.sales)}</span>
+                      <span className="text-rose-600 font-black text-[10px] tabular-nums" title="Compras">C: {fCLP(m.purchases)}</span>
+                      <span className="text-orange-600 font-black text-[10px] tabular-nums" title="Remuneraciones">R: {fCLP(m.payroll)}</span>
                     </div>
-                    <span className={`font-black text-xs tabular-nums w-28 text-right ${m.margin > 0 ? 'text-primary' : 'text-amber-600'}`}>
+                    <span className={`font-black text-xs tabular-nums w-24 text-right ${m.margin > 0 ? 'text-primary' : 'text-rose-600'}`}>
                       {fCLP(m.margin)}
                     </span>
                   </div>
