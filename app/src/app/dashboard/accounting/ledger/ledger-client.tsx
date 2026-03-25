@@ -28,8 +28,14 @@ import { fCurrency } from "@/lib/utils";
 
 export default function LedgerClient({ organizationId, accounts }: { organizationId: string, accounts: any[] }) {
   const [selectedAccount, setSelectedAccount] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+  });
   const [ledgerData, setLedgerData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
