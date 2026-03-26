@@ -18,7 +18,7 @@ INDICADORES ACTUALIZADOS:
 
 import logging
 import httpx
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
@@ -118,6 +118,26 @@ async def _fetch_and_store_indicators() -> dict:
     return result
 
 
+async def _cleanup_old_audit_logs():
+    """
+    Tarea de mantenimiento B2B: Elimina audit_logs más antiguos a 6 meses
+    para mantener el rendimiento de la tabla y no asfixiar PostgreSQL.
+    """
+    db = get_supabase()
+    limite_fecha = (datetime.utcnow() - timedelta(days=180)).isoformat()
+    logger.info(f"[Mantenimiento] Iniciando purga de bitácora (anteriores a {limite_fecha})...")
+    
+    try:
+        # Usar Supabase RESTual (Postgrest) para eliminar sin necesidad de un Trigger SQL manual
+        res = db.table("audit_logs").delete().lte("created_at", limite_fecha).execute()
+        if res.data is not None:
+            logger.info(f"[Mantenimiento] ✅ Purga completada. Se liberaron {len(res.data)} registros antiguos.")
+        else:
+            logger.info("[Mantenimiento] ✅ Purga ejecutada sin errores (sin datos retornados).")
+    except Exception as e:
+        logger.error(f"[Mantenimiento] ❌ Error purgando la bitácora vieja: {e}")
+
+
 def get_scheduler() -> AsyncIOScheduler:
     """
     Retorna el scheduler singleton, creándolo si no existe.
@@ -143,7 +163,21 @@ def get_scheduler() -> AsyncIOScheduler:
             misfire_grace_time=3600,  # 1 hora de gracia si el servidor estaba offline
         )
 
-        logger.info("[Scheduler] ✅ Scheduler de indicadores creado: Lun-Vie 09:00 AM (Santiago)")
+        # Cron: Limpieza de Bitácora (El primer día de cada mes a las 03:00 AM)
+        _scheduler.add_job(
+            func=_cleanup_old_audit_logs,
+            trigger=CronTrigger(
+                day="1",
+                hour=3,
+                minute=0,
+                timezone="America/Santiago",
+            ),
+            id="monthly_audit_cleanup",
+            name="Limpieza Mensual de Audit Logs (Retiros de > 6 meses)",
+            replace_existing=True,
+        )
+
+        logger.info("[Scheduler] ✅ Scheduler de indicadores y mantenimiento creado (09:00 AM y 03:00 AM)")
 
     return _scheduler
 

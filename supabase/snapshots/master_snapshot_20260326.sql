@@ -783,3 +783,34 @@ CREATE TABLE public.regional_news (
   slug text NOT NULL UNIQUE,
   CONSTRAINT regional_news_pkey PRIMARY KEY (id)
 );
+
+-- =========================================================================
+-- FASE 8 & 9 (RENDIMIENTO EXTREMO Y MANTENIMIENTO)
+-- =========================================================================
+
+-- A. ÍNDICES DE ALTO RENDIMIENTO (MULTI-TENANT ISOLATION)
+-- PostgreSQL no indexa Foreign Keys automáticamente. Sin esto, un simple fetch es un Full Table Scan.
+CREATE INDEX IF NOT EXISTS idx_journal_entries_org_id ON public.journal_entries(organization_id);
+CREATE INDEX IF NOT EXISTS idx_journal_entry_lines_org_id ON public.journal_entry_lines(organization_id);
+CREATE INDEX IF NOT EXISTS idx_f29_forms_org_id ON public.f29_forms(organization_id);
+CREATE INDEX IF NOT EXISTS idx_liquidations_org_id ON public.liquidations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_employees_org_id ON public.employees(organization_id);
+CREATE INDEX IF NOT EXISTS idx_sales_records_org_id ON public.sales_records(organization_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_records_org_id ON public.purchase_records(organization_id);
+CREATE INDEX IF NOT EXISTS idx_bank_str_lines_org_id ON public.bank_statement_lines(organization_id);
+CREATE INDEX IF NOT EXISTS idx_bank_reconciliations_org_id ON public.bank_reconciliations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_org_id ON public.audit_logs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_fixed_assets_org_id ON public.fixed_assets(organization_id);
+
+-- B. ESTRATEGIA DE RETENCIÓN DE BITÁCORA (TTL: 6 MESES)
+-- Borra logs viejos para no ahogar la RAM de Supabase.
+CREATE OR REPLACE FUNCTION public.cleanup_old_audit_logs()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM public.audit_logs
+  WHERE created_at < NOW() - INTERVAL '6 months';
+END;
+$$;
