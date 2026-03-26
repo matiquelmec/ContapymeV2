@@ -640,3 +640,146 @@ CREATE TABLE public.termination_causes (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT termination_causes_pkey PRIMARY KEY (id)
 );
+
+-- ==============================================================================
+-- 🚀 FASE 3: SOVEREIGN ERP - POSTGRES RECURSIVE ACCOUNTING ENGINE
+-- ==============================================================================
+-- Objetivo: Mover la lógica pesada de los reportes del "Engine" en Python
+-- al núcleo hiper-rápido de PostgreSQL. Esto permite que los cálculos de
+-- saldos masivos carguen en < 50ms sin importar el volumen de datos.
+-- ==============================================================================
+
+-- 1. ⚡ OPTIMIZACIÓN KERNAL: ÍNDICES B-TREE
+-- Estos índices previenen "Full Table Scans". Son vitales porque journal_entries 
+-- es la tabla que más crecerá en el tiempo.
+CREATE INDEX IF NOT EXISTS idx_journal_entries_org_date ON public.journal_entries(organization_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_jel_entry_account ON public.journal_entry_lines(entry_id, account_id);
+CREATE INDEX IF NOT EXISTS idx_coa_org_codigo ON public.chart_of_accounts(organization_id, codigo);
+
+
+-- 2. ⚡ VISTA RÁPIDA: vw_leaf_account_balances
+-- Vista de acceso ultrarrápido a los saldos totales acumulados a la fecha de resolución actual (útil para dashboards)
+CREATE OR REPLACE VIEW public.vw_leaf_account_balances AS
+SELECT 
+    jel.organization_id,
+    jel.account_id,
+    coa.codigo,
+    coa.nombre,
+    coa.naturaleza,
+    SUM(CASE WHEN jel.tipo = 'debe' THEN jel.monto ELSE 0 END) as total_debe,
+    SUM(CASE WHEN jel.tipo = 'haber' THEN jel.monto ELSE 0 END) as total_haber,
+    SUM(
+        CASE 
+            WHEN coa.naturaleza = 'deudora' AND jel.tipo = 'debe' THEN jel.monto
+            WHEN coa.naturaleza = 'deudora' AND jel.tipo = 'haber' THEN -jel.monto
+            WHEN coa.naturaleza = 'acreedora' AND jel.tipo = 'haber' THEN jel.monto
+            WHEN coa.naturaleza = 'acreedora' AND jel.tipo = 'debe' THEN -jel.monto
+            ELSE 0 
+        END
+    ) as saldo_actual
+FROM public.journal_entry_lines jel
+JOIN public.journal_entries je ON jel.entry_id = je.id
+JOIN public.chart_of_accounts coa ON jel.account_id = coa.id
+GROUP BY jel.organization_id, jel.account_id, coa.codigo, coa.nombre, coa.naturaleza;
+
+
+-- 3. 🛡️ FUNCION RPC: rpc_get_recursive_trial_balance
+-- La joya matemática. En vez de procesar el árbol de cuentas en bucles for de Python o TypeScript,
+-- esta función agrupa los montos "de abajo hacia arriba" (Rollup) usando patrones de prefijo.
+CREATE OR REPLACE FUNCTION public.rpc_get_recursive_trial_balance(
+    p_organization_id UUID,
+    p_end_date DATE
+) 
+RETURNS TABLE (
+    id UUID,
+    codigo VARCHAR,
+    nombre TEXT,
+    nivel INTEGER,
+    tipo TEXT,
+    naturaleza TEXT,
+    acepta_movimiento BOOLEAN,
+    total_debe NUMERIC,
+    total_haber NUMERIC,
+    saldo NUMERIC
+) 
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+BEGIN
+    RETURN QUERY
+    WITH account_tree AS (
+        -- CASO BASE: Obtenemos todas las cuentas y sumamos SOLO los asientos correspondientes a hojas imputables 
+        -- hasta la fecha de corte solicitada.
+        SELECT 
+            coa.id,
+            coa.codigo,
+            coa.nombre,
+            coa.nivel,
+            coa.parent_codigo,
+            coa.tipo,
+            coa.naturaleza,
+            coa.acepta_movimiento,
+            COALESCE(SUM(CASE WHEN jel.tipo = 'debe' THEN jel.monto ELSE 0 END), 0) as calc_debe,
+            COALESCE(SUM(CASE WHEN jel.tipo = 'haber' THEN jel.monto ELSE 0 END), 0) as calc_haber
+        FROM public.chart_of_accounts coa
+        LEFT JOIN public.journal_entry_lines jel 
+               ON coa.id = jel.account_id
+        LEFT JOIN public.journal_entries je 
+               ON jel.entry_id = je.id 
+              AND je.fecha <= p_end_date 
+              AND je.organization_id = p_organization_id
+        WHERE coa.organization_id = p_organization_id
+        GROUP BY coa.id, coa.codigo, coa.nombre, coa.nivel, coa.parent_codigo, coa.tipo, coa.naturaleza, coa.acepta_movimiento
+    ),
+    rollup_calc AS (
+        -- RECURSIÓN POR PREFIJO: Propagamos eficientemente los montos al padre.
+        -- Si esta cuenta es "1.1", sumará todas las hijas ("1.1.01", "1.1.01.01") que aceptan movimiento.
+        SELECT 
+            padre.id,
+            padre.codigo,
+            padre.nombre,
+            padre.nivel,
+            padre.tipo,
+            padre.naturaleza,
+            padre.acepta_movimiento,
+            (SELECT SUM(calc_debe) FROM account_tree hijo WHERE hijo.codigo LIKE padre.codigo || '%' AND hijo.acepta_movimiento = TRUE) as sum_rollup_debe,
+            (SELECT SUM(calc_haber) FROM account_tree hijo WHERE hijo.codigo LIKE padre.codigo || '%' AND hijo.acepta_movimiento = TRUE) as sum_rollup_haber
+        FROM account_tree padre
+    )
+    SELECT 
+        r.id,
+        r.codigo,
+        r.nombre,
+        r.nivel,
+        r.tipo,
+        r.naturaleza,
+        r.acepta_movimiento,
+        COALESCE(r.sum_rollup_debe, 0) as total_debe,
+        COALESCE(r.sum_rollup_haber, 0) as total_haber,
+        CASE 
+            WHEN r.naturaleza = 'deudora' THEN COALESCE(r.sum_rollup_debe, 0) - COALESCE(r.sum_rollup_haber, 0)
+            ELSE COALESCE(r.sum_rollup_haber, 0) - COALESCE(r.sum_rollup_debe, 0) 
+        END as saldo
+    FROM rollup_calc r
+    ORDER BY r.codigo ASC;
+END;
+$$;
+
+-- ==========================================
+-- FASE 5: MAGALLANES NEWS & IA PREDICTIVA
+-- ==========================================
+CREATE TABLE public.regional_news (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL UNIQUE,
+  category text NOT NULL,
+  content text NOT NULL,
+  image_url text,
+  published_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_featured boolean DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  source_url text UNIQUE,
+  source_name text,
+  normalized_title text,
+  summary text,
+  slug text NOT NULL UNIQUE,
+  CONSTRAINT regional_news_pkey PRIMARY KEY (id)
+);

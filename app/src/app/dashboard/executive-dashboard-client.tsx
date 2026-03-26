@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { 
   BarChart3, Brain, Activity, Target, AlertCircle, 
-  Shield, Trophy, Package, TrendingUp, LineChart, RefreshCw, Loader2
+  Shield, Trophy, Package, TrendingUp, LineChart, RefreshCw, Newspaper, ChevronRight
 } from 'lucide-react'
-import { getExecutiveMetrics } from '@/actions/dashboard'
+import { getExecutiveMetrics, getRegionalNews } from '@/actions/dashboard'
+import { NewsDetailModal } from '@/components/news-detail-modal'
 
 interface DashboardData {
   year: number
   orgName?: string
   financials: {
     totalSales: number
+    totalPurchases: number
     totalPayroll: number
     grossMargin: number
     marginPercentage: number
@@ -47,18 +49,28 @@ const ASSESSMENT_STYLES = {
 export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string }) {
   const [targetYear, setTargetYear] = useState<number>(new Date().getFullYear())
   const [data, setData] = useState<DashboardData | null>(null)
+  const [news, setNews] = useState<any[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedNews, setSelectedNews] = useState<any>(null)
 
   const performAnalysis = useCallback(async () => {
     setIsAnalyzing(true)
     setError(null)
     try {
-      const result = await getExecutiveMetrics(targetYear, activeOrgId)
+      const [result, newsResult] = await Promise.all([
+        getExecutiveMetrics(targetYear, activeOrgId),
+        getRegionalNews()
+      ])
+      
       if (result.error) {
         setError(result.error)
       } else {
         setData(result)
+      }
+
+      if (newsResult.success) {
+        setNews(newsResult.data)
       }
     } catch (err: any) {
       setError("Error crítico conectando al motor financiero Python.")
@@ -272,6 +284,152 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
           </CardContent>
         </Card>
       </div>
+      {/* ―― MAGALLANES NEWS & FLUJO SANKEY ―― */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        
+        {/* FLUJO DE CAJA EJECUTIVO (Sankey-like) */}
+        <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-amber-500/10 flex flex-col">
+          <CardHeader className="bg-muted/5 border-b border-border p-8">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100">
+                <BarChart3 className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-black text-foreground uppercase tracking-tight">Análisis de Flujo</CardTitle>
+                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">CÓMO SE DISTRIBUYEN TUS INGRESOS</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8 flex-1 flex flex-col justify-center">
+            <div className="flex flex-col gap-4 w-full max-w-md mx-auto relative">
+              {/* Entradas */}
+              <div className="p-4 rounded-3xl border-2 bg-emerald-50/50 border-emerald-100 relative shadow-sm">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">1. INGRESOS (VENTAS)</p>
+                 <p className="text-2xl font-black text-emerald-700 tracking-tighter">{fCLP(data.financials.totalSales)}</p>
+                 {/* Conector */}
+                 <div className="absolute left-1/2 -bottom-4 w-1 h-4 bg-border -translate-x-1/2" />
+              </div>
+
+              {/* Salidas Ramificadas */}
+              <div className="flex gap-4 isolate">
+                <div className="flex-1 p-4 rounded-3xl border-2 bg-rose-50/50 border-rose-100 flex flex-col justify-center relative mt-4 shadow-sm">
+                  {/* Conector Ramificado */}
+                  <div className="absolute left-1/2 -top-4 w-[calc(100%+16px)] h-4 border-t-2 border-l-2 border-border rounded-tl-xl -translate-x-[calc(50%+8px)] -z-10" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-800">COSTOS OPERAC.</p>
+                  <p className="text-lg font-black text-rose-700 tracking-tighter">{fCLP(data.financials.totalPurchases)}</p>
+                </div>
+                
+                <div className="flex-1 p-4 rounded-3xl border-2 bg-orange-50/50 border-orange-100 flex flex-col justify-center relative mt-4 shadow-sm">
+                  {/* Conector Ramificado Direito */}
+                  <div className="absolute right-1/2 -top-4 w-[calc(100%+16px)] h-4 border-t-2 border-r-2 border-border rounded-tr-xl translate-x-[calc(50%+8px)] -z-10" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-800">NÓMINA (PERSONAL)</p>
+                  <p className="text-lg font-black text-orange-700 tracking-tighter">{fCLP(data.financials.totalPayroll)}</p>
+                </div>
+              </div>
+
+              {/* Margen Final */}
+               <div className="p-5 rounded-3xl border-4 bg-primary/5 border-primary/20 relative mt-4 flex items-center justify-between shadow-md">
+                 {/* Conector de Unión */}
+                 <div className="absolute left-1/2 -top-4 w-[calc(100%-2rem)] h-4 border-b-2 border-l-2 border-r-2 border-border rounded-b-xl -translate-x-1/2 -z-10" />
+                 <div className="absolute left-1/2 top-0 w-1 h-full bg-primary/10 -translate-x-1/2 -z-10" />
+                 
+                 <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Margen / EBITDA Estimado</p>
+                    <p className="text-2xl font-black text-primary tracking-tighter">{fCLP(data.financials.ebitda)}</p>
+                 </div>
+                 <div className="text-right">
+                    <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full font-black text-xs uppercase tracking-widest shadow-sm">
+                      {data.financials.totalSales > 0 ? Math.round((data.financials.ebitda / data.financials.totalSales) * 100) : 0}% RENTABILIDAD
+                    </span>
+                 </div>
+              </div>
+
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* MÓDULO DE NOTICIAS CON INTELIGENCIA REGIONAL */}
+        <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500/10 flex flex-col">
+          <CardHeader className="bg-muted/5 border-b border-border p-8 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                <Newspaper className="w-5 h-5 text-blue-600 animate-pulse" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-black text-foreground uppercase tracking-tight">Magallanes News</CardTitle>
+                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">INTELIGENCIA ARTIFICIAL EN TIEMPO REAL</CardDescription>
+              </div>
+            </div>
+            {news.length > 0 && (
+              <span className="flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </span>
+            )}
+          </CardHeader>
+          <CardContent className="p-0 flex-1 overflow-auto max-h-[450px]">
+            {news.length === 0 ? (
+               <div className="text-center py-20 px-8">
+                 <div className="w-16 h-16 rounded-full border border-dashed border-border mx-auto mb-4 flex items-center justify-center bg-muted/20">
+                    <Brain className="w-6 h-6 text-muted-foreground/50" />
+                 </div>
+                 <p className="font-bold text-muted-foreground text-sm max-w-[250px] mx-auto">El motor de IA está rastreando las últimas noticias económicas de la región en La Prensa Austral y El Pingüino.</p>
+               </div>
+            ) : (
+               <div className="divide-y divide-border/50">
+                 {news.map((item) => (
+                   <div 
+                      key={item.id} 
+                      onClick={() => setSelectedNews(item)}
+                      className="group flex gap-5 p-6 hover:bg-muted/30 transition-all cursor-pointer items-start"
+                   >
+                     {/* Imagen IA o Placeholder */}
+                     <div className="w-20 h-20 rounded-2xl bg-muted overflow-hidden border border-border shrink-0 shadow-sm relative group-hover:shadow-md transition-shadow">
+                        {item.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                            <Newspaper className="w-8 h-8 text-primary/20" />
+                          </div>
+                        )}
+                        {/* Indicador AI */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <span className="text-[8px] font-black text-white/90 uppercase tracking-widest flex items-center gap-1"><Brain className="w-2.5 h-2.5"/> AI SUMMARY</span>
+                        </div>
+                     </div>
+                     
+                     {/* Contenido */}
+                     <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 border border-primary/20`}>
+                            {item.category}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground font-bold tracking-wider">
+                            {new Date(item.published_at).toLocaleDateString('es-CL', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-foreground text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {item.title}
+                        </h4>
+                        <p className="text-muted-foreground font-bold text-xs line-clamp-2 leading-relaxed">
+                          {item.summary || item.content?.substring(0, 100) + '...'}
+                        </p>
+                     </div>
+                     <ChevronRight className="w-5 h-5 text-muted-foreground/30 mt-6 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                   </div>
+                 ))}
+               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <NewsDetailModal 
+        news={selectedNews} 
+        isOpen={!!selectedNews} 
+        onClose={() => setSelectedNews(null)} 
+      />
     </div>
   )
 }

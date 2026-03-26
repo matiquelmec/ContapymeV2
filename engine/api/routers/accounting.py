@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from core.database import get_supabase
 from core.auth import verify_token
 from core.logger import log_activity
@@ -757,46 +757,16 @@ async def get_financial_reports(organization_id: str, year: int, month: Optional
             start_date = f"{year}-01-01"
             end_date = f"{year}-12-31"
 
-        # 2. Obtener catálogo para metadatos de cuenta
-        acc_res = db.table("chart_of_accounts") \
-            .select("codigo, nombre, tipo, naturaleza") \
-            .eq("organization_id", organization_id) \
-            .execute()
-        catalog = {a["codigo"]: a for a in acc_res.data}
+        # 3. Llamar al Motor SQL Recursivo (Fase 3 Sovereign ERP)
+        # Esto reemplaza miles de loops en Python y obtiene el saldo real histórico ultra rápido
+        res = db.rpc(
+            "rpc_get_recursive_trial_balance",
+            {"p_organization_id": organization_id, "p_end_date": end_date}
+        ).execute()
 
-        # 3. Obtener movimientos
-        res = db.table("journal_entry_lines") \
-            .select("*, journal_entries!inner(fecha)") \
-            .eq("journal_entries.organization_id", organization_id) \
-            .gte("journal_entries.fecha", start_date) \
-            .lte("journal_entries.fecha", end_date) \
-            .execute()
-        
-        lines = res.data or []
-        
-        # 4. Consolidar saldos
-        account_sums: Dict[str, Dict[str, Any]] = {}
-        for l in lines:
-            code = l["cuenta_codigo"]
-            if code not in account_sums:
-                info = catalog.get(code, {"nombre": l["cuenta_nombre"], "tipo": "desconocido", "naturaleza": "deudora"})
-                account_sums[code] = {
-                    "codigo": code,
-                    "nombre": info["nombre"],
-                    "tipo": info.get("tipo", "desconocido"),
-                    "naturaleza": info.get("naturaleza", "deudora"),
-                    "debe": 0,
-                    "haber": 0
-                }
-            
-            monto = int(l["monto"])
-            if l["tipo"] == "debe":
-                account_sums[code]["debe"] += monto
-            else:
-                account_sums[code]["haber"] += monto
+        rollup_accounts = res.data or []
 
-        # 5. Estructurar Reportes
-        # 5. Estructurar Reportes
+        # 4. Estructurar Reportes
         ingresos_total = 0
         gastos_total = 0
         activos_total = 0
@@ -806,34 +776,47 @@ async def get_financial_reports(organization_id: str, year: int, month: Optional
         er_detalles = []
         bg_detalles = []
 
-        for code in sorted(account_sums.keys()):
-            acc = account_sums[code]
-            debe = acc["debe"]
-            haber = acc["haber"]
-            nature = acc["naturaleza"]
-            tipo = acc["tipo"]
+        for acc in rollup_accounts:
+            # Para los cálculos de totales evitamos sumar cuentas padre (solo sumamos hojas)
+            # para no duplicar el valor en el frontend actual, aunque enviamos el nivel.
+            is_leaf = acc.get("acepta_movimiento", False)
+            saldo = float(acc.get("saldo", 0))
             
-            # Saldo según naturaleza
-            saldo = (debe - haber) if nature == "deudora" else (haber - debe)
-            if saldo == 0: continue # Omitir cuentas sin saldo en el periodo
+            if saldo == 0: continue 
                 
-            item = {"codigo": code, "nombre": acc["nombre"], "monto": saldo, "tipo": tipo}
+            tipo = acc.get("tipo", "desconocido")
+            item = {
+                "codigo": acc.get("codigo"), 
+                "nombre": acc.get("nombre"), 
+                "monto": saldo, 
+                "tipo": tipo,
+                "nivel": acc.get("nivel"),
+                "is_leaf": is_leaf
+            }
             
-            if tipo == "ingreso":
-                ingresos_total += saldo
-                er_detalles.append(item)
-            elif tipo == "gasto":
-                gastos_total += saldo
-                er_detalles.append(item)
-            elif tipo == "activo":
-                activos_total += saldo
-                bg_detalles.append(item)
-            elif tipo == "pasivo":
-                pasivos_total += saldo
-                bg_detalles.append(item)
-            elif tipo == "patrimonio":
-                patrimonio_antes_resultado += saldo
-                bg_detalles.append(item)
+            # Solo sumamos a los totales matriciales si es hoja
+            if is_leaf:
+                if tipo == "ingreso":
+                    ingresos_total += saldo
+                    er_detalles.append(item)
+                elif tipo == "gasto":
+                    gastos_total += saldo
+                    er_detalles.append(item)
+                elif tipo == "activo":
+                    activos_total += saldo
+                    bg_detalles.append(item)
+                elif tipo == "pasivo":
+                    pasivos_total += saldo
+                    bg_detalles.append(item)
+                elif tipo == "patrimonio":
+                    patrimonio_antes_resultado += saldo
+                    bg_detalles.append(item)
+            else:
+                # Las cuentas padre también las enviamos para que React arme un árbol visual después
+                if tipo in ["ingreso", "gasto"]:
+                    er_detalles.append(item)
+                elif tipo in ["activo", "pasivo", "patrimonio"]:
+                    bg_detalles.append(item)
 
         # 6. INTEGRIDAD CONTABLE: El resultado neto se suma al patrimonio para el balance
         resultado_neto = ingresos_total - gastos_total
@@ -958,7 +941,6 @@ async def export_lce_mayor_xml(organization_id: str, periodo: str):
         # 2. Fechas para el período
         year_str, month_str = periodo.split("-")
         try:
-            start_date = f"{year_str}-{month_str}-01"
             import calendar
             last_day = calendar.monthrange(int(year_str), int(month_str))[1]
             end_date = f"{year_str}-{month_str}-{last_day:02d}"
@@ -969,24 +951,7 @@ async def export_lce_mayor_xml(organization_id: str, periodo: str):
         acc_res = db.table("chart_of_accounts").select("*").eq("organization_id", organization_id).eq("acepta_movimiento", True).execute()
         accounts = acc_res.data or []
         
-        # 4. Obtener Movimientos Acumulados y del Mes (SQL Puro para Rendimiento)
-        query_sql = f"""
-            SELECT 
-                jel.account_id,
-                je.fecha,
-                je.glosa,
-                je.numero_asiento,
-                je.tipo_comprobante,
-                jel.monto,
-                jel.tipo
-            FROM journal_entries je
-            JOIN journal_entry_lines jel ON je.id = jel.entry_id
-            WHERE je.organization_id = '{organization_id}'
-              AND je.fecha <= '{end_date}'
-            ORDER BY je.fecha ASC, je.numero_asiento ASC
-        """
-        # Ejecutamos query SQL puro o adaptamos con eq y lte. 
-        # Dado que supabase python via postgrest filter a veces es tedioso para un JOIN, usamos Rpc o subqueries
+        # 4. Obtener Movimientos Acumulados y del Mes
         # Para simplificar y hacerlo 100% seguro sin RPC, llamaré las tablas y las uniré en Python (para LCE es vital la precisión).
         je_res = db.table("journal_entries").select("id, fecha, glosa, numero_asiento, tipo_comprobante").eq("organization_id", organization_id).lte("fecha", end_date).execute()
         journal_entries = je_res.data or []
@@ -1128,7 +1093,7 @@ async def export_lce_mayor_xml(organization_id: str, periodo: str):
         xml_str = ET.tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')
         
         # Inyectar instrucción de procesamiento XML del SII y comentarios manuales
-        header = f'<?xml version="1.0" encoding="ISO-8859-1"?>\n<!-- Generado por Contapymepuq - Libro Mayor LCE -->\n'
+        header = '<?xml version="1.0" encoding="ISO-8859-1"?>\n<!-- Generado por Contapymepuq - Libro Mayor LCE -->\n'
         xml_final = header + xml_str.replace("<?xml version='1.0' encoding='utf-8'?>\n", "")
         
         return Response(content=xml_final, media_type="application/xml")

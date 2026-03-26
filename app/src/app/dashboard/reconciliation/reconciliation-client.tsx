@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark, Plus } from 'lucide-react'
 import { analyzeBankStatementAction, saveReconciliationAction, reconcileWithAdjustmentAction } from '@/actions/bank-reconciliation'
+import { suggestAccountWithSovereignAI } from '@/actions/ai-classifier'
 import { toast } from 'sonner'
 import { fCurrency } from '@/lib/utils'
 
@@ -68,15 +69,45 @@ export function ReconciliationClient({
     }
 
     const handleQuickAdjustment = async (bankRowId: string, desc: string) => {
-        const proceed = confirm(`¿Desea generar un asiento de Gasto Bancario por este movimiento?\n\n"${desc}"`)
+        setLoading(true)
+        
+        // 1. Consultar The Sovereign AI Memory
+        let targetCode = "5.1.05.001"
+        let targetName = "Gastos y Comisiones Bancarias"
+        let aiMsg = ""
+        
+        try {
+            const aiRes = await suggestAccountWithSovereignAI({ 
+                organization_id: organizationId, 
+                description: desc 
+            });
+            
+            if (aiRes.success && aiRes.data && aiRes.data.account_code) {
+                // Si la IA tiene alta confianza, lo marcamos como sugerencia inteligente
+                targetCode = aiRes.data.account_code;
+                targetName = aiRes.data.account_name;
+                
+                if (aiRes.data.suggested) {
+                    aiMsg = `\n\n🤖 Sugerencia Sovereign AI (${aiRes.data.confidence}% confianza):\nSe detectó un patrón histórico.`;
+                } else {
+                    aiMsg = `\n\n⚠️ Sugerencia Básica Sovereign AI (Baja certeza - requiere más historial).`;
+                }
+            }
+        } catch(e) {
+            console.warn("Fallo en inferencia IA predictiva", e)
+        }
+        
+        setLoading(false)
+
+        const proceed = confirm(`¿Desea generar un Asiento de Ajuste por este movimiento bancario?\n\nDetalle: "${desc}"${aiMsg}\n\n-> Se imputará a: [${targetCode}] ${targetName}`)
         if (!proceed) return
 
         setLoading(true)
         try {
             const result = await reconcileWithAdjustmentAction({
                 bank_line_id: bankRowId,
-                account_code: "5.1.05.001", 
-                account_name: "Gastos y Comisiones Bancarias",
+                account_code: targetCode, 
+                account_name: targetName,
                 organization_id: organizationId
             })
 

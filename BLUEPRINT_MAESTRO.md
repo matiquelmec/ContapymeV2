@@ -255,6 +255,9 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   [x] **Sincronización Contable:** Generación de un Sistema de Asientos Automático (Idempotencia en Nómina y F29).
 *   [x] **Integridad Temporal Completa:** Resolución de "Timezone Shift Bugs" en Libro Mayor y Diario.
 *   [x] **Limpieza en Cascada:** Borrado seguro de Impuestos vs Contabilidad sin dejar sombras en el Ledger.
+*   [x] **Sovereign AI (Memoria Cognitiva):** Predictor Naive Bayes inyectado en conciliación bancaria mapeando con Chart of Accounts.
+*   [x] **Visualización Ejecutiva & Diario Regional:** Sankey Flow Chart vivo en Dashboard y Módulo de Periodismo Sintético (Worker de noticias locales).
+*   [x] **Alineación de IA (Skills):** Normativas `magallanes-regional-newspaper` y `ai-journalism-synthesis` para blindaje legal anti-copyright y prevención de alucinación NLP.
 *   [ ] **Seguridad Avanzada:** Copias de seguridad automáticas (Supabase PITR).
 *   [ ] **Exportador Autorizado:** XML LCE SII con firma `ds:Signature` instalada.
 

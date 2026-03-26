@@ -48,3 +48,23 @@ export async function getExecutiveMetrics(year: number, providedOrgId?: string) 
     }
   }
 }
+
+export async function getRegionalNews() {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('regional_news')
+      .select('*')
+      .order('published_at', { ascending: false })
+      .limit(6)
+      
+    if (error) {
+       console.log("Error regional_news:", error.message)
+       return { success: false, data: [] }
+    }
+    return { success: true, data: data || [] }
+  } catch (err) {
+    console.error("error fetching news:", err)
+    return { success: false, data: [] }
+  }
+}

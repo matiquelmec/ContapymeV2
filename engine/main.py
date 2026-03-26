@@ -15,7 +15,7 @@ from api.routers import (
     documents, previred, terminations,
     rcv, accounting, dashboard_metrics,
     payroll_settings, lre, bank_reconciliation,
-    audit,
+    audit, ml_classifier
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
@@ -78,6 +78,7 @@ app.include_router(payroll_settings.router, prefix="/api/v1/payroll",        tag
 app.include_router(lre.router,              prefix="/api/v1/payroll/lre",    tags=["Libro LRE"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(bank_reconciliation.router, prefix="/api/v1/bank",        tags=["Conciliación Bancaria V2"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(audit.router,               prefix="/api/v1/audit",       tags=["Auditoría y Trazabilidad"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(ml_classifier.router,       prefix="/api/v1/ai",          tags=["Inteligencia Financiera (Local ML)"], dependencies=GLOBAL_DEPENDENCIES)
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────

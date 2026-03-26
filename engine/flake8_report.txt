@@ -1,0 +1,40 @@
+api/routers/accounting.py:3:1: F401 'typing.List' imported but unused
+api/routers/accounting.py:961:13: F841 local variable 'start_date' is assigned to but never used
+api/routers/accounting.py:973:9: F841 local variable 'query_sql' is assigned to but never used
+api/routers/accounting.py:1131:18: F541 f-string is missing placeholders
+api/routers/assets.py:12:1: F401 'datetime.date' imported but unused
+api/routers/audit.py:2:1: F401 'typing.List' imported but unused
+api/routers/dashboard_metrics.py:5:1: F401 'datetime.datetime' imported but unused
+api/routers/dashboard_metrics.py:186:21: F541 f-string is missing placeholders
+api/routers/documents.py:7:1: F401 'docx.shared.Inches' imported but unused
+api/routers/documents.py:8:1: F401 'docx.enum.text.WD_ALIGN_PARAGRAPH' imported but unused
+api/routers/documents.py:214:17: F811 redefinition of unused 'WD_ALIGN_PARAGRAPH' from line 8
+api/routers/documents.py:215:17: F811 redefinition of unused 'Inches' from line 7
+api/routers/f29.py:2:1: F401 'shutil' imported but unused
+api/routers/f29.py:5:1: F401 'fastapi.UploadFile' imported but unused
+api/routers/f29.py:5:1: F401 'fastapi.File' imported but unused
+api/routers/f29.py:8:1: F401 'typing.List' imported but unused
+api/routers/f29.py:8:1: F401 'typing.Optional' imported but unused
+api/routers/f29.py:185:9: F841 local variable 'total_pagar' is assigned to but never used
+api/routers/indicators.py:9:1: F401 'typing.Dict' imported but unused
+api/routers/indicators.py:9:1: F401 'typing.Any' imported but unused
+api/routers/indicators.py:9:1: F401 'typing.List' imported but unused
+api/routers/indicators.py:9:1: F401 'typing.Optional' imported but unused
+api/routers/indicators.py:35:5: F841 local variable 'hoy' is assigned to but never used
+api/routers/indicators.py:82:5: F824 `global _indicators_cache` is unused: name is never assigned in scope
+api/routers/payroll.py:10:1: F401 'datetime.datetime' imported but unused
+api/routers/payroll.py:10:1: F401 'datetime.date' imported but unused
+api/routers/previred.py:1:1: F401 'os' imported but unused
+api/routers/previred.py:3:1: F401 'datetime.date' imported but unused
+api/routers/rcv.py:8:1: F401 'core.logger.log_activity' imported but unused
+api/routers/rcv.py:8:1: F401 'core.logger.log_system_error' imported but unused
+api/routers/rcv.py:9:1: F401 'typing.List' imported but unused
+api/routers/rcv.py:9:1: F401 'typing.Dict' imported but unused
+api/routers/terminations.py:1:1: F401 'datetime.timedelta' imported but unused
+api/routers/terminations.py:3:1: F401 'typing.Optional' imported but unused
+api/routers/terminations.py:3:1: F401 'typing.List' imported but unused
+api/routers/terminations.py:3:1: F401 'typing.Dict' imported but unused
+api/routers/terminations.py:3:1: F401 'typing.Any' imported but unused
+api/routers/terminations.py:11:1: F401 'os' imported but unused
+api/routers/terminations.py:13:1: F401 'uuid' imported but unused
+api/routers/terminations.py:111:9: F841 local variable 'last_day_of_month' is assigned to but never used
