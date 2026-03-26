@@ -51,6 +51,17 @@ export async function processF29Document(storagePath: string, periodo: string, o
         console.error('DB Error saving F29:', dbErr)
         return { success: false, error: 'Fallo al guardar en DB.' }
     }
+
+    // DISPARO AUTOMÁTICO: Centralización Contable Idempotente del Impuesto
+    try {
+        await engineFetch(`/api/v1/f29/centralize`, {
+            method: 'POST',
+            body: JSON.stringify({ org_id: orgId, periodo: periodo })
+        });
+    } catch (centralizeErr) {
+        console.error('⚠️ Automagic F29 Centralize failed, but document was saved.', centralizeErr);
+    }
+
     return { success: true, data: { ...dbResult, audit } }
 
   } catch (err: unknown) {

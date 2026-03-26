@@ -40,6 +40,7 @@ export default function OnboardingWizard() {
   const [giro, setGiro] = useState('')
   const [direccion, setDireccion] = useState('')
   const [comuna, setComuna] = useState('')
+  const [region, setRegion] = useState('')
   const [regimen, setRegimen] = useState('pro_pyme')
   const [repLegalNombre, setRepLegalNombre] = useState('')
   const [repLegalRut, setRepLegalRut] = useState('')
@@ -62,7 +63,7 @@ export default function OnboardingWizard() {
     if (!rut.trim() || !nombre.trim()) { setError('RUT y Razón Social son obligatorios'); return }
     setLoading(true)
     setError('')
-    const res = await createOrganization({ rut, nombre, giro, direccion, comuna, regimen })
+    const res = await createOrganization({ rut, nombre, giro, direccion, comuna, region, regimen })
     setLoading(false)
     if (!res.success) { setError(res.error || 'Error al crear empresa'); return }
     setOrgId(res.organizationId!)
@@ -220,14 +221,18 @@ export default function OnboardingWizard() {
                 <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Giro comercial</Label>
                 <Input value={giro} onChange={e => setGiro(e.target.value)} placeholder="Servicios contables" className="h-11" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Dirección</Label>
+                <Input value={direccion} onChange={e => setDireccion(e.target.value)} placeholder="Av. España 1234" className="h-11" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Dirección</Label>
-                  <Input value={direccion} onChange={e => setDireccion(e.target.value)} placeholder="Av. España 1234" className="h-11" />
-                </div>
                 <div className="space-y-2">
                   <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Comuna</Label>
                   <Input value={comuna} onChange={e => setComuna(e.target.value)} placeholder="Punta Arenas" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Región</Label>
+                  <Input value={region} onChange={e => setRegion(e.target.value)} placeholder="Magallanes" className="h-11" />
                 </div>
               </div>
 

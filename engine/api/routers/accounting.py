@@ -722,6 +722,7 @@ async def get_ledger(organization_id: str, account_code: str, start_date: Option
             movements.append({
                 "fecha": je.get("fecha"),
                 "glosa": je.get("glosa", "S/G"),
+                "numero_asiento": str(m.get("journal_entry_id", ""))[:8].upper() if m.get("journal_entry_id") else "S/N",
                 "debe": debe,
                 "haber": haber,
                 "saldo": saldo_acumulado
@@ -930,3 +931,211 @@ async def delete_mapping_rule(rule_id: str):
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ====================================================================
+# EXPORTADOR OFICIAL LCE (XML SII) - LIBRO MAYOR ELECTRÓNICO
+# ====================================================================
+
+import xml.etree.ElementTree as ET
+import datetime
+from fastapi.responses import Response
+
+def get_iso_time():
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).replace(microsecond=0).isoformat()
+
+@router.get("/lce_mayor")
+async def export_lce_mayor_xml(organization_id: str, periodo: str):
+    """
+    Genera el archivo XML Oficial del SII LceEnvioLibros -> LceMayor y LceMayorRes.
+    Periodo debe venir en formato YYYY-MM.
+    """
+    db = get_supabase()
+    try:
+        # 1. Obtener datos Organización
+        org_res = db.table("organizations").select("rut_empresa").eq("id", organization_id).single().execute()
+        rut_org = org_res.data.get("rut_empresa", "1-9") if org_res.data else "1-9"
+
+        # 2. Fechas para el período
+        year_str, month_str = periodo.split("-")
+        try:
+            start_date = f"{year_str}-{month_str}-01"
+            import calendar
+            last_day = calendar.monthrange(int(year_str), int(month_str))[1]
+            end_date = f"{year_str}-{month_str}-{last_day:02d}"
+        except:
+            raise HTTPException(status_code=400, detail="Formato periodo inválido. Use YYYY-MM.")
+
+        # 3. Obtener Plan de Cuentas (solo hojas)
+        acc_res = db.table("chart_of_accounts").select("*").eq("organization_id", organization_id).eq("acepta_movimiento", True).execute()
+        accounts = acc_res.data or []
+        
+        # 4. Obtener Movimientos Acumulados y del Mes (SQL Puro para Rendimiento)
+        query_sql = f"""
+            SELECT 
+                jel.account_id,
+                je.fecha,
+                je.glosa,
+                je.numero_asiento,
+                je.tipo_comprobante,
+                jel.monto,
+                jel.tipo
+            FROM journal_entries je
+            JOIN journal_entry_lines jel ON je.id = jel.entry_id
+            WHERE je.organization_id = '{organization_id}'
+              AND je.fecha <= '{end_date}'
+            ORDER BY je.fecha ASC, je.numero_asiento ASC
+        """
+        # Ejecutamos query SQL puro o adaptamos con eq y lte. 
+        # Dado que supabase python via postgrest filter a veces es tedioso para un JOIN, usamos Rpc o subqueries
+        # Para simplificar y hacerlo 100% seguro sin RPC, llamaré las tablas y las uniré en Python (para LCE es vital la precisión).
+        je_res = db.table("journal_entries").select("id, fecha, glosa, numero_asiento, tipo_comprobante").eq("organization_id", organization_id).lte("fecha", end_date).execute()
+        journal_entries = je_res.data or []
+        je_map = {je["id"]: je for je in journal_entries}
+        
+        if not je_map:
+            raise HTTPException(status_code=400, detail="No hay asientos contables ingresados hasta ese período.")
+
+        # Obtener las líneas de esos asientos
+        entry_ids = list(je_map.keys())
+        jel_res = db.table("journal_entry_lines").select("entry_id, account_id, tipo, monto").in_("entry_id", entry_ids).execute()
+        
+        # 5. Agrupar la data:
+        sum_accounts = {}
+        for acc in accounts:
+            sum_accounts[acc["id"]] = {
+                "codigo": acc["codigo"], 
+                "nombre": acc["nombre"],
+                "naturaleza": acc["naturaleza"],
+                
+                "acumulado_debe": 0, "acumulado_haber": 0,
+                "periodo_debe": 0, "periodo_haber": 0,
+                "movimientos_ms": []
+            }
+
+        for line in jel_res.data or []:
+            aid = line["account_id"]
+            if aid not in sum_accounts: continue
+            
+            je = je_map.get(line["entry_id"])
+            if not je: continue
+            
+            is_period = je["fecha"].startswith(periodo)
+            debe = line["monto"] if line["tipo"] == "debe" else 0
+            haber = line["monto"] if line["tipo"] == "haber" else 0
+            
+            # Acumulados Totales Históricos + Este mes inclusive
+            sum_accounts[aid]["acumulado_debe"] += debe
+            sum_accounts[aid]["acumulado_haber"] += haber
+            
+            # Movimientos SOLO del Mes consultado
+            if is_period:
+                sum_accounts[aid]["periodo_debe"] += debe
+                sum_accounts[aid]["periodo_haber"] += haber
+                
+                sum_accounts[aid]["movimientos_ms"].append({
+                    "fecha": je["fecha"],
+                    "glosa": je["glosa"][:40], # Límite SII
+                    "num_comp": je.get("numero_asiento") or 1,
+                    "tpo_comp": je.get("tipo_comprobante") or "T",
+                    "debe": debe,
+                    "haber": haber
+                })
+        
+        # -------------- CONSTRUCCIÓN DEL XML --------------
+        # Elementos Raíz con Namespaces Oficiales
+        ET.register_namespace('', "http://www.sii.cl/SiiLce")
+        ET.register_namespace('ds', "http://www.w3.org/2000/09/xmldsig#")
+        ET.register_namespace('xsi', "http://www.w3.org/2001/XMLSchema-instance")
+        
+        root = ET.Element("{http://www.sii.cl/SiiLce}LceEnvioLibros", {"version": "1.0"})
+        root.set("{http://www.w3.org/2001/XMLSchema-instance}schemaLocation", "http://www.sii.cl/SiiLce LceEnvioLibros_v10.xsd")
+        
+        doc_envio = ET.SubElement(root, "DocumentoEnvioLibros", {"ID": f"ENVIO_MAYOR_{periodo.replace('-', '')}"})
+        ET.SubElement(doc_envio, "RutEnvia").text = "YOUR-SIGNER-RUT-HERE" # A inyectar por Homologador
+        ET.SubElement(doc_envio, "RutContribuyente").text = rut_org
+        notificacion = ET.SubElement(doc_envio, "Notificacion")
+        ET.SubElement(notificacion, "Tipo").text = "1"
+        ET.SubElement(notificacion, "Folio").text = "0" # Opcional Folio
+        ET.SubElement(doc_envio, "TmstFirmaEnv").text = get_iso_time()
+
+        lce = ET.SubElement(root, "LCE")
+        lce_mayor = ET.SubElement(lce, "LceMayor", {"version": "1.0"})
+        
+        # NODO: LceMayorRes (Resumen Agrupado)
+        lce_mayor_res = ET.SubElement(lce_mayor, "{http://www.sii.cl/SiiLce}LceMayorRes", {"version": "1.0"})
+        doc_mayor_res = ET.SubElement(lce_mayor_res, "DocumentoMayorRes", {"ID": f"MAYOR_RES_{periodo.replace('-', '')}"})
+        
+        identificacion = ET.SubElement(doc_mayor_res, "Identificacion")
+        ET.SubElement(identificacion, "RutContribuyente").text = rut_org
+        per_trib = ET.SubElement(identificacion, "PeriodoTributario")
+        ET.SubElement(per_trib, "Inicial").text = periodo
+        ET.SubElement(per_trib, "Final").text = periodo
+        
+        for aid, data in sorted(sum_accounts.items(), key=lambda x: x[1]["codigo"]):
+            # Solo si la cuenta tuvo movimiento este mes OR tiene saldo acumulado
+            if data["acumulado_debe"] == 0 and data["acumulado_haber"] == 0:
+                continue
+                
+            qty_movs = len(data["movimientos_ms"])
+            if qty_movs == 0 and data["acumulado_debe"] == 0 and data["acumulado_haber"] == 0: continue
+
+            per_db = data["periodo_debe"]
+            per_hb = data["periodo_haber"]
+            acu_db = data["acumulado_debe"]
+            acu_hb = data["acumulado_haber"]
+            
+            per_saldo = per_db - per_hb if data["naturaleza"] == "deudora" else per_hb - per_db
+            acu_saldo = acu_db - acu_hb if data["naturaleza"] == "deudora" else acu_hb - acu_db
+
+            # NODO: Resumen de la Cuenta en DocumentoMayorRes
+            cuenta_res = ET.SubElement(doc_mayor_res, "Cuenta")
+            ET.SubElement(cuenta_res, "CodigoCuenta").text = data["codigo"]
+            ET.SubElement(cuenta_res, "CantidadMovimientos").text = str(qty_movs)
+            
+            cierre = ET.SubElement(cuenta_res, "Cierre")
+            m_per = ET.SubElement(cierre, "MontosPeriodo")
+            if per_db > 0: ET.SubElement(m_per, "Debe").text = str(per_db)
+            if per_hb > 0: ET.SubElement(m_per, "Haber").text = str(per_hb)
+            if per_saldo > 0 and data["naturaleza"] == "deudora": ET.SubElement(m_per, "SaldoDeudor").text = str(per_saldo)
+            if per_saldo > 0 and data["naturaleza"] == "acreedora": ET.SubElement(m_per, "SaldoAcreedor").text = str(per_saldo)
+
+            m_acu = ET.SubElement(cierre, "MontosAcumulado")
+            if acu_db > 0: ET.SubElement(m_acu, "Debe").text = str(acu_db)
+            if acu_hb > 0: ET.SubElement(m_acu, "Haber").text = str(acu_hb)
+            if acu_saldo > 0 and data["naturaleza"] == "deudora": ET.SubElement(m_acu, "SaldoDeudor").text = str(acu_saldo)
+            if acu_saldo > 0 and data["naturaleza"] == "acreedora": ET.SubElement(m_acu, "SaldoAcreedor").text = str(acu_saldo)
+
+        ET.SubElement(doc_mayor_res, "RutFirma").text = "YOUR-SIGNER-RUT-HERE"
+        ET.SubElement(doc_mayor_res, "TmstFirma").text = get_iso_time()
+
+        # NODO: Detalle de Movimientos en LceMayor (Fuera del Resumen)
+        for aid, data in sorted(sum_accounts.items(), key=lambda x: x[1]["codigo"]):
+            if len(data["movimientos_ms"]) == 0: continue
+            
+            cuenta_det = ET.SubElement(lce_mayor, "Cuenta")
+            ET.SubElement(cuenta_det, "CodigoCuenta").text = data["codigo"]
+            
+            # Ordenados por Fecha y Correlativo
+            for mov in sorted(data["movimientos_ms"], key=lambda m: (m["fecha"], m["num_comp"])):
+                movs = ET.SubElement(cuenta_det, "Movimientos")
+                ET.SubElement(movs, "TpoComp").text = mov["tpo_comp"] # I, E, T
+                ET.SubElement(movs, "NumComp").text = str(mov["num_comp"])
+                ET.SubElement(movs, "FechaContable").text = mov["fecha"]
+                ET.SubElement(movs, "GlosaAnalisis").text = mov["glosa"]
+                if mov["debe"] > 0: ET.SubElement(movs, "Debe").text = str(mov["debe"])
+                if mov["haber"] > 0: ET.SubElement(movs, "Haber").text = str(mov["haber"])
+
+        xml_str = ET.tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')
+        
+        # Inyectar instrucción de procesamiento XML del SII y comentarios manuales
+        header = f'<?xml version="1.0" encoding="ISO-8859-1"?>\n<!-- Generado por Contapymepuq - Libro Mayor LCE -->\n'
+        xml_final = header + xml_str.replace("<?xml version='1.0' encoding='utf-8'?>\n", "")
+        
+        return Response(content=xml_final, media_type="application/xml")
+
+    except Exception as e:
+        print(f"ERROR export_lce_mayor_xml: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+

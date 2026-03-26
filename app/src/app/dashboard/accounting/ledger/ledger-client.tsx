@@ -21,12 +21,17 @@ import {
   RefreshCcw,
   Info
 } from "lucide-react";
-import { getLedger } from "@/actions/accounting";
+import { getLedger, exportLedgerAction, exportLceMayorXmlAction } from "@/actions/accounting";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { fCurrency } from "@/lib/utils";
 
-export default function LedgerClient({ organizationId, accounts }: { organizationId: string, accounts: any[] }) {
+export default function LedgerClient({ organizationId, accounts, orgName, orgRut }: { 
+  organizationId: string, 
+  accounts: any[],
+  orgName?: string,
+  orgRut?: string
+}) {
   const [selectedAccount, setSelectedAccount] = useState("");
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -38,6 +43,8 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
   });
   const [ledgerData, setLedgerData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportingLce, setExportingLce] = useState(false);
 
   useEffect(() => {
     setLedgerData(null);
@@ -62,6 +69,67 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
       toast.error("Error crítico al cargar libro mayor");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!ledgerData) return;
+    setExporting(true);
+    try {
+      const res = await exportLedgerAction(
+        organizationId,
+        selectedAccount,
+        ledgerData.account_name,
+        startDate,
+        endDate,
+        ledgerData,
+        orgName,
+        orgRut
+      );
+      if (res.success && res.csv) {
+        const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.filename || 'libro_mayor.csv';
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Libro Mayor exportado correctamente.');
+      } else {
+        toast.error(res.error || 'Error al exportar.');
+      }
+    } catch {
+      toast.error('Error inesperado al exportar.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportLce = async () => {
+    setExportingLce(true);
+    try {
+      const periodoStr = startDate.substring(0, 7); // Extracción segura formato YYYY-MM
+      const res = await exportLceMayorXmlAction(organizationId, periodoStr);
+      if (res.success && res.xml) {
+        const blob = new Blob([res.xml], { type: 'application/xml;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.filename || `LCE_MAYOR_${periodoStr.replace('-', '')}.xml`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Auditoría XML LCE generada exitosamente.');
+      } else {
+        toast.error(res.error || 'Error de Validación SII al generar XML LCE.');
+      }
+    } catch {
+      toast.error('Error inesperado de motor al generar XML.');
+    } finally {
+      setExportingLce(false);
     }
   };
 
@@ -116,6 +184,11 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
             {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Filter className="h-5 w-5" />}
             Consultar Mayor
           </Button>
+
+          <Button onClick={handleExportLce} disabled={exportingLce} variant="outline" className="gap-3 font-black uppercase text-[11px] tracking-widest border-2 border-primary text-primary hover:bg-primary/5 rounded-3xl h-14 px-8 active:scale-95 transition-all w-full md:w-auto shrink-0 group">
+            {exportingLce ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5 group-hover:-translate-y-1 transition-transform" />}
+            SII LCE (XML)
+          </Button>
         </div>
       </div>
 
@@ -137,8 +210,14 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                 <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] italic text-muted-foreground/70">Trazabilidad Transaccional Consolidada IFRS</CardDescription>
               </div>
             </div>
-            <Button variant="outline" className="gap-3 font-black uppercase text-[11px] tracking-widest h-14 px-8 rounded-3xl border-2 border-border hover:bg-muted shadow-lg active:scale-95 transition-all duration-300">
-              <Download className="h-5 w-5 text-primary" /> Exportar Mayor
+            <Button 
+              variant="outline" 
+              className="gap-3 font-black uppercase text-[11px] tracking-widest h-14 px-8 rounded-3xl border-2 border-border hover:bg-muted shadow-lg active:scale-95 transition-all duration-300"
+              onClick={handleExport}
+              disabled={exporting || !ledgerData}
+            >
+              {exporting ? <RefreshCcw className="h-5 w-5 animate-spin text-primary" /> : <Download className="h-5 w-5 text-primary" />}
+              {exporting ? 'Exportando...' : 'Exportar CSV'}
             </Button>
           </CardHeader>
           <CardContent className="p-0">
@@ -176,7 +255,7 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                           <TableCell className="px-10 py-5">
                              <div className="flex items-center gap-3">
                                <RefreshCcw className="w-3 h-3 text-primary/50 animate-spin" />
-                               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Saldo Anterior Heredado (Hitorial)</span>
+                               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">Saldo Anterior Heredado (Historial)</span>
                              </div>
                           </TableCell>
                           <TableCell className="text-right px-10 py-5 text-muted-foreground/20">—</TableCell>
@@ -189,7 +268,10 @@ export default function LedgerClient({ organizationId, accounts }: { organizatio
                       {ledgerData.movements.map((m: any, idx: number) => (
                         <TableRow key={idx} className="group border-border/30 hover:bg-primary/[0.02] transition-colors">
                           <TableCell className="px-10 py-6 whitespace-nowrap text-[11px] font-black uppercase tracking-tighter text-muted-foreground/60">
-                            {new Date(m.fecha).toLocaleDateString('es-CL')}
+                            {/* Parsear fecha sin conversiones UTC destructivas */}
+                            {m.fecha && m.fecha.includes('-') 
+                              ? m.fecha.split('T')[0].split('-').reverse().join('-') 
+                              : m.fecha}
                           </TableCell>
                           <TableCell className="px-10 py-6 max-w-sm">
                             <p className="font-black uppercase text-xs tracking-tight text-foreground leading-relaxed">{m.glosa}</p>

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 
-export async function generateContractAction(employeeId: string) {
+export async function generateContractAction(employeeId: string, signature_base64?: string, type: string = 'contrato') {
   try {
     const supabase = await createClient()
 
@@ -13,9 +13,26 @@ export async function generateContractAction(employeeId: string) {
       return { success: false, error: 'No autorizado' }
     }
     
-    // 2. Call Python Engine to generate the DOCX
-    const response = await engineFetch(`/api/v1/documents/generate?employee_id=${employeeId}&type=contrato&v=${Date.now()}`, {
-      method: 'GET',
+    // 2. Guardar la firma en la DB si existe
+    if (signature_base64) {
+      await supabase.from('employment_contracts')
+        .update({ 
+            signature_base64,
+            status: 'firmado'
+        })
+        .eq('employee_id', employeeId)
+        .eq('tipo_documento', type)
+    }
+    
+    // 3. Call Python Engine to generate the DOCX
+    const response = await engineFetch(`/api/v1/documents/generate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: employeeId,
+        type: type,
+        signature_base64: signature_base64,
+        description: "" // Opcional
+      }),
       cache: 'no-store'
     })
 

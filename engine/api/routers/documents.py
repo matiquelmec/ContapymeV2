@@ -2,23 +2,42 @@ import os
 import traceback
 from datetime import date, datetime
 from io import BytesIO
+import base64
+import io
+from docx.shared import Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from fastapi import APIRouter, HTTPException
 from docxtpl import DocxTemplate
 from num2words import num2words
 from core.database import get_supabase
 from fastapi.responses import StreamingResponse
+import requests
 
 router = APIRouter()
+
+from pydantic import BaseModel
+from typing import Optional
 
 # Las plantillas vivirán en la carpeta engine/templates/
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates")
 
-@router.get("/generate")
-async def generate_document(employee_id: str, type: str = "contrato", description: str = ""):
+class GenerateDocRequest(BaseModel):
+    employee_id: str
+    type: str = "contrato"
+    description: Optional[str] = ""
+    signature_base64: Optional[str] = None
+
+@router.post("/generate")
+async def generate_document(req: GenerateDocRequest):
     """
     Genera un Contrato o Anexo de Trabajo inteligente.
-    Convierte montos a palabras, formatea fechas legales y limpia datos.
+    POST: Recibe la firma directamente para integración inmediata.
     """
+    employee_id = req.employee_id
+    type = req.type
+    description = req.description
+    sig_raw = req.signature_base64
+    
     db = get_supabase()
 
     try:
@@ -110,7 +129,13 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
         context = {
             'EMPRESA_NOMBRE': safe_upper(org.get('nombre'), 'EMPRESA NO REGISTRADA'),
             'EMPRESA_RUT': clean_rut(org.get('rut_empresa', '')),
-            'EMPRESA_DIRECCION': safe_upper(org.get('direccion'), 'DIRECCION NO REGISTRADA'),
+            'EMPRESA_DIRECCION': safe_upper(
+                (lambda d, c: d if c.lower() in d.lower() else f"{d}, {c}")(
+                    org.get('direccion', ''), 
+                    org.get('comuna', '')
+                ), 
+                'DIRECCION NO REGISTRADA'
+            ),
             'EMPRESA_GIRO': safe_upper(org.get('giro'), 'ACTIVIDADES DE CONTABILIDAD'),
             'CIUDAD': safe_upper(org.get('comuna'), 'PUNTA ARENAS'),
             
@@ -176,6 +201,49 @@ async def generate_document(employee_id: str, type: str = "contrato", descriptio
 
         doc = DocxTemplate(template_path)
         doc.render(context)
+        
+        # --- INCORPORAR FIRMA DIGITAL ---
+        if sig_raw:
+            try:
+                if "," in sig_raw:
+                    sig_raw = sig_raw.split(",")[1]
+                
+                sig_data = base64.b64decode(sig_raw)
+                sig_stream = io.BytesIO(sig_data)
+                
+                from docx.enum.text import WD_ALIGN_PARAGRAPH
+                from docx.shared import Inches
+                
+                # Espaciado y Sello Profesional
+                doc.docx.add_paragraph("\n" * 2)
+                p_sig = doc.docx.add_paragraph()
+                p_sig.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                # Firma arriba
+                p_sig.add_run().add_picture(sig_stream, width=Inches(1.8))
+                
+                # --- GENERAR QR DE VERIFICACIÓN ---
+                try:
+                    verify_url = f"https://contapymepuq.cl/verify/{employee_id[:12]}"
+                    qr_api_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={verify_url}"
+                    qr_response = requests.get(qr_api_url)
+                    if qr_response.status_code == 200:
+                        qr_stream = io.BytesIO(qr_response.content)
+                        # Añadir QR al lado o debajo
+                        p_sig.add_run("   ") # Espacio
+                        p_sig.add_run().add_picture(qr_stream, width=Inches(0.8))
+                except Exception as qr_err:
+                    print(f"⚠️ Error al generar QR: {qr_err}")
+
+                # Línea y Sello debajo
+                p_sig.add_run("\n________________________________________\n").bold = True
+                p_sig.add_run("VERIFICACIÓN DE INTEGRIDAD DIGITAL\n").bold = True
+                p_sig.add_run("CONTAPYMEPUQ - SELLO DE TIEMPO REGISTRADO\n\n").italic = True
+                
+                doc.docx.add_paragraph(f"ID TRANSACCIÓN: {employee_id[:12].upper()}").alignment = WD_ALIGN_PARAGRAPH.CENTER
+            except Exception as e:
+                print(f"⚠️ Error embedding signature: {e}")
+        else:
+             print("ℹ️ No se recibió firma para este documento.")
 
         mem_file = BytesIO()
         doc.save(mem_file)
@@ -350,7 +418,10 @@ async def generate_annex(mod_id: str):
     context = {
         'EMPRESA_NOMBRE': str(org.get('nombre', '')).upper(),
         'EMPRESA_RUT': clean_rut(org.get('rut_empresa', '')),
-        'EMPRESA_DIRECCION': str(org.get('direccion', 'DIRECCION NO REGISTRADA')).upper(),
+        'EMPRESA_DIRECCION': (lambda d, c: d if c.lower() in d.lower() else f"{d}, {c}")(
+            str(org.get('direccion', '')), 
+            str(org.get('comuna', ''))
+        ).upper(),
         'CIUDAD': str(org.get('comuna', 'PUNTA ARENAS')).upper(),
         'REP_LEGAL_NOMBRE': str(settings.get('rep_legal_nombre', '_________________')).upper(),
         'REP_LEGAL_RUT': clean_rut(settings.get('rep_legal_rut', '')),

@@ -97,9 +97,19 @@ export default function LREClient({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         toast.success("Descarga de CSV (DT) iniciada.");
       } else {
-        toast.error("Error al sintetizar el archivo CSV.");
+        // Mostrar el error real del backend
+        const errorMsg = result.error || "Error desconocido al exportar";
+        if (errorMsg.includes("no existe") || errorMsg.includes("reemplazado")) {
+          toast.error("Este libro fue reemplazado. Refrescando lista...", {
+            description: "Se generó una nueva versión. Recargando datos actualizados."
+          });
+          window.location.reload();
+        } else {
+          toast.error(errorMsg);
+        }
       }
     } catch (error) {
       toast.error("Error en la conexión con el servidor de archivos.");
@@ -112,7 +122,7 @@ export default function LREClient({
         <div className="bg-rose-50 border-2 border-rose-100 text-rose-700 p-6 rounded-[2rem] flex items-center gap-4 shadow-xl shadow-rose-500/5 animate-pulse">
           <AlertCircle className="h-6 w-6 shrink-0" />
           <p className="font-black uppercase text-xs tracking-widest leading-relaxed">
-            <span className="opacity-60">Fallo de Integridadi:</span> {error}
+            <span className="opacity-60">Fallo de Integridad:</span> {error}
           </p>
         </div>
       )}

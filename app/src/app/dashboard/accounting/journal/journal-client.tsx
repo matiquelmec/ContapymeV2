@@ -64,7 +64,15 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })
+    if (!dateStr || !dateStr.includes('-')) return dateStr;
+    
+    // Extracción limpia de dígitos previniendo desfase UTC de JavaScript
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    
+    // Forzamos el objeto Date en la hora local neta de las 12 PM para evitar bordes horarios
+    const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 12, 0, 0);
+    
+    return dateObj.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
   }
 
   return (

@@ -27,6 +27,15 @@ export default async function LedgerPage() {
   // Necesitamos las cuentas para que el usuario elija cuál mayorizar
   const accounts = await getChartOfAccounts(activeOrgId);
 
+  // Datos de la empresa para encabezado del CSV
+  const { data: orgData } = await supabase
+    .from('organizations')
+    .select('nombre, rut_empresa')
+    .eq('id', activeOrgId)
+    .single();
+  const orgName = orgData?.nombre || '';
+  const orgRut = orgData?.rut_empresa || '';
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -48,7 +57,9 @@ export default async function LedgerPage() {
       <LedgerClient 
         key={activeOrgId}
         organizationId={activeOrgId} 
-        accounts={accounts} 
+        accounts={accounts}
+        orgName={orgName}
+        orgRut={orgRut}
       />
     </div>
   );

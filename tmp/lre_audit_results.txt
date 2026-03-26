@@ -1,0 +1,13 @@
+=== AUDITORÍA TÉCNICA LRE (PROCESO DE EXPORTACIÓN) ===
+
+--- RESULTADO DE AUDITORÍA ---
+Total Headers DT: 147
+Campos Poblados: 15
+Campos Vacíos: 132
+
+Campos CRÍTICOS que están actualmente en CERO (Error potential):
+❌ CCAF(1110) está en 0.
+❌ Org. administrador ley 16.744(1152) está en 0.
+❌ Total haberes imponibles y tributables(5210) está en 0.
+❌ Total haberes no imponibles y no tributables(5230) está en 0.
+❌ Nro cargas familiares legales autorizadas(1111) está en 0.

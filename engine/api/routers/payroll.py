@@ -7,6 +7,8 @@ NO contiene lógica de negocio.
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from datetime import datetime, date
+import calendar
 from core.database import get_supabase
 from calculators.chilean_payroll import (
     EmployeeInput,
@@ -51,13 +53,14 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
         cfg_res = db.table("organization_payroll_settings") \
             .select("*") \
             .eq("organization_id", req.org_id) \
-            .maybe_single() \
             .execute()
 
-        cfg = cfg_res.data or {}
+        cfg = cfg_res.data[0] if cfg_res.data else {}
 
         # ── 2. Indicadores económicos Dinámicos (UF y UTM por Periodo) ────────
-        target_period_start = f"{req.periodo}-01"
+        # Normalizar periodo: si llega "2026-03-01" lo dejamos, si llega "2026-03" le agregamos "-01"
+        periodo_clean = req.periodo[:7]  # Siempre tomar solo YYYY-MM
+        target_period_start = f"{periodo_clean}-01"
         uf_valor = 38000.0  # Fallback de emergencia
         utm_valor = 67294.0 # Fallback de emergencia
 
@@ -115,6 +118,10 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
         # ── 5. Calcular y guardar liquidaciones ───────────────────────────────
         processed_count = 0
         advertencias_totales = []
+        
+        # Parsear periodo una sola vez (usado en loop y centralización)
+        period_parts = periodo_clean.split("-")
+        year_part, month_part = int(period_parts[0]), int(period_parts[1])
 
         for emp in employees:
             # Blindaje extra: Si por algún motivo el driver trajo un inactivo, lo saltamos
@@ -142,13 +149,9 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
             # ── 5.1. Obtener contrato vigente para el período (INTELIGENCIA v2) ───
             # Usamos el último día del mes para determinar qué contrato rige.
             # (Ejemplo: si hay un aumento el 15, rige el nuevo sueldo para ese mes).
-            from datetime import datetime, date
-            import calendar
-            
             try:
-                year_part, month_part = map(int, req.periodo.split("-"))
                 last_day = calendar.monthrange(year_part, month_part)[1]
-                target_date_str = f"{req.periodo}-{last_day}"
+                target_date_str = f"{periodo_clean}-{last_day}"
                 
                 # Intentamos usar la función de DB RPC
                 effective_res = db.rpc("get_effective_contract_data", {
@@ -188,7 +191,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     for a in result.advertencias
                 ])
 
-            liq_data = to_db_dict(result, req.org_id, emp["id"], req.periodo)
+            liq_data = to_db_dict(result, req.org_id, emp["id"], target_period_start)
 
             # ── 6. Guardado Atómico (Blindaje Maestro) ──────────────────────────
             # Usar upsert con el conflicto definido en la base de datos (org, emp, periodo)
@@ -203,37 +206,24 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
         # ── 7. CENTRALIZACIÓN CONTABLE AUTOMÁTICA (Integración IFRS) ──────────
         if processed_count > 0:
             try:
-                # 7.1. Obtener totales agregados del periodo recién guardado
-                totals_res = db.table("liquidations") \
-                    .select("total_haberes_brutos.sum(), afc_empresa.sum(), sis_empresa.sum(), afp.sum(), afp_comision.sum(), salud_total.sum(), afc_trabajador.sum(), impuesto_unico.sum(), sueldo_liquido.sum()") \
+                # 7.1. Obtener totales agregados del periodo (siempre en Python, más robusto)
+                all_liq = db.table("liquidations") \
+                    .select("*") \
                     .eq("organization_id", req.org_id) \
-                    .eq("periodo", req.periodo) \
-                    .maybe_single() \
+                    .eq("periodo", target_period_start) \
                     .execute()
                 
-                # Nota: PostgREST no siempre soporta agregaciones directas en select
-                # Si falla, traemos todo y sumamos en Python (más seguro por compatibilidad)
-                if not totals_res.data:
-                    all_liq = db.table("liquidations") \
-                        .select("*") \
-                        .eq("organization_id", req.org_id) \
-                        .eq("periodo", req.periodo) \
-                        .execute()
-                    
-                    data = all_liq.data or []
-                    sums = {
-                        "bruto": sum(l.get("total_haberes_brutos", 0) for l in data),
-                        "afc_emp": sum(l.get("afc_empresa", 0) for l in data),
-                        "sis_emp": sum(l.get("sis_empresa", 0) for l in data),
-                        "afp_total": sum(l.get("afp", 0) + l.get("afp_comision", 0) for l in data),
-                        "salud": sum(l.get("salud_total", 0) for l in data),
-                        "afc_trab": sum(l.get("afc_trabajador", 0) for l in data),
-                        "impuesto": sum(l.get("impuesto_unico", 0) for l in data),
-                        "liquido": sum(l.get("sueldo_liquido", 0) for l in data),
-                    }
-                else:
-                    # Si el servidor soporta agregaciones (Supabase RPC o View)
-                    sums = totals_res.data # (Simulado, usaremos el fallback por seguridad)
+                data = all_liq.data or []
+                sums = {
+                    "bruto": sum(l.get("total_haberes_brutos", 0) for l in data),
+                    "afc_emp": sum(l.get("afc_empresa", 0) for l in data),
+                    "sis_emp": sum(l.get("sis_empresa", 0) for l in data),
+                    "afp_total": sum(l.get("afp", 0) + l.get("afp_comision", 0) for l in data),
+                    "salud": sum(l.get("salud_total", 0) for l in data),
+                    "afc_trab": sum(l.get("afc_trabajador", 0) for l in data),
+                    "impuesto": sum(l.get("impuesto_unico", 0) for l in data),
+                    "liquido": sum(l.get("sueldo_liquido", 0) for l in data),
+                }
 
                 # 7.2. Definir Líneas del Asiento de Centralización
                 # Glosa institucional
@@ -252,11 +242,24 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     {"cuenta_codigo": "2.1.04.001", "cuenta_nombre": "Sueldos por Pagar", "tipo": "haber", "monto": sums["liquido"]},
                 ]
 
-                # 7.3. Inyectar Asiento vía RPC
-                # Usamos el último día del mes para la fecha contable
-                last_day = calendar.monthrange(int(req.periodo.split("-")[0]), int(req.periodo.split("-")[1]))[1]
-                fecha_asiento = f"{req.periodo}-{last_day}"
+                # 7.3. Inyectar Asiento (CON CONTROL DE DUPLICADOS EXACTO Nivel DB)
+                last_day_contable = calendar.monthrange(year_part, month_part)[1]
+                fecha_asiento = f"{periodo_clean}-{last_day_contable}"
 
+                # a) Buscar asientos antiguos usando su Meta-Referencia (Garantía Arquitectónica)
+                existing_entries = db.table("journal_entries") \
+                    .select("id") \
+                    .eq("organization_id", req.org_id) \
+                    .eq("source_type", "NOMINA") \
+                    .eq("source_id", periodo_clean) \
+                    .execute()
+
+                # b) Eliminar primero sus líneas y luego el asiento
+                for e in (existing_entries.data or []):
+                    db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
+                    db.table("journal_entries").delete().eq("id", e["id"]).execute()
+
+                # c) Crear el asiento consolidado final vía RPC
                 db.rpc("create_journal_entry_with_lines", {
                     "p_organization_id": req.org_id,
                     "p_fecha": fecha_asiento,
@@ -264,26 +267,38 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     "p_lines": journal_lines
                 }).execute()
 
-                logger.info(f"🏦 Asiento de centralización generado exitosamente para {req.periodo}")
+                # d) Marcar el asiento recién creado con su ADN exacto para el índice único
+                db.table("journal_entries") \
+                    .update({"source_type": "NOMINA", "source_id": periodo_clean}) \
+                    .eq("organization_id", req.org_id) \
+                    .eq("fecha", fecha_asiento) \
+                    .eq("glosa", glosa_centralizacion) \
+                    .is_("source_type", "null") \
+                    .execute()
+
+                logger.info(f"🏦 Asiento de centralización (idempótico metadata) exitoso para {req.periodo}")
 
             except Exception as ex_cont:
                 logger.error(f"❌ Error al centralizar contablemente la nómina: {ex_cont}")
                 advertencias_totales.append(f"⚠️ Nómina procesada pero falló la creación del asiento contable: {ex_cont}")
 
-        # REGISTRAR EN BITÁCORA (AUDIT LOG)
-        log_activity(
-            action="process_payroll_bulk",
-            organization_id=req.org_id,
-            user_id=current_user.get("id"),
-            entity_type="payroll_period",
-            entity_id=f"{req.org_id}_{req.periodo}",
-            details={
-                "processed_count": processed_count,
-                "uf_usada": uf_valor,
-                "utm_usada": utm_valor,
-                "has_warnings": len(advertencias_totales) > 0
-            }
-        )
+        # REGISTRAR EN BITÁCORA (AUDIT LOG) — envuelto en try/except por si la tabla no existe
+        try:
+            log_activity(
+                action="process_payroll_bulk",
+                organization_id=req.org_id,
+                user_id=current_user.get("id"),
+                entity_type="payroll_period",
+                entity_id=f"{req.org_id}_{periodo_clean}",
+                details={
+                    "processed_count": processed_count,
+                    "uf_usada": uf_valor,
+                    "utm_usada": utm_valor,
+                    "has_warnings": len(advertencias_totales) > 0
+                }
+            )
+        except Exception as e_audit:
+            logger.warning(f"⚠️ No se pudo registrar audit log (tabla no existe): {e_audit}")
 
         return {
             "success": True,

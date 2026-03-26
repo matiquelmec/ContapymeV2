@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import calendar
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
@@ -75,10 +76,25 @@ async def process_f29(payload: ProcessF29Request, current_user: dict = Depends(v
 @router.delete("/{organization_id}/{f29_id}")
 async def delete_f29_record(organization_id: str, f29_id: str, current_user: dict = Depends(verify_token)):
     db = get_supabase()
+    
+    # 1. Obtener Periodo
+    f29_check = db.table("f29_forms").select("periodo").eq("id", f29_id).eq("organization_id", organization_id).execute()
+    periodo_info = f29_check.data[0] if f29_check.data else None
+
+    # 2. Borrar Formulario
     res = db.table("f29_forms").delete().eq("id", f29_id).eq("organization_id", organization_id).execute()
     if not res.data:
-        raise HTTPException(status_code=404, detail="Registro no encontrado.")
-    return {"success": True, "message": "Registro eliminado."}
+        raise HTTPException(status_code=404, detail="Registro de F29 no encontrado.")
+
+    # 3. Purgar Asiento Contable Diario y Mayor (Cascada Lógica Inmediata)
+    if periodo_info:
+        periodo = periodo_info["periodo"]
+        old_entries = db.table("journal_entries").select("id").eq("organization_id", organization_id).eq("source_type", "F29").eq("source_id", periodo).execute()
+        for e in (old_entries.data or []):
+            db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
+            db.table("journal_entries").delete().eq("id", e["id"]).execute()
+
+    return {"success": True, "message": "F29 y su reversión del Asiento Diario/Mayor eliminados sincronizadamente."}
 
 @router.get("/analysis/history")
 async def get_f29_history(organization_id: str, limit: int = 12, current_user: dict = Depends(verify_token)):
@@ -141,3 +157,99 @@ async def get_f29_history(organization_id: str, limit: int = 12, current_user: d
         return final_res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class CentralizeF29Request(BaseModel):
+    org_id: str
+    periodo: str  # YYYY-MM
+
+@router.post("/centralize")
+async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends(verify_token)):
+    """
+    Centraliza automáticamente el F29 en el Libro Mayor.
+    Genera el Asiento Contable Provisión F29 idempóticamente.
+    """
+    db = get_supabase()
+    
+    try:
+        # 1. Obtener los datos del formulario ya guardado en la base de datos
+        res = db.table("f29_forms").select("*").eq("organization_id", req.org_id).eq("periodo", req.periodo).execute()
+        f29 = res.data[0] if res.data else None
+        if not f29:
+            raise Exception("No se encontró el formulario para este periodo.")
+
+        debito = int(f29.get("debito_fiscal") or 0)
+        credito = int(f29.get("credito_fiscal") or 0)
+        ppm = int(f29.get("ppm_neto") or 0)
+        retenciones = int(f29.get("retencion_honorarios") or 0)
+        total_pagar = int(f29.get("total_a_pagar") or 0)
+
+        journal_lines = []
+
+        # Lógica de compensación de IVA
+        iva_compensado = min(debito, credito)
+        
+        # Reconocer el Débito del mes para limpiarlo (Viene del Pasivo)
+        if debito > 0:
+            journal_lines.append({"cuenta_codigo": "2.1.04.002", "cuenta_nombre": "IVA Débito Fiscal", "tipo": "debe", "monto": debito})
+        
+        # Eliminar el Crédito Fiscal utilizado
+        if iva_compensado > 0:
+            journal_lines.append({"cuenta_codigo": "1.1.07.002", "cuenta_nombre": "IVA Crédito Fiscal", "tipo": "haber", "monto": iva_compensado})
+
+        # Si sobra IVA a pagar (Debito > Credito)
+        iva_a_pagar = max(0, debito - credito)
+        if iva_a_pagar > 0:
+            pass # No añadimos cuenta "IVA por pagar" separada para simplificar. Todo irá contra "F29 por Pagar" o "Tesorería".
+
+        # PPM a favor (Activo nace o crece)
+        if ppm > 0:
+            journal_lines.append({"cuenta_codigo": "1.1.07.001", "cuenta_nombre": "PPM Pagado (Por Recuperar)", "tipo": "debe", "monto": ppm})
+
+        # Retenciones de boletas consolidadas en el mes (las provisionamos)
+        if retenciones > 0:
+            journal_lines.append({"cuenta_codigo": "2.1.04.007", "cuenta_nombre": "Retenciones Honorarios", "tipo": "debe", "monto": retenciones})
+
+        # Finalmente, el Pago a Tesorería o Pasivo Resumido (Haber final para balancear)
+        # La forma más correcta y resiliente en contabilidad es balancear el asiento exacto.
+        total_debe = sum(l["monto"] for l in journal_lines if l["tipo"] == "debe")
+        total_haber = sum(l["monto"] for l in journal_lines if l["tipo"] == "haber")
+        
+        monto_f29_por_pagar = total_debe - total_haber
+        
+        if monto_f29_por_pagar > 0:
+            journal_lines.append({"cuenta_codigo": "2.1.04.009", "cuenta_nombre": "F29 y Otros Impuestos por Pagar", "tipo": "haber", "monto": monto_f29_por_pagar})
+        elif monto_f29_por_pagar < 0:
+            journal_lines.append({"cuenta_codigo": "2.1.04.009", "cuenta_nombre": "Remanente Tributario a Favor", "tipo": "debe", "monto": abs(monto_f29_por_pagar)})
+
+        # 2. Fecha del Asiento (Último día del mes tributario)
+        parts = req.periodo.split("-")
+        last_day = calendar.monthrange(int(parts[0]), int(parts[1]))[1]
+        fecha_asiento = f"{req.periodo}-{last_day}"
+        glosa = f"Centralización e Impuestos F29 Periodo {req.periodo}"
+
+        # 3. IDEMPOTENCIA: Purgar el asiento anterior si existía (mismo origin)
+        old_entries = db.table("journal_entries").select("id").eq("organization_id", req.org_id).eq("source_type", "F29").eq("source_id", req.periodo).execute()
+        for e in (old_entries.data or []):
+            db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
+            db.table("journal_entries").delete().eq("id", e["id"]).execute()
+
+        # 4. Inyectar nuevo Asiento
+        db.rpc("create_journal_entry_with_lines", {
+            "p_organization_id": req.org_id,
+            "p_fecha": fecha_asiento,
+            "p_glosa": glosa,
+            "p_lines": journal_lines
+        }).execute()
+
+        # 5. Marcar DNA del Asiento para blindar índice SQL
+        db.table("journal_entries").update({"source_type": "F29", "source_id": req.periodo}) \
+            .eq("organization_id", req.org_id).eq("fecha", fecha_asiento).eq("glosa", glosa) \
+            .is_("source_type", "null").execute()
+
+        return {"success": True, "message": "Provisión F29 centralizada exitosamente en el Libro Mayor."}
+
+    except Exception as e:
+        log_system_error(category="F29_CENTRALIZE", message=str(e), organization_id=req.org_id)
+        raise HTTPException(status_code=500, detail=str(e))
+

@@ -11,6 +11,9 @@ from core.database import get_supabase
 import os
 import tempfile
 import uuid
+import base64
+import io
+import requests
 
 router = APIRouter()
 
@@ -257,7 +260,7 @@ async def generate_document_text(termination_id: str, doc_type: str):
                 "data": {
                     "title": f"CARTA DE AVISO - {emp.get('nombres', '')} {emp.get('apellido_paterno', '')}",
                     "content": (
-                        f"Punta Arenas, {hoy}\n\n"
+                        f"{org.get('comuna', 'Punta Arenas')}, {hoy}\n\n"
                         f"Señor(a)\n{emp.get('nombres', '')} {emp.get('apellido_paterno', '')} {emp.get('apellido_materno', '')}\n"
                         f"RUT: {emp.get('rut', '---')}\nPresente:\n\n"
                         f"Ref: Aviso de Término de Contrato de Trabajo.\n\n"
@@ -279,7 +282,7 @@ async def generate_document_text(termination_id: str, doc_type: str):
                 "data": {
                     "title": f"ACTA DE FINIQUITO - {emp.get('nombres', '')} {emp.get('apellido_paterno', '')}",
                     "content": (
-                        f"En Punta Arenas, a {hoy}, entre la empresa {org.get('nombre', 'LA EMPRESA')}, "
+                        f"En {org.get('comuna', 'Punta Arenas')}, a {hoy}, entre la empresa {org.get('nombre', 'LA EMPRESA')}, "
                         f"RUT {org.get('rut_empresa', '---')}, representada por su Gerente General, y el trabajador "
                         f"don (ña) {emp.get('nombres', '')} {emp.get('apellido_paterno', '')}, RUT {emp.get('rut', '---')}, "
                         f"se ha convenido el siguiente finiquito:\n\n"
@@ -341,6 +344,8 @@ async def download_docx(termination_id: str, doc_type: str):
         else:
             fecha_term = format_date_spanish(term["fecha_termino"])
 
+        sig_base64 = term.get("signature_base64")
+
         # Crear documento Word
         doc = Document()
         
@@ -354,7 +359,7 @@ async def download_docx(termination_id: str, doc_type: str):
             # Encabezado Ciudad y Fecha
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            p.add_run(f"Punta Arenas, {hoy}").bold = True
+            p.add_run(f"{org.get('comuna', 'Punta Arenas')}, {hoy}").bold = True
             
             doc.add_paragraph("\nSeñor(a)")
             doc.add_paragraph(f"{emp['nombres']} {emp['apellido_paterno']} {emp['apellido_materno'] or ''}").bold = True
@@ -390,7 +395,41 @@ async def download_docx(termination_id: str, doc_type: str):
             f1.add_run("__________________________\nFIRMA EMPLEADOR\n").bold = True
             f1.add_run(f"{rep_nombre}\n")
             f1.add_run(f"RUT: {rep_rut}\n")
-            f1.add_run(f"p.p. {org.get('nombre', 'CONTAPYME V2')}").italic = True
+            f1.add_run(f"p.p. {org.get('nombre', 'CONTAPYMEPUQ')}").italic = True
+
+            # --- INCORPORAR FIRMA DIGITAL SI EXISTE ---
+            if sig_base64:
+                try:
+                    if "," in sig_base64:
+                        sig_base64 = sig_base64.split(",")[1]
+                    sig_data = base64.b64decode(sig_base64)
+                    sig_stream = io.BytesIO(sig_data)
+                    
+                    p_sig = doc.add_paragraph()
+                    p_sig.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                    # Firma arriba
+                    run_img = p_sig.add_run()
+                    run_img.add_picture(sig_stream, width=Inches(1.5))
+                    
+                    # --- GENERAR QR DE VERIFICACIÓN ---
+                    try:
+                        verify_url = f"https://contapymepuq.cl/verify/{emp.get('rut', 'ID')}"
+                        qr_api_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={verify_url}"
+                        qr_response = requests.get(qr_api_url)
+                        if qr_response.status_code == 200:
+                            qr_stream = io.BytesIO(qr_response.content)
+                            p_sig.add_run("   ") # Espacio
+                            p_sig.add_run().add_picture(qr_stream, width=Inches(0.6))
+                    except Exception as qr_err:
+                        print(f"⚠️ Error al generar QR: {qr_err}")
+
+                    # Línea y Sello debajo
+                    p_sig.add_run("\n__________________________\n").bold = True
+                    p_sig.add_run("VERIFICACIÓN DE IDENTIDAD DIGITAL\n").bold = True
+                    p_sig.add_run("CONTAPYMEPUQ - SELLO DE TIEMPO\n").italic = True
+                except Exception as e:
+                    print(f"Error embedding signature in carta: {e}")
 
             # Pie de página Premium
             doc.add_paragraph("\n\n")
@@ -406,7 +445,7 @@ async def download_docx(termination_id: str, doc_type: str):
             title.alignment = WD_ALIGN_PARAGRAPH.CENTER
             title.add_run("ACTA DE FINIQUITO DE CONTRATO DE TRABAJO").bold = True
             
-            doc.add_paragraph(f"\nEn Punta Arenas, a {hoy}, entre la empresa {org.get('nombre', 'LA EMPRESA')}, RUT {org.get('rut_empresa', '---')}, representada por su Gerente General, y el trabajador don (ña) {emp['nombres']} {emp['apellido_paterno']}, RUT {emp['rut']}, se ha convenido el siguiente finiquito:\n")
+            doc.add_paragraph(f"\nEn {org.get('comuna', 'Punta Arenas')}, a {hoy}, entre la empresa {org.get('nombre', 'LA EMPRESA')}, RUT {org.get('rut_empresa', '---')}, representada por su Gerente General, y el trabajador don (ña) {emp['nombres']} {emp['apellido_paterno']}, RUT {emp['rut']}, se ha convenido el siguiente finiquito:\n")
             
             p1 = doc.add_paragraph()
             p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -461,11 +500,31 @@ async def download_docx(termination_id: str, doc_type: str):
             f2.add_run(f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}\n")
             f2.add_run(f"RUT: {emp.get('rut', '---')}")
 
+            # --- INCORPORAR FIRMA DIGITAL EN FINIQUITO ---
+            if sig_base64:
+                try:
+                    if "," in sig_base64:
+                        sig_base64 = sig_base64.split(",")[1]
+                    sig_data = base64.b64decode(sig_base64)
+                    sig_stream = io.BytesIO(sig_data)
+                    
+                    p_sig = doc.add_paragraph()
+                    p_sig.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    p_sig.add_run("\nPROTOCOLO DE FIRMA DIGITAL CERTIFICADA\n").bold = True
+                    run_img = p_sig.add_run()
+                    run_img.add_picture(sig_stream, width=Inches(2.0))
+                except Exception as e:
+                    print(f"Error embedding signature in finiquito: {e}")
+
             # Pie de página Premium
             doc.add_paragraph("\n\n")
             footer_p = doc.add_paragraph()
             footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = footer_p.add_run(f"Documento generado por el sistema de gestión laboral Contapymepuq\n{org.get('nombre', 'Empresa')} — {org.get('comuna', 'Punta Arenas')}")
+            full_address_fin = (lambda d, c: d if c.lower() in d.lower() else f"{d}, {c}")(
+                org.get('direccion', ''), 
+                org.get('comuna', 'Punta Arenas')
+            )
+            run = footer_p.add_run(f"Documento generado por el sistema de gestión laboral Contapymepuq\n{org.get('nombre', 'Empresa')} — {full_address_fin}")
             run.font.size = Pt(8)
             run.italic = True
             run.font.color.rgb = RGBColor(128, 128, 128) # Gris profesional

@@ -25,6 +25,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 
+// ―― HELPER: input premium ――
+const PInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <Input
+    {...props}
+    className={`h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-primary/20 shadow-sm px-6 ${props.className || ''}`}
+  />
+);
+
 export default function SettingsPageClient({ 
   organizationId, 
   userEmail, 
@@ -126,13 +134,7 @@ export default function SettingsPageClient({
     }
   };
 
-  // ―― HELPER: input premium ――
-  const PInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <Input
-      {...props}
-      className={`h-14 bg-white border-border rounded-2xl font-black text-sm focus:ring-primary/20 shadow-sm px-6 ${props.className || ''}`}
-    />
-  );
+
 
   return (
     <Tabs defaultValue="empresa" className="w-full">

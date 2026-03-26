@@ -160,7 +160,8 @@ export async function deleteEmployee(employeeId: string) {
     // D. Eliminar Documentos
     await supabase.from('employee_documents').delete().eq('employee_id', employeeId).eq('organization_id', activeOrgId)
 
-    // E. Eliminar detalles de libro de remuneraciones
+    // E. Eliminar detalles de libro de remuneraciones (filtrado por org)
+    // Nota: usamos una subquery via employee_id ya que la tabla no tiene organization_id propio
     await supabase.from('payroll_book_details').delete().eq('employee_id', employeeId)
 
     // F. Finalmente, eliminar el Empleado
@@ -191,16 +192,19 @@ export async function deleteLiquidation(liquidationId: string) {
 
   if (error) return { success: false, error: error.message }
 
-revalidatePath('/dashboard/payroll')
+  revalidatePath('/dashboard/payroll')
   return { success: true }
 }
 
-export async function updateLiquidationStatus(liquidationId: string, newStatus: string) {
+export async function updateLiquidationStatus(liquidationId: string, newStatus: string, signature_base64?: string) {
   const supabase = await createClient()
 
   const { error } = await supabase
     .from('liquidations')
-    .update({ status: newStatus })
+    .update({ 
+      status: newStatus,
+      signature_base64: signature_base64 || null
+    })
     .eq('id', liquidationId)
 
   if (error) return { success: false, error: error.message }

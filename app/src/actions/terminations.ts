@@ -94,14 +94,17 @@ export async function getTerminationCausesAction() {
         return { success: false, error: errorMessage }
     }
 }
-export async function finalizeTerminationAction(terminationId: string, employeeId: string, endDate: string) {
+export async function finalizeTerminationAction(terminationId: string, employee_id: string, endDate: string, signature_base64?: string) {
     try {
         const supabase = await createClient()
         
-        // 1. Marcar el finiquito como firmado
+        // 1. Marcar el finiquito como firmado y guardar la firma
         const { error: termError } = await supabase
             .from('employee_terminations')
-            .update({ status: 'firmado' })
+            .update({ 
+                status: 'firmado',
+                signature_base64: signature_base64 || null // Asumimos que la columna existe o la usaremos en el engine
+            })
             .eq('id', terminationId)
         
         if (termError) throw termError
@@ -113,7 +116,7 @@ export async function finalizeTerminationAction(terminationId: string, employeeI
                 activo: false, 
                 fecha_termino: endDate 
             })
-            .eq('id', employeeId)
+            .eq('id', employee_id)
         
         if (empError) throw empError
 

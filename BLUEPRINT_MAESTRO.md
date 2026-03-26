@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYME V2 — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 3.1 (Magallanes 2077 — Sincro Total 🛡️💎) | **Fecha:** 2026-03-23 | **Estado:** EN DESARROLLO 🚧 — Blindaje Multitenencia & Estética Luxury 🏛️🏦
+> **Versión:** 3.2 (Magallanes 2077 — Master Centralization 🛡️💎) | **Fecha:** 2026-03-26 | **Estado:** EN DESARROLLO 🚧 — Idempotencia F29 & Limpieza de Fechas IFRS
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -15,9 +15,9 @@
 > - Engine API + Docs: http://localhost:8000/docs
 >
 > [!TIP]
-> **AUDITORÍA DE ESQUEMA (SINCRO 23-03 FINAL):** 
+> **AUDITORÍA DE ESQUEMA (SINCRO 26-03 FINAL):** 
 > El estado maestro de todas las tablas se encuentra consolidado en:
-> `supabase/snapshots/master_snapshot_20260323.sql` (Única Fuente de Verdad Sincronizada).
+> `supabase/snapshots/master_snapshot_20260326.sql` (Única Fuente de Verdad Sincronizada).
 
 ---
 
@@ -80,7 +80,8 @@ El corazón comercial del producto. Convierte papeleo en analítica estratégica
     - **Visualización:** Gráficos de tendencias (Recharts) con renderizado optimizado por debouncing y claves dinámicas.
     - **Insights:** Alertas automáticas sobre tendencias de pago (Alza/Baja) y coherencia fiscal.
 *   **Python Engine:** `parsers/f29_plumber.py` (Proximidad Global V2.1). Captura códigos 563 (Ventas), 538, 537, 062, 151 y 049. Ejecuta una **Lógica de Auditoría Multidimensional** que genera alertas inteligentes ante anomalías o discrepancias de IVA.
-    - **API Endpoint:** Soporte para `DELETE` por ID con limpieza automática de caché y recalculo de métricas.
+    - **Centralización Contable Automática (Idempotente):** Endpoint `POST /centralize` convierte mágicamente los campos en un asiento perfecto IFRS.
+    - **API Endpoint:** Soporte para `DELETE` por ID con **Limpieza en Cascada** automática hacia el Libro Mayor/Diario.
 
 ### 3.3 👥 Módulo Remuneraciones (Payroll) y Finiquitos
 Extensa lógica progresiva y normativa chilena completa con **Estética Institucional**.
@@ -115,7 +116,8 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   **Blindaje SQL e Integridad Multitenencia (V3.0):** 
     - **Aislamiento Total:** Implementación de `organization_id` denormalizado en tablas hijo (`journal_entry_lines`, `bank_statement_lines`, `f29_box_details`, `bank_reconciliations`) para RLS ultra-rápido y seguridad absoluta.
     - **Automatización de Integridad:** Triggers `fill_org_id_from_parent` que garantizan que el ID de empresa se asigne automáticamente en cada inserción desde la base de datos, eliminando el riesgo de "datos huérfanos".
-    - **Restricciones de Unicidad:** Bloqueo de duplicados por empresa mediante `UNIQUE constraints` en Plan de Cuentas (`org+code`), Empleados (`org+rut`) y Cartolas (`acc+period`).
+    - **Idempotencia Transaccional:** Uso estratégico de campos de metadatos `source_type` y `source_id` que purgan antiguos clones de un asiento al procesarlo, previniendo para siempre el Error de Desfase de Saldos.
+    - **Sincronización de Tiempos IFRS:** Frontend fortificado para convertir `YYYY-MM-DD` sin manipulaciones Timezone UTC, protegiendo 100% las visualizaciones del último día del mes (Ej: 31-03 no renderiza como 30-03).
     - **Optimización de Rendimiento:** Índices compuestos en todas las llaves de organización para consultas de Libro Mayor y Cartolas en milisegundos.
 *   **Next.js:** RCV Dashboard con **Visión de Inteligencia Pasiva**:
     - **Detección Automática:** El sistema detecta el mes/año desde el archivo (Zero-Click Awareness).
@@ -249,10 +251,12 @@ El pilar de la salud contable con **Arquitectura de Integridad Inquebrantable**.
 *   [x] **Flujo de Onboarding:** Implementación de registro paso a paso con seeding automático de configuración.
 *   [x] **CI/CD Ready:** Dockerfile y railway.json configurados para despliegue automático.
 
-### Fase 9: Post-Lanzamiento y Mantenimiento 💎 — **EN PROCESO**
+### Fase 9: Consolidación Transaccional y Auditoría Final 💎 — **EN PROCESO AVANZADO**
+*   [x] **Sincronización Contable:** Generación de un Sistema de Asientos Automático (Idempotencia en Nómina y F29).
+*   [x] **Integridad Temporal Completa:** Resolución de "Timezone Shift Bugs" en Libro Mayor y Diario.
+*   [x] **Limpieza en Cascada:** Borrado seguro de Impuestos vs Contabilidad sin dejar sombras en el Ledger.
 *   [ ] **Seguridad Avanzada:** Copias de seguridad automáticas (Supabase PITR).
-*   [ ] **Multi-divisa:** Soporte para activos fijos en USD/EUR y conversión en tiempo real.
-*   [x] **Motor de Auditoría Proactiva:** Auditoría cruzada en F29 y Payroll (Implementado).
+*   [ ] **Exportador Autorizado:** XML LCE SII con firma `ds:Signature` instalada.
 
 ---
 

@@ -74,6 +74,64 @@ export async function getLedger(organizationId: string, accountCode: string, sta
   }
 }
 
+export async function exportLedgerAction(
+  organizationId: string,
+  accountCode: string,
+  accountName: string,
+  startDate?: string,
+  endDate?: string,
+  ledgerData?: any,
+  orgName?: string,
+  orgRut?: string
+) {
+  try {
+    const data = ledgerData || await getLedger(organizationId, accountCode, startDate, endDate);
+    if (!data) return { success: false, error: "No se pudieron obtener los datos del Libro Mayor." };
+
+    // BOM UTF-8 para que Excel lo abra correctamente en español
+    const BOM = '\uFEFF';
+    const rows: string[] = [];
+
+    // Encabezado Corporativo Oficial
+    rows.push(`Razón Social:,${orgName || 'N/A'}`);
+    rows.push(`RUT:,${orgRut || 'N/A'}`);
+    rows.push(`LIBRO MAYOR CONTABLE`);
+    rows.push(`Cuenta:,[${data.account_code}] ${data.account_name}`);
+    rows.push(`Naturaleza:,${data.naturaleza}`);
+    rows.push(`Período:,${startDate || 'Desde el inicio'} al ${endDate || 'Hoy'}`);
+    rows.push(`Generado por:,Contapymepuq Sistema de Gestión Contable`);
+    rows.push(``);
+
+    // Columnas Actualizadas con Nº Comprobante
+    rows.push(`Fecha,Nº Comprobante,Glosa / Concepto,Cargo (Debe),Abono (Haber),Saldo Acumulado`);
+
+    if (data.saldo_anterior !== 0) {
+      rows.push(`Apertura,,Saldo Anterior Heredado,,,${data.saldo_anterior}`);
+    }
+
+    for (const m of data.movements) {
+      const fecha = m.fecha ? new Date(m.fecha + 'T12:00:00').toLocaleDateString('es-CL') : '';
+      const numAsiento = m.numero_asiento || '';
+      const glosa = `"${ (m.glosa || '').replace(/"/g, '""') }"`;
+      const debe = m.debe > 0 ? m.debe : '';
+      const haber = m.haber > 0 ? m.haber : '';
+      rows.push(`${fecha},${numAsiento},${glosa},${debe},${haber},${m.saldo}`);
+    }
+
+    rows.push(``);
+    rows.push(`TOTALES,,,${data.total_debe},${data.total_haber},${data.saldo_final}`);
+
+    const csv = BOM + rows.join('\n');
+    const orgPrefix = orgRut ? `${orgRut.replace(/[^0-9Kk]/g, '')}_` : '';
+    const filename = `LibroMayor_${orgPrefix}${accountCode.replace(/\./g, '-')}_${startDate || 'inicio'}_al_${endDate || 'hoy'}.csv`;
+    
+    return { success: true, csv, filename };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { success: false, error: msg };
+  }
+}
+
 export async function getTrialBalance(organizationId: string, startDate: string, endDate: string) {
   try {
     const response = await engineFetch(
@@ -262,5 +320,32 @@ export async function deleteMappingRuleAction(ruleId: string) {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, error: errorMessage };
+  }
+}
+
+export async function exportLceMayorXmlAction(organizationId: string, periodoStr: string) {
+  try {
+    const response = await engineFetch(`/api/v1/accounting/lce_mayor?organization_id=${organizationId}&periodo=${periodoStr}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+        let errorText = await response.text();
+        try {
+            const errJson = JSON.parse(errorText);
+            errorText = errJson.detail || errorText;
+        } catch(e) {}
+      console.error("[LCE XML error]", errorText);
+      throw new Error(`Error al generar XML: ${errorText}`);
+    }
+
+    const xml = await response.text();
+    const filename = `LCE_MAYOR_${periodoStr.replace('-', '')}.xml`;
+
+    return { success: true, xml, filename };
+  } catch (error: any) {
+    console.error("Error en exportLceMayorXmlAction:", error);
+    return { success: false, error: error.message };
   }
 }

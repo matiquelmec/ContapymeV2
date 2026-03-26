@@ -26,12 +26,23 @@ import {
     Waves,
     ArrowRight,
     ExternalLink,
-    Loader2
+    Loader2,
+    PenTool,
+    CheckCircle2
 } from 'lucide-react';
 import { toast } from "sonner";
 import Link from "next/link";
 import { generateContractAction } from "@/actions/documents";
 import { ModificationsDialog } from "@/components/modifications-dialog"
+import { SignaturePad } from "@/components/ui/signature-pad"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog"
 
 interface Employee {
   id: string;
@@ -59,6 +70,9 @@ export default function ContractsClient({
   const [modOpen, setModOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [signatureOpen, setSignatureOpen] = useState(false);
+  const [signingDoc, setSigningDoc] = useState<{id: string, employeeId: string, name: string, type?: string} | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -107,6 +121,56 @@ export default function ContractsClient({
         year: "numeric"
     });
   }, [initialContracts, isClient]);
+
+  const handleSignDocument = (contractId: string, employeeId: string, name: string, type: string) => {
+    setSigningDoc({ id: contractId, employeeId, name, type });
+    setSignatureOpen(true);
+  };
+
+  const handleDownload = async (employeeId: string, contractId: string, name: string, type: string, signature?: string) => {
+    const toastId = toast.loading(signature ? "Protocolizando y sellando documento..." : "Sintetizando documento legal...");
+    if (!signature) setLoadingId(contractId);
+    
+    try {
+      const result = await generateContractAction(employeeId, signature, type);
+      if (!result.success || !result.base64Doc) {
+        throw new Error(result.error || "Falla en la generación del documento");
+      }
+
+      const blob = await (await fetch(`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${result.base64Doc}`)).blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename || `${name}_${type}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(signature ? "Documento firmado y descargado." : "Documento recuperado con éxito.", { id: toastId });
+      return true;
+    } catch (error: any) {
+      console.error("Error en documento:", error);
+      toast.error(`Error: ${error.message}`, { id: toastId });
+      return false;
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const onConfirmSigned = async (signatureDataUrl: string) => {
+    if (!signingDoc) return;
+    setIsFinishing(true);
+    
+    const success = await handleDownload(signingDoc.employeeId, signingDoc.id, signingDoc.name, signingDoc.type || 'contrato', signatureDataUrl);
+    
+    if (success) {
+      setIsFinishing(false);
+      setSignatureOpen(false);
+      router.refresh();
+    } else {
+      setIsFinishing(false);
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -244,33 +308,18 @@ export default function ContractsClient({
                         <Button 
                             variant="ghost" 
                             size="icon" 
+                            className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 w-11 h-11 rounded-xl transition-all"
+                            onClick={() => handleSignDocument(contract.id, contract.employee_id, `${contract.employees?.nombres} ${contract.employees?.apellido_paterno}`, contract.tipo_documento)}
+                            title="Protocolizar con Firma Digital"
+                        >
+                            <PenTool className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-11 h-11 rounded-xl transition-all"
                             disabled={loadingId === contract.id}
-                            onClick={async () => {
-                              const toastId = toast.loading("Sintetizando documento legal...");
-                              setLoadingId(contract.id);
-                              try {
-                                const result = await generateContractAction(contract.employee_id);
-                                if (!result.success || !result.base64Doc) {
-                                  throw new Error(result.error || "Falla en la generación del documento");
-                                }
-
-                                const blob = await (await fetch(`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${result.base64Doc}`)).blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement("a");
-                                a.href = url;
-                                a.download = result.filename || `${contract.employees?.apellido_paterno}_${contract.tipo_documento}.docx`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                toast.success("Documento recuperado con éxito.", { id: toastId });
-                              } catch (error: any) {
-                                console.error("Error en descarga Kardex:", error);
-                                toast.error(`Error: ${error.message}`, { id: toastId });
-                               } finally {
-                                setLoadingId(null);
-                              }
-                            }}
+                            onClick={() => handleDownload(contract.employee_id, contract.id, contract.employees?.apellido_paterno, contract.tipo_documento)}
                         >
                             {loadingId === contract.id ? (
                                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -309,6 +358,40 @@ export default function ContractsClient({
           onClose={() => setModOpen(false)}
         />
       )}
+
+      {/* ===== DIÁLOGO DE FIRMA TÁCTIL (REUTILIZABLE) ===== */}
+      <Dialog open={signatureOpen} onOpenChange={setSignatureOpen}>
+        <DialogContent className="sm:max-w-xl bg-card border-border shadow-2xl rounded-[2.5rem] p-0 overflow-hidden ring-1 ring-black/5">
+            <div className="h-4 w-full bg-gradient-to-r from-emerald-600 via-emerald-300 to-transparent" />
+            <DialogHeader className="p-10 pb-6">
+                <div className="flex items-center gap-5">
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center">
+                        <PenTool className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <div className="space-y-0.5">
+                        <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Sello Digital Corporativo</DialogTitle>
+                        <DialogDescription className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] italic">CERTIFICACIÓN DE DOCUMENTO — {signingDoc?.name}</DialogDescription>
+                    </div>
+                </div>
+            </DialogHeader>
+            <div className="p-10 pt-4">
+                <p className="text-[11px] text-muted-foreground font-bold italic mb-6 leading-relaxed opacity-60">
+                    Proceda a capturar la firma del colaborador. El sistema anexará un registro de integridad SHA-256 y un código QR de validación al documento final.
+                </p>
+                {isFinishing ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-emerald-600 opacity-20" />
+                        <p className="font-black uppercase text-[10px] tracking-widest text-emerald-700 italic">Protocolizando Instrumento...</p>
+                    </div>
+                ) : (
+                    <SignaturePad onSave={onConfirmSigned} />
+                )}
+            </div>
+            <DialogFooter className="p-10 pt-0">
+                <Button variant="ghost" onClick={() => setSignatureOpen(false)} className="w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest text-muted-foreground">CANCELAR SIGILO</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

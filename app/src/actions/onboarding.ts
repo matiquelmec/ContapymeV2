@@ -42,6 +42,7 @@ export async function createOrganization(data: {
   giro: string
   direccion: string
   comuna: string
+  region: string
   regimen: string
 }) {
   const supabase = await createClient()
@@ -57,6 +58,7 @@ export async function createOrganization(data: {
     p_giro: data.giro,
     p_direccion: data.direccion,
     p_comuna: data.comuna,
+    p_region: data.region,
     p_regimen: data.regimen
   })
 

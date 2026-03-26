@@ -39,7 +39,7 @@ export async function generateLREAction(formData: {
     if (!response.ok) throw new Error(result.detail || "Error al generar LRE");
 
     revalidatePath("/dashboard/payroll/lre");
-    return { success: true, message: "Libro generado correctamente" };
+    return { success: true, message: "Libro generado correctamente", book_id: result.book_id };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -48,7 +48,11 @@ export async function generateLREAction(formData: {
 export async function exportLREAction(bookId: string) {
   try {
     const response = await engineFetch(`/api/v1/payroll/lre/export/${bookId}`);
-    if (!response.ok) throw new Error("Error al exportar LRE");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail || "Error al exportar LRE";
+      throw new Error(detail);
+    }
     
     const blob = await response.text(); // CSV as text
     return { success: true, data: blob };
@@ -56,3 +60,4 @@ export async function exportLREAction(bookId: string) {
     return { success: false, error: error.message };
   }
 }
+
