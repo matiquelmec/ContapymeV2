@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Contapyme V2 | Diario Regional & Sistema Contable",
+  title: "Contapymepuq | Diario Regional & Sistema Contable",
   description: "Plataforma profesional para PyMEs en Punta Arenas, Magallanes. Diario regional, indicadores económicos y gestión contable avanzada.",
 };
 

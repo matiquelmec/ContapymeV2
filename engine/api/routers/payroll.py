@@ -231,15 +231,15 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 
                 journal_lines = [
                     # GASTOS (Debe)
-                    {"cuenta_codigo": "5.1.02.001", "cuenta_nombre": "Sueldos y Salarios", "tipo": "debe", "monto": sums["bruto"]},
-                    {"cuenta_codigo": "5.1.02.002", "cuenta_nombre": "Leyes Sociales Empresa", "tipo": "debe", "monto": sums["afc_emp"] + sums["sis_emp"]},
+                    {"cuenta_codigo": cfg.get("expense_salary_code", "5.1.02.001"), "cuenta_nombre": cfg.get("expense_salary_name", "Sueldos y Salarios"), "tipo": "debe", "monto": sums["bruto"]},
+                    {"cuenta_codigo": cfg.get("expense_social_code", "5.1.02.002"), "cuenta_nombre": cfg.get("expense_social_name", "Leyes Sociales Empresa"), "tipo": "debe", "monto": sums["afc_emp"] + sums["sis_emp"]},
                     
                     # PASIVOS (Haber)
-                    {"cuenta_codigo": "2.1.04.004", "cuenta_nombre": "AFP por Pagar", "tipo": "haber", "monto": sums["afp_total"]},
-                    {"cuenta_codigo": "2.1.04.005", "cuenta_nombre": "Salud por Pagar", "tipo": "haber", "monto": sums["salud"]},
-                    {"cuenta_codigo": "2.1.04.006", "cuenta_nombre": "AFC por Pagar", "tipo": "haber", "monto": sums["afc_trab"] + sums["afc_emp"]},
-                    {"cuenta_codigo": "2.1.03.001", "cuenta_nombre": "Impuesto Único por Pagar", "tipo": "haber", "monto": sums["impuesto"]},
-                    {"cuenta_codigo": "2.1.04.001", "cuenta_nombre": "Sueldos por Pagar", "tipo": "haber", "monto": sums["liquido"]},
+                    {"cuenta_codigo": cfg.get("liability_afp_code", "2.1.04.004"), "cuenta_nombre": cfg.get("liability_afp_name", "AFP por Pagar"), "tipo": "haber", "monto": sums["afp_total"]},
+                    {"cuenta_codigo": cfg.get("liability_salud_code", "2.1.04.005"), "cuenta_nombre": cfg.get("liability_salud_name", "Salud por Pagar"), "tipo": "haber", "monto": sums["salud"]},
+                    {"cuenta_codigo": cfg.get("liability_afc_code", "2.1.04.006"), "cuenta_nombre": cfg.get("liability_afc_name", "AFC por Pagar"), "tipo": "haber", "monto": sums["afc_trab"] + sums["afc_emp"]},
+                    {"cuenta_codigo": cfg.get("liability_tax_code", "2.1.03.001"), "cuenta_nombre": cfg.get("liability_tax_name", "Impuesto Único por Pagar"), "tipo": "haber", "monto": sums["impuesto"]},
+                    {"cuenta_codigo": cfg.get("liability_net_code", "2.1.04.001"), "cuenta_nombre": cfg.get("liability_net_name", "Sueldos por Pagar"), "tipo": "haber", "monto": sums["liquido"]},
                 ]
 
                 # 7.3. Inyectar Asiento (CON CONTROL DE DUPLICADOS EXACTO Nivel DB)

@@ -35,12 +35,49 @@ class UpdateAccountRequest(BaseModel):
     naturaleza: Optional[str] = None
 
 class UpdateAccountingConfigRequest(BaseModel):
-    tax_account_code: str
-    tax_account_name: str
-    revenue_account_code: str
-    revenue_account_name: str
-    asset_account_code: str
-    asset_account_name: str
+    module_name: Optional[str] = "accounting"
+    transaction_type: Optional[str] = "generic"
+    # Cuentas Generales / RCV
+    tax_account_code: Optional[str] = None
+    tax_account_name: Optional[str] = None
+    revenue_account_code: Optional[str] = None
+    revenue_account_name: Optional[str] = None
+    asset_account_code: Optional[str] = None
+    asset_account_name: Optional[str] = None
+    # Cuentas de Nómina (Payroll)
+    expense_salary_code: Optional[str] = None
+    expense_salary_name: Optional[str] = None
+    expense_social_code: Optional[str] = None
+    expense_social_name: Optional[str] = None
+    liability_afp_code: Optional[str] = None
+    liability_afp_name: Optional[str] = None
+    liability_salud_code: Optional[str] = None
+    liability_salud_name: Optional[str] = None
+    liability_afc_code: Optional[str] = None
+    liability_afc_name: Optional[str] = None
+    liability_tax_code: Optional[str] = None
+    liability_tax_name: Optional[str] = None
+    liability_net_code: Optional[str] = None
+    liability_net_name: Optional[str] = None
+    # Cuentas de Impuestos (F29)
+    tax_iva_debito_code: Optional[str] = None
+    tax_iva_debito_name: Optional[str] = None
+    tax_iva_credito_code: Optional[str] = None
+    tax_iva_credito_name: Optional[str] = None
+    tax_ppm_code: Optional[str] = None
+    tax_ppm_name: Optional[str] = None
+    tax_retentions_code: Optional[str] = None
+    tax_retentions_name: Optional[str] = None
+    tax_f29_payable_code: Optional[str] = None
+    tax_f29_payable_name: Optional[str] = None
+    tax_iva_remanente_code: Optional[str] = None
+    tax_iva_remanente_name: Optional[str] = None
+    # Cuentas de Activos Fijos (Assets)
+    asset_depreciation_expense_code: Optional[str] = None
+    asset_depreciation_expense_name: Optional[str] = None
+    asset_accumulated_depreciation_code: Optional[str] = None
+    asset_accumulated_depreciation_name: Optional[str] = None
+    is_active: Optional[bool] = True
 
 class AccountMappingRuleRequest(BaseModel):
     organization_id: str
@@ -381,46 +418,46 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
         # --- CARGOS (Debe - Gastos) ---
         if t_haberes > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["expense_salary_code"], 
-                "cuenta_nombre": config["expense_salary_name"], 
+                "cuenta_codigo": config.get("expense_salary_code", "5.1.02.001"), 
+                "cuenta_nombre": config.get("expense_salary_name", "Sueldos y Salarios"), 
                 "tipo": "debe", "monto": t_haberes
             })
         if t_leyes_empresa > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["expense_social_code"], 
-                "cuenta_nombre": config["expense_social_name"], 
+                "cuenta_codigo": config.get("expense_social_code", "5.1.02.002"), 
+                "cuenta_nombre": config.get("expense_social_name", "Leyes Sociales Empresa"), 
                 "tipo": "debe", "monto": t_leyes_empresa
             })
 
         # --- ABONOS (Haber - Pasivos) ---
         if t_afp > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["liability_afp_code"], 
-                "cuenta_nombre": config["liability_afp_name"], 
+                "cuenta_codigo": config.get("liability_afp_code", "2.1.04.004"), 
+                "cuenta_nombre": config.get("liability_afp_name", "AFP por Pagar"), 
                 "tipo": "haber", "monto": t_afp
             })
         if t_salud > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["liability_salud_code"], 
-                "cuenta_nombre": config["liability_salud_name"], 
+                "cuenta_codigo": config.get("liability_salud_code", "2.1.04.005"), 
+                "cuenta_nombre": config.get("liability_salud_name", "Salud por Pagar"), 
                 "tipo": "haber", "monto": t_salud
             })
         if t_afc > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["liability_afc_code"], 
-                "cuenta_nombre": config["liability_afc_name"], 
+                "cuenta_codigo": config.get("liability_afc_code", "2.1.04.006"), 
+                "cuenta_nombre": config.get("liability_afc_name", "AFC por Pagar"), 
                 "tipo": "haber", "monto": t_afc
             })
         if t_impuestos > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["liability_tax_code"], 
-                "cuenta_nombre": config["liability_tax_name"], 
+                "cuenta_codigo": config.get("liability_tax_code", "2.1.03.001"), 
+                "cuenta_nombre": config.get("liability_tax_name", "Impuesto Único por Pagar"), 
                 "tipo": "haber", "monto": t_impuestos
             })
         if t_liquido > 0:
             lines_to_insert.append({
-                "cuenta_codigo": config["liability_net_code"], 
-                "cuenta_nombre": config["liability_net_name"], 
+                "cuenta_codigo": config.get("liability_net_code", "2.1.04.001"), 
+                "cuenta_nombre": config.get("liability_net_name", "Sueldos por Pagar"), 
                 "tipo": "haber", "monto": t_liquido
             })
 
@@ -435,7 +472,7 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
         
         if descuadre != 0:
             for line in lines_to_insert:
-                if line["cuenta_codigo"] == config["liability_net_code"]:
+                if line["cuenta_codigo"] == config.get("liability_net_code", "2.1.04.001"):
                     line["monto"] += descuadre
                     break
 
@@ -870,7 +907,7 @@ async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountin
     """Actualiza un mapeo de cuentas específico."""
     db = get_supabase()
     try:
-        data = req.dict()
+        data = req.model_dump(exclude_unset=True)
         res = db.table("centralized_account_config").update(data).eq("id", config_id).execute()
         if not res.data:
             raise HTTPException(status_code=400, detail="Error al actualizar configuración")

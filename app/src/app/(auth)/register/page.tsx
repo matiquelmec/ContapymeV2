@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { signUpWithEmail } from '@/actions/auth'
 
 export const metadata: Metadata = {
-  title: 'Crear Cuenta | Contapyme V2',
-  description: 'Regístrate en Contapyme V2, el sistema contable profesional para PYMEs.',
+  title: 'Crear Cuenta | Contapymepuq',
+  description: 'Regístrate en Contapymepuq, el sistema contable profesional para PYMEs.',
 }
 
 interface RegisterPageProps {
@@ -116,7 +116,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       </Card>
 
       <p className="text-center text-muted-foreground/40 text-[10px] font-semibold tracking-widest mt-12 uppercase">
-        CONTAPYME V2 · {new Date().getFullYear()} · PRECISION INSTITUCIONAL
+        Contapymepuq · {new Date().getFullYear()} · PRECISION INSTITUCIONAL
       </p>
     </div>
   )

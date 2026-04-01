@@ -1,7 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Globe, TrendingUp, ArrowRight, Sparkles, Landmark, BadgeCheck } from "lucide-react";
+import { 
+  Globe, 
+  TrendingUp, 
+  ArrowRight, 
+  Sparkles, 
+  Landmark, 
+  BadgeCheck, 
+  ArrowUpRight, 
+  ArrowDownRight 
+} from "lucide-react";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
 interface NewsArticle {
@@ -20,6 +29,7 @@ interface NewsArticle {
 
 interface DiarioRegionalSectionProps {
   initialNews: NewsArticle[];
+  indicators?: any[];
 }
 
 /** 🧬 Motor Editorial Experto: Scoring de Relevancia Dinámica */
@@ -28,43 +38,66 @@ function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle | null; 
 
   const scoredNews = news.map(article => {
     let score = 0;
-    const cat = article.category.toUpperCase();
+    const cat = article.category?.toUpperCase() || "";
     const now = Date.now();
     const pubDate = new Date(article.published_at).getTime();
     const hoursAgo = (now - pubDate) / 3600000;
 
-    // 1. Ponderación por Relevancia de Nicho (Especialidad Contable/Empresarial)
     if (cat.includes("SII") || cat.includes("LEGAL")) score += 100;
     else if (cat.includes("FINANZAS")) score += 90;
     else if (cat.includes("ECONOMÍA")) score += 80;
     else if (cat.includes("INVERSIONES")) score += 70;
     else if (cat.includes("MAGALLANES") || cat.includes("ACTUAL")) score += 40;
-    else score += 10; // Deportes, Otros
+    else score += 10;
 
-    // 2. Bono de Recencia (Lo más fresco tiene un plus)
     if (hoursAgo < 12) score += 40;
     else if (hoursAgo < 24) score += 20;
 
-    // 3. Bono Editorial Manual (si el sistema o el usuario la destacó)
     if (article.is_featured) score += 20;
 
     return { ...article, finalScore: score };
   });
 
-  // Ordenar por Puntaje Final (Descendente)
-  const ranked = [...scoredNews].sort((a, b) => b.finalScore - a.finalScore);
-
+  const ranked = [...scoredNews].sort((a, b) => (b as any).finalScore - (a as any).finalScore);
   const hero = ranked[0] || null;
-  const secondary = ranked.slice(1, 7); // Las 6 siguientes con mejor puntaje
+  const secondary = ranked.slice(1, 7);
 
   return { hero, secondary };
 }
 
-export function DiarioRegionalSection({ initialNews }: DiarioRegionalSectionProps) {
+export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRegionalSectionProps) {
   const { hero: heroNews, secondary: secondaryNews } = newsRelevanceScoring(initialNews);
 
+  /** 🛡️ Protocolo de Veracidad Absoluta */
+  const isDataReady = Array.isArray(indicators) && indicators.length > 0;
+
+  // Mapeo dinámico del Market Pulse con Inteligencia de Tendencia
+  const pulseData = [
+    { 
+      label: "IPSA Chile", 
+      value: indicators.find(i => i.codigo === 'ipsa')?.valor,
+      trend: "up",
+      color: isDataReady ? "text-emerald-500" : "text-muted-foreground/30",
+      format: (v: number) => v ? `${v.toLocaleString('es-CL', { minimumFractionDigits: 0 })} pts` : "---"
+    },
+    { 
+      label: "Petróleo WTI", 
+      value: indicators.find(i => i.codigo === 'wti')?.valor,
+      trend: "down",
+      color: isDataReady ? "text-rose-500" : "text-muted-foreground/30",
+      format: (v: number) => v ? `US$ ${v.toFixed(2)}` : "---"
+    },
+    { 
+      label: "Cobre (lb)", 
+      value: indicators.find(i => i.codigo === 'libra_cobre')?.valor,
+      trend: "up",
+      color: isDataReady ? "text-emerald-500" : "text-muted-foreground/30",
+      format: (v: number) => v ? `US$ ${v.toFixed(2)}` : "---"
+    }
+  ];
+
   return (
-    <section id="diario" className="py-32 bg-white text-foreground overflow-hidden relative" suppressHydrationWarning>
+    <section id="diario" className="py-16 bg-white text-foreground overflow-hidden relative scroll-mt-32" suppressHydrationWarning>
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")'}} suppressHydrationWarning />
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent" suppressHydrationWarning />
       
@@ -85,12 +118,16 @@ export function DiarioRegionalSection({ initialNews }: DiarioRegionalSectionProp
                </p>
             </div>
             <div className="flex gap-4">
-               <Button variant="outline" className="text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
-                 Publicitarios
-               </Button>
-               <Button className="text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
-                 Archivo Completo
-               </Button>
+               <Link href="/#contacto">
+                 <Button variant="outline" className="text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
+                   Anuncia con Nosotros
+                 </Button>
+               </Link>
+               <Link href="/noticias">
+                 <Button className="text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
+                   Hemeroteca Regional
+                 </Button>
+               </Link>
             </div>
         </div>
         
@@ -99,6 +136,7 @@ export function DiarioRegionalSection({ initialNews }: DiarioRegionalSectionProp
            <div className="lg:col-span-8 group cursor-pointer space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700" suppressHydrationWarning>
               {heroNews ? (
                 <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
+                  {/** ... render de noticia real ... */}
                   <div key={heroNews.id} className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl shadow-primary/10 hover:border-primary/40 transition-all duration-700">
                      <Image 
                         src={heroNews.image_url || "/news-placeholder.png"} 
@@ -127,13 +165,19 @@ export function DiarioRegionalSection({ initialNews }: DiarioRegionalSectionProp
                   </div>
                 </Link>
               ) : (
-                <div className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl bg-muted/20 backdrop-blur-md animate-pulse flex items-center justify-center">
-                   <p className="text-muted-foreground font-black italic tracking-widest uppercase text-xs opacity-50">Sincronizando con Analista IA...</p>
+                <div className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl bg-muted/10 backdrop-blur-sm flex flex-col items-center justify-center space-y-4 p-12 text-center border-dashed">
+                   <div className="h-16 w-16 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
+                      <Globe className="h-8 w-8 text-primary/20" />
+                   </div>
+                   <h3 className="text-xl font-black tracking-tighter uppercase italic text-muted-foreground/40">Sintonizando Central de Noticias</h3>
+                   <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-widest max-w-xs">
+                      Verificando fuentes regionales y globales. La integridad de la información es nuestro activo más valioso.
+                   </p>
                 </div>
               )}
            </div>
 
-           {/* 🏛️ INDICADORES Y PLUS */}
+           {/* 🏛️ INDICADORES Y PLUS (Market Pulse Intel) */}
            <div className="lg:col-span-4 space-y-10">
               <div className="p-8 rounded-[2.5rem] bg-muted/40 backdrop-blur-md border border-border/50 space-y-6 relative overflow-hidden group">
                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -143,34 +187,46 @@ export function DiarioRegionalSection({ initialNews }: DiarioRegionalSectionProp
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Market Pulse</p>
                     <h4 className="text-xl font-black italic mb-6 text-foreground">Resumen Económico</h4>
                     <div className="space-y-4">
-                       {[
-                         { label: "IPSA Chile", value: "+1.2%", color: "text-emerald-600" },
-                         { label: "Petróleo WTI", value: "-0.5%", color: "text-rose-600" },
-                         { label: "Cobre (lb)", value: "US$ 4.2", color: "text-emerald-600" }
-                       ].map((m, i) => (
-                         <div key={i} className="flex justify-between items-center py-3 border-b border-border last:border-none">
-                            <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">{m.label}</span>
-                            <span className={`text-xs font-black tabular-nums ${m.color}`}>{m.value}</span>
-                         </div>
+                       {pulseData.map((m, i) => (
+                         <Link key={i} href="/dashboard" className="block group/item">
+                           <div className="flex justify-between items-center py-4 border-b border-border/50 last:border-none group-hover/item:bg-primary/5 transition-all px-2 rounded-xl">
+                              <div className="flex flex-col">
+                                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest group-hover/item:text-primary transition-colors">{m.label}</span>
+                                 <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-sm font-black tabular-nums transition-colors ${m.color}`}>
+                                       {m.format(m.value as number)}
+                                    </span>
+                                    {m.trend === "up" ? (
+                                       <ArrowUpRight className={`h-4 w-4 ${m.color} animate-pulse`} />
+                                    ) : (
+                                       <ArrowDownRight className={`h-4 w-4 ${m.color} animate-pulse`} />
+                                    )}
+                                 </div>
+                              </div>
+                              <div className="text-[8px] font-black text-muted-foreground/30 uppercase tracking-tighter italic">LIVE</div>
+                           </div>
+                         </Link>
                        ))}
                     </div>
                  </div>
               </div>
 
-              <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden group cursor-pointer hover:border-primary/20 transition-colors">
-                 <div className="relative space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
-                       <Sparkles className="h-3 w-3" /> Espacio Institucional
-                    </div>
-                    <div className="h-32 bg-white/80 backdrop-blur-lg rounded-2xl flex items-center justify-center p-6 border border-primary/10 shadow-sm">
-                       <div className="text-center">
-                          <p className="text-lg font-black italic leading-none text-foreground/80">ALIANZAS 2026</p>
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Conectando a Magallanes</p>
-                       </div>
-                    </div>
-                    <p className="text-[10px] font-medium text-muted-foreground/60 italic text-center text-shadow-xs">Impulsando la economía del extremo sur.</p>
-                 </div>
-              </div>
+              <Link href="/dashboard" className="block">
+                <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden group cursor-pointer hover:border-primary/20 transition-colors">
+                   <div className="relative space-y-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
+                         <Sparkles className="h-3 w-3" /> Espacio Institucional
+                      </div>
+                      <div className="h-32 bg-white/80 backdrop-blur-lg rounded-2xl flex items-center justify-center p-6 border border-primary/10 shadow-sm">
+                         <div className="text-center">
+                            <p className="text-lg font-black italic leading-none text-foreground/80">ALIANZAS 2026</p>
+                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Conectando a Magallanes</p>
+                         </div>
+                      </div>
+                      <p className="text-[10px] font-medium text-muted-foreground/60 italic text-center text-shadow-xs">Impulsando la economía del extremo sur.</p>
+                   </div>
+                </div>
+              </Link>
            </div>
         </div>
 

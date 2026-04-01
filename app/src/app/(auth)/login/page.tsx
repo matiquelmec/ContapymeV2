@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { signInWithEmail } from '@/actions/auth'
 
 export const metadata: Metadata = {
-  title: 'Iniciar Sesión | Contapyme V2',
+  title: 'Iniciar Sesión | Contapymepuq',
 }
 
 interface LoginPageProps {
@@ -111,7 +111,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </Card>
 
       <p className="text-center text-muted-foreground/40 text-[10px] font-semibold tracking-widest mt-12 uppercase">
-        CONTAPYME V2 · {new Date().getFullYear()} · PRECISION INSTITUCIONAL
+        Contapymepuq · {new Date().getFullYear()} · PRECISION INSTITUCIONAL
       </p>
     </div>
   )

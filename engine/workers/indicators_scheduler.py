@@ -27,11 +27,14 @@ logger = logging.getLogger("contapyme.indicators")
 
 # ─── Indicadores a actualizar ─────────────────────────────────────────────────
 INDICADORES = {
-    "uf":    "UF (Unidad de Fomento)",
-    "utm":   "UTM (Unidad Tributaria Mensual)",
-    "dolar": "Dólar Americano (USD)",
-    "euro":  "Euro (EUR)",
-    "ipc":   "IPC (Índice de Precios al Consumidor)",
+    "uf":          "UF (Unidad de Fomento)",
+    "utm":         "UTM (Unidad Tributaria Mensual)",
+    "dolar":       "Dólar Americano (USD)",
+    "euro":        "Euro (EUR)",
+    "ipc":         "IPC (Índice de Precios al Consumidor)",
+    "libra_cobre": "Cobre (US$ por Libra)",
+    "tpm":         "Tasa Política Monetaria (TPM)",
+    "imacec":      "IMACEC (Crecimiento Regional)",
 }
 
 # ─── Scheduler global (singleton) ─────────────────────────────────────────────
@@ -97,6 +100,40 @@ async def _fetch_and_store_indicators() -> dict:
                     errores.append(msg)
                     logger.error(f"[Scheduler] ❌ {msg}")
                     logger.debug(f"[Scheduler] Traceback: {traceback.format_exc()}")
+
+            # ─── Yahoo Finance Ticker Sync (IPSA & WTI) ───────────────────────
+            # Estos datos no están en mindicador.cl, los buscamos vía Yahoo Finance Query Engine
+            TICKERS = {
+                "ipsa": ("IPSA Chile", "%5EIPSA"),
+                "wti":  ("Petróleo WTI", "CL=F")
+            }
+            for codigo, (nombre, ticker) in TICKERS.items():
+                try:
+                    # Usamos el motor de consulta v8 de Yahoo (sin necesidad de API KEY)
+                    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
+                    resp = await client.get(url, follow_redirects=True)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        chart = data.get("chart", {}).get("result", [{}])[0]
+                        meta = chart.get("meta", {})
+                        valor = float(meta.get("regularMarketPrice", 0))
+                        prev_close = float(meta.get("previousClose", valor))
+                        variacion = ((valor - prev_close) / prev_close) * 100 if prev_close != 0 else 0
+                        
+                        # Persistimos con el formato unificado
+                        db.table("economic_indicators").upsert({
+                            "codigo": codigo,
+                            "nombre": nombre,
+                            "valor": valor,
+                            "fecha": hoy,
+                            "fuente": "Yahoo Finance (Global)",
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }, on_conflict="codigo").execute()
+                        
+                        actualizados.append({"codigo": codigo, "valor": valor})
+                        logger.info(f"[Scheduler] ✅ {codigo.upper()} (Market Pulse) = {valor:,.2f} ({variacion:+.2f}%)")
+                except Exception as ey:
+                    logger.warning(f"[Scheduler] ⚠️ Error capturando {codigo} de Yahoo Finance: {ey}")
 
     except Exception as e:
         logger.critical(f"[Scheduler] Error crítico en worker de indicadores: {e}")

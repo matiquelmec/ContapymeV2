@@ -172,11 +172,21 @@ async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends
     db = get_supabase()
     
     try:
-        # 1. Obtener los datos del formulario ya guardado en la base de datos
+        # 1. Obtener los datos del formulario y la configuración contable
         res = db.table("f29_forms").select("*").eq("organization_id", req.org_id).eq("periodo", req.periodo).execute()
         f29 = res.data[0] if res.data else None
         if not f29:
             raise Exception("No se encontró el formulario para este periodo.")
+
+        # Obtener Configuración Dinámica (Fase 3 Auditoría: Des-hardcoding)
+        cfg_res = db.table("centralized_account_config") \
+            .select("*") \
+            .eq("organization_id", req.org_id) \
+            .eq("module_name", "f29") \
+            .eq("is_active", True) \
+            .execute()
+        
+        config = cfg_res.data[0] if (cfg_res.data and len(cfg_res.data) > 0) else {}
 
         debito = int(f29.get("debito_fiscal") or 0)
         credito = int(f29.get("credito_fiscal") or 0)
@@ -191,36 +201,54 @@ async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends
         
         # Reconocer el Débito del mes para limpiarlo (Viene del Pasivo)
         if debito > 0:
-            journal_lines.append({"cuenta_codigo": "2.1.04.002", "cuenta_nombre": "IVA Débito Fiscal", "tipo": "debe", "monto": debito})
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_iva_debito_code", "2.1.04.002"), 
+                "cuenta_nombre": config.get("tax_iva_debito_name", "IVA Débito Fiscal"), 
+                "tipo": "debe", "monto": debito
+            })
         
-        # Eliminar el Crédito Fiscal utilizado
+        # Eliminar el Crédito Fiscal utilizado (Activo)
         if iva_compensado > 0:
-            journal_lines.append({"cuenta_codigo": "1.1.07.002", "cuenta_nombre": "IVA Crédito Fiscal", "tipo": "haber", "monto": iva_compensado})
-
-        # Si sobra IVA a pagar (Debito > Credito)
-        iva_a_pagar = max(0, debito - credito)
-        if iva_a_pagar > 0:
-            pass # No añadimos cuenta "IVA por pagar" separada para simplificar. Todo irá contra "F29 por Pagar" o "Tesorería".
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_iva_credito_code", "1.1.07.002"), 
+                "cuenta_nombre": config.get("tax_iva_credito_name", "IVA Crédito Fiscal"), 
+                "tipo": "haber", "monto": iva_compensado
+            })
 
         # PPM a favor (Activo nace o crece)
         if ppm > 0:
-            journal_lines.append({"cuenta_codigo": "1.1.07.001", "cuenta_nombre": "PPM Pagado (Por Recuperar)", "tipo": "debe", "monto": ppm})
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_ppm_code", "1.1.07.001"), 
+                "cuenta_nombre": config.get("tax_ppm_name", "PPM Pagado (Por Recuperar)"), 
+                "tipo": "debe", "monto": ppm
+            })
 
         # Retenciones de boletas consolidadas en el mes (las provisionamos)
         if retenciones > 0:
-            journal_lines.append({"cuenta_codigo": "2.1.04.007", "cuenta_nombre": "Retenciones Honorarios", "tipo": "debe", "monto": retenciones})
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_retentions_code", "2.1.04.007"), 
+                "cuenta_nombre": config.get("tax_retentions_name", "Retenciones Honorarios"), 
+                "tipo": "debe", "monto": retenciones
+            })
 
         # Finalmente, el Pago a Tesorería o Pasivo Resumido (Haber final para balancear)
-        # La forma más correcta y resiliente en contabilidad es balancear el asiento exacto.
         total_debe = sum(l["monto"] for l in journal_lines if l["tipo"] == "debe")
         total_haber = sum(l["monto"] for l in journal_lines if l["tipo"] == "haber")
         
         monto_f29_por_pagar = total_debe - total_haber
         
         if monto_f29_por_pagar > 0:
-            journal_lines.append({"cuenta_codigo": "2.1.04.009", "cuenta_nombre": "F29 y Otros Impuestos por Pagar", "tipo": "haber", "monto": monto_f29_por_pagar})
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_f29_payable_code", "2.1.04.009"), 
+                "cuenta_nombre": config.get("tax_f29_payable_name", "F29 y Otros Impuestos por Pagar"), 
+                "tipo": "haber", "monto": monto_f29_por_pagar
+            })
         elif monto_f29_por_pagar < 0:
-            journal_lines.append({"cuenta_codigo": "2.1.04.009", "cuenta_nombre": "Remanente Tributario a Favor", "tipo": "debe", "monto": abs(monto_f29_por_pagar)})
+            journal_lines.append({
+                "cuenta_codigo": config.get("tax_iva_remanente_code", "1.1.07.002"), # Fallback al crédito fiscal
+                "cuenta_nombre": config.get("tax_iva_remanente_name", "Remanente Tributario a Favor"), 
+                "tipo": "debe", "monto": abs(monto_f29_por_pagar)
+            })
 
         # 2. Fecha del Asiento (Último día del mes tributario)
         parts = req.periodo.split("-")

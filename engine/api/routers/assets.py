@@ -113,15 +113,22 @@ async def depreciate_assets(req: DepreciateRequest, current_user: dict = Depends
 
             # --- CENTRALIZACIÓN CONTABLE ---
             glosa = f"Depreciación Mensual {periodo_mes} — {nombre_activo}"
+            
+            # Priorizar nuevas columnas específicas, fallback a genéricas de la migración original
+            expense_code = config.get("asset_depreciation_expense_code") or config.get("tax_account_code")
+            expense_name = config.get("asset_depreciation_expense_name") or config.get("tax_account_name")
+            accumulated_code = config.get("asset_accumulated_depreciation_code") or config.get("revenue_account_code")
+            accumulated_name = config.get("asset_accumulated_depreciation_name") or config.get("revenue_account_name")
+
             lines = [
                 {
-                    "cuenta_codigo": config["tax_account_code"], 
-                    "cuenta_nombre": config["tax_account_name"], 
+                    "cuenta_codigo": expense_code, 
+                    "cuenta_nombre": expense_name, 
                     "tipo": "debe", "monto": monto_asiento
                 },
                 {
-                    "cuenta_codigo": config["revenue_account_code"], 
-                    "cuenta_nombre": config["revenue_account_name"], 
+                    "cuenta_codigo": accumulated_code, 
+                    "cuenta_nombre": accumulated_name, 
                     "tipo": "haber", "monto": monto_asiento
                 }
             ]

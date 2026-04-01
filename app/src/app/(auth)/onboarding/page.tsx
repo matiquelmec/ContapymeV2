@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation'
 import OnboardingWizard from './onboarding-wizard'
 
 export const metadata: Metadata = {
-  title: 'Configuración Inicial | Contapyme V2',
-  description: 'Configura tu empresa para comenzar a usar Contapyme V2.',
+  title: 'Configuración Inicial | Contapymepuq',
+  description: 'Configura tu empresa para comenzar a usar Contapymepuq.',
 }
 
 export default async function OnboardingPage() {

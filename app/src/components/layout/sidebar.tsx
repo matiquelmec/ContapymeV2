@@ -56,7 +56,7 @@ const navigationGroups = [
 export function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-sm" suppressHydrationWarning>
-      <div className="flex h-20 items-center px-6 border-b border-sidebar-border bg-white/50 backdrop-blur-sm" suppressHydrationWarning>
+      <div className="flex h-[108px] items-center px-6 border-b border-sidebar-border bg-white/50 backdrop-blur-sm" suppressHydrationWarning>
         <Link href="/dashboard" className="group flex items-center gap-3 transition-transform duration-300 hover:scale-105 active:scale-95">
           <div className="relative">
             <div className="absolute -inset-2 rounded-xl bg-gradient-to-tr from-primary/10 to-teal-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

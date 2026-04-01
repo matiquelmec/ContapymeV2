@@ -11,7 +11,7 @@ import { getRCVHistory, getRCVSummary } from "@/actions/rcv";
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
-  title: "Ecosistema RCV | Contapyme V2",
+  title: "Ecosistema RCV | Contapymepuq",
   description: "Auditoría histórica de importaciones del Registro de Compras y Ventas del SII.",
 };
 

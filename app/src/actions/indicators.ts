@@ -10,7 +10,7 @@ export async function getLatestIndicators() {
     // Cache: Aplicamos 1 hora de revalidación para indicadores del día
     const response = await engineFetch('/api/v1/indicators/latest', {
       next: { 
-        revalidate: 3600,
+        revalidate: 600,
         tags: ['indicators'] 
       }
     });
@@ -41,6 +41,7 @@ export async function updateIndicators() {
 
     const data = await res.json()
     revalidatePath('/dashboard')
+    revalidatePath('/')
     return {
       success: true,
       total: data.total as number,

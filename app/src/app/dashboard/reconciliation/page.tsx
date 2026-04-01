@@ -4,7 +4,7 @@ import { Landmark, ArrowRightLeft, FileSpreadsheet, Lock, CheckCircle2 } from 'l
 import { ReconciliationClient } from './reconciliation-client'
 
 export const metadata = {
-  title: 'Conciliación Bancaria - Contapyme V2'
+  title: 'Conciliación Bancaria - Contapymepuq'
 }
 
 export default async function ReconciliationPage() {

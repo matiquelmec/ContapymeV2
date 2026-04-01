@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Iniciar Sesión | Contapyme V2',
+  title: 'Iniciar Sesión | Contapymepuq',
   description: 'Accede a tu panel de gestión contable institucional.',
 }
 

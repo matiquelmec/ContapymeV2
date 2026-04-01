@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { requestPasswordReset } from '@/actions/auth'
 
 export const metadata: Metadata = {
-  title: 'Recuperar Contraseña | Contapyme V2',
+  title: 'Recuperar Contraseña | Contapymepuq',
 }
 
 interface ResetPasswordPageProps {

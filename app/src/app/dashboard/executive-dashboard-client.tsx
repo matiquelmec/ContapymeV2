@@ -124,7 +124,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   const AssessIcon = style.icon
 
   return (
-    <div className="space-y-8 mt-6" suppressHydrationWarning={true}>
+    <div className="space-y-8" suppressHydrationWarning={true}>
 
       {/* ―― CABECERA DEL MOTOR ―― */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-8 bg-card border border-border shadow-xl rounded-[2.5rem]">
@@ -134,10 +134,10 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
           </div>
           <div>
             <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
-              Análisis Financiero V2
+              Análisis Financiero Contapymepuq
               {data?.orgName && <span className="text-primary/60 ml-2 text-base font-bold normal-case italic">({data.orgName})</span>}
             </h2>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black italic">MOTOR PYTHON — CRUCE DE COMPRAS, VENTAS Y LIBRO DIARIO</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black italic">MOTOR PYTHON — COMPRA, VENTA Y LIBRO DIARIO</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -328,18 +328,24 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
               </div>
 
               {/* Margen Final */}
-               <div className="p-5 rounded-3xl border-4 bg-primary/5 border-primary/20 relative mt-4 flex items-center justify-between shadow-md">
+               <div className={`p-5 rounded-3xl border-4 relative mt-4 flex items-center justify-between shadow-md transition-all ${data.financials.ebitda >= 0 ? 'bg-primary/5 border-primary/20' : 'bg-rose-50 border-rose-200'}`}>
                  {/* Conector de Unión */}
                  <div className="absolute left-1/2 -top-4 w-[calc(100%-2rem)] h-4 border-b-2 border-l-2 border-r-2 border-border rounded-b-xl -translate-x-1/2 -z-10" />
-                 <div className="absolute left-1/2 top-0 w-1 h-full bg-primary/10 -translate-x-1/2 -z-10" />
+                 <div className={`absolute left-1/2 top-0 w-1 h-full -translate-x-1/2 -z-10 ${data.financials.ebitda >= 0 ? 'bg-primary/10' : 'bg-rose-600/10'}`} />
                  
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Margen / EBITDA Estimado</p>
-                    <p className="text-2xl font-black text-primary tracking-tighter">{fCLP(data.financials.ebitda)}</p>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${data.financials.ebitda >= 0 ? 'text-primary' : 'text-rose-700'}`}>
+                       Margen / EBITDA Estimado
+                    </p>
+                    <p className={`text-2xl font-black tracking-tighter ${data.financials.ebitda >= 0 ? 'text-primary' : 'text-rose-700'}`}>
+                       {fCLP(data.financials.ebitda)}
+                    </p>
                  </div>
                  <div className="text-right">
-                    <span className="px-3 py-1 bg-primary text-primary-foreground rounded-full font-black text-xs uppercase tracking-widest shadow-sm">
-                      {data.financials.totalSales > 0 ? Math.round((data.financials.ebitda / data.financials.totalSales) * 100) : 0}% RENTABILIDAD
+                    <span className={`px-3 py-1 rounded-full font-black text-xs uppercase tracking-widest shadow-sm text-white ${data.financials.ebitda > 0 ? 'bg-primary' : data.financials.ebitda < 0 ? 'bg-rose-600' : 'bg-slate-400'}`}>
+                      {data.financials.totalSales > 0 
+                        ? `${Math.round((data.financials.ebitda / data.financials.totalSales) * 100)}% RENTAB.`
+                        : data.financials.ebitda < 0 ? 'DÉFICIT NETO' : 'SIN RENTABILIDAD'}
                     </span>
                  </div>
               </div>

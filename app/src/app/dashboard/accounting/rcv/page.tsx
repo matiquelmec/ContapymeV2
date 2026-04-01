@@ -8,7 +8,7 @@ import { getActiveOrganizationId } from "@/actions/organizations";
 import { getRCVDashboardData } from "@/actions/rcv";
 
 export const metadata = {
-  title: "RCV — Registro de Compras y Ventas | Contapyme V2",
+  title: "RCV — Registro de Compras y Ventas | Contapymepuq",
   description: "Importa, analiza y contabiliza tu Registro de Compras y Ventas del SII con gráficos interactivos.",
 };
 

@@ -1,13 +1,10 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { MOCK_NEWS } from '@/lib/news-mocks'
 
 export async function getRegionalNews() {
   const supabase = await createClient()
   try {
-    // Audit: Añadimos caché de Next.js (1 hora) para el portal de noticias
-    // Esto evita saturar Supabase con peticiones de visitantes anónimos
     const { data, error } = await supabase
       .from('regional_news')
       .select('*')
@@ -18,14 +15,14 @@ export async function getRegionalNews() {
       if (error && error.code !== 'PGRST116') {
         console.error('[DATABASE ERROR] Fallo al obtener noticias:', error.message)
       }
-      return { success: true, data: MOCK_NEWS, isFallback: true }
+      // Veracidad Absoluta: Devolvemos array vacío si no hay datos reales
+      return { success: true, data: [], isFallback: false }
     }
 
-    // Nota: Aunque usemos el cliente de Supabase, Next.js memoiza estas peticiones
-    // si el cliente está configurado con 'force-cache' o si envolvemos esto en un fetch.
     return { success: true, data, isFallback: false }
   } catch (err: any) {
-    return { success: true, data: MOCK_NEWS, isFallback: true }
+    console.error("[News Action Error]:", err.message);
+    return { success: true, data: [], isFallback: false }
   }
 }
 
@@ -39,15 +36,11 @@ export async function getNewsBySlug(slug: string) {
       .single()
     
     if (error || !data) {
-      // Intentar buscar en mocks si no está en DB (para compatibilidad de desarrollo)
-      const mockNews = MOCK_NEWS.find(n => n.slug === slug)
-      if (mockNews) return { success: true, data: mockNews, isFallback: true }
-      
-      return { success: false, error: 'Noticia no encontrada' }
+      return { success: false, error: 'Noticia no encontrada en los registros oficiales' }
     }
 
     return { success: true, data, isFallback: false }
   } catch (err: any) {
-    return { success: false, error: 'Error interno del servidor' }
+    return { success: false, error: 'Error de conexión con la central de noticias' }
   }
 }
