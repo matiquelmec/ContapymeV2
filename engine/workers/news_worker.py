@@ -223,11 +223,17 @@ async def _fetch_and_process_news():
             continue
 
         try:
-            # Generar Imagen con GPU Local
-            image_url = raw_news["img"] 
+            # Generar Imagen Artística con fallback inteligente
+            original_img = raw_news.get("img", "/news-placeholder.png")
+            image_url = original_img
             if ai_data.get("visual_prompt"):
                 logger.info(f"[News Worker] 🎨 Generando IMAGEN ARTÍSTICA para: {ai_data['title']}")
-                image_url = await generate_and_upload_image(ai_data["visual_prompt"])
+                generated_url = await generate_and_upload_image(ai_data["visual_prompt"])
+                # Solo usar la generada si NO es el placeholder (es decir, si tuvo éxito)
+                if generated_url and generated_url != "/news-placeholder.png":
+                    image_url = generated_url
+                else:
+                    logger.info(f"[News Worker] 📸 Usando imagen original del RSS como fallback.")
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
