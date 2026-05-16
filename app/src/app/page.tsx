@@ -84,9 +84,9 @@ export default async function LandingPage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-in fade-in slide-in-from-top-4 duration-700" suppressHydrationWarning>
                 <ShieldCheck className="h-3 w-3" /> Precisión Patagonia
               </div>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black tracking-tighter uppercase leading-[0.9] italic animate-in fade-in slide-in-from-left-8 duration-700">
+              <h1 className="text-[clamp(2.5rem,8vw,6.5rem)] font-black tracking-tighter uppercase leading-[0.95] italic animate-in fade-in slide-in-from-left-8 duration-700">
                 Precisión <span className="text-primary italic font-serif">Institucional</span> <br />
-                y Escalabilidad <span className="text-muted-foreground/20">Organizacional.</span>
+                y Escalabilidad <span className="text-muted-foreground/10">Organizacional.</span>
               </h1>
               <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                 Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.
@@ -111,52 +111,52 @@ export default async function LandingPage() {
         <DiarioRegionalSection initialNews={regionalNews} indicators={indicators} />
 
         {/* ===== FEATURES SECTION ===== */}
-        <section id="features" className="py-16 bg-background scroll-mt-32">
+        <section id="features" className="py-24 bg-background scroll-mt-32">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16">
               {/* FEATURE 1: DIARIO */}
-              <div className="space-y-6 group p-8 rounded-3xl hover:bg-zinc-50 transition-colors border border-transparent hover:border-border shadow-none hover:shadow-xl hover:shadow-primary/5">
-                <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/20 transition-colors">
+              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
+                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
                   <Newspaper className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black italic tracking-tighter uppercase">Hemeroteca Regional</h3>
                 <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Acceso exclusivo a noticias de Punta Arenas y el mundo, con un enfoque financiero diseñado para la toma de decisiones estratégicas en Magallanes.
+                  Acceso exclusivo a noticias de Punta Arenas y el mundo, con un enfoque financiero diseñado para la toma de decisiones estratégicas.
                 </p>
-                <Link href="/noticias" className="block outline-none">
-                  <Button variant="ghost" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-transparent text-primary hover:text-primary/70 transition-all gap-2">
+                <Link href="/noticias" className="block">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
                     Explorar Archivo <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
 
-              {/* FEATURE 2: F29 / TRIBUTARIO */}
-              <div className="space-y-6 group p-8 rounded-3xl hover:bg-zinc-50 transition-colors border border-transparent hover:border-border shadow-none hover:shadow-xl hover:shadow-primary/5">
-                <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/20 transition-colors">
+              {/* FEATURE 2: F29 */}
+              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
+                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
                   <BarChart3 className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black italic tracking-tighter uppercase">Automación Tributaria</h3>
                 <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Motor inteligente de procesamiento de F29 y RCV. Transforma horas de trabajo manual en segundos de precisión digital para el contador chileno.
+                  Motor inteligente de procesamiento de F29 y RCV. Transforma horas de trabajo manual en segundos de precisión digital.
                 </p>
-                <Link href="/dashboard" className="block outline-none">
-                  <Button variant="ghost" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-transparent text-primary hover:text-primary/70 transition-all gap-2">
+                <Link href="/dashboard" className="block">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
                     Iniciar Auditoría <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
 
-              {/* FEATURE 3: LRE / REMUNERACIONES */}
-              <div className="space-y-6 group p-8 rounded-3xl hover:bg-zinc-50 transition-colors border border-transparent hover:border-border shadow-none hover:shadow-xl hover:shadow-primary/5">
-                <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/20 transition-colors">
+              {/* FEATURE 3: RRHH */}
+              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
+                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
                   <Users className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-2xl font-black italic tracking-tighter uppercase">Gestión Payroll LRE</h3>
                 <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Generación masiva de liquidaciones de sueldo y Libros de Remuneraciones Electrónicos listos para cargar en la Dirección del Trabajo.
+                  Generación masiva de liquidaciones de sueldo y Libros de Remuneraciones Electrónicos listos para la Dirección del Trabajo.
                 </p>
-                <Link href="/dashboard" className="block outline-none">
-                  <Button variant="ghost" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-transparent text-primary hover:text-primary/70 transition-all gap-2">
+                <Link href="/dashboard" className="block">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
                     Ver Módulo Sueldos <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>

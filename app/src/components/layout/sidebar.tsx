@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { FileText, Users, Briefcase, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog } from 'lucide-react'
 
-const navigationGroups = [
+export const navigationGroups = [
   {
     title: "Visión General",
     items: [
@@ -56,7 +56,7 @@ const navigationGroups = [
 
 export function Sidebar() {
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-sm" suppressHydrationWarning>
+    <div className="hidden lg:flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-sm shrink-0" suppressHydrationWarning>
       <div className="flex h-[108px] items-center px-6 border-b border-sidebar-border bg-white/50 backdrop-blur-sm" suppressHydrationWarning>
         <Link href="/dashboard" className="group flex items-center gap-3 transition-transform duration-300 hover:scale-105 active:scale-95">
           <div className="relative">

@@ -39,7 +39,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
 
   if (!isDataReady) {
     return (
-      <div className="w-full bg-background/95 border-b border-border h-11 flex items-center justify-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
+      <div className="w-full bg-background/60 border-b border-border/50 h-11 flex items-center justify-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
         <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-1 duration-1000">
           <div className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
@@ -67,7 +67,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
   const tickerItems = [...items, ...items, ...items]
 
   return (
-    <div className="w-full bg-background/95 border-b border-border h-11 flex items-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
+    <div className="w-full bg-background/60 border-b border-border/50 h-11 flex items-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
       <div className="absolute left-0 top-0 h-full w-32 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
       <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
       

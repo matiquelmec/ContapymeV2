@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button'
 import { getUserOrganizations, setActiveOrganization, getActiveOrganizationId } from '@/actions/organizations'
 import { toast } from 'sonner'
 import { useRouter, usePathname } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Menu } from 'lucide-react'
 import { NewCompanyModal } from './new-company-modal'
+import { MobileSidebar } from './mobile-sidebar'
 
 export function Header() {
   const [organizations, setOrganizations] = useState<any[]>([])
@@ -58,10 +59,11 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-16 w-full items-center justify-between border-b border-border bg-white shadow-sm px-6">
-      <div className="flex items-center gap-4">
+    <header className="flex h-16 w-full items-center justify-between border-b border-border bg-white shadow-sm px-4 md:px-6">
+      <div className="flex items-center gap-3 md:gap-4 flex-1">
+        <MobileSidebar />
         {/* Company Switcher Dinámico */}
-        <div className="w-80">
+        <div className="w-full max-w-[200px] sm:max-w-80">
           <Select 
             value={activeOrgId} 
             onValueChange={handleOrgChange}
@@ -95,10 +97,11 @@ export function Header() {
       <div className="flex items-center gap-4" suppressHydrationWarning={true}>
         <Button 
           variant="ghost" 
-          className="text-muted-foreground hover:text-foreground hover:bg-accent" 
+          className="text-muted-foreground hover:text-foreground hover:bg-accent px-2 sm:px-4" 
           onClick={async () => { await signOut() }}
         >
-          Cerrar Sesión
+          <span className="hidden sm:inline">Cerrar Sesión</span>
+          <span className="sm:hidden">Salir</span>
         </Button>
         <Avatar className="h-9 w-9 border border-border">
           <AvatarFallback className="bg-primary text-primary-foreground font-black uppercase text-xs">CO</AvatarFallback>
