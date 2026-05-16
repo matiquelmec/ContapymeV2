@@ -1,9 +1,11 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { Globe, Calendar, MessageCircle, Share2 } from 'lucide-react'
+import { Globe, Calendar, MessageCircle, Share2, Instagram, Download, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
+import { StoryCard } from './story-card'
 
 interface NewsArticleContentProps {
   news: any
@@ -11,18 +13,125 @@ interface NewsArticleContentProps {
 }
 
 export function NewsArticleContent({ news, isModal = false }: NewsArticleContentProps) {
+  const storyCardRef = useRef<HTMLDivElement>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+
   if (!news) return null
 
   const getCanonicalUrl = () => {
-    // En cliente no necesitamos preocuparnos por SSR, usamos window
     if (typeof window === 'undefined') return ''
     return `${window.location.protocol}//${window.location.host}/noticias/${news.slug}`
   }
 
-  const handleShare = async () => {
+  /**
+   * Genera una imagen tipo Story Card (1080x1920) de la noticia
+   * y retorna un File listo para compartir.
+   */
+  const generateStoryImage = async (): Promise<File | null> => {
+    if (!storyCardRef.current) return null
+
+    try {
+      // Importar html2canvas dinámicamente para no afectar el bundle inicial
+      const html2canvas = (await import('html2canvas-pro')).default
+
+      const canvas = await html2canvas(storyCardRef.current, {
+        width: 1080,
+        height: 1920,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#0a0a0a',
+        logging: false,
+      })
+
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(new File([blob], `noticia-contapyme-${news.slug || 'share'}.png`, { type: 'image/png' }))
+          } else {
+            resolve(null)
+          }
+        }, 'image/png', 1.0)
+      })
+    } catch (error) {
+      console.error('Error generando imagen:', error)
+      return null
+    }
+  }
+
+  /**
+   * Compartir como IMAGEN → Abre el menú nativo del celular con opciones:
+   * Instagram Stories, Instagram Post, WhatsApp, etc.
+   */
+  const handleShareInstagram = async () => {
+    setIsGenerating(true)
+    try {
+      const file = await generateStoryImage()
+
+      if (!file) {
+        // Fallback si no se pudo generar la imagen
+        handleShareFallback()
+        return
+      }
+
+      // Verificar si el navegador soporta compartir archivos
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: news.title,
+          text: `📍 ${news.title} — Diario Regional Contapymepuq\n${getCanonicalUrl()}`,
+        })
+      } else {
+        // Si no soporta share con archivos, descargar la imagen
+        downloadImage(file)
+      }
+    } catch (error: any) {
+      // Si el usuario canceló el share, no es un error
+      if (error?.name !== 'AbortError') {
+        console.error('Error al compartir:', error)
+        handleShareFallback()
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  /**
+   * Descarga la imagen generada al dispositivo del usuario.
+   */
+  const downloadImage = (file: File) => {
+    const url = URL.createObjectURL(file)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  /**
+   * Descarga directa de la Story Card como imagen.
+   */
+  const handleDownloadStory = async () => {
+    setIsGenerating(true)
+    try {
+      const file = await generateStoryImage()
+      if (file) {
+        downloadImage(file)
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  /**
+   * Fallback: compartir solo con texto/URL
+   */
+  const handleShareFallback = async () => {
     const shareData = {
       title: news.title,
-      text: `Mira esta noticia en ContaPyme V2: ${news.title}`,
+      text: `📍 NOTICIA REGIONAL — ${news.title}`,
       url: getCanonicalUrl(),
     }
 
@@ -48,6 +157,15 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       "w-full bg-background text-foreground",
       isModal ? "p-0" : "animate-in fade-in duration-1000"
     )}>
+      {/* Story Card Invisible (para generación de imagen) */}
+      <StoryCard
+        ref={storyCardRef}
+        title={news.title}
+        category={news.category || 'Regional'}
+        imageUrl={news.image_url || '/news-placeholder.png'}
+        date={news.published_at}
+      />
+
       {/* Featured Image */}
       <div className={cn(
         "relative w-full overflow-hidden border border-border shadow-2xl shadow-primary/10",
@@ -108,21 +226,54 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         </div>
 
         {/* Interactivity Bar */}
-        <div className="pt-8 border-t border-border/50 flex flex-wrap items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={handleWhatsApp}
-            className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all hover:scale-105 active:scale-95"
-          >
-            <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleShare}
-            className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 transition-all hover:scale-105 active:scale-95"
-          >
-            <Share2 className="mr-2 h-4 w-4" /> Compartir (IG)
-          </Button>
+        <div className="pt-8 border-t border-border/50 space-y-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 italic">
+            Compartir Noticia
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Botón principal: Compartir con Imagen (Stories/Post/etc) */}
+            <Button
+              variant="outline"
+              onClick={handleShareInstagram}
+              disabled={isGenerating}
+              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-[#E1306C]/30 text-[#E1306C] hover:bg-[#E1306C]/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Instagram className="mr-2 h-4 w-4" />
+              )}
+              {isGenerating ? 'Generando...' : 'Historia / Post'}
+            </Button>
+
+            {/* WhatsApp */}
+            <Button
+              variant="outline"
+              onClick={handleWhatsApp}
+              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all hover:scale-105 active:scale-95"
+            >
+              <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+            </Button>
+
+            {/* Compartir Link (genérico) */}
+            <Button
+              variant="outline"
+              onClick={handleShareFallback}
+              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 transition-all hover:scale-105 active:scale-95"
+            >
+              <Share2 className="mr-2 h-4 w-4" /> Compartir Link
+            </Button>
+
+            {/* Descargar imagen para subir manualmente */}
+            <Button
+              variant="ghost"
+              onClick={handleDownloadStory}
+              disabled={isGenerating}
+              className="rounded-xl h-12 px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 hover:text-foreground transition-all"
+            >
+              <Download className="mr-2 h-4 w-4" /> Descargar
+            </Button>
+          </div>
         </div>
       </div>
     </article>
