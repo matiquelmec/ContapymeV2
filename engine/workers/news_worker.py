@@ -224,17 +224,24 @@ async def _fetch_and_process_news():
             continue
 
         try:
-            # Sistema de Imágenes Profesional: RSS original → Stock por categoría → Placeholder
-            original_img = raw_news.get("img", "")
-            category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
+            # Prioridad 1: Estilo Artístico (IA) - Para mantener el estilo Contapyme
+            image_url = None
+            if ai_data.get("visual_prompt"):
+                logger.info(f"[News Worker] 🎨 Generando ESTILO ARTÍSTICO para: {ai_data['title']}")
+                image_url = await generate_and_upload_image(ai_data["visual_prompt"])
             
-            if original_img and not original_img.startswith("/"):
-                # Descargar y persistir la imagen original del RSS en Supabase
-                image_url = await download_and_upload_image(original_img)
-            else:
-                # Sin imagen original: usar stock profesional por categoría
+            # Prioridad 2: Imagen Original (RSS) - Si la IA falla
+            if not image_url or "placeholder" in image_url:
+                original_img = raw_news.get("img")
+                if original_img and not original_img.startswith("/"):
+                    logger.info(f"[News Worker] 📸 IA falló, usando imagen original del RSS.")
+                    image_url = await download_and_upload_image(original_img)
+            
+            # Prioridad 3: Stock Profesional - Si nada de lo anterior funciona
+            if not image_url or "placeholder" in image_url:
+                category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
                 image_url = get_category_fallback(category)
-                logger.info(f"[News Worker] 📸 Sin imagen RSS. Usando stock para: {category}")
+                logger.info(f"[News Worker] 🖼️ Usando imagen de stock por categoría: {category}")
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
