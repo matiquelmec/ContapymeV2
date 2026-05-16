@@ -84,9 +84,12 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 ### FASE 11: Facturación y Auditoría Profunda 💎 — **EN PROGRESO**
 *   [x] **RCV Auditor 2.0:** Implementado.
 *   [x] **DTE Core Engine:** Operativo.
-*   [x] **DTE Institutional Grade**: Implementación de mensajes educativos y rutas de navegación precisas.
-*   [x] **Security Hardening**: Corrección de políticas RLS para la tabla `profiles` permitiendo autogestión de perfil y visibilidad de equipo.
-*   [x] **UX Team**: Mejora en la visualización de miembros con fallbacks inteligentes (Email/Tú) para perfiles incompletos.
+*   [x] **DTE Institutional Grade**: Mensajes educativos y rutas de navegación precisas.
+*   [x] **Security Hardening (RLS)**:
+    *   Migración `profiles` (autogestión de perfil).
+    *   Migración `economic_indicators` (acceso público), resolviendo bloqueo de MarketTicker.
+*   [x] **Sincronización de Datos**: Sincronización forzada de indicadores (UF, Dólar, etc.) desde el motor Python.
+*   [x] **UX Team**: Mejora en la visualización de miembros con fallbacks inteligentes (Email/Tú).
 *   [ ] **SII Connector:** Conexión con endpoints de certificación.
 
 ### FASE 12: Consolidación Institutional Grade 🏛️ — **COMPLETADO**
