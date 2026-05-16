@@ -22,12 +22,11 @@ class DTELogic:
         response = self.supabase.table("dte_companies")\
             .select("*")\
             .eq("organization_id", self.organization_id)\
-            .single()\
             .execute()
         
-        if not response.data:
-            raise Exception(f"No se encontró configuración DTE para la organización {self.organization_id}")
-        return response.data
+        if not response.data or len(response.data) == 0:
+            raise Exception(f"Configuración DTE faltante: La organización '{self.organization_id}' no está registrada como emisor en dte_companies.")
+        return response.data[0]
 
     def _get_next_folio(self, tipo_dte: int) -> int:
         """Obtiene el siguiente folio disponible para un tipo de DTE."""
@@ -39,8 +38,8 @@ class DTELogic:
             .order("range_start")\
             .execute()
         
-        if not caf.data:
-            raise Exception(f"No hay folios disponibles para el tipo {tipo_dte}")
+        if not caf.data or len(caf.data) == 0:
+            raise Exception(f"Sin folios: No se encontraron archivos CAF (folios) activos para el tipo {tipo_dte}. Por favor, cargue un CAF en la configuración.")
             
         current_caf = caf.data[0]
         next_folio = current_caf["last_used_folio"] + 1
