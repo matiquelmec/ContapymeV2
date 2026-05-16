@@ -266,7 +266,7 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                             <Select 
                               name="prevision_salud" 
                               defaultValue={saludSeleccionada}
-                              onValueChange={(val) => setSaludSeleccionada(val)}
+                              onValueChange={(val) => val && setSaludSeleccionada(val)}
                             >
                                <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]">
                                 <SelectValue />
