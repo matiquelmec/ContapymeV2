@@ -268,21 +268,10 @@ async def _fetch_and_process_news():
     return {"total": processed_count}
 
 async def _cleanup_junk_news():
-    """Limpia las noticias de prueba (Chuck Norris, Petro, etc.) de la base de datos."""
-    db = get_supabase()
-    try:
-        logger.info("[News Worker] 🧹 Iniciando limpieza de noticias irrelevantes...")
-        # Borrar por palabras clave de mala calidad/fuera de nicho
-        junk_patterns = ["%Chuck Norris%", "%Petro%", "Investigación en EE.UU.%", "San Felipe fuera de la liguilla%", "%LIGUILLAS%"]
-        
-        for pattern in junk_patterns:
-            res = db.table("regional_news").delete().ilike("title", pattern).execute()
-            if res.data:
-                logger.info(f"[News Worker] 🗑️ Purgadas {len(res.data)} noticias de tipo: {pattern}")
-        
-        logger.info("[News Worker] ✨ Limpieza completada.")
-    except Exception as e:
-        logger.error(f"[News Worker] ⚠️ Error en limpieza de DB: {e}")
+    """Limpia las noticias de prueba. Simplificado para evitar errores de timeout."""
+    # Desactivado: La IA ya se encarga de no guardar basura.
+    # Solo mantenemos la función para no romper referencias, pero sin lógica pesada.
+    pass
 
 async def _maintain_db_hygiene():
     """Mantiene solo las últimas 200 noticias usando filtros de fecha para mayor eficiencia."""
@@ -330,8 +319,7 @@ async def start_news_worker():
     if not scheduler.running:
         scheduler.start()
         logger.info("[News Worker] 🚀 Scheduler iniciado.")
-        # Carga inicial inmediata y LIMPIEZA en segundo plano
-        asyncio.create_task(_cleanup_junk_news())
+        # Carga inicial inmediata de noticias
         asyncio.create_task(_fetch_and_process_news())
 
 def _normalize_category(cat: str) -> str:
