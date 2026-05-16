@@ -48,7 +48,7 @@ export default async function LandingPage() {
               width={180} 
               height={50} 
               priority
-              className="h-auto w-[160px] md:w-[200px] drop-shadow-sm"
+              className="h-auto w-[120px] sm:w-[160px] md:w-[200px] drop-shadow-sm"
             />
           </div>
           <nav className="hidden lg:flex items-center gap-10">
@@ -66,7 +66,7 @@ export default async function LandingPage() {
               </Link>
             ) : (
               <Link href="/login">
-                <Button className="text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-10 rounded-full h-11">
+                <Button className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-6 sm:px-10 rounded-full h-9 sm:h-11">
                   Acceso Clientes
                 </Button>
               </Link>
@@ -84,11 +84,11 @@ export default async function LandingPage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-in fade-in slide-in-from-top-4 duration-700" suppressHydrationWarning>
                 <ShieldCheck className="h-3 w-3" /> Precisión Patagonia
               </div>
-              <h1 className="text-7xl md:text-[100px] font-black tracking-tighter uppercase leading-[0.85] italic animate-in fade-in slide-in-from-left-8 duration-700">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black tracking-tighter uppercase leading-[0.9] italic animate-in fade-in slide-in-from-left-8 duration-700">
                 Precisión <span className="text-primary italic font-serif">Institucional</span> <br />
                 y Escalabilidad <span className="text-muted-foreground/20">Organizacional.</span>
               </h1>
-              <p className="max-w-2xl text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+              <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                 Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.
               </p>
               <div className="flex flex-col sm:flex-row gap-6 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">

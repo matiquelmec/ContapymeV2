@@ -45,7 +45,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary/60" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/40 italic">
+          <span className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground/40 italic">
             Sincronizando con Mercados Globales — Verificando Canales Contapymepuq
           </span>
         </div>
@@ -82,8 +82,8 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
             ) : (
               <item.icon className={`w-3 h-3 ${item.color} opacity-70 group-hover:opacity-100 transition-opacity`} />
             )}
-            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">{item.label}</span>
-            <span className="text-xs font-black tracking-tight text-foreground/80 tabular-nums">{item.value}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">{item.label}</span>
+            <span className="text-sm font-black tracking-tight text-foreground/80 tabular-nums">{item.value}</span>
           </div>
         ))}
       </div>

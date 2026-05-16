@@ -109,7 +109,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                  <span className="w-10 h-[1px] bg-primary/50" />
                  <Landmark className="h-3 w-3 animate-pulse" /> Portal de Noticias Institucional Contapymepuq
                </div>
-               <h2 className="text-6xl font-black tracking-tighter uppercase leading-[0.9] italic text-foreground text-shadow-sm">
+               <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.9] italic text-foreground text-shadow-sm">
                  Diario <span className="text-primary italic font-serif">Punta Arenas</span> <br />
                  <span className="text-muted-foreground/30">& Financiero Regional.</span>
                </h2>
@@ -117,18 +117,18 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                  Información estratégica para el contador chileno, con el balance perfecto entre economía regional y global.
                </p>
             </div>
-            <div className="flex gap-4">
-               <Link href="/#contacto">
-                 <Button variant="outline" className="text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
-                   Anuncia con Nosotros
-                 </Button>
-               </Link>
-               <Link href="/noticias">
-                 <Button className="text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
-                   Hemeroteca Regional
-                 </Button>
-               </Link>
-            </div>
+             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <Link href="/#contacto" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
+                    Anuncia con Nosotros
+                  </Button>
+                </Link>
+                <Link href="/noticias" className="w-full sm:w-auto">
+                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
+                    Hemeroteca Regional
+                  </Button>
+                </Link>
+             </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -191,9 +191,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                          <Link key={i} href="/dashboard" className="block group/item">
                            <div className="flex justify-between items-center py-4 border-b border-border/50 last:border-none group-hover/item:bg-primary/5 transition-all px-2 rounded-xl">
                               <div className="flex flex-col">
-                                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest group-hover/item:text-primary transition-colors">{m.label}</span>
+                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest group-hover/item:text-primary transition-colors">{m.label}</span>
                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-sm font-black tabular-nums transition-colors ${m.color}`}>
+                                    <span className={`text-base font-black tabular-nums transition-colors ${m.color}`}>
                                        {m.format(m.value as number)}
                                     </span>
                                     {m.trend === "up" ? (
@@ -247,7 +247,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                      </div>
                   </div>
                   <div className="px-4 pb-4 space-y-4">
-                     <h3 className="text-xl font-black leading-tight italic group-hover:text-primary transition-colors text-foreground tracking-tight drop-shadow-sm line-clamp-2 uppercase">
+                     <h3 className="text-lg sm:text-xl font-black leading-tight italic group-hover:text-primary transition-colors text-foreground tracking-tight drop-shadow-sm line-clamp-2 uppercase">
                         {news.title}
                      </h3>
                      <div className="flex items-center justify-between gap-3 pt-2">
