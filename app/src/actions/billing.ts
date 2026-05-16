@@ -174,7 +174,7 @@ export async function updateDTEConfig(organizationId: string, formData: any) {
         organization_id: organizationId,
         ...payload,
         updated_at: new Date().toISOString()
-      }, { on_conflict: 'organization_id,rut' })
+      }, { onConflict: 'organization_id,rut' })
 
     if (error) throw error
 
