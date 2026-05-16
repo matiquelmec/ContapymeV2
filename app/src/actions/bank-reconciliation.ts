@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { engineFetch } from "@/lib/engine-client";
+import { parseError } from "@/lib/utils/errors";
 
 export async function getBankAccounts(organizationId: string) {
   try {
@@ -44,12 +45,11 @@ export async function analyzeBankStatementAction(formData: FormData) {
     });
     
     const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || "Error al analizar cartola");
+    if (!response.ok) throw new Error(parseError(result.detail || "Error al analizar cartola"));
     
     return { success: true, data: result };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return { success: false, error: errorMessage };
+    return { success: false, error: parseError(error) };
   }
 }
 
@@ -69,10 +69,7 @@ export async function saveReconciliationAction(data: {
     
     const result = await response.json();
     if (!response.ok) {
-      const errorMsg = typeof result.detail === 'string' 
-        ? result.detail 
-        : (typeof result.detail === 'object' ? JSON.stringify(result.detail) : "Error al guardar conciliación");
-      throw new Error(errorMsg);
+      throw new Error(parseError(result.detail || "Error al guardar conciliación"));
     }
     
     revalidatePath("/dashboard/reconciliation");
@@ -110,7 +107,7 @@ export async function reconcileWithAdjustmentAction(data: {
     
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.detail || "Error al procesar ajuste bancario");
+      throw new Error(parseError(result.detail || "Error al procesar ajuste bancario"));
     }
     
     revalidatePath("/dashboard/reconciliation");

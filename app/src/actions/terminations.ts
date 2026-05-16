@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '../lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 export async function calculateTerminationAction(data: {
   employee_id: string,
@@ -23,7 +24,7 @@ export async function calculateTerminationAction(data: {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }))
-      return { success: false, error: err.detail }
+      return { success: false, error: parseError(err.detail || 'Error en el Motor Python') }
     }
 
     const result = await response.json()
@@ -142,7 +143,7 @@ export async function downloadTerminationDocAction(terminationId: string, docTyp
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }));
-      return { success: false, error: err.detail };
+      return { success: false, error: parseError(err.detail || 'Error en el Motor Python') };
     }
 
     const arrayBuffer = await response.arrayBuffer();

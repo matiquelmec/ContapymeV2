@@ -1,29 +1,23 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 export async function getLatestIndicators() {
   try {
-    // Audit: Migrando de acceso directo a Supabase hacia el Engine (Source of Truth)
-    // Cache: Aplicamos 1 hora de revalidación para indicadores del día
     const response = await engineFetch('/api/v1/indicators/latest', {
-      next: { 
-        revalidate: 600,
-        tags: ['indicators'] 
-      }
-    });
-
+      cache: 'no-store'
+    })
+    
     if (!response.ok) {
-        throw new Error("No se pudo obtener indicadores del motor");
+        const errorData = await response.json().catch(() => ({}))
+        return { success: false, error: parseError(errorData.detail || 'No se pudieron obtener indicadores.') }
     }
-
-    const result = await response.json();
-    return { success: true, data: result.data };
+    const data = await response.json()
+    return { success: true, data }
   } catch (err: any) {
-    console.error("[Indicators Action Error]:", err.message);
-    return { success: false, error: err.message };
+    return { success: false, error: 'Motor fuera de línea.' }
   }
 }
 
@@ -36,7 +30,7 @@ export async function updateIndicators() {
 
     if (!res.ok) {
       const err = await res.json()
-      return { success: false, error: err.detail || 'Error al actualizar indicadores.' }
+      return { success: false, error: parseError(err.detail || 'Error al actualizar indicadores.') }
     }
 
     const data = await res.json()

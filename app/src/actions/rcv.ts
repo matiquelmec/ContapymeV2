@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 // ==========================================
 // IMPORTACIÓN
@@ -29,15 +30,7 @@ export async function importRCVAction(
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }))
-      let errMsg = 'Error en el servidor'
-      if (typeof err.detail === 'string') {
-        errMsg = err.detail
-      } else if (Array.isArray(err.detail)) {
-        errMsg = err.detail.map((e: any) => e.msg).join(', ')
-      } else if (err.detail) {
-        errMsg = JSON.stringify(err.detail)
-      }
-      return { success: false, error: errMsg }
+      return { success: false, error: parseError(err.detail || 'Error en el servidor') }
     }
 
     const result = await response.json()

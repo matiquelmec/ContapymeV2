@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 import { revalidatePath } from 'next/cache'
 
+import { parseError } from '@/lib/utils/errors'
+
 export async function getDTEsForOrganization(organizationId: string) {
   try {
     const supabase = await createClient()
@@ -17,7 +19,7 @@ export async function getDTEsForOrganization(organizationId: string) {
     return { success: true, data: data || [] }
   } catch (err: any) {
     console.error('[DTE Action Error]:', err.message)
-    return { success: false, error: err.message, data: [] }
+    return { success: false, error: parseError(err), data: [] }
   }
 }
 
@@ -67,7 +69,7 @@ export async function getDTEStats(organizationId: string) {
     }
   } catch (err: any) {
     console.error('[DTE Stats Error]:', err.message)
-    return { success: false, error: err.message, data: null }
+    return { success: false, error: parseError(err), data: null }
   }
 }
 
@@ -96,7 +98,7 @@ export async function issueDTE(formData: {
 
     if (!response.ok) {
       const err = await response.json()
-      return { success: false, error: err.detail || 'Error al emitir DTE.' }
+      return { success: false, error: parseError(err.detail || 'Error al emitir DTE.') }
     }
 
     const data = await response.json()

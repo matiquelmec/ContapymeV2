@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 export async function processF29Document(storagePath: string, periodo: string, orgId: string) {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export async function processF29Document(storagePath: string, periodo: string, o
 
     if (!res.ok) {
       const errData = await res.json()
-      return { success: false, error: errData.detail || 'Fallo en Motor Matemático Python.' }
+      return { success: false, error: parseError(errData.detail || 'Fallo en Motor Matemático Python.') }
     }
 
     const resData = await res.json()

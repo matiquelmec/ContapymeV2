@@ -20,6 +20,7 @@ import {
   ContractModification
 } from "@/actions/contract-modifications";
 import { toast } from "sonner";
+import { parseError } from "@/lib/utils/errors";
 import {
   History,
   FileText,
@@ -148,7 +149,7 @@ export function ModificationsDialog({ employeeId, employeeName, organizationId, 
       setView('list');
       loadMods();
     } else {
-      toast.error(res.error);
+      toast.error(parseError(res.error));
     }
     setLoading(false);
   }

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { createEmployee } from '@/actions/payroll'
 import { generateJobDescription, generateWorkSchedule } from '@/actions/ai-assistant'
 import { toast } from 'sonner'
+import { parseError } from '@/lib/utils/errors'
 import { Textarea } from '@/components/ui/textarea'
 import { Sparkles, Bot, RefreshCcw, Clock, AlertCircle, Info } from 'lucide-react'
 import { useEffect } from 'react'
@@ -157,9 +158,9 @@ export function CreateEmployeeButton() {
     const result = await createEmployee(formData)
     
     if (!result.success && result.error) {
-      setError(result.error)
+      setError(parseError(result.error))
       setLoading(false)
-      toast.error(result.error)
+      toast.error(parseError(result.error))
       return
     }
     

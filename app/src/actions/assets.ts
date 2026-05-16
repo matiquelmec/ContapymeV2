@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 // Crear un activo fijo nuevo
 export async function createAsset(formData: FormData) {
@@ -47,7 +48,7 @@ export async function createAsset(formData: FormData) {
 
     if (!res.ok) {
       const err = await res.json()
-      return { success: false, error: err.detail || 'Error al crear activo.' }
+      return { success: false, error: parseError(err.detail || 'Error al crear activo.') }
     }
 
     revalidatePath('/dashboard/assets')
@@ -80,7 +81,7 @@ export async function depreciateAssets() {
 
     if (!res.ok) {
       const err = await res.json()
-      return { success: false, error: err.detail || 'Error al calcular depreciación.' }
+      return { success: false, error: parseError(err.detail || 'Error al calcular depreciación.') }
     }
 
     const data = await res.json()

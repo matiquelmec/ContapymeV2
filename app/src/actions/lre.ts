@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { engineFetch } from "@/lib/engine-client";
+import { parseError } from "@/lib/utils/errors";
 
 export async function getLREBooks(organizationId: string) {
   try {
@@ -12,7 +13,7 @@ export async function getLREBooks(organizationId: string) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error("error getLREBooks engine response:", errorData);
-      return { success: false, error: errorData.detail || "Error al obtener libros LRE" };
+      return { success: false, error: parseError(errorData.detail || "Error al obtener libros LRE") };
     }
     
     const data = await response.json();
@@ -36,12 +37,12 @@ export async function generateLREAction(formData: {
     });
 
     const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || "Error al generar LRE");
+    if (!response.ok) throw new Error(parseError(result.detail || "Error al generar LRE"));
 
     revalidatePath("/dashboard/payroll/lre");
     return { success: true, message: "Libro generado correctamente", book_id: result.book_id };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: parseError(error) };
   }
 }
 
@@ -50,14 +51,14 @@ export async function exportLREAction(bookId: string) {
     const response = await engineFetch(`/api/v1/payroll/lre/export/${bookId}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const detail = errorData.detail || "Error al exportar LRE";
+      const detail = parseError(errorData.detail || "Error al exportar LRE");
       throw new Error(detail);
     }
     
     const blob = await response.text(); // CSV as text
     return { success: true, data: blob };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: parseError(error) };
   }
 }
 

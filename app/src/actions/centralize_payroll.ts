@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveOrganizationId } from './organizations'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 export async function centralizePayroll(period: string) {
   const supabase = await createClient()
@@ -31,7 +32,7 @@ export async function centralizePayroll(period: string) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ detail: 'Fallo al centralizar remuneraciones.' }))
-      return { success: false, error: errData.detail || 'Fallo contable.' }
+      return { success: false, error: parseError(errData.detail || 'Fallo contable.') }
     }
 
     const data = await res.json()

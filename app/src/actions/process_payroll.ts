@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveOrganizationId } from './organizations'
 import { engineFetch } from '@/lib/engine-client'
+import { parseError } from '@/lib/utils/errors'
 
 export async function processPayroll(period?: string) {
   const supabase = await createClient()
@@ -32,7 +33,7 @@ export async function processPayroll(period?: string) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ detail: 'Fallo en Motor Matemático Payroll.' }))
-      return { success: false, error: errData.detail || 'Fallo en Motor Matemático Payroll.' }
+      return { success: false, error: parseError(errData.detail || 'Fallo en Motor Matemático Payroll.') }
     }
 
     const payrollData = await res.json()
