@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
 from core.ai import process_news_with_local_llm
-from core.images import generate_and_upload_image
+from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback
 
 logger = logging.getLogger("contapyme.news")
 
@@ -223,17 +223,17 @@ async def _fetch_and_process_news():
             continue
 
         try:
-            # Generar Imagen Artística con fallback inteligente
-            original_img = raw_news.get("img", "/news-placeholder.png")
-            image_url = original_img
-            if ai_data.get("visual_prompt"):
-                logger.info(f"[News Worker] 🎨 Generando IMAGEN ARTÍSTICA para: {ai_data['title']}")
-                generated_url = await generate_and_upload_image(ai_data["visual_prompt"])
-                # Solo usar la generada si NO es el placeholder (es decir, si tuvo éxito)
-                if generated_url and generated_url != "/news-placeholder.png":
-                    image_url = generated_url
-                else:
-                    logger.info(f"[News Worker] 📸 Usando imagen original del RSS como fallback.")
+            # Sistema de Imágenes Profesional: RSS original → Stock por categoría → Placeholder
+            original_img = raw_news.get("img", "")
+            category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
+            
+            if original_img and not original_img.startswith("/"):
+                # Descargar y persistir la imagen original del RSS en Supabase
+                image_url = await download_and_upload_image(original_img)
+            else:
+                # Sin imagen original: usar stock profesional por categoría
+                image_url = get_category_fallback(category)
+                logger.info(f"[News Worker] 📸 Sin imagen RSS. Usando stock para: {category}")
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
