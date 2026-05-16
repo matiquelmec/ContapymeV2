@@ -272,7 +272,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                     <div className="flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8">
                         <div className="md:col-span-4 space-y-3">
                             <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Tipo de Documento</Label>
-                            <Select value={tipoDte} onValueChange={setTipoDte}>
+                            <Select value={tipoDte} onValueChange={(v) => v && setTipoDte(v)}>
                                 <SelectTrigger className="w-full rounded-2xl h-14 border-slate-200 bg-white shadow-sm font-bold text-slate-700 px-6">
                                     <SelectValue placeholder="Seleccione Tipo" />
                                 </SelectTrigger>
