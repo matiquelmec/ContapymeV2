@@ -189,14 +189,14 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     } else {
         doc.setTextColor(225, 29, 72); // Rose
     }
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(isSquare ? "VERIFICADO - CUADRADO" : "ALERTA - DESCUADRADO", 60, 75);
     
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
     doc.text("DIFERENCIA NETA:", 20, 82);
     doc.setTextColor(15, 23, 42);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(fCurrency(Math.abs(totalSumas.debe - totalSumas.haber)), 60, 82);
 
     // Table
