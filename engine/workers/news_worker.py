@@ -237,11 +237,11 @@ async def _fetch_and_process_news():
                     logger.info(f"[News Worker] 📸 IA falló, usando imagen original del RSS.")
                     image_url = await download_and_upload_image(original_img)
             
-            # Prioridad 3: Stock Profesional - Si nada de lo anterior funciona
+            # Prioridad 3: Stock Profesional (Ahora asíncrono y seguro)
             if not image_url or "placeholder" in image_url:
                 category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
-                image_url = get_category_fallback(category)
-                logger.info(f"[News Worker] 🖼️ Usando imagen de stock por categoría: {category}")
+                image_url = await get_category_fallback_url(category)
+                logger.info(f"[News Worker] 🖼️ Usando stock seguro en Supabase para: {category}")
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
