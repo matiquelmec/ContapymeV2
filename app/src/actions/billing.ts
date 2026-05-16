@@ -194,7 +194,7 @@ export async function updateDTEConfig(organizationId: string, formData: any) {
 
 export async function uploadCAF(organizationId: string, xmlContent: string, environment: string = 'certification') {
   try {
-    const res = await engineFetch('/api/v1/dte/upload-caf', {
+    const response = await engineFetch('/api/v1/dte/upload-caf', {
       method: 'POST',
       body: {
         organization_id: organizationId,
@@ -203,17 +203,24 @@ export async function uploadCAF(organizationId: string, xmlContent: string, envi
       }
     })
 
-    if (res.success) {
+    if (!response.ok) {
+      const errData = await response.json()
+      return { success: false, error: parseError(errData.detail || 'Error al subir CAF') }
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
       await recordAuditAction({
         action: 'UPLOAD_CAF',
         entity_type: 'DTE_CAF',
         entity_id: organizationId,
-        details: res.details
+        details: data.details
       })
       revalidatePath('/dashboard/settings')
     }
 
-    return res
+    return data
   } catch (err: any) {
     return { success: false, error: parseError(err) }
   }
