@@ -101,5 +101,5 @@ export async function requestPasswordReset(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  return redirect('/login')
+  return redirect('/')
 }
