@@ -84,12 +84,20 @@ app.include_router(dte.router,                 prefix="/api/v1/dte",         tag
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 
+@app.get("/", tags=["Sistema"])
+def root():
+    return {
+        "status": "online",
+        "service": "Contapymepuq Engine",
+        "description": "Motor de Inteligencia Contable y Regional Magallanes",
+        "docs": "/docs"
+    }
+
 @app.get("/health", tags=["Sistema"])
 def health_check():
     return {
         "status": "ok",
         "service": "contapymepuq-engine",
         "version": "6.0.0",
-        "message": "[CONTAPYMEPUQ ENGINE] Motor activo en http://0.0.0.0:8000",
-        "scheduler": "activo (indicadores Lun-Vie 09:00 AM Santiago)",
+        "message": "[CONTAPYMEPUQ ENGINE] Motor activo",
     }
