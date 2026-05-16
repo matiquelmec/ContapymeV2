@@ -14,9 +14,44 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Contapymepuq | Diario Regional & Sistema Contable",
-  description: "Plataforma profesional para PyMEs en Punta Arenas, Magallanes. Diario regional, indicadores económicos y gestión contable avanzada.",
+  title: {
+    default: "Contapymepuq | Inteligencia Contable y Regional",
+    template: "%s | Contapymepuq"
+  },
+  description: "La plataforma líder en Punta Arenas para la gestión contable inteligente y noticias regionales en tiempo real. Grado institucional para PyMEs de Magallanes.",
+  keywords: ["contabilidad", "punta arenas", "magallanes", "pyme", "gestión financiera", "diario regional", "inteligencia artificial"],
+  authors: [{ name: "Contapymepuq Team" }],
+  creator: "Contapymepuq",
+  publisher: "Contapymepuq",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    url: "https://contapymepuq.cl",
+    siteName: "Contapymepuq",
+    title: "Contapymepuq | Inteligencia Contable y Regional",
+    description: "Gestión contable de vanguardia y noticias regionales para Magallanes.",
+    images: [
+      {
+        url: "/og-image.png", // Asumimos que existe o se creará
+        width: 1200,
+        height: 630,
+        alt: "Contapymepuq Dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contapymepuq | Inteligencia Contable y Regional",
+    description: "Gestión contable avanzada para Punta Arenas.",
+    images: ["/og-image.png"],
+  },
 };
+
+import { Providers } from "@/components/providers";
 
 export default function RootLayout({
   children,
@@ -29,7 +64,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         <Toaster 
           theme="dark" 
           position="bottom-right" 
