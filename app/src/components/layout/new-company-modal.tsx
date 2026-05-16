@@ -21,7 +21,7 @@ export function NewCompanyModal({
 }) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    rut: '', nombre: '', giro: '', direccion: '', comuna: '', regimen: 'pro_pyme',
+    rut: '', nombre: '', giro: '', direccion: '', comuna: '', region: 'Magallanes', regimen: 'pro_pyme',
     repLegalNombre: '', repLegalRut: ''
   })
 
@@ -103,14 +103,18 @@ export function NewCompanyModal({
               <Input required placeholder="Servicios Financieros y Contables" value={formData.giro} onChange={e => setFormData({...formData, giro: e.target.value})} className="h-12 bg-muted/50" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Dirección</Label>
                 <Input required placeholder="Av. Apoquindo 4501" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} className="h-12 bg-muted/50" />
               </div>
               <div className="space-y-2">
-                <Label>Comuna Central</Label>
+                <Label>Comuna</Label>
                 <Input required placeholder="Las Condes" value={formData.comuna} onChange={e => setFormData({...formData, comuna: e.target.value})} className="h-12 bg-muted/50" />
+              </div>
+              <div className="space-y-2">
+                <Label>Región</Label>
+                <Input required placeholder="Metropolitana" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} className="h-12 bg-muted/50" />
               </div>
             </div>
 
