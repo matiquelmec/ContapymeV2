@@ -41,6 +41,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
        - 'full_content': MÍNIMO 3 párrafos de redacción experta.
     5. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
     6. TONO: Ejecutivo, sobrio y analítico.
+    7. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples ('). Esto es CRÍTICO para que el formato JSON no se rompa.
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
     {{
