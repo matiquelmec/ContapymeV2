@@ -159,19 +159,19 @@ export default function ChartOfAccountsClient({
 
   const handleInitialize = async () => {
     setLoading(true);
-    try {
-      const result = await initializeChartAction(organizationId);
-      if (result.success) {
-        toast.success(result.message);
-        window.location.reload();
-      } else {
-        toast.error(result.message || "Error al inicializar");
-      }
-    } catch (error) {
-      toast.error("Error inesperado");
-    } finally {
+    toast.promise(initializeChartAction(organizationId), {
+      loading: 'Sincronizando Plan de Cuentas IFRS...',
+      success: (result: any) => {
+        if (result.success) {
+          setTimeout(() => window.location.reload(), 1500);
+          return result.message || "Plan de Cuentas IFRS inicializado correctamente";
+        }
+        throw new Error(result.error || result.message || "Error al inicializar");
+      },
+      error: (err) => err.message || "Error inesperado al sincronizar",
+    }).finally(() => {
       setLoading(false);
-    }
+    });
   };
 
   const handleCreateAccount = async () => {

@@ -381,21 +381,21 @@ export function ConfigClient({
           </CardDescription>
           <div className="pt-6 inline-flex">
             <Button 
-              onClick={async () => {
+              onClick={() => {
                 setInitializing(true);
-                try {
-                  const res = await initializeAccountingConfigAction(organizationId);
-                  if (res.success) {
-                    toast.success("Configuración inicializada correctamente");
-                    window.location.reload();
-                  } else {
-                    toast.error(res.error || "Error al inicializar");
-                  }
-                } catch (error) {
-                  toast.error("Error inesperado al inicializar");
-                } finally {
+                toast.promise(initializeAccountingConfigAction(organizationId), {
+                  loading: 'Inicializando parámetros contables...',
+                  success: (res: any) => {
+                    if (res.success) {
+                      setTimeout(() => window.location.reload(), 1500);
+                      return "Configuración inicializada correctamente";
+                    }
+                    throw new Error(res.error || "Error al inicializar");
+                  },
+                  error: (err) => err.message || "Error inesperado al inicializar"
+                }).finally(() => {
                   setInitializing(false);
-                }
+                });
               }}
               disabled={initializing}
               className="inline-flex items-center gap-3 px-8 py-6 bg-primary hover:bg-primary/90 rounded-full text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border border-primary/20 transition-all hover:scale-105 active:scale-95"
