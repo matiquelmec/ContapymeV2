@@ -19,14 +19,15 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     Si no, lanza una excepción 401.
     """
     token = credentials.credentials
-    url = os.getenv("SUPABASE_URL")
-    # Usamos la Anon Key para validar, o mejor aún, el cliente valida solo el JWT.
-    # En Supabase Python Client, usamos get_user(token).
-    
     try:
-        # Creamos un cliente temporal solo para validar este JWT.
-        # No usamos el singleton SERVICE_ROLE aquí por seguridad.
+        url = os.getenv("SUPABASE_URL")
         anon_key = os.getenv("SUPABASE_ANON_KEY")
+        
+        if not url or not anon_key:
+            print("❌ ERROR: Faltan variables de entorno SUPABASE_URL o SUPABASE_ANON_KEY en el servidor.")
+            raise HTTPException(status_code=500, detail="Configuración del servidor incompleta (Variables de entorno)")
+
+        # Creamos un cliente temporal solo para validar este JWT.
         temp_client = create_client(url, anon_key)
         
         # Validar el token obteniendo el usuario
@@ -40,8 +41,11 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
             "email": res.user.email,
             "token": token
         }
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        print(f"Error en validación de token Engine: {str(e)}")
+        print(f"❌ Error crítico en validación de token Engine: {str(e)}")
+        # Loguear más detalles si es posible
         raise HTTPException(status_code=401, detail="Error de autenticación: Protocolo de seguridad violado")
 
 from core.database import get_supabase
