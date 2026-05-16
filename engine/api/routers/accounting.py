@@ -902,6 +902,70 @@ async def get_accounting_config_endpoint(organization_id: str):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/config/initialize")
+async def initialize_accounting_config(organization_id: str):
+    """Inicializa la tabla de configuraciones con valores por defecto si está vacía."""
+    db = get_supabase()
+    try:
+        # 1. Verificar si ya existen
+        check = db.table("centralized_account_config").select("id").eq("organization_id", organization_id).limit(1).execute()
+        if check.data:
+            return {"success": True, "message": "Configuración ya existe."}
+        
+        # 2. Filas por defecto
+        default_rows = [
+            {
+                "organization_id": organization_id,
+                "module_name": "rcv", "transaction_type": "purchases", "display_name": "Configuración Compras (RCV)",
+                "tax_account_code": "1.1.03.001", "tax_account_name": "IVA Crédito Fiscal",
+                "revenue_account_code": "5.1.01.001", "revenue_account_name": "Costo de Ventas",
+                "asset_account_code": "2.1.01.001", "asset_account_name": "Proveedores Nacionales"
+            },
+            {
+                "organization_id": organization_id,
+                "module_name": "rcv", "transaction_type": "sales", "display_name": "Configuración Ventas (RCV)",
+                "tax_account_code": "2.1.02.001", "tax_account_name": "IVA Débito Fiscal",
+                "revenue_account_code": "4.1.01.001", "revenue_account_name": "Ventas de Mercaderías",
+                "asset_account_code": "1.1.02.001", "asset_account_name": "Clientes Nacionales"
+            },
+            {
+                "organization_id": organization_id,
+                "module_name": "payroll", "transaction_type": "monthly", "display_name": "Configuración Remuneraciones",
+                "expense_salary_code": "5.1.02.001", "expense_salary_name": "Sueldos y Salarios",
+                "expense_social_code": "5.1.02.002", "expense_social_name": "Leyes Sociales Empresa",
+                "liability_afp_code": "2.1.04.004", "liability_afp_name": "AFP por Pagar",
+                "liability_salud_code": "2.1.04.005", "liability_salud_name": "Salud por Pagar",
+                "liability_afc_code": "2.1.04.006", "liability_afc_name": "AFC por Pagar",
+                "liability_tax_code": "2.1.03.001", "liability_tax_name": "Impuesto Único Retenido por Pagar",
+                "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            },
+            {
+                "organization_id": organization_id,
+                "module_name": "f29", "transaction_type": "generic", "display_name": "Configuración Formulario 29",
+                "tax_iva_debito_code": "2.1.02.001", "tax_iva_debito_name": "IVA Débito Fiscal",
+                "tax_iva_credito_code": "1.1.03.001", "tax_iva_credito_name": "IVA Crédito Fiscal",
+                "tax_ppm_code": "1.1.03.003", "tax_ppm_name": "PPM por Recuperar",
+                "tax_retentions_code": "2.1.03.002", "tax_retentions_name": "Retenciones 2da Categoría",
+                "tax_f29_payable_code": "2.1.03.003", "tax_f29_payable_name": "F29 por Pagar",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            },
+            {
+                "organization_id": organization_id,
+                "module_name": "assets", "transaction_type": "generic", "display_name": "Configuración Activos Fijos",
+                "asset_depreciation_expense_code": "5.1.03.001", "asset_depreciation_expense_name": "Depreciación del Ejercicio",
+                "asset_accumulated_depreciation_code": "1.2.01.001", "asset_accumulated_depreciation_name": "Depreciación Acumulada",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            }
+        ]
+        
+        db.table("centralized_account_config").insert(default_rows).execute()
+        
+        return {"success": True, "message": "Configuración inicializada correctamente."}
+    except Exception as e:
+        print(f"ERROR initialize_accounting_config: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.put("/config/{config_id}")
 async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountingConfigRequest):
     """Actualiza un mapeo de cuentas específico."""
