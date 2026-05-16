@@ -217,6 +217,8 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                     type: 'error',
                     title: 'Fallo en Emisión',
                     description: result.error || 'No se pudo completar el timbrado del documento.',
+                    actionLabel: undefined,
+                    onAction: undefined
                 })
             }
         } catch (error) {
@@ -225,6 +227,8 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                 type: 'error',
                 title: 'Error Crítico',
                 description: 'El motor de facturación no respondió. Verifique su conexión o folios.',
+                actionLabel: undefined,
+                onAction: undefined
             })
         } finally {
             setLoading(false)
