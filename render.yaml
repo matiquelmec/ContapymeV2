@@ -1,0 +1,33 @@
+# ============================================
+# CONTAPYMEPUQ — RENDER DEPLOYMENT CONFIG
+# ============================================
+# Documento IaC (Infrastructure as Code) para despliegue profesional.
+# Costo estimado: $7 USD/mes (Starter Plan).
+#
+# Para desplegar: Conectar el repo en https://dashboard.render.com
+# Render detectará este archivo automáticamente.
+# ============================================
+
+services:
+  # ─────────────────────────────────────────
+  # SERVICIO 1: Engine (Python / FastAPI)
+  # Motor de procesamiento contable y DTE.
+  # ─────────────────────────────────────────
+  - type: web
+    name: contapymepuq-engine
+    runtime: docker
+    dockerfilePath: ./engine/Dockerfile
+    dockerContext: ./engine
+    plan: starter  # $7/mes — Always On, 512MB RAM, 0.5 vCPU
+    region: oregon  # Región más cercana a Chile con buena latencia
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: SUPABASE_URL
+        sync: false  # Se configura manualmente en el dashboard
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+    autoDeploy: true  # Deploy automático en cada push a main

@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 6.0 (Magallanes 2077 — Institutional Grade 🏛️) | **Fecha:** 2026-05-16 | **Estado:** SINCRO TOTAL — Auditada y Refactorizada 🚀
+> **Versión:** 7.0 (Magallanes 2077 — Production Ready 🏛️) | **Fecha:** 2026-05-16 | **Estado:** DEPLOY PLAN DEFINIDO — Listo para Producción 🚀
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -97,6 +97,26 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 *   [x] **SSoT Utility Engine:** Módulo `shared_utils.py` operativo.
 *   [x] **Master Audit Suite:** Directorio raíz `/tests` unificado.
 *   [x] **Higiene de Proyecto:** Eliminación de redundancias y archivos zombie.
+
+### FASE 13: Despliegue a Producción 🌐 — **PENDIENTE**
+> **Presupuesto:** $7 — $20 USD/mes | **Plan completo:** `docs/plan_despliegue_produccion.md`
+
+| Servicio | Proveedor | Costo |
+| :--- | :--- | ---: |
+| Frontend (Next.js 16) | Vercel Hobby | $0 |
+| Engine (FastAPI/Docker) | Render Starter | $7 |
+| Base de Datos (PostgreSQL) | Supabase Free | $0 |
+| Caché (Redis Serverless) | Upstash Free | $0 |
+| **TOTAL MÍNIMO** | | **$7/mes** |
+
+*   [ ] **IaC (Infrastructure as Code):** `render.yaml` creado y listo.
+*   [ ] **Deploy Engine:** Conectar repo a Render, configurar env vars.
+*   [ ] **Deploy Frontend:** Conectar repo a Vercel, apuntar a `/app`.
+*   [ ] **Dominio:** Registrar `contapymepuq.cl` en NIC Chile.
+*   [ ] **CORS Producción:** Actualizar origins con dominio final.
+*   [ ] **Monitoreo:** Configurar UptimeRobot (gratuito) para alertas.
+*   [ ] **SSL/HTTPS:** Verificar certificados automáticos (Vercel + Render).
+*   [ ] **Test E2E:** Login → Dashboard → Factura → Reporte PDF.
 
 ---
 
