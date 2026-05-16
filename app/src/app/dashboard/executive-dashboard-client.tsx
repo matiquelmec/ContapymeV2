@@ -44,6 +44,9 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
     queryKey: ['executive-metrics', activeOrgId, targetYear],
     queryFn: async () => {
       const res = await getExecutiveMetrics(targetYear, activeOrgId)
+      if (res && 'error' in res) {
+        throw new Error(res.error as string)
+      }
       // Validación Zod en tiempo de ejecución
       return dashboardDataSchema.parse(res)
     },
@@ -64,7 +67,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   })
 
   const news = newsData?.success ? newsData.data : []
-  const error = metricsError ? "Error crítico conectando al motor financiero Python." : (data?.error || null)
+  const error = metricsError ? (metricsError instanceof Error ? metricsError.message : "Error crítico conectando al motor financiero Python.") : null
 
 
   // ―― ESTADO: Calculando ――
