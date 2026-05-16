@@ -4,7 +4,7 @@
 
 -- 1. Crear tabla de logs (rcv_imports)
 CREATE TABLE IF NOT EXISTS public.rcv_imports (
-  id              uuid    NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id              uuid    NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   organization_id uuid    NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   periodo         date    NOT NULL,
   tipo            text    NOT NULL CHECK (tipo IN ('purchases', 'sales')),

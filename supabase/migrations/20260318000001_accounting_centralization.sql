@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.account_mapping_rules (
 
 -- 2. Configuración Centralizada por Módulo
 CREATE TABLE IF NOT EXISTS public.centralized_account_config (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL,
   module_name character varying NOT NULL,
   transaction_type character varying NOT NULL,

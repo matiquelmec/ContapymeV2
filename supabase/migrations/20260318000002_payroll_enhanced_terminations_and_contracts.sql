@@ -6,7 +6,7 @@
 
 -- 1. Causas de Término Legales (Referencia)
 CREATE TABLE IF NOT EXISTS public.termination_causes (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   article_code character varying NOT NULL UNIQUE,
   article_name character varying NOT NULL,
   description text NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.termination_causes (
 
 -- 2. Documentos de Empleado
 CREATE TABLE IF NOT EXISTS public.employee_documents (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL,
   employee_id uuid NOT NULL,
   tipo text NOT NULL, -- Referenciado como USER-DEFINED en el esquema maestro
@@ -41,7 +41,7 @@ DO $$
 BEGIN 
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'employee_terminations') THEN
         CREATE TABLE public.employee_terminations (
-            id uuid NOT NULL DEFAULT uuid_generate_v4(),
+            id uuid NOT NULL DEFAULT gen_random_uuid(),
             organization_id uuid NOT NULL,
             employee_id uuid NOT NULL UNIQUE,
             fecha_inicio date NOT NULL,
