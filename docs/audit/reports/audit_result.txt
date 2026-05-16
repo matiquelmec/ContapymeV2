@@ -1,3 +1,0 @@
-Auditoría de 7 noticias encontradas:
---------------------------------------------------
-Error en auditoría: 'charmap' codec can't encode character '\U0001f7e1' in position 1: character maps to <undefined>

@@ -26,3 +26,7 @@ Contapymepuq no es una aplicación monolítica; es un ecosistema distribuido dis
 - **Hash Chain**: Cada DTE contiene el hash del anterior, impidiendo la alteración de registros históricos.
 - **Audit Logging**: Cada mutación de datos se registra con el ID del usuario, IP y metadatos del cambio.
 - **Contexto Multi-Tenant**: El `organization_id` es el eje central que impide cualquier fuga de datos entre empresas.
+
+## ⚙️ Estabilidad y Calidad
+- **SSoT Utility**: Centralización de lógica de negocio crítica en `shared_utils.py` para evitar divergencias de datos.
+- **Master Testing Suite**: Suite unificada en `/tests` que valida la integridad del motor, la base de datos y los flujos de integración de forma proactiva.

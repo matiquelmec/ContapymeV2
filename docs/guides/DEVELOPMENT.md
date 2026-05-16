@@ -1,56 +1,43 @@
-﻿---
-description: CÃ³mo iniciar el proyecto Contapyme V2 en local (Backend Python + Frontend Next.js)
+# 🚀 Guía de Desarrollo — Contapymepuq
+
+Esta guía detalla el workflow estándar para mantener la integridad institucional del proyecto.
+
 ---
 
-# Iniciar Contapyme V2 en Local
-
-## âš¡ Forma rÃ¡pida (recomendada): Un solo comando
-
-// turbo
-1. Ejecutar el launcher unificado desde la raÃ­z del proyecto (una vez creado el archivo start.ps1):
+## ⚡ Forma Rápida (Recomendada)
+Para iniciar todo el ecosistema con un solo comando desde la raíz:
 ```powershell
 ./start.ps1
 ```
-Esto abre automÃ¡ticamente dos ventanas de PowerShell separadas:
-- Una con el **Motor Backend** (FastAPI) en http://localhost:8000
-- Una con el **Dashboard Frontend** (Next.js) en http://localhost:3000
+Esto lanzará el **Motor Backend** (Puerto 8000) y el **Dashboard Frontend** (Puerto 3000) en ventanas independientes.
 
 ---
 
-## ðŸ”§ Forma manual (si necesitas control granular)
+## 🧪 Suite de Pruebas Unificada
+Es mandatorio ejecutar las pruebas antes de realizar cualquier commit significativo.
+Desde la raíz del proyecto:
 
-### Paso 1: Backend (Motor FastAPI - Python)
-// turbo
-1. Moverse a la carpeta engine, activar el entorno virtual e iniciar el motor:
-```powershell
-cd engine
-. .\.venv\Scripts\Activate.ps1
-python main.py
-```
-- Verificar: `[CONTAPYME ENGINE] Iniciando en http://0.0.0.0:8000`
+- **Pruebas del Motor**: `pytest tests/engine`
+- **Pruebas de Base de Datos**: `pytest tests/database`
+- **Pruebas de Integración**: `pytest tests/integration`
 
-### Paso 2: Frontend (Dashboard Next.js)
-// turbo
-2. Moverse a la carpeta app e iniciar el servidor de desarrollo:
-```powershell
-cd app
-npx next dev
-```
-- Verificar: `âœ“ Ready in X.Xs`
+*Consulta `tests/TESTING.md` para más detalles.*
 
 ---
 
-## âš ï¸ IMPORTANTE - Regla de oro en Windows + PowerShell
-
-**NUNCA usar `npm run dev`** para el frontend en Windows con PowerShell si tienes problemas de procesos colgados.
-
-| Comando | Resultado en Windows/PowerShell |
-|---------|-------------------------------|
-| `npm run dev` | Puede pasar por `.cmd` â†’ a veces genera prompt interactivo â†’ muere |
-| `npx next dev` | Llama a Next.js directamente â†’ funciona consistentemente |
+## 🛠️ Reglas de Oro en Windows
+- **Frontend**: Usa siempre `npx next dev` en lugar de `npm run dev` para evitar procesos colgados en PowerShell.
+- **Backend**: Asegúrate de tener el entorno virtual activo (`.venv`) dentro de la carpeta `engine`.
 
 ---
 
-## âœ… VerificaciÃ³n
-- Backend API Docs: http://localhost:8000/docs (Swagger UI - Pruebas manuales de subida de PDF)
-- Frontend: http://localhost:3000 (Dashboard B2B)
+## 💎 Estándares de Código (SSoT)
+- **Lógica Compartida**: Toda función de formateo (moneda, RUT, fechas) DEBE residir en `engine/core/utils/shared_utils.py`. **No dupliques lógica en los routers**.
+- **Base de Datos**: Usa siempre `gen_random_uuid()` para IDs y mantén las migraciones con el prefijo de 14 dígitos cronológicos.
+- **Frontend**: Mantén los componentes pequeños. Si un archivo supera las 400 líneas, es hora de refactorizar.
+
+---
+
+## ✅ Verificación de Salud
+- **Backend API Docs**: http://localhost:8000/docs
+- **Frontend Dashboard**: http://localhost:3000

@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 5.0 (Magallanes 2077 — Integrity Hardening 🛡️💎) | **Fecha:** 2026-05-16 | **Estado:** ESTABLE — Producción Ready & Auditoría Real 🚀
+> **Versión:** 6.0 (Magallanes 2077 — Institutional Grade 🏛️) | **Fecha:** 2026-05-16 | **Estado:** SINCRO TOTAL — Auditada y Refactorizada 🚀
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -15,14 +15,16 @@
 > - Engine API + Docs: http://localhost:8000/docs
 
 > [!TIP]
-> **CADENA DE INTEGRIDAD (SSoT 2026):** 
-> El sistema ahora implementa una **Hash Chain SHA-256** para documentos tributarios, garantizando que los registros sean inalterables y auditables.
+> **CADENA DE INTEGRIDAD Y SOT (2026):** 
+> - **Blockchain-like Ledger**: Hash Chain SHA-256 para documentos DTE.
+> - **Unified Logic**: Lógica compartida en `engine/core/utils/shared_utils.py` para coherencia total.
+> - **Central Testing**: Suite unificada en `/tests` para validación continua.
 
 ---
 
-## 🏗️ 2. ARQUITECTURA TÉCNICA Y DIAGRAMA LÓGICO
+## 🏗️ 1. ARQUITECTURA TÉCNICA Y DIAGRAMA LÓGICO
 
-El ecosistema ahora consta de 3 actores independientes que se comunican de forma ágil mediante APIs REST:
+El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -30,7 +32,7 @@ El ecosistema ahora consta de 3 actores independientes que se comunican de forma
 │  - RCV Auditor 2.0: Agregación real de documentos vs Bitácoras.      │
 │  - DTE Core: Generación de XML, Firma Digital y Timbrado Electrónico.│
 │  - calculators/chilean_payroll.py: Motor de Remuneraciones REAL.     │
-│  - Scraping & Workers: Sincronización automática de indicadores.     │
+│  - core/utils/shared_utils.py: SSoT de lógica matemática y RUT.      │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ API REST / JSON Struct
 ┌───────────────────────────────────▼──────────────────────────────────┐
@@ -50,69 +52,49 @@ El ecosistema ahora consta de 3 actores independientes que se comunican de forma
 
 ---
 
-## 🛠️ 3. DEEP DIVE Y ESPECIFICACIÓN DE MÓDULOS (LOW LEVEL DESIGN)
+## 🛠️ 2. ESPECIFICACIÓN DE MÓDULOS (LOW LEVEL DESIGN)
 
-### 3.1 📊 Módulo Base: Autenticación e Integridad Multi-Tenant
-*   **Base de Datos:** Tablas troncales de `organizations` y `organization_members`.
-*   **Seguridad:** RLS (Row Level Security) nivel Dios en todas las tablas transaccionales.
-*   **Audit Logs:** Registro de cada acción crítica (entity_type, action, details) para trazabilidad GRC.
+### 2.1 📊 Módulo Base: Autenticación e Integridad
+*   **Seguridad:** RLS nivel Dios en todas las tablas transaccionales.
+*   **Audit Logs:** Registro GRC (Gobierno/Riesgo/Cumplimiento) de cada acción crítica.
+*   **Gobernanza SQL:** Uso mandatorio de `gen_random_uuid()` y migraciones de 14 dígitos.
 
-### 3.2 🧾 Módulo RCV: Auditoría Real e Inteligencia
-*   **RCV 2.0:** Motor de agregación que suma documentos físicos en lugar de confiar en bitácoras externas.
-*   **Selector Inteligente:** Solo muestra periodos con datos reales, eliminando meses "fantasma".
+### 2.2 🧾 Módulo RCV e Inteligencia
+*   **RCV 2.0:** Motor de agregación real (físico) para auditoría de cumplimiento.
+*   **Selector Inteligente:** Interfaz proactiva que solo muestra periodos con data.
 
-### 3.3 📄 Módulo DTE: Facturación Electrónica (SII Compliance)
-*   **XML Builder:** Generación de esquemas DTE según estándar del SII.
-*   **Signer Core:** Firma digital usando PKCS1v15 y SHA1 con canonización C14N.
-*   **CAF Manager:** Gestión automática de folios y avisos de agotamiento de rangos.
-
-### 3.4 👥 Módulo Remuneraciones y Finiquitos
-*   **Motor Real:** Normativa laboral chilena completa (Topes UF, Gratificación Art. 50, IRPF).
-*   **Firmas Digitales:** Soporte para `signature_base64` en liquidaciones y finiquitos.
+### 2.3 📄 Módulo DTE y Remuneraciones
+*   **SII Compliance:** Generación y firma de XML (SHA1/C14N).
+*   **Motor Laboral:** Normativa 2026 (Tope UF, 42 Horas, Art. 47).
+*   **Firmas Digitales:** Integración de `signature_base64` en documentos legales.
 
 ---
 
-## 🚀 4. INTEGRIDAD DE BASE DE DATOS (SINCRO 2026-05)
+## 🚀 3. ROADMAP: LAS FASES DE EVOLUCIÓN
 
-| Tabla | Propósito Crítico | Campos de Elite Sincronizados |
-|---|---|---|
-| `dte_issued` | Facturación Emitida | `integrity_hash`, `previous_hash`, `xml_content`, `folio` |
-| `dte_caf_folios` | Gestión SII | `range_start`, `range_end`, `last_used_folio`, `caf_xml` |
-| `purchase_records` | Auditoría Compras | `monto_total`, `periodo`, `organization_id` |
-| `audit_logs` | GRC (Gobierno/Riesgo) | `user_id`, `action`, `details` (jsonb), `ip_address` |
+### FASE 9: Institucionalización Maestro 💎 — **100% COMPLETADO**
+*   [x] **Rebranding:** Migración total a **CONTAPYMEPUQ**.
+*   [x] **MarketTicker:** Cinta de indicadores global sincronizada.
+*   [x] **Alineación Geométrica:** Horizonte visual estandarizado.
 
----
-
-## 🚀 6. ROADMAP: LAS FASES DE DESPLIEGUE
+### FASE 10: Inteligencia y Expansión 🚀 — **EN PLANIFICACIÓN**
+*   [ ] **Cashflow Predictor:** Análisis basado en RCV histórico.
+*   [ ] **API Partner:** Integración con POS locales.
 
 ### FASE 11: Facturación y Auditoría Profunda 💎 — **EN PROGRESO**
-*   [x] **RCV Auditor 2.0:** Motor de agregación real implementado.
-*   [x] **DTE Core Engine:** Generador y firmador de XML operativo.
-*   [x] **Integrity Chain:** Implementación de Hashes SHA-256 en DB.
-*   [ ] **SII Connector:** Envío automático a la API del SII (Soap/Rest).
-*   [ ] **PDF Generation:** Generación de representación impresa (Acrobat PDF).
+*   [x] **RCV Auditor 2.0:** Implementado.
+*   [x] **DTE Core Engine:** Operativo.
+*   [x] **Integrity Chain:** Implementado en DB.
+*   [ ] **SII Connector:** Conexión con endpoints de certificación.
+
+### FASE 12: Consolidación Institutional Grade 🏛️ — **COMPLETADO**
+*   [x] **SSoT Utility Engine:** Módulo `shared_utils.py` operativo.
+*   [x] **Master Audit Suite:** Directorio raíz `/tests` unificado.
+*   [x] **Higiene de Proyecto:** Eliminación de redundancias y archivos zombie.
 
 ---
 
 > *"Al centralizar lo pesado en Python y lo hermoso en React, dejamos de construir una plantilla web compleja y empezamos a construir un **SaaS Contable de Clase Mundial**."*
-ddress` |
 
 ---
-
-## 🚀 6. ROADMAP: LAS FASES DE DESPLIEGUE
-
-### FASE 9: Institucionalización y Hardening Maestro 💎 — **100% COMPLETADO**
-*   [x] **Rebranding:** Migración de V2 a **CONTAPYMEPUQ**.
-*   [x] **MarketTicker Seamless:** Cinta de indicadores global (44px) integrada.
-*   [x] **Zero-Button UI:** Sincronización proactiva de datos económicos.
-*   [x] **Alineación Geométrica:** Horizonte alineado a 108px en todo el Dashboard.
-*   [x] **Firmas de Liquidación:** Implementación de persistencia de firmas para validez legal.
-
-### Fase 10: Inteligencia Predictiva y Expansión 🚀 — **EN PLANIFICACIÓN**
-*   [ ] **Cashflow Predictor:** Análisis de tendencias basado en RCV histórico.
-*   [ ] **Certificación LRE Automática:** Firma digital masiva delegada en la DT.
-*   [ ] **API Partner:** Integración con puntos de venta (POS) locales.
-
----
-
-> *"Al centralizar lo pesado en Python y lo hermoso en React, dejamos de construir una plantilla web compleja y empezamos a construir un **SaaS Contable de Clase Mundial**."*
+© 2026 Contapymepuq — Propiedad Intelectual Reservada. Magallanes, Chile.
