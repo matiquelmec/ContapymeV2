@@ -262,12 +262,12 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     doc.line(120, finalY, 180, finalY); // Legal Rep
 
     doc.setFontSize(8);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
     doc.text('CERTIFICACIÓN CONTADOR', 60, finalY + 5, { align: 'center' });
     doc.text('REPRESENTANTE LEGAL', 150, finalY + 5, { align: 'center' });
 
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.text('CONTABILIDAD GENERAL', 60, finalY + 9, { align: 'center' });
     doc.text(organization?.nombre || 'EMPRESA', 150, finalY + 9, { align: 'center' });
@@ -283,11 +283,11 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     }
     
     doc.setFontSize(7);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(80);
     doc.text('SELLO DE INTEGRIDAD DIGITAL - VALIDEZ INSTITUCIONAL', 38, finalY + 5);
     
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
     doc.setTextColor(140);
     doc.text(`HASH DE INTEGRIDAD: ${integrityHash}`, 38, finalY + 9);
