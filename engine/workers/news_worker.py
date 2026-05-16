@@ -285,31 +285,29 @@ async def _cleanup_junk_news():
         logger.error(f"[News Worker] ⚠️ Error en limpieza de DB: {e}")
 
 async def _maintain_db_hygiene():
-    """Mantiene solo las últimas 200 noticias para preservar la Hemeroteca sin saturar la DB."""
+    """Mantiene solo las últimas 200 noticias usando filtros de fecha para mayor eficiencia."""
     db = get_supabase()
     try:
-        # Obtener IDs de las últimas 200 noticias
-        res = db.table("regional_news").select("id").order("published_at", desc=True).limit(200).execute()
-        if not res.data: return
+        # 1. Obtener la fecha de la noticia número 200 (nuestro límite)
+        res = db.table("regional_news").select("published_at").order("published_at", desc=True).range(199, 199).execute()
         
-        keep_ids = [n["id"] for n in res.data]
-        
-        # Borrar todas las que NO estén en ese grupo
-        # Nota: Supabase Python no soporta 'not.in' directamente fácil, usamos un filtro de ID
-        all_res = db.table("regional_news").select("id").execute()
-        all_ids = [n["id"] for n in all_res.data]
-        
-        delete_ids = [id for id in all_ids if id not in keep_ids]
-        
-        if delete_ids:
-            logger.info(f"[News Worker] 🧹 Higiene de DB: Purgando {len(delete_ids)} noticias antiguas...")
-            for i in range(0, len(delete_ids), 10): # Borrar en lotes
-                chunk = delete_ids[i:i+10]
-                db.table("regional_news").delete().in_("id", chunk).execute()
-            logger.info("[News Worker] ✅ Base de Datos purificada y optimizada.")
+        if not res.data:
+            # Si hay menos de 200 noticias, no hacemos nada
+            return
             
+        limit_date = res.data[0]["published_at"]
+        
+        # 2. Borrar todo lo que sea anterior a esa fecha
+        # Esto es una sola query eficiente en el servidor
+        delete_res = db.table("regional_news").delete().lt("published_at", limit_date).execute()
+        
+        if delete_res.data:
+            logger.info(f"[News Worker] 🧹 Higiene: Se eliminaron {len(delete_res.data)} noticias antiguas (anteriores a {limit_date}).")
+        else:
+            logger.info("[News Worker] 🧹 Higiene: Base de datos ya está optimizada.")
+
     except Exception as e:
-        logger.error(f"[News Worker] ⚠️ Error al mantener higiene de DB: {e}")
+        logger.warning(f"[News Worker] ⚠️ Error no-crítico en higiene: {e}")
 
 def get_news_scheduler() -> AsyncIOScheduler:
     """Retorna el scheduler para el worker de noticias."""

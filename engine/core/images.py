@@ -8,7 +8,7 @@ from core.database import get_supabase
 logger = logging.getLogger("contapyme.images")
 
 # Configuración Hugging Face Inference API (v8.7 Smart Cloud)
-HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 
 async def generate_and_upload_image(prompt: str, news_id: str = None) -> str:
