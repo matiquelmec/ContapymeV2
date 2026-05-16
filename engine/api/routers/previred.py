@@ -4,6 +4,7 @@ from datetime import date
 from io import StringIO
 from fastapi import APIRouter, HTTPException
 from core.database import get_supabase
+from core.utils.shared_utils import split_rut
 from fastapi.responses import StreamingResponse
 
 router = APIRouter()
@@ -45,11 +46,6 @@ def clean_text(text: str) -> str:
     for a, b in replacements:
         text = text.replace(a, b)
     return re.sub(r'[^A-Z0-9 ]', '', text).strip()
-
-def clean_rut(rut: str) -> tuple:
-    """Limpia RUT y devuelve (cuerpo, dv)."""
-    r = rut.replace(".", "").replace("-", "").upper()
-    return r[:-1], r[-1]
 
 @router.get("/export-previred/{organization_id}")
 async def export_previred(organization_id: str, periodo: str):
@@ -109,7 +105,7 @@ async def export_previred(organization_id: str, periodo: str):
 
         for liq in liquidations:
             emp = liq.get('employees', {})
-            rut_body, rut_dv = clean_rut(emp.get('rut', ''))
+            rut_body, rut_dv = split_rut(emp.get('rut', ''))
             
             # ──────────────────────────────────────────────────────────────────
             # LÓGICA DE ROBUSTEZ: FALLBACK DE IMPONIBLE

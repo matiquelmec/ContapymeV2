@@ -19,6 +19,7 @@ import io
 import csv
 import logging
 from core.database import get_supabase
+from core.utils.shared_utils import clean_rut_simple as clean_rut
 from core.auth import verify_token
 
 logger = logging.getLogger("lre_engine")
@@ -106,15 +107,6 @@ def safe_int(val: Any) -> int:
         return int(round(float(val)))
     except (ValueError, TypeError):
         return 0
-
-def clean_rut(rut_raw: Any) -> str:
-    """Limpia un RUT chileno al formato DT: sin puntos ni guión, DV en mayúscula."""
-    if not rut_raw: return ""
-    rut = str(rut_raw).replace(".", "").replace("-", "").strip()
-    # DT requiere DV en mayúscula (ej: 12345678K, no 12345678k)
-    if rut and rut[-1].isalpha():
-        rut = rut[:-1] + rut[-1].upper()
-    return rut
 
 
 # ─── Modelo de Request ───────────────────────────────────────────
