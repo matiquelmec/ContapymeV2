@@ -5,6 +5,7 @@ import { engineFetch } from '@/lib/engine-client'
 import { revalidatePath } from 'next/cache'
 
 import { parseError } from '@/lib/utils/errors'
+import { recordAuditAction } from '@/actions/audit'
 
 export async function getDTEsForOrganization(organizationId: string) {
   try {
@@ -136,5 +137,100 @@ export async function exportDTEToCSV(organizationId: string) {
     return { success: true, data: csvContent }
   } catch (err: any) {
     return { success: false, error: err.message }
+  }
+}
+
+export async function getDTEConfig(organizationId: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('dte_companies')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return { success: true, data: null }
+      throw error
+    }
+    return { success: true, data }
+  } catch (err: any) {
+    return { success: false, error: parseError(err), data: null }
+  }
+}
+
+export async function updateDTEConfig(organizationId: string, formData: any) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const payload = { ...formData }
+    if (!payload.id) delete payload.id
+
+    const { error } = await supabase
+      .from('dte_companies')
+      .upsert({
+        organization_id: organizationId,
+        ...payload,
+        updated_at: new Date().toISOString()
+      }, { on_conflict: 'organization_id,rut' })
+
+    if (error) throw error
+
+    await recordAuditAction({
+      action: 'UPDATE_DTE_CONFIG',
+      entity_type: 'DTE_COMPANY',
+      entity_id: organizationId,
+      details: { rut: formData.rut }
+    })
+
+    revalidatePath('/dashboard/settings')
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}
+
+export async function uploadCAF(organizationId: string, xmlContent: string, environment: string = 'certification') {
+  try {
+    const res = await engineFetch('/api/v1/dte/upload-caf', {
+      method: 'POST',
+      body: {
+        organization_id: organizationId,
+        xml_content: xmlContent,
+        environment
+      }
+    })
+
+    if (res.success) {
+      await recordAuditAction({
+        action: 'UPLOAD_CAF',
+        entity_type: 'DTE_CAF',
+        entity_id: organizationId,
+        details: res.details
+      })
+      revalidatePath('/dashboard/settings')
+    }
+
+    return res
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}
+
+export async function getCAFRecords(organizationId: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('dte_caf_folios')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (err: any) {
+    return { success: false, error: parseError(err), data: [] }
   }
 }

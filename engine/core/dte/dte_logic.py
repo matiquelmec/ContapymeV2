@@ -24,8 +24,8 @@ class DTELogic:
             .eq("organization_id", self.organization_id)\
             .execute()
         
-        if not response.data or len(response.data) == 0:
-            raise Exception(f"Configuración DTE faltante: La organización '{self.organization_id}' no está registrada como emisor en dte_companies.")
+        if (not response.data) or (len(response.data) == 0):
+            raise Exception(f"Configuración DTE Pendiente: La organización no ha sido registrada como emisor electrónico. Por favor, vaya a 'Configuración de Empresa > Facturación' para completar los datos de la empresa y cargar sus folios (CAF).")
         return response.data[0]
 
     def _get_next_folio(self, tipo_dte: int) -> int:
@@ -39,7 +39,7 @@ class DTELogic:
             .execute()
         
         if not caf.data or len(caf.data) == 0:
-            raise Exception(f"Sin folios: No se encontraron archivos CAF (folios) activos para el tipo {tipo_dte}. Por favor, cargue un CAF en la configuración.")
+            raise Exception(f"Folios Agotados o Faltantes: No se encontraron folios (CAF) activos para el documento tipo {tipo_dte}. Por favor, descargue un nuevo archivo CAF desde el portal del SII y cárguelo en 'Configuración de Empresa > Facturación'.")
             
         current_caf = caf.data[0]
         next_folio = current_caf["last_used_folio"] + 1

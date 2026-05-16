@@ -75,3 +75,90 @@ async def list_issued_dtes(
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload-caf")
+async def upload_caf(
+    organization_id: str = Body(...),
+    xml_content: str = Body(...),
+    environment: str = Body("certification"),
+    auth: dict = Depends(verify_token)
+):
+    """
+    Sube y procesa un archivo CAF (Folios) del SII.
+    """
+    await verify_org_role(organization_id, required_roles=["owner", "admin"], auth=auth)
+    
+    from lxml import etree
+    from core.database import get_supabase
+    db = get_supabase()
+    
+    try:
+        # Parsear XML
+        parser = etree.XMLParser(remove_blank_text=True)
+        root = etree.fromstring(xml_content.encode('utf-8'), parser)
+        
+        # El CAF real está en <CAF> o es el root si solo se subió el fragmento
+        caf_node = root.find(".//CAF")
+        if caf_node is None and root.tag == "CAF":
+            caf_node = root
+        
+        if caf_node is None:
+            raise Exception("No se encontró el nodo <CAF> en el XML provisto.")
+            
+        da_node = caf_node.find("DA")
+        rut_emisor = da_node.find("RE").text
+        tipo_dte = int(da_node.find("TD").text)
+        range_start = int(da_node.find(".//D").text)
+        range_end = int(da_node.find(".//H").text)
+        fecha_auth = da_node.find("FA").text
+        
+        # Buscar el company_id en dte_companies
+        comp_res = db.table("dte_companies")\
+            .select("id")\
+            .eq("organization_id", organization_id)\
+            .eq("rut", rut_emisor)\
+            .execute()
+            
+        if not comp_res.data:
+            raise Exception(f"Emisor No Encontrado: El RUT {rut_emisor} presente en el archivo CAF no coincide con la empresa configurada en esta organización. Por favor, verifique que el RUT en 'Configuración de Empresa > Facturación' sea el correcto antes de subir el archivo.")
+            
+        company_id = comp_res.data[0]["id"]
+        
+        # Guardar en dte_caf_folios
+        caf_data = {
+            "organization_id": organization_id,
+            "company_id": company_id,
+            "tipo_dte": tipo_dte,
+            "range_start": range_start,
+            "range_end": range_end,
+            "last_used_folio": range_start - 1,
+            "environment": environment,
+            "caf_xml": xml_content,
+            "authorized_at": fecha_auth,
+            "is_active": True
+        }
+        
+        # Desactivar otros CAFs del mismo tipo y ambiente para esta empresa
+        db.table("dte_caf_folios")\
+            .update({"is_active": False})\
+            .eq("organization_id", organization_id)\
+            .eq("company_id", company_id)\
+            .eq("tipo_dte", tipo_dte)\
+            .eq("environment", environment)\
+            .execute()
+            
+        # Insertar nuevo
+        db.table("dte_caf_folios").insert(caf_data).execute()
+        
+        return {
+            "success": True, 
+            "message": f"CAF Procesado: Tipo {tipo_dte}, Folios {range_start}-{range_end}",
+            "details": {
+                "tipo_dte": tipo_dte,
+                "range": f"{range_start}-{range_end}",
+                "rut": rut_emisor
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

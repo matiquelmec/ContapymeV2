@@ -10,13 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Save, UserCircle, Building2, Users2, Shield, Loader2, 
   CheckCircle2, Mail, Phone, MapPin, FileText, Globe, UserCog,
-  History, Fingerprint, Activity, Plus, Trash2, X, Send
+  History, Fingerprint, Activity, Plus, Trash2, X, Send, 
+  UploadCloud, FileUp, AlertTriangle, Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
 import { inviteMember, deleteInvitation, getPendingInvitations } from "@/actions/members";
 import { getAuditLogs, getAuditActions } from "@/actions/audit";
+import { updateDTEConfig, uploadCAF } from "@/actions/billing";
 import { formatRUT, cleanRUT } from "@/lib/utils/rut";
+import { cn } from "@/lib/utils";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, 
   DialogTrigger, DialogDescription, DialogFooter 
@@ -24,6 +27,7 @@ import {
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
+import { StatusModal, StatusType } from "../components/status-modal";
 
 // ―― HELPER: input premium ――
 const PInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
@@ -37,17 +41,27 @@ export default function SettingsPageClient({
   organizationId, 
   userEmail, 
   initialProfile, 
-  initialOrganization, 
-  initialMembers 
+  initialOrganization,
+  initialMembers,
+  initialDTEConfig,
+  initialCAFRecords,
+  userId
 }: {
   organizationId: string;
   userEmail: string;
+  userId: string;
   initialProfile: any;
   initialOrganization: any;
   initialMembers: any[];
+  initialDTEConfig: any;
+  initialCAFRecords: any[];
 }) {
   const [loadingOrg, setLoadingOrg] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingDTE, setLoadingDTE] = useState(false);
+  const [loadingCAF, setLoadingCAF] = useState(false);
+  const [cafRecords, setCafRecords] = useState<any[]>(initialCAFRecords || []);
+  const [cafEnv, setCafEnv] = useState<'certification' | 'production'>('certification');
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditActions, setAuditActions] = useState<string[]>([]);
@@ -55,6 +69,16 @@ export default function SettingsPageClient({
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "viewer" });
   const [loadingInvite, setLoadingInvite] = useState(false);
+
+  // Status Modal State
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: 'success' as StatusType,
+    title: '',
+    description: '',
+    actionLabel: undefined as string | undefined,
+    onAction: undefined as (() => void) | undefined
+  });
 
   const [profileForm, setProfileForm] = useState({
     full_name: initialProfile?.full_name || "",
@@ -70,6 +94,19 @@ export default function SettingsPageClient({
     region: initialOrganization?.region || "",
     email: initialOrganization?.email || "",
     telefono: initialOrganization?.telefono || "",
+  });
+
+  const [dteForm, setDteForm] = useState({
+    id: initialDTEConfig?.id || null,
+    rut: initialDTEConfig?.rut ? formatRUT(initialDTEConfig.rut) : "",
+    razon_social: initialDTEConfig?.razon_social || "",
+    giro: initialDTEConfig?.giro || "",
+    direccion: initialDTEConfig?.direccion || "",
+    comuna: initialDTEConfig?.comuna || "",
+    ciudad: initialDTEConfig?.ciudad || "",
+    acteco: initialDTEConfig?.acteco || "",
+    resolucion_numero: initialDTEConfig?.resolucion_numero || "",
+    resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
   });
 
   useEffect(() => {
@@ -91,6 +128,21 @@ export default function SettingsPageClient({
       telefono: initialOrganization?.telefono || "",
     });
   }, [initialOrganization]);
+
+  useEffect(() => {
+    setDteForm({
+      id: initialDTEConfig?.id || null,
+      rut: initialDTEConfig?.rut ? formatRUT(initialDTEConfig.rut) : "",
+      razon_social: initialDTEConfig?.razon_social || "",
+      giro: initialDTEConfig?.giro || "",
+      direccion: initialDTEConfig?.direccion || "",
+      comuna: initialDTEConfig?.comuna || "",
+      ciudad: initialDTEConfig?.ciudad || "",
+      acteco: initialDTEConfig?.acteco || "",
+      resolucion_numero: initialDTEConfig?.resolucion_numero || "",
+      resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
+    });
+  }, [initialDTEConfig]);
 
   const handleSaveProfile = async () => {
     setLoadingProfile(true);
@@ -134,13 +186,110 @@ export default function SettingsPageClient({
     }
   };
 
+  const handleSaveDTE = async () => {
+    setLoadingDTE(true);
+    try {
+      const dtePayload = {
+        ...dteForm,
+        rut: cleanRUT(dteForm.rut),
+        acteco: parseInt(dteForm.acteco.toString()) || 0,
+        resolucion_numero: parseInt(dteForm.resolucion_numero.toString()) || 0,
+      };
+      const res = await updateDTEConfig(organizationId, dtePayload);
+      if (res.success) {
+        setStatusModal({
+          open: true,
+          type: 'success',
+          title: 'Configuración Sincronizada',
+          description: 'La empresa ha sido habilitada exitosamente como emisor electrónico. Ahora puede proceder a cargar sus folios (CAF).',
+          actionLabel: 'Ver Folios',
+          onAction: () => {
+             document.getElementById('caf-section')?.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      } else {
+        setStatusModal({
+          open: true,
+          type: 'error',
+          title: 'Fallo en Configuración',
+          description: res.error || 'No se pudo actualizar la configuración del emisor.',
+        });
+      }
+    } catch(err: any) {
+      setStatusModal({
+        open: true,
+        type: 'error',
+        title: 'Error de Sistema',
+        description: 'Hubo un problema al conectar con el servidor de facturación.',
+      });
+    } finally {
+      setLoadingDTE(false);
+    }
+  };
+
+  const handleUploadCAF = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoadingCAF(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const xmlContent = e.target?.result as string;
+        const res = await uploadCAF(organizationId, xmlContent, cafEnv);
+        
+        if (res.success) {
+          setStatusModal({
+            open: true,
+            type: 'success',
+            title: 'Folios Cargados',
+            description: res.message || 'El archivo CAF ha sido procesado e inyectado correctamente en el sistema.',
+            actionLabel: 'Aceptar',
+            onAction: () => window.location.reload()
+          });
+        } else {
+          setStatusModal({
+            open: true,
+            type: 'error',
+            title: 'Error de Procesamiento',
+            description: res.error || 'El archivo CAF provisto no es válido o no corresponde a esta empresa.',
+          });
+        }
+        setLoadingCAF(false);
+      };
+      reader.readAsText(file);
+    } catch (err) {
+      setStatusModal({
+        open: true,
+        type: 'error',
+        title: 'Error de Lectura',
+        description: 'No se pudo leer el archivo XML. Asegúrese de que el formato sea correcto.',
+      });
+      setLoadingCAF(false);
+    }
+  };
+
 
 
   return (
-    <Tabs defaultValue="empresa" className="w-full">
-      <TabsList className="bg-muted/10 p-2 h-auto rounded-[2rem] border border-border/50 grid grid-cols-3 max-w-2xl gap-2 mb-10 shadow-inner">
+    <div className="space-y-6">
+      <StatusModal 
+        open={statusModal.open}
+        onOpenChange={(open) => setStatusModal(prev => ({ ...prev, open }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        description={statusModal.description}
+        actionLabel={statusModal.actionLabel}
+        onAction={statusModal.onAction}
+      />
+
+      <Tabs defaultValue="empresa" className="w-full">
+      <TabsList className="bg-muted/10 p-2 h-auto rounded-[2rem] border border-border/50 grid grid-cols-5 max-w-4xl gap-2 mb-10 shadow-inner">
         <TabsTrigger value="empresa" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
           <Building2 className="w-4 h-4 opacity-40" /> EMPRESA
+        </TabsTrigger>
+        <TabsTrigger value="dte" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
+          <FileText className="w-4 h-4 opacity-40" /> FACTURACIÓN
         </TabsTrigger>
         <TabsTrigger value="perfil" className="py-4 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary gap-2 transition-all">
           <UserCircle className="w-4 h-4 opacity-40" /> MI PERFIL
@@ -286,6 +435,268 @@ export default function SettingsPageClient({
             >
               {loadingOrg ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
               SINCRONIZAR DATOS
+            </Button>
+          </CardFooter>
+        </Card>
+      </TabsContent>
+
+      {/* ===== TAB: FACTURACIÓN (DTE) ===== */}
+      <TabsContent value="dte" className="animate-in fade-in slide-in-from-top-4 duration-500 outline-none">
+        <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-amber-500/10">
+          <CardHeader className="bg-muted/5 border-b border-border p-10">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                <FileText className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Emisor Electrónico (DTE)</CardTitle>
+                <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
+                  CONFIGURACIÓN TÉCNICA REQUERIDA POR EL SII PARA EMISIÓN DE DOCUMENTOS
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-10 space-y-10">
+            
+            {/* IDENTIDAD DTE */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5" /> CREDENCIALES TRIBUTARIAS
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem]">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">RUT EMISOR</Label>
+                  <PInput
+                    value={dteForm.rut}
+                    onChange={(e) => setDteForm({ ...dteForm, rut: formatRUT(e.target.value) })}
+                    placeholder="76.000.000-K"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CÓDIGO ACTECO (ACTIVIDAD)</Label>
+                  <PInput
+                    type="number"
+                    value={dteForm.acteco}
+                    onChange={(e) => setDteForm({ ...dteForm, acteco: e.target.value })}
+                    placeholder="Ej: 692000"
+                  />
+                </div>
+                <div className="space-y-3 md:col-span-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">RAZÓN SOCIAL (SII)</Label>
+                  <PInput
+                    value={dteForm.razon_social}
+                    onChange={(e) => setDteForm({ ...dteForm, razon_social: e.target.value })}
+                    placeholder="Nombre legal completo ante el SII"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* RESOLUCIÓN */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Activity className="w-3.5 h-3.5" /> RESOLUCIÓN SII
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem]">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NÚMERO DE RESOLUCIÓN</Label>
+                  <PInput
+                    type="number"
+                    value={dteForm.resolucion_numero}
+                    onChange={(e) => setDteForm({ ...dteForm, resolucion_numero: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">FECHA DE RESOLUCIÓN</Label>
+                  <PInput
+                    type="date"
+                    value={dteForm.resolucion_fecha}
+                    onChange={(e) => setDteForm({ ...dteForm, resolucion_fecha: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* DOMICILIO DTE */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5" /> DOMICILIO TRIBUTARIO
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem]">
+                <div className="space-y-3 md:col-span-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">DIRECCIÓN LEGAL</Label>
+                  <PInput
+                    value={dteForm.direccion}
+                    onChange={(e) => setDteForm({ ...dteForm, direccion: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">COMUNA</Label>
+                  <PInput
+                    value={dteForm.comuna}
+                    onChange={(e) => setDteForm({ ...dteForm, comuna: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CIUDAD</Label>
+                  <PInput
+                    value={dteForm.ciudad}
+                    onChange={(e) => setDteForm({ ...dteForm, ciudad: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* GESTIÓN DE FOLIOS (CAF) */}
+            <div className="space-y-6 pt-10 border-t border-border/50">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <History className="w-3.5 h-3.5" /> FOLIOS AUTORIZADOS (CAF)
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/60 italic font-bold uppercase tracking-wider">
+                    CARGUE LOS ARCHIVOS .XML OBTENIDOS DESDE EL SII (TIMBRAJE ELECTRÓNICO)
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-muted/20 p-4 rounded-[2rem] border-2 border-border/50 shadow-inner">
+                  <div className="space-y-1 pr-4 border-r border-border/50">
+                     <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">AMBIENTE</Label>
+                     <Select value={cafEnv} onValueChange={(val: any) => setCafEnv(val)}>
+                        <SelectTrigger className="h-10 w-32 rounded-xl border-none bg-white font-black uppercase text-[10px] tracking-widest shadow-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border rounded-xl">
+                          <SelectItem value="certification" className="font-black text-[10px] uppercase">Certificación</SelectItem>
+                          <SelectItem value="production" className="font-black text-[10px] uppercase text-emerald-600">Producción</SelectItem>
+                        </SelectContent>
+                     </Select>
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      id="caf-upload" 
+                      className="hidden" 
+                      accept=".xml" 
+                      onChange={handleUploadCAF}
+                      disabled={loadingCAF}
+                    />
+                    <Button
+                      onClick={() => document.getElementById('caf-upload')?.click()}
+                      disabled={loadingCAF}
+                      variant="outline"
+                      className="h-14 rounded-2xl border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 font-black uppercase text-xs tracking-[0.2em] px-8 shadow-lg hover:scale-[1.03] transition-all gap-3"
+                    >
+                      {loadingCAF ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                      CARGAR NUEVO CAF
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* LISTA DE CAFS */}
+              <div className="bg-muted/5 border-2 border-border/50 rounded-[2rem] overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 border-border">
+                      <TableHead className="text-foreground font-black uppercase text-[9px] tracking-widest px-8 py-4">Tipo DTE</TableHead>
+                      <TableHead className="text-foreground font-black uppercase text-[9px] tracking-widest px-8 py-4">Rango de Folios</TableHead>
+                      <TableHead className="text-foreground font-black uppercase text-[9px] tracking-widest px-8 py-4">Último Usado</TableHead>
+                      <TableHead className="text-foreground font-black uppercase text-[9px] tracking-widest px-8 py-4">Ambiente</TableHead>
+                      <TableHead className="text-right text-foreground font-black uppercase text-[9px] tracking-widest px-8 py-4">Estado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cafRecords.length > 0 ? (
+                      cafRecords.map((caf) => (
+                        <TableRow key={caf.id} className="border-border group hover:bg-white/40 transition-colors">
+                          <TableCell className="px-8 py-4">
+                            <span className="font-black text-xs text-foreground uppercase tracking-tight">
+                              {caf.tipo_dte === 33 ? 'Factura Electrónica' : 
+                               caf.tipo_dte === 39 ? 'Boleta Electrónica' : 
+                               caf.tipo_dte === 61 ? 'Nota de Crédito' : 
+                               `Tipo ${caf.tipo_dte}`}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-8 py-4">
+                            <span className="font-mono text-xs font-bold text-muted-foreground">
+                              {caf.range_start} — {caf.range_end}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-8 py-4">
+                            <span className="font-mono text-xs font-black text-primary">
+                              #{caf.last_used_folio}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-8 py-4">
+                            <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg border ${
+                              caf.environment === 'production' 
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                : 'bg-blue-50 text-blue-700 border-blue-100'
+                            }`}>
+                              {caf.environment === 'production' ? 'PROD' : 'CERT'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-8 py-4 text-right">
+                            {caf.is_active ? (
+                              <span className="inline-flex items-center gap-1.5 text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 shadow-sm">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Activo
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">
+                                Agotado / Inactivo
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-32 text-center py-10">
+                          <div className="flex flex-col items-center gap-2 opacity-30">
+                            <FileUp className="w-8 h-8" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em]">No se han cargado folios autorizados</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* AVISO TÉCNICO */}
+              <div className="p-6 bg-amber-500/[0.03] border-2 border-amber-500/10 rounded-[2rem] flex gap-4 items-start">
+                <div className="p-2 bg-amber-500/10 rounded-xl">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-amber-900 tracking-tight">Importante: Gestión de Folios</p>
+                  <p className="text-[9px] text-amber-800/70 font-bold leading-relaxed">
+                    Al cargar un nuevo CAF para un mismo tipo de documento y ambiente, el sistema desactivará automáticamente el anterior. 
+                    Asegúrese de cargar el archivo XML original descargado desde el sitio del SII. No modifique el contenido del archivo.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </CardContent>
+          <CardFooter className="bg-muted/5 border-t border-border p-10 flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-muted-foreground flex items-center gap-2 font-black uppercase tracking-widest">
+                <Shield className="w-4 h-4 text-amber-600" /> Configuración crítica de facturación.
+              </span>
+              <p className="text-[9px] text-muted-foreground/60 italic font-bold">Estos datos aparecerán en el PDF y XML de cada DTE emitido.</p>
+            </div>
+            <Button
+              onClick={handleSaveDTE}
+              disabled={loadingDTE}
+              className="h-14 rounded-2xl bg-amber-600 text-white font-black uppercase text-xs tracking-[0.2em] px-10 shadow-xl shadow-amber-600/20 hover:scale-[1.03] active:scale-95 transition-all gap-3 hover:bg-amber-700"
+            >
+              {loadingDTE ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              GUARDAR CONFIGURACIÓN DTE
             </Button>
           </CardFooter>
         </Card>
@@ -462,10 +873,20 @@ export default function SettingsPageClient({
                               {m.profiles?.full_name?.charAt(0) || "?"}
                             </div>
                             <div className="flex flex-col">
-                              <span className="font-black text-foreground uppercase text-xs tracking-tight group-hover:text-primary transition-colors">
-                                {m.profiles?.full_name || 'Usuario sin nombre'}
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "font-black text-foreground uppercase text-xs tracking-tight transition-colors",
+                                  m.user_id === userId ? "text-primary" : "group-hover:text-primary"
+                                )}>
+                                  {m.profiles?.full_name || (m.user_id === userId ? userEmail : 'Usuario sin nombre')}
+                                </span>
+                                {m.user_id === userId && (
+                                  <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[8px] font-black uppercase rounded-md border border-primary/10">Tú</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground/60 font-bold italic mt-0.5">
+                                {m.profiles?.full_name ? "Acceso Activo" : (m.user_id === userId ? "Favor completar perfil" : "Nombre no configurado")}
                               </span>
-                              <span className="text-[10px] text-muted-foreground/60 font-bold italic mt-0.5">Acceso Activo</span>
                             </div>
                           </div>
                         </TableCell>
@@ -631,6 +1052,7 @@ export default function SettingsPageClient({
           </CardContent>
         </Card>
       </TabsContent>
-    </Tabs>
+      </Tabs>
+    </div>
   );
 }

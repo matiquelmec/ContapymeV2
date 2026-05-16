@@ -30,7 +30,27 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
-        <Toaster theme="dark" position="bottom-right" richColors />
+        <Toaster 
+          theme="dark" 
+          position="bottom-right" 
+          richColors 
+          toastOptions={{
+            style: {
+              background: 'rgba(10, 10, 10, 0.85)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '24px',
+              padding: '16px 24px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            },
+            className: "font-sans",
+          }}
+        />
       </body>
     </html>
   );

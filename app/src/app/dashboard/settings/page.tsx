@@ -6,6 +6,7 @@ import {
   getOrganizationDetails, 
   getOrganizationMembers 
 } from "@/actions/settings";
+import { getDTEConfig, getCAFRecords } from "@/actions/billing";
 import SettingsPageClient from "./settings-page-client";
 import { Settings2 } from "lucide-react";
 
@@ -29,9 +30,11 @@ export default async function GlobalSettingsPage() {
     );
   }
 
-  const [organization, members] = await Promise.all([
+  const [organization, members, dteConfigRes, cafRes] = await Promise.all([
     getOrganizationDetails(orgId),
-    getOrganizationMembers(orgId)
+    getOrganizationMembers(orgId),
+    getDTEConfig(orgId),
+    getCAFRecords(orgId)
   ]);
 
   return (
@@ -53,9 +56,12 @@ export default async function GlobalSettingsPage() {
       <SettingsPageClient 
         organizationId={orgId}
         userEmail={user.email || ""}
+        userId={user.id}
         initialProfile={JSON.parse(JSON.stringify(profile))}
         initialOrganization={JSON.parse(JSON.stringify(organization))}
         initialMembers={JSON.parse(JSON.stringify(members))}
+        initialDTEConfig={JSON.parse(JSON.stringify(dteConfigRes?.data))}
+        initialCAFRecords={JSON.parse(JSON.stringify(cafRes?.data || []))}
       />
     </div>
   );

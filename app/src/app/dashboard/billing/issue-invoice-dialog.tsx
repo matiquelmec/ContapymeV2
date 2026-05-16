@@ -42,6 +42,7 @@ import { issueDTE } from '@/actions/billing'
 import { cleanRUT, formatRUT, validateRUT } from '@/lib/utils/rut'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { StatusModal, StatusType } from '../components/status-modal'
 
 interface IssueInvoiceDialogProps {
     open: boolean
@@ -75,6 +76,15 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
         iva: 0,
         total: 0
     })
+
+    const [statusModal, setStatusModal] = useState({
+        open: false,
+        type: 'success' as StatusType,
+        title: '',
+        description: '',
+        actionLabel: undefined as string | undefined,
+        onAction: undefined as (() => void) | undefined
+    });
 
     const supabase = createClient();
 
@@ -188,23 +198,51 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
             })
 
             if (result.success) {
-                toast.success(`DTE Folio ${result.data.folio} emitido con éxito!`)
-                onOpenChange(false)
-                // Reset form
-                setReceptor({ rut: '', razon_social: '', giro: '' })
-                setItems([{ id: crypto.randomUUID(), product_name: '', quantity: 1, unit_price: 0, total_amount: 0, is_exempt: false }])
+                setStatusModal({
+                    open: true,
+                    type: 'success',
+                    title: 'DTE Emitido',
+                    description: `El documento Folio ${result.data.folio} ha sido generado y timbrado exitosamente por el SII.`,
+                    actionLabel: 'Ver PDF',
+                    onAction: () => {
+                        // Aquí iría la lógica para abrir el PDF
+                        onOpenChange(false)
+                        setReceptor({ rut: '', razon_social: '', giro: '' })
+                        setItems([{ id: crypto.randomUUID(), product_name: '', quantity: 1, unit_price: 0, total_amount: 0, is_exempt: false }])
+                    }
+                })
             } else {
-                toast.error(result.error)
+                setStatusModal({
+                    open: true,
+                    type: 'error',
+                    title: 'Fallo en Emisión',
+                    description: result.error || 'No se pudo completar el timbrado del documento.',
+                })
             }
         } catch (error) {
-            toast.error('Error al conectar con el servidor.')
+            setStatusModal({
+                open: true,
+                type: 'error',
+                title: 'Error Crítico',
+                description: 'El motor de facturación no respondió. Verifique su conexión o folios.',
+            })
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <>
+            <StatusModal 
+                open={statusModal.open}
+                onOpenChange={(open) => setStatusModal(prev => ({ ...prev, open }))}
+                type={statusModal.type}
+                title={statusModal.title}
+                description={statusModal.description}
+                actionLabel={statusModal.actionLabel}
+                onAction={statusModal.onAction}
+            />
+            <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-5xl w-full p-0 overflow-hidden border-none rounded-[2rem] md:rounded-[3rem] bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.2)]">
                 <div className="bg-[#0f172a] p-6 md:p-10 text-white relative overflow-hidden">
                     <div className="absolute -top-12 -right-12 p-8 opacity-[0.03] rotate-12">
@@ -382,5 +420,6 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                 </div>
             </DialogContent>
         </Dialog>
+        </>
     )
 }
