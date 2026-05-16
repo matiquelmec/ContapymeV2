@@ -1,3 +1,4 @@
+import os
 import httpx
 import json
 import logging
@@ -5,19 +6,24 @@ import asyncio
 
 logger = logging.getLogger("contapyme.ai")
 
-# Configuración de Ollama Local (Heredada de Slingshot Trading)
-OLLAMA_URL = "http://localhost:11434/api/chat"
-DEFAULT_MODEL = "gemma3:4b"  # El modelo que el usuario tiene configurado
+# Configuración de Groq Cloud (v8.7 Smart Cloud)
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+DEFAULT_MODEL = "llama-3.1-8b-instant"
 
 async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     """
-    Procesa una noticia usando el LLM local (Ollama) para resumirla,
+    Procesa una noticia usando Groq Cloud para resumirla,
     darle un tono ejecutivo y verificar su relevancia regional.
     """
+    if not GROQ_API_KEY:
+        logger.error("[AI] ⚠️ Falta GROQ_API_KEY. Abortando procesamiento de IA.")
+        return None
+
     prompt = f"""
     Eres el editor y Analista Financiero principal de 'Contapymepuq', un portal institucional de noticias en Magallanes, Chile.
     Tu audiencia son contadores, dueños de empresas y profesionales que buscan información estratégica.
-    Tu objetivo es transformar textos crudosen artículos profesionales, sobrios y útiles.
+    Tu objetivo es transformar textos crudos en artículos profesionales, sobrios y útiles.
     
     ¡IMPORTANTE!: Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. En su lugar, responde con un JSON que tenga "category": "IGNORE".
 
@@ -50,24 +56,27 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     payload = {
         "model": DEFAULT_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "stream": False,
-        "format": "json",
-        "options": {
-            "num_predict": 2048,  # Aumento del límite de tokens para evitar cortes
-            "temperature": 0.3,   # Más determinismo para evitar divagaciones
-            "top_p": 0.9          # Estabilidad en la elección de palabras
-        }
+        "temperature": 0.3,
+        "response_format": {"type": "json_object"}
     }
 
     try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(OLLAMA_URL, json=payload)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            headers = {
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            response = await client.post(GROQ_URL, json=payload, headers=headers)
+            
             if response.status_code == 200:
                 result = response.json()
-                content_raw = result.get("message", {}).get("content", "{}")
+                content_raw = result.get("choices", [{}])[0].get("message", {}).get("content", "{}")
                 data = json.loads(content_raw)
                 
-                # Blindaje: Asegurar que TODAS las llaves necesarias existan
+                if data.get("category") == "IGNORE":
+                    logger.info(f"[AI] Noticia ignorada por irrelevancia: {headline}")
+                    return None
+
                 return {
                     "title": data.get("title", headline),
                     "category": data.get("category", "REGIONAL"),
@@ -77,10 +86,8 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
                     "visual_prompt": data.get("visual_prompt", f"Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, 8k, vibrant colors.")
                 }
             else:
-                logger.error(f"[AI] Error en Ollama: {response.status_code}")
+                logger.error(f"[AI] Error en Groq: {response.status_code} - {response.text}")
     except Exception as e:
         logger.error(f"[AI] No se pudo procesar con IA: {e}")
     
-    # Si la IA falla, devolvemos NULL para no ensuciar el portal con basura.
-    # El portal debe ser IMPECABLE o estar vacío.
     return None
