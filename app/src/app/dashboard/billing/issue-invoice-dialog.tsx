@@ -143,8 +143,14 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
     const updateItem = (id: string, field: keyof DTEItem, value: any) => {
         setItems(items.map(item => {
             if (item.id === id) {
-                const updated = { ...item, [field]: value }
-                updated.total_amount = updated.quantity * updated.unit_price
+                // Si es un campo numérico y el valor es NaN (input vacío), usamos 0
+                let finalValue = value;
+                if ((field === 'quantity' || field === 'unit_price') && isNaN(value)) {
+                    finalValue = 0;
+                }
+                
+                const updated = { ...item, [field]: finalValue }
+                updated.total_amount = (updated.quantity || 0) * (updated.unit_price || 0)
                 return updated
             }
             return item
@@ -313,7 +319,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                             <TableCell className="py-4">
                                                 <Input 
                                                     type="number"
-                                                    value={item.quantity}
+                                                    value={item.quantity || ''}
                                                     onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value))}
                                                     className="rounded-xl h-11 border-transparent bg-transparent hover:bg-white text-center font-black"
                                                 />
@@ -321,7 +327,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                             <TableCell className="py-4">
                                                 <Input 
                                                     type="number"
-                                                    value={item.unit_price}
+                                                    value={item.unit_price || ''}
                                                     onChange={e => updateItem(item.id, 'unit_price', parseInt(e.target.value))}
                                                     className="rounded-xl h-11 border-transparent bg-transparent hover:bg-white text-right font-black"
                                                 />
