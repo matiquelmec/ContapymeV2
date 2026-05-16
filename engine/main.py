@@ -25,11 +25,16 @@ from workers.news_worker import start_news_worker, stop_news_worker
 async def lifespan(app: FastAPI):
     """
     Gestiona el ciclo de vida del API Engine.
-    Los procesos de fondo (Workers/Schedulers) se ejecutan ahora
-    de forma independiente en 'run_worker.py' para mayor estabilidad.
+    Incluye los workers de indicadores y noticias para que
+    se ejecuten automáticamente al iniciar el servidor.
     """
+    # Arrancar workers de fondo
+    await start_scheduler()
+    await start_news_worker()
     yield
-    # Limpieza de recursos de API si fuera necesario
+    # Limpieza al apagar
+    await stop_scheduler()
+    await stop_news_worker()
 
 
 # ─── Aplicación FastAPI ────────────────────────────────────────────────────────

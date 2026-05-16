@@ -285,11 +285,11 @@ async def _cleanup_junk_news():
         logger.error(f"[News Worker] ⚠️ Error en limpieza de DB: {e}")
 
 async def _maintain_db_hygiene():
-    """Mantiene solo las últimas 50 noticias para evitar saturación de datos irrelevantes."""
+    """Mantiene solo las últimas 200 noticias para preservar la Hemeroteca sin saturar la DB."""
     db = get_supabase()
     try:
-        # Obtener IDs de las útlimas 50 noticias
-        res = db.table("regional_news").select("id").order("published_at", desc=True).limit(50).execute()
+        # Obtener IDs de las últimas 200 noticias
+        res = db.table("regional_news").select("id").order("published_at", desc=True).limit(200).execute()
         if not res.data: return
         
         keep_ids = [n["id"] for n in res.data]
