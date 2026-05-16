@@ -12,26 +12,29 @@ from supabase import create_client, Client
 
 security = HTTPBearer()
 
+_anon_client: Client | None = None
+
+def get_anon_client() -> Client:
+    global _anon_client
+    if _anon_client is None:
+        url = os.getenv("SUPABASE_URL")
+        anon_key = os.getenv("SUPABASE_ANON_KEY")
+        if not url or not anon_key:
+            raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_ANON_KEY")
+        _anon_client = create_client(url, anon_key)
+    return _anon_client
+
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
     Valida el JWT con Supabase.
-    Si el token es válido, devuelve el objeto usuario.
-    Si no, lanza una excepción 401.
     """
     token = credentials.credentials
     try:
-        url = os.getenv("SUPABASE_URL")
-        anon_key = os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not anon_key:
-            print("❌ ERROR: Faltan variables de entorno SUPABASE_URL o SUPABASE_ANON_KEY en el servidor.")
-            raise HTTPException(status_code=500, detail="Configuración del servidor incompleta (Variables de entorno)")
-
-        # Creamos un cliente temporal solo para validar este JWT.
-        temp_client = create_client(url, anon_key)
+        # Usamos un cliente singleton para validar
+        client = get_anon_client()
         
         # Validar el token obteniendo el usuario
-        res = temp_client.auth.get_user(token)
+        res = client.auth.get_user(token)
         
         if not res.user:
             raise HTTPException(status_code=401, detail="Sesión no válida o expirada")
@@ -45,8 +48,10 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         raise he
     except Exception as e:
         print(f"❌ Error crítico en validación de token Engine: {str(e)}")
-        # Loguear más detalles si es posible
-        raise HTTPException(status_code=401, detail="Error de autenticación: Protocolo de seguridad violado")
+        # Si hay un error de inicialización, intentamos limpiar el cliente para el próximo reintento
+        global _anon_client
+        _anon_client = None
+        raise HTTPException(status_code=401, detail=f"Error de seguridad: {str(e)}")
 
 from core.database import get_supabase
 
