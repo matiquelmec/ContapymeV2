@@ -3,6 +3,8 @@ from .dte_xml_builder import DTEXMLBuilder
 from .dte_signer import DTESigner
 from ..database import get_supabase
 import uuid
+import hashlib
+import json
 
 class DTELogic:
     """
@@ -82,8 +84,12 @@ class DTELogic:
             "monto_iva": invoice_data["monto_iva"],
             "monto_total": invoice_data["monto_total"],
             "tasa_iva": invoice_data.get("tasa_iva", 19.00),
-            "status": "draft"
+            "status": "draft",
+            "previous_hash": self._get_previous_hash(tipo_dte)
         }
+        
+        # Calcular Integrity Hash
+        dte_record["integrity_hash"] = self._calculate_integrity_hash(dte_record)
         
         insert_response = self.supabase.table("dte_issued").insert(dte_record).execute()
         dte_id = insert_response.data[0]["id"]
@@ -141,3 +147,68 @@ class DTELogic:
             .range(offset, offset + limit)\
             .execute()
         return response.data
+
+    def _get_previous_hash(self, tipo_dte: int) -> str:
+        """Obtiene el hash del último DTE emitido para mantener la cadena de integridad."""
+        last_dte = self.supabase.table("dte_issued")\
+            .select("integrity_hash")\
+            .eq("organization_id", self.organization_id)\
+            .eq("tipo_dte", tipo_dte)\
+            .order("created_at", desc=True)\
+            .limit(1)\
+            .execute()
+        
+        if not last_dte.data or len(last_dte.data) == 0:
+            return "GENESIS_BLOCK_CONTAPYMEPUQ"
+            
+        return last_dte.data[0]["integrity_hash"]
+
+    def _calculate_integrity_hash(self, record: Dict[str, Any]) -> str:
+        """Calcula un hash SHA-256 basado en los datos críticos y el hash anterior."""
+        # Seleccionamos campos críticos que no deben cambiar
+        data_to_hash = {
+            "organization_id": str(record["organization_id"]),
+            "tipo_dte": record["tipo_dte"],
+            "folio": record["folio"],
+            "fecha_emision": record["fecha_emision"],
+            "receptor_rut": record["receptor_rut"],
+            "monto_total": record["monto_total"],
+            "previous_hash": record["previous_hash"]
+        }
+        
+        # Serializar a JSON ordenado para consistencia
+        serialized_data = json.dumps(data_to_hash, sort_keys=True).encode()
+        return hashlib.sha256(serialized_data).hexdigest()
+
+    async def verify_chain_integrity(self, tipo_dte: int) -> Dict[str, Any]:
+        """
+        Realiza una auditoría forense de la cadena de documentos para detectar manipulaciones.
+        """
+        all_dtes = self.supabase.table("dte_issued")\
+            .select("*")\
+            .eq("organization_id", self.organization_id)\
+            .eq("tipo_dte", tipo_dte)\
+            .order("created_at", desc=False)\
+            .execute()
+        
+        errors = []
+        expected_prev_hash = "GENESIS_BLOCK_CONTAPYMEPUQ"
+        
+        for dte in all_dtes.data:
+            # 1. Verificar vínculo con el anterior
+            if dte["previous_hash"] != expected_prev_hash:
+                errors.append(f"Ruptura de cadena en Folio {dte['folio']}: Se esperaba {expected_prev_hash[:10]}... pero se encontró {dte['previous_hash'][:10]}...")
+            
+            # 2. Recalcular Hash actual
+            recalculated_hash = self._calculate_integrity_hash(dte)
+            if dte["integrity_hash"] != recalculated_hash:
+                errors.append(f"Manipulación detectada en Folio {dte['folio']}: El contenido no coincide con la firma digital.")
+            
+            # Actualizar para el siguiente eslabón
+            expected_prev_hash = dte["integrity_hash"]
+            
+        return {
+            "status": "VALID" if not errors else "COMPROMISED",
+            "total_documents": len(all_dtes.data),
+            "errors": errors
+        }

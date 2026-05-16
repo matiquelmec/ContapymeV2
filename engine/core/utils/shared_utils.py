@@ -67,3 +67,42 @@ def format_date_cl(date_val: Any) -> str:
         return f"{d.day} de {meses_cl[d.month-1]} de {d.year}"
     except:
         return str(date_val)
+
+def validate_rut(rut: Any) -> bool:
+    """Revisa si un rut chileno es válido según su dígito verificador."""
+    cleaned = clean_rut_simple(rut)
+    if len(cleaned) < 2:
+        return False
+
+    cuerpo = cleaned[:-1]
+    dv = cleaned[-1]
+
+    try:
+        if not cuerpo.isdigit():
+            return False
+            
+        cuerpo_num = int(cuerpo)
+        suma = 0
+        multiplo = 2
+
+        while cuerpo_num > 0:
+            suma += (cuerpo_num % 10) * multiplo
+            cuerpo_num = cuerpo_num // 10
+            multiplo = 2 if multiplo == 7 else multiplo + 1
+
+        resto = 11 - (suma % 11)
+        dv_esperado = str(resto)
+
+        if resto == 11:
+            dv_esperado = "0"
+        elif resto == 10:
+            dv_esperado = "K"
+
+        return dv == dv_esperado
+    except:
+        return False
+
+# Alias para estandarización profesional
+format_rut = clean_rut
+format_currency = format_clp
+format_date_es = format_date_cl
