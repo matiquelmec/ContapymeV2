@@ -50,7 +50,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         "summary": "Resumen ejecutivo.",
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
-        "visual_prompt": "Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, professional business atmosphere, 8k."
+        "visual_prompt": "Descripción visual detallada de la escena (ej. 'Jugador de futbol en la nieve...', 'Las Torres del Paine con neones...'), siempre en inglés, manteniendo el estilo 'Studio Ghibli style, soft cyberpunk, Magallanes, vibrant colors'."
     }}
     """
 
