@@ -13,6 +13,7 @@ const navigationGroups = [
     title: "Tributario & RCV",
     items: [
       { name: 'Registro RCV', href: '/dashboard/accounting/rcv', icon: FileText },
+      { name: 'Facturación (DTE)', href: '/dashboard/billing', icon: Box },
       { name: 'Contabilidad (F29)', href: '/dashboard/accounting', icon: Calculator },
       { name: 'Análisis F29', href: '/dashboard/accounting/f29-comparative', icon: BarChart3 },
     ]

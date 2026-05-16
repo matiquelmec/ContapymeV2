@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE version="1.0" xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte DTE_v10.xsd">
+    <Documento ID="DTE_33_2">
+        <Encabezado>
+            <IdDoc>
+                <TipoDTE>33</TipoDTE>
+                <Folio>2</Folio>
+                <FchEmis>2026-05-15</FchEmis>
+            </IdDoc>
+            <Emisor>
+                <RUTEmisor>77411206-5</RUTEmisor>
+                <RznSoc>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RznSoc>
+                <GiroEmis>TECNOLOGIA DE LA INFORMACION Y SERVICIOS INFORMATICOS</GiroEmis>
+                <Acteco></Acteco>
+                <DirOrigen>Las Malvas 2775</DirOrigen>
+                <CmnaOrigen>Punta Arenas</CmnaOrigen>
+                <CiudadOrigen>Punta Arenas</CiudadOrigen>
+            </Emisor>
+            <Receptor>
+                <RUTRecep>60803000-K</RUTRecep>
+                <RznSocRecep>SII - PRUEBA INTEGRACION</RznSocRecep>
+                <GiroRecep>PARTICULAR</GiroRecep>
+                <DirRecep>CIUDAD</DirRecep>
+                <CmnaRecep>CIUDAD</CmnaRecep>
+                <CiudadRecep>CIUDAD</CiudadRecep>
+            </Receptor>
+            <Totales>
+                <MntNeto>10000</MntNeto>
+                <TasaIVA>19.0</TasaIVA>
+                <IVA>1900</IVA>
+                <MntTotal>11900</MntTotal>
+            </Totales>
+        </Encabezado>
+        
+        <Detalle>
+            <NroLinDet>1</NroLinDet>
+            <NmbItem>Servicio de Consultoria IT</NmbItem>
+            <QtyItem>1</QtyItem>
+            <PrcItem>10000</PrcItem>
+            <MontoItem>10000</MontoItem>
+        </Detalle>
+    </Documento>
+</DTE>

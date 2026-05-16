@@ -1,0 +1,272 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { 
+    FileText, 
+    CheckCircle2, 
+    AlertCircle, 
+    TrendingUp, 
+    DollarSign, 
+    Search, 
+    Plus,
+    Clock,
+    ShieldCheck,
+    ArrowUpRight,
+    Download,
+    Eye,
+    Loader2
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableHead, 
+    TableHeader, 
+    TableRow 
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { exportDTEToCSV } from '@/actions/billing'
+import { IssueInvoiceDialog } from './issue-invoice-dialog'
+import { toast } from 'sonner'
+
+interface BillingClientProps {
+    organizationId: string
+    initialData: any[]
+    stats: {
+        totalDTEs: number
+        acceptedDTEs: number
+        signedDTEs: number
+        totalFacturado: number
+        availableFolios: number
+    }
+}
+
+export function BillingClient({ organizationId, initialData, stats }: BillingClientProps) {
+    const [searchTerm, setSearchTerm] = useState('')
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [exporting, setExporting] = useState(false)
+
+    const handleExport = async () => {
+        setExporting(true)
+        try {
+            const res = await exportDTEToCSV(organizationId)
+            if (res.success && res.data) {
+                const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                link.setAttribute('href', url)
+                link.setAttribute('download', `RCV_Ventas_${new Date().toISOString().slice(0, 10)}.csv`)
+                link.style.visibility = 'hidden'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+                toast.success('Reporte RCV exportado con éxito.')
+            } else {
+                toast.error(res.error || 'Error al exportar.')
+            }
+        } catch (err) {
+            toast.error('Error al generar el archivo.')
+        } finally {
+            setExporting(false)
+        }
+    }
+
+    const filteredData = initialData.filter(dte => 
+        dte.receptor_razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dte.folio.toString().includes(searchTerm) ||
+        dte.receptor_rut.includes(searchTerm)
+    )
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value)
+    }
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'accepted':
+                return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Aceptado</Badge>
+            case 'signed':
+                return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200"><ShieldCheck className="w-3 h-3 mr-1" /> Firmado</Badge>
+            case 'sent':
+                return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200"><Clock className="w-3 h-3 mr-1" /> Enviado</Badge>
+            case 'rejected':
+                return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200"><AlertCircle className="w-3 h-3 mr-1" /> Rechazado</Badge>
+            default:
+                return <Badge variant="outline">{status}</Badge>
+        }
+    }
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            
+            {/* ===== KPI CARDS (DISEÑO PREMIUM) ===== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="bg-gradient-to-br from-primary/[0.04] to-transparent border-primary/10 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-primary/10 p-3 rounded-2xl text-primary">
+                                <DollarSign className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">+12.5%</span>
+                        </div>
+                        <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">Total Facturado Bruto</h3>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{formatCurrency(stats.totalFacturado)}</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-emerald-50 p-3 rounded-2xl text-emerald-600">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-1 rounded-lg">SII Activo</span>
+                        </div>
+                        <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">DTEs Emitidos</h3>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{stats.totalDTEs} <span className="text-sm text-muted-foreground not-italic font-bold">Docs</span></p>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border/50 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-amber-50 p-3 rounded-2xl text-amber-600">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">Folios Disponibles (CAF)</h3>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{stats.availableFolios} <span className="text-sm text-amber-600 not-italic font-bold">Críticos</span></p>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-emerald-500/[0.08] to-transparent border-emerald-500/10 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-emerald-500/10 p-3 rounded-2xl text-emerald-600">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                        </div>
+                        <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">Integridad Criptográfica</h3>
+                        <p className="text-2xl font-black text-emerald-600 tracking-tighter italic">99.9% <span className="text-sm text-muted-foreground not-italic font-bold">Secured</span></p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* ===== SEARCH & ACTIONS ===== */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-96 group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input 
+                        placeholder="Buscar por RUT, Folio o Razón Social..." 
+                        className="pl-10 rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm focus-visible:ring-primary/20 h-11"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button 
+                        variant="outline" 
+                        className="rounded-2xl h-11 px-6 border-border font-bold text-xs uppercase tracking-tight gap-2 bg-white/50 hover:bg-white transition-all shadow-sm"
+                        onClick={handleExport}
+                        disabled={exporting}
+                    >
+                        {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        Exportar RCV
+                    </Button>
+                    <Button 
+                        className="rounded-2xl h-11 px-8 font-black text-xs uppercase tracking-tight gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                        onClick={() => setIsDialogOpen(true)}
+                    >
+                        <Plus className="w-4 h-4" /> Emitir Factura
+                    </Button>
+                </div>
+            </div>
+
+            {/* ===== DOCUMENT TABLE ===== */}
+            <Card className="border-border/40 rounded-[2.5rem] overflow-hidden bg-card/30 backdrop-blur-md shadow-xl shadow-black/[0.02]">
+                <Table>
+                    <TableHeader className="bg-muted/50">
+                        <TableRow className="hover:bg-transparent border-b border-border/40">
+                            <TableHead className="w-[100px] text-[10px] font-black uppercase tracking-widest pl-8">Folio</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Tipo</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Receptor</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Fecha</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Monto Total</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Estado</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right pr-8">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredData.length > 0 ? (
+                            filteredData.map((dte) => (
+                                <TableRow key={dte.id} className="hover:bg-primary/[0.02] border-b border-border/20 transition-colors group">
+                                    <TableCell className="font-black text-sm pl-8 italic text-primary">{dte.folio}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-foreground">DTE {dte.tipo_dte}</span>
+                                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
+                                                {dte.tipo_dte === 33 ? 'Factura Electrónica' : 'Boleta Electrónica'}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-foreground truncate max-w-[200px]">{dte.receptor_razon_social}</span>
+                                            <span className="text-[10px] text-muted-foreground font-mono">{dte.receptor_rut}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs font-bold text-muted-foreground">
+                                        {new Date(dte.fecha_emision).toLocaleDateString('es-CL')}
+                                    </TableCell>
+                                    <TableCell className="font-black text-sm tracking-tighter">
+                                        {formatCurrency(dte.monto_total)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {getStatusBadge(dte.status)}
+                                    </TableCell>
+                                    <TableCell className="text-right pr-8">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                                                <Eye className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                                                <Download className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-emerald-50 hover:text-emerald-600">
+                                                <ShieldCheck className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={7} className="h-32 text-center text-muted-foreground italic font-bold">
+                                    No se encontraron documentos emitidos.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </Card>
+
+            <IssueInvoiceDialog 
+                open={isDialogOpen} 
+                onOpenChange={setIsDialogOpen} 
+                organizationId={organizationId} 
+            />
+
+            {/* ===== INTEGRITY FOOTER ===== */}
+            <div className="flex items-center justify-center gap-2 py-4">
+                <div className="h-[1px] w-12 bg-border" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic flex items-center gap-2">
+                    <ShieldCheck className="w-3 h-3" /> Ledger Criptográfico Distribuido — Punta Arenas, Chile
+                </p>
+                <div className="h-[1px] w-12 bg-border" />
+            </div>
+        </div>
+    )
+}

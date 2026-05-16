@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getRCVDashboardData } from "@/actions/rcv";
+import { generateAccountingFromRCV } from "@/actions/accounting";
 import { formatCLP, formatPeriodo } from "@/lib/rcv-utils";
+import { toast } from "sonner";
 
 // Carga dinámica de gráficos para evitar bloqueo de hidratación (SSR: False)
 const AnalysisBarChart = dynamic(() => import("./rcv-charts").then(mod => mod.AnalysisBarChart), { 
@@ -56,7 +58,7 @@ interface Periodo {
 }
 
 interface DashboardState {
-  periodos: Periodo[];
+  periodos: string[];
   summary: RCVSummary | null;
   vendors: TopEntity[];
   customers: TopEntity[];
@@ -173,10 +175,40 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
   const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Solución robusta: Diferir el valor de los datos pesados
-  const deferredVendors = useDeferredValue(state.vendors);
-  const deferredCustomers = useDeferredValue(state.customers);
-  const deferredSummary = useDeferredValue(state.summary);
+    const [isCentralizing, setIsCentralizing] = useState(false);
+  
+    // Solución robusta: Diferir el valor de los datos pesados
+    const deferredVendors = useDeferredValue(state.vendors);
+    const deferredCustomers = useDeferredValue(state.customers);
+    const deferredSummary = useDeferredValue(state.summary);
+  
+    const handleCentralize = async (type: 'purchases' | 'sales') => {
+      if (!selectedPeriodo) {
+        toast.error("Seleccione un período específico para centralizar.");
+        return;
+      }
+  
+      if (!window.confirm(`¿Desea generar los asientos contables para ${type === 'purchases' ? 'COMPRAS' : 'VENTAS'} del período ${formatPeriodo(selectedPeriodo)}?`)) return;
+  
+      setIsCentralizing(true);
+      try {
+        const res = await generateAccountingFromRCV({
+          organization_id: organizationId,
+          periodo: selectedPeriodo,
+          type
+        });
+  
+        if (res.success) {
+          toast.success(`${res.count || 'Los'} asientos han sido generados en el Libro Diario.`);
+        } else {
+          toast.error(res.error || "Error al centralizar.");
+        }
+      } catch (err) {
+        toast.error("Error de conexión con el motor contable.");
+      } finally {
+        setIsCentralizing(false);
+      }
+    };
 
   useEffect(() => {
     if (!mounted) {
@@ -270,16 +302,16 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             </button>
             {state.periodos.map((p) => (
               <button
-                key={p.periodo}
-                onClick={() => setSelectedPeriodo(p.periodo)}
+                key={p}
+                onClick={() => setSelectedPeriodo(p)}
                 className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  selectedPeriodo === p.periodo
+                  selectedPeriodo === p
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100"
                     : "bg-transparent text-muted-foreground hover:bg-white hover:text-foreground"
                 }`}
                 suppressHydrationWarning
               >
-                {formatPeriodo(p.periodo)}
+                {formatPeriodo(p)}
               </button>
             ))}
           </div>
@@ -415,6 +447,15 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                   </Button>
                   <Button
                     variant="outline"
+                    className="flex-1 sm:flex-none border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
+                    onClick={() => handleCentralize('purchases')}
+                    disabled={isCentralizing || !selectedPeriodo}
+                  >
+                    {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
+                    CENTRALIZAR EN CONTABILIDAD
+                  </Button>
+                  <Button
+                    variant="outline"
                     className="flex-1 sm:flex-none border-2 border-border/60 bg-white text-foreground hover:bg-muted/50 font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
                     onClick={() => setShowVendorsTable((v) => !v)}
                   >
@@ -512,6 +553,15 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                   >
                     <Download className="w-4 h-4 mr-3" />
                     DATA EXPORT CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
+                    onClick={() => handleCentralize('sales')}
+                    disabled={isCentralizing || !selectedPeriodo}
+                  >
+                    {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
+                    CENTRALIZAR EN CONTABILIDAD
                   </Button>
                   <Button
                     variant="outline"

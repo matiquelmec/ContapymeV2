@@ -36,6 +36,10 @@ export default async function DashboardPage() {
     .from('f29_forms').select('*', { count: 'exact', head: true })
     .eq('organization_id', org?.id || '')
 
+  const { count: totalDTEs } = await supabase
+    .from('dte_issued').select('*', { count: 'exact', head: true })
+    .eq('organization_id', org?.id || '')
+
   const fechaActualizacion = indicators?.[0]?.updated_at
     ? new Date(indicators[0].updated_at).toLocaleDateString('es-CL', {
         day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -46,7 +50,8 @@ export default async function DashboardPage() {
   const hasIndicators = (indicators || []).length > 0;
   const hasEmployees = (totalEmpleados || 0) > 0;
   const hasF29 = (totalF29 || 0) > 0;
-  const showOnboardingChecklist = !hasIndicators || !hasEmployees || !hasF29;
+  const hasDTE = (totalDTEs || 0) > 0;
+  const showOnboardingChecklist = !hasIndicators || !hasEmployees || !hasF29 || !hasDTE;
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-700">
@@ -80,7 +85,7 @@ export default async function DashboardPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className={`p-6 rounded-3xl border-2 transition-all duration-500 ${hasIndicators ? 'bg-emerald-50/40 border-emerald-200/50 shadow-inner' : 'bg-card border-dashed border-border group hover:border-primary/40'}`}>
               <div className="flex items-center gap-4 mb-4">
                 {hasIndicators ? (
@@ -114,6 +119,18 @@ export default async function DashboardPage() {
                 <h3 className={`text-sm font-black uppercase tracking-tight ${hasEmployees ? 'text-emerald-900' : 'text-foreground'}`}>Certificación de Nómina LRE</h3>
               </div>
               <p className={`text-[11px] font-medium leading-relaxed italic ${hasEmployees ? 'text-emerald-800/70' : 'text-muted-foreground'}`}>Consolidación del capital humano y configuración de liquidaciones electrónicas.</p>
+            </div>
+
+            <div className={`p-6 rounded-3xl border-2 transition-all duration-500 ${hasDTE ? 'bg-emerald-50/40 border-emerald-200/50 shadow-inner' : 'bg-card border-dashed border-border group hover:border-primary/40'}`}>
+              <div className="flex items-center gap-4 mb-4">
+                {hasDTE ? (
+                  <div className="bg-emerald-100 p-1.5 rounded-full"><CheckCircle2 className="w-4 h-4 text-emerald-600" /></div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-muted-foreground/20" />
+                )}
+                <h3 className={`text-sm font-black uppercase tracking-tight ${hasDTE ? 'text-emerald-900' : 'text-foreground'}`}>Motor de Facturación DTE</h3>
+              </div>
+              <p className={`text-[11px] font-medium leading-relaxed italic ${hasDTE ? 'text-emerald-800/70' : 'text-muted-foreground'}`}>Gestión de folios CAF e integridad criptográfica de documentos tributarios.</p>
             </div>
           </div>
         </section>

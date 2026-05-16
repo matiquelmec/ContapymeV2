@@ -12,7 +12,7 @@ router = APIRouter()
 
 # ─── Sistema de Caché Interno para Análisis RCV ───────────────────────────
 _rcv_analysis_cache = {}
-RCV_CACHE_TTL = 600 # 10 minutos
+RCV_CACHE_TTL = 1 # Reducido a 1s para asegurar datos frescos en depuración
 
 def _get_rcv_cache(key: str):
     if key in _rcv_analysis_cache:
@@ -375,6 +375,10 @@ async def get_top_vendors(organization_id: str, periodo: Optional[str] = None, l
             query = query.or_(f"periodo.eq.{periodo},import_id.in.({','.join(imp_ids)})")
         else:
             query = query.eq("periodo", periodo)
+    else:
+        # Para Visión Global, aumentamos el límite de escaneo para capturar todos los periodos
+        query = query.limit(10000)
+        
     res = query.execute()
     data = res.data or []
     
@@ -414,6 +418,10 @@ async def get_top_customers(organization_id: str, periodo: Optional[str] = None,
             query = query.or_(f"periodo.eq.{periodo},import_id.in.({','.join(imp_ids)})")
         else:
             query = query.eq("periodo", periodo)
+    else:
+        # Para Visión Global, aumentamos el límite de escaneo
+        query = query.limit(10000)
+        
     res = query.execute()
     data = res.data or []
     
@@ -446,14 +454,19 @@ async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
         imp_res = db.table("rcv_imports").select("id").eq("organization_id", organization_id).eq("periodo", periodo).execute()
         imp_ids = [i["id"] for i in (imp_res.data or [])]
     
-    # 2. Obtener Compras
+    # 2. Obtener Compras (Usamos un límite muy alto para el resumen global)
     pq = db.table("purchase_records").select("monto_total, monto_calculado, rut_emisor").eq("organization_id", organization_id)
     if periodo:
         if imp_ids:
             pq = pq.or_(f"periodo.eq.{periodo},import_id.in.({','.join(imp_ids)})")
         else:
             pq = pq.eq("periodo", periodo)
-    purchases = pq.execute().data or []
+    else:
+        # Para global, queremos TODO. PostgREST tiene un límite duro, así que pedimos el máximo permitido
+        pq = pq.limit(10000)
+        
+    p_res = pq.execute()
+    purchases = p_res.data or []
     
     # 3. Obtener Ventas
     sq = db.table("sales_records").select("monto_total, monto_calculado, rut_receptor").eq("organization_id", organization_id)
@@ -462,17 +475,28 @@ async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
             sq = sq.or_(f"periodo.eq.{periodo},import_id.in.({','.join(imp_ids)})")
         else:
             sq = sq.eq("periodo", periodo)
-    sales = sq.execute().data or []
+    else:
+        sq = sq.limit(10000)
+        
+    s_res = sq.execute()
+    sales = s_res.data or []
     
-    # 4. Cálculos
+    # Debug para el desarrollador
+    print(f"DEBUG Analysis: Org={organization_id}, Periodo={periodo}, Purchases={len(purchases)}, Sales={len(sales)}")
+    
+    # 4. Cálculos Robustos
     total_purch = sum(abs(r.get("monto_total", 0)) for r in purchases)
     total_sales = sum(abs(r.get("monto_total", 0)) for r in sales)
     mc_purch = sum(r.get("monto_calculado", 0) for r in purchases)
     mc_sales = sum(r.get("monto_calculado", 0) for r in sales)
     
-    unique_vendors = len(set(r["rut_emisor"] for r in purchases if r.get("rut_emisor")))
-    unique_customers = len(set(r["rut_receptor"] for r in sales if r.get("rut_receptor")))
+    unique_vendors = len(set(r.get("rut_emisor") for r in purchases if r.get("rut_emisor")))
+    unique_customers = len(set(r.get("rut_receptor") for r in sales if r.get("rut_receptor")))
     
+    # Log profesional para diagnóstico en consola del motor
+    mode = "GLOBAL" if periodo is None else f"PERIOD:{periodo}"
+    print(f"[RCV_ANALYSIS] Mode: {mode} | Org: {organization_id} | PurchDocs: {len(purchases)} | SalesDocs: {len(sales)} | SumPurch: ${total_purch:,.0f}")
+
     result = {
         "total_docs_compras": len(purchases),
         "total_docs_ventas": len(sales),
@@ -482,22 +506,28 @@ async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
         "monto_calculado_ventas": mc_sales,
         "proveedores_unicos": unique_vendors,
         "clientes_unicos": unique_customers,
-        "balance": mc_sales - abs(mc_purch)
+        "balance": mc_sales - abs(mc_purch),
+        "is_global": periodo is None
     }
     _set_rcv_cache(cache_key, result)
     return result
 
 @router.get("/periodos")
 async def get_available_periods(organization_id: str):
+    """
+    Lista los periodos que tienen documentos físicos en la base de datos.
+    Filtra periodos 'fantasma' que solo existen en la bitácora de importación.
+    """
     db = get_supabase()
-    # PostgREST distinct filter
     p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).execute()
     s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).execute()
-    i_res = db.table("rcv_imports").select("periodo").eq("organization_id", organization_id).execute()
     
-    p_data = [r["periodo"] for r in (p_res.data or [])]
-    s_data = [r["periodo"] for r in (s_res.data or [])]
-    i_data = [r["periodo"] for r in (i_res.data or [])]
+    # Extraemos periodos únicos de las tablas de documentos reales
+    p_data = list(set([r["periodo"] for r in (p_res.data or []) if r.get("periodo")]))
+    s_data = list(set([r["periodo"] for r in (s_res.data or []) if r.get("periodo")]))
     
-    periods = sorted(list(set(p_data + s_data + i_data)), reverse=True)
-    return [{"periodo": p} for p in periods]
+    # Unificamos y ordenamos
+    periods = sorted(list(set(p_data + s_data)), reverse=True)
+    
+    print(f"[RCV_CONFIG] Periodos reales encontrados para {organization_id}: {len(periods)}")
+    return periods

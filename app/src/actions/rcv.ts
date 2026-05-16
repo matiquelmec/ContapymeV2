@@ -161,8 +161,8 @@ export async function getRCVDashboardData(organizationId: string, periodo?: stri
     ]);
 
     // Ordenar periodos de forma descendente (más recientes primero)
-    const sortedPeriods = (periods || []).sort((a: any, b: any) => 
-      b.periodo.localeCompare(a.periodo)
+    const sortedPeriods = (periods || []).sort((a: string, b: string) => 
+      b.localeCompare(a)
     );
 
     return {

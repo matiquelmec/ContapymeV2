@@ -1,6 +1,6 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
 ## "Precisión Institucional y Escalabilidad Organizacional para el Contador Moderno."
-> **Versión:** 4.0 (Magallanes 2077 — Institutional Hardening 🛡️💎) | **Fecha:** 2026-04-01 | **Estado:** ESTABLE — Producción Ready & Sincronización Automática 🚀
+> **Versión:** 5.0 (Magallanes 2077 — Integrity Hardening 🛡️💎) | **Fecha:** 2026-05-16 | **Estado:** ESTABLE — Producción Ready & Auditoría Real 🚀
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
@@ -13,11 +13,10 @@
 > **PARA INICIAR EL SISTEMA LOCAL:** Ejecutar `.\start.ps1` desde la raíz del proyecto.
 > - Frontend: http://localhost:3000
 > - Engine API + Docs: http://localhost:8000/docs
->
+
 > [!TIP]
-> **AUDITORÍA DE ESQUEMA (SINCRO 01-04 INSTITUCIONAL):** 
-> El estado maestro de todas las tablas se encuentra consolidado en:
-> `supabase/snapshots/master_snapshot_20260401.sql` (Única Fuente de Verdad Sincronizada).
+> **CADENA DE INTEGRIDAD (SSoT 2026):** 
+> El sistema ahora implementa una **Hash Chain SHA-256** para documentos tributarios, garantizando que los registros sean inalterables y auditables.
 
 ---
 
@@ -27,24 +26,25 @@ El ecosistema ahora consta de 3 actores independientes que se comunican de forma
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│  MOTOR DE PROCESAMIENTO MATEMÁTICO (Python + FastAPI)                │
-│  - PyMuPDF / Tesseract OCR: Precisión 100% en PDFs (F29, etc.).      │
+│  MOTOR DE PROCESAMIENTO Y FISCALIZACIÓN (Python + FastAPI)           │
+│  - RCV Auditor 2.0: Agregación real de documentos vs Bitácoras.      │
+│  - DTE Core: Generación de XML, Firma Digital y Timbrado Electrónico.│
 │  - calculators/chilean_payroll.py: Motor de Remuneraciones REAL.     │
 │  - Scraping & Workers: Sincronización automática de indicadores.     │
-│  - Synthesis Engine: Redacción automática de noticias regionales.     │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ API REST / JSON Struct
 ┌───────────────────────────────────▼──────────────────────────────────┐
 │  CENTRO DE DATOS Y SEGURIDAD (Supabase PostgreSQL)                   │
 │  - RLS (Row Level Security): EL MURO MULTI-TENANT. Datos Aislados.   │
-│  - Protocolo de Integridad: Triggers org_id auto-fill.               │
+│  - Integrity Chain: SHA-256 Hash vinculando cada DTE emitido.        │
+│  - Audit Logs: Trazabilidad total de acciones por organización.      │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ Supabase Client / Server Actions
 ┌───────────────────────────────────▼──────────────────────────────────┐
 │  FRONTEND INSTITUCIONAL (Next.js 16 App Router)                      │
 │  - UI "Seamless": MarketTicker global (Bloomberg style).             │
-│  - Executive Dashboard: Análisis Financiero Contapymepuq.            │
-│  - Zero-Maintenance: Sincronización proactiva y estados inteligentes.│
+│  - Billing Module: Emisión de DTE con autocompletado inteligente.    │
+│  - RCV Intelligence: Análisis profundo de compras y ventas.          │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -57,37 +57,45 @@ El ecosistema ahora consta de 3 actores independientes que se comunican de forma
 *   **Seguridad:** RLS (Row Level Security) nivel Dios en todas las tablas transaccionales.
 *   **Audit Logs:** Registro de cada acción crítica (entity_type, action, details) para trazabilidad GRC.
 
-### 3.2 🧾 Módulo F29: Auditoría Tributaria Inteligente
-*   **Visualización:** Gráficos de tendencias e insights automáticos de carga tributaria.
-*   **Centralización:** Generación idempotente de asientos contables IFRS desde el parser Python.
+### 3.2 🧾 Módulo RCV: Auditoría Real e Inteligencia
+*   **RCV 2.0:** Motor de agregación que suma documentos físicos en lugar de confiar en bitácoras externas.
+*   **Selector Inteligente:** Solo muestra periodos con datos reales, eliminando meses "fantasma".
 
-### 3.3 👥 Módulo Remuneraciones, Finiquitos y "Papel Cero"
+### 3.3 📄 Módulo DTE: Facturación Electrónica (SII Compliance)
+*   **XML Builder:** Generación de esquemas DTE según estándar del SII.
+*   **Signer Core:** Firma digital usando PKCS1v15 y SHA1 con canonización C14N.
+*   **CAF Manager:** Gestión automática de folios y avisos de agotamiento de rangos.
+
+### 3.4 👥 Módulo Remuneraciones y Finiquitos
 *   **Motor Real:** Normativa laboral chilena completa (Topes UF, Gratificación Art. 50, IRPF).
 *   **Firmas Digitales:** Soporte para `signature_base64` en liquidaciones y finiquitos.
-*   **Folios:** Sistema de numeración de folios único por organización.
-*   **Data Demográfica:** RUT, Sexo, Estado Civil, Nacionalidad y Plan de Salud UF integrados.
-
-### 3.4 🏘️ Módulo de Periodismo Regional (Sovereign AI)
-*   **News Engine:** Automatización de noticias locales Magallánicas con soporte para slugs SEO y resúmenes inteligentes.
-
-### 3.5 📉 Módulo Indicadores y MarketPulse
-*   **MarketTicker:** Cinta Bloomberg integrada en el Layout 108px.
-*   **Automatización:** Actualización desatendida mediante APScheduler en el Engine Python.
 
 ---
 
-## 🚀 4. INTEGRIDAD DE BASE DE DATOS (SINCRO 01-04)
-
-El sistema opera bajo los siguientes esquemas validados (Contexto Institucional):
+## 🚀 4. INTEGRIDAD DE BASE DE DATOS (SINCRO 2026-05)
 
 | Tabla | Propósito Crítico | Campos de Elite Sincronizados |
 |---|---|---|
-| `liquidations` | Nómina Mensual | `signature_base64`, `folio_number`, `salud_total`, `asignacion_familiar` |
-| `employees` | Capital Humano | `plan_salud_uf`, `asignacion_colacion`, `sexo`, `estado_civil` |
-| `regional_news` | Periodismo Sintético | `slug`, `normalized_title`, `summary`, `source_url` |
-| `economic_indicators` | Market Data | `codigo`, `valor`, `fuente`, `updated_at` |
-| `bank_accounts` | Tesorería | `bank_name`, `account_type`, `chart_account_id` |
+| `dte_issued` | Facturación Emitida | `integrity_hash`, `previous_hash`, `xml_content`, `folio` |
+| `dte_caf_folios` | Gestión SII | `range_start`, `range_end`, `last_used_folio`, `caf_xml` |
+| `purchase_records` | Auditoría Compras | `monto_total`, `periodo`, `organization_id` |
 | `audit_logs` | GRC (Gobierno/Riesgo) | `user_id`, `action`, `details` (jsonb), `ip_address` |
+
+---
+
+## 🚀 6. ROADMAP: LAS FASES DE DESPLIEGUE
+
+### FASE 11: Facturación y Auditoría Profunda 💎 — **EN PROGRESO**
+*   [x] **RCV Auditor 2.0:** Motor de agregación real implementado.
+*   [x] **DTE Core Engine:** Generador y firmador de XML operativo.
+*   [x] **Integrity Chain:** Implementación de Hashes SHA-256 en DB.
+*   [ ] **SII Connector:** Envío automático a la API del SII (Soap/Rest).
+*   [ ] **PDF Generation:** Generación de representación impresa (Acrobat PDF).
+
+---
+
+> *"Al centralizar lo pesado en Python y lo hermoso en React, dejamos de construir una plantilla web compleja y empezamos a construir un **SaaS Contable de Clase Mundial**."*
+ddress` |
 
 ---
 

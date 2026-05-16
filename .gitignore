@@ -30,9 +30,9 @@ Thumbs.db
 
 # Temporales y Logs de Auditoria/Pruebas
 *.log
+**/.pytest_cache/
+.pytest_cache/
 engine/output_images/
-engine/tmp/
-engine/.pytest_cache/
 .agent/
 .agents/
 .claude/
