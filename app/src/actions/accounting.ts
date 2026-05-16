@@ -250,6 +250,22 @@ export async function getAccountingConfig(organizationId: string) {
   }
 }
 
+export async function initializeAccountingConfigAction(organizationId: string) {
+  try {
+    const response = await engineFetch(`/api/v1/accounting/config/initialize?organization_id=${organizationId}`, {
+      method: "POST",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "Error al inicializar configuración");
+    
+    revalidatePath("/dashboard/accounting/config");
+    return result;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function updateAccountingConfigAction(configId: string, data: any) {
   try {
     const response = await engineFetch(`/api/v1/accounting/config/${configId}`, {

@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Save, Settings2, AlertCircle, Info, Loader2, Plus, Trash2, Search, UserPlus, Landmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { 
   updateAccountingConfigAction, 
   createMappingRuleAction, 
-  deleteMappingRuleAction 
+  deleteMappingRuleAction,
+  initializeAccountingConfigAction
 } from "@/actions/accounting";
 import {
   Dialog,
@@ -258,6 +258,7 @@ export function ConfigClient({
   const [rules, setRules] = useState<MappingRule[]>(initialRules);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(initialBankAccounts);
   const [loading, setLoading] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   
@@ -378,10 +379,33 @@ export function ConfigClient({
             Esto es habitual tras la creación de una nueva organización o reestructuración del plan contable.
           </CardDescription>
           <div className="pt-6 inline-flex">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-primary shadow-sm border border-primary/20">
-              <Info className="h-4 w-4" />
-              Sincronice el Plan de Cuentas IFRS
-            </div>
+            <Button 
+              onClick={async () => {
+                setInitializing(true);
+                try {
+                  const res = await initializeAccountingConfigAction(organizationId);
+                  if (res.success) {
+                    toast.success("Configuración inicializada correctamente");
+                    window.location.reload();
+                  } else {
+                    toast.error(res.error || "Error al inicializar");
+                  }
+                } catch (error) {
+                  toast.error("Error inesperado al inicializar");
+                } finally {
+                  setInitializing(false);
+                }
+              }}
+              disabled={initializing}
+              className="inline-flex items-center gap-3 px-8 py-6 bg-primary hover:bg-primary/90 rounded-full text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border border-primary/20 transition-all hover:scale-105 active:scale-95"
+            >
+              {initializing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Info className="h-5 w-5" />
+              )}
+              {initializing ? "INICIALIZANDO..." : "Sincronizar el Plan de Cuentas (ERP)"}
+            </Button>
           </div>
         </div>
       </Card>
