@@ -9,7 +9,7 @@ logger = logging.getLogger("contapyme.ai")
 # Configuración de Groq Cloud (v8.7 Smart Cloud)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-DEFAULT_MODEL = "llama-3.1-8b-instant"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     """
