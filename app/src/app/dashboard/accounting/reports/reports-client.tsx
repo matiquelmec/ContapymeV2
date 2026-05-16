@@ -76,7 +76,7 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
 
     const allRows = [headers, ...erRows, ...bgRows];
     const csvContent = "\uFEFF" + allRows.map(row => 
-      row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
+      row.map((value: any) => `"${String(value).replace(/"/g, '""')}"`).join(",")
     ).join("\n");
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
