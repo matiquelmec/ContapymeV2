@@ -159,7 +159,9 @@ export default function ChartOfAccountsClient({
 
   const handleInitialize = async () => {
     setLoading(true);
-    toast.promise(initializeChartAction(organizationId), {
+    const promise = initializeChartAction(organizationId);
+    
+    toast.promise(promise, {
       loading: 'Sincronizando Plan de Cuentas IFRS...',
       success: (result: any) => {
         if (result.success) {
@@ -169,9 +171,13 @@ export default function ChartOfAccountsClient({
         throw new Error(result.error || result.message || "Error al inicializar");
       },
       error: (err) => err.message || "Error inesperado al sincronizar",
-    }).finally(() => {
-      setLoading(false);
     });
+
+    try {
+      await promise;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateAccount = async () => {
