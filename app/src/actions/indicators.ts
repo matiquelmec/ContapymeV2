@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 import { parseError } from '@/lib/utils/errors'
+import { Indicator } from '@/lib/types/dashboard'
 
 export async function getLatestIndicators() {
   const supabase = await createClient()
@@ -15,13 +16,13 @@ export async function getLatestIndicators() {
     
     if (error) {
       console.error('[DATABASE ERROR] Fallo al obtener indicadores:', error.message)
-      return { success: false, error: 'No se pudieron obtener indicadores de la base de datos.' }
+      return { success: false, error: 'No se pudieron obtener indicadores de la base de datos.', data: [] }
     }
 
-    return { success: true, data: data || [] }
+    return { success: true, data: (data as Indicator[]) || [] }
   } catch (err: any) {
     console.error("[Indicators Action Error]:", err.message);
-    return { success: false, error: 'Error de conexión con la central de indicadores.' }
+    return { success: false, error: 'Error de conexión con la central de indicadores.', data: [] }
   }
 }
 
