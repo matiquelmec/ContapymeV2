@@ -269,6 +269,10 @@ async def _fetch_and_process_news():
                 "updated_at": datetime.now().isoformat()
             }).execute()
             
+            # CADENCIA: Pausa de 5 segundos para evitar Rate Limits (Groq 429 / Images)
+            logger.info(f"[News Worker] ⏱️ Pausando 5s para respetar límites de API...")
+            await asyncio.sleep(5)
+            
             processed_count += 1
             logger.info(f"[News Worker] 🚀 ÉXITO EN BASE DE DATOS: {ai_data['title']} ({category})")
 
