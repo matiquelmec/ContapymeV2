@@ -381,9 +381,11 @@ export function ConfigClient({
           </CardDescription>
           <div className="pt-6 inline-flex">
             <Button 
-              onClick={() => {
+              onClick={async () => {
                 setInitializing(true);
-                toast.promise(initializeAccountingConfigAction(organizationId), {
+                const promise = initializeAccountingConfigAction(organizationId);
+                
+                toast.promise(promise, {
                   loading: 'Inicializando parámetros contables...',
                   success: (res: any) => {
                     if (res.success) {
@@ -393,9 +395,13 @@ export function ConfigClient({
                     throw new Error(res.error || "Error al inicializar");
                   },
                   error: (err) => err.message || "Error inesperado al inicializar"
-                }).finally(() => {
-                  setInitializing(false);
                 });
+
+                try {
+                  await promise;
+                } finally {
+                  setInitializing(false);
+                }
               }}
               disabled={initializing}
               className="inline-flex items-center gap-3 px-8 py-6 bg-primary hover:bg-primary/90 rounded-full text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border border-primary/20 transition-all hover:scale-105 active:scale-95"
