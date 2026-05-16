@@ -1,5 +1,5 @@
 """
-main.py — Contapyme V2 Engine Entry Point
+main.py — Contapymepuq Engine Entry Point
 ==========================================
 Boot de FastAPI con gestión de ciclo de vida (lifespan).
 Integra el scheduler de indicadores económicos automáticamente.
@@ -35,9 +35,9 @@ async def lifespan(app: FastAPI):
 # ─── Aplicación FastAPI ────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Contapyme V2 Engine",
+    title="Contapymepuq Engine",
     description="Motor Matemático de Contabilidad Regional — Arquitectura Slingshot",
-    version="2.0.0",
+    version="6.0.0",
     lifespan=lifespan,
 )
 
@@ -47,8 +47,8 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://*.vercel.app",  # Preview deployments de Vercel
-    # Agregar dominio de producción en Fase 8:
-    # "https://contapyme.cl",
+    # Dominio de producción:
+    "https://contapymepuq.cl",
 ]
 
 app.add_middleware(
@@ -88,8 +88,8 @@ app.include_router(dte.router,                 prefix="/api/v1/dte",         tag
 def health_check():
     return {
         "status": "ok",
-        "service": "contapyme-engine",
-        "version": "2.0.0",
-        "message": "[CONTAPYME ENGINE] Motor activo en http://0.0.0.0:8000",
+        "service": "contapymepuq-engine",
+        "version": "6.0.0",
+        "message": "[CONTAPYMEPUQ ENGINE] Motor activo en http://0.0.0.0:8000",
         "scheduler": "activo (indicadores Lun-Vie 09:00 AM Santiago)",
     }
