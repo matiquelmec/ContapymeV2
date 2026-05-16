@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
 from core.ai import process_news_with_local_llm
-from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback
+from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback_url
 
 logger = logging.getLogger("contapyme.news")
 # Trace: News Worker Pipeline v8.7.2 - Estabilizado con fallback de imágenes profesionales
