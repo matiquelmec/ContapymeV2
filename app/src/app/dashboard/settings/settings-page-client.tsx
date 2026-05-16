@@ -213,6 +213,8 @@ export default function SettingsPageClient({
           type: 'error',
           title: 'Fallo en Configuración',
           description: res.error || 'No se pudo actualizar la configuración del emisor.',
+          actionLabel: 'Entendido',
+          onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
         });
       }
     } catch(err: any) {
@@ -221,6 +223,8 @@ export default function SettingsPageClient({
         type: 'error',
         title: 'Error de Sistema',
         description: 'Hubo un problema al conectar con el servidor de facturación.',
+        actionLabel: 'Entendido',
+        onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
       });
     } finally {
       setLoadingDTE(false);
@@ -253,6 +257,8 @@ export default function SettingsPageClient({
             type: 'error',
             title: 'Error de Procesamiento',
             description: res.error || 'El archivo CAF provisto no es válido o no corresponde a esta empresa.',
+            actionLabel: 'Entendido',
+            onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
           });
         }
         setLoadingCAF(false);
@@ -264,6 +270,8 @@ export default function SettingsPageClient({
         type: 'error',
         title: 'Error de Lectura',
         description: 'No se pudo leer el archivo XML. Asegúrese de que el formato sea correcto.',
+        actionLabel: 'Entendido',
+        onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
       });
       setLoadingCAF(false);
     }
