@@ -14,8 +14,8 @@ export async function getLatestIndicators() {
         const errorData = await response.json().catch(() => ({}))
         return { success: false, error: parseError(errorData.detail || 'No se pudieron obtener indicadores.') }
     }
-    const data = await response.json()
-    return { success: true, data }
+    const result = await response.json()
+    return { success: true, data: result.data || [] }
   } catch (err: any) {
     return { success: false, error: 'Motor fuera de línea.' }
   }
