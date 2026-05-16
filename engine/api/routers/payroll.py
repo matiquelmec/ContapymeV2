@@ -218,7 +218,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     "bruto": sum(l.get("total_haberes_brutos", 0) for l in data),
                     "afc_emp": sum(l.get("afc_empresa", 0) for l in data),
                     "sis_emp": sum(l.get("sis_empresa", 0) for l in data),
-                    "afp_total": sum(l.get("afp", 0) + l.get("afp_comision", 0) for l in data),
+                    "afp_total": sum(l.get("afp", 0) + l.get("afp_comision", 0) + l.get("sis_empresa", 0) for l in data),
                     "salud": sum(l.get("salud_total", 0) for l in data),
                     "afc_trab": sum(l.get("afc_trabajador", 0) for l in data),
                     "impuesto": sum(l.get("impuesto_unico", 0) for l in data),

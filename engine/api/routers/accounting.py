@@ -451,7 +451,7 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
         if t_impuestos > 0:
             lines_to_insert.append({
                 "cuenta_codigo": config.get("liability_tax_code", "2.1.03.001"), 
-                "cuenta_nombre": config.get("liability_tax_name", "Impuesto Único por Pagar"), 
+                "cuenta_nombre": config.get("liability_tax_name", "Impuesto Unico por Pagar"), 
                 "tipo": "haber", "monto": t_impuestos
             })
         if t_liquido > 0:
@@ -461,20 +461,27 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
                 "tipo": "haber", "monto": t_liquido
             })
 
+        # --- VALIDACION DE CUADRATURA ESTRICTA ---
         if not lines_to_insert:
             return {"success": True, "entries_created": 0}
 
-        # Control de cuadratura estricta para el Libro Mayor
-        # Totales debe y haber (redondeos podrían desajustar en 1 peso). El sistema fuerza ajuste en sueldo por pagar.
         total_debe = sum(l["monto"] for l in lines_to_insert if l["tipo"] == "debe")
         total_haber = sum(l["monto"] for l in lines_to_insert if l["tipo"] == "haber")
-        descuadre = total_debe - total_haber
-        
-        if descuadre != 0:
-            for line in lines_to_insert:
-                if line["cuenta_codigo"] == config.get("liability_net_code", "2.1.04.001"):
-                    line["monto"] += descuadre
-                    break
+        diff = abs(total_debe - total_haber)
+
+        if diff > 0:
+            # Si el descuadre es menor a 10 pesos, ajustamos por redondeo en la cuenta de sueldos por pagar
+            if diff < 10:
+                for l in lines_to_insert:
+                    if l["cuenta_codigo"] == config.get("liability_net_code", "2.1.04.001"):
+                        l["monto"] += (total_debe - total_haber)
+                        break
+            else:
+                # Si el descuadre es mayor, ES UN ERROR FUNCIONAL. Bloqueamos para proteger la integridad.
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Error de Integridad: El asiento de remuneraciones esta descuadrado por ${diff:,.0f}. Auditoria requerida en liquidaciones."
+                )
 
         glosa = f"Centralización de Remuneraciones {req.periodo[:7]}"
         

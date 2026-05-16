@@ -1,5 +1,5 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
-**Versión:** 8.0 (Institutional Blockchain Integrity 🏛️)
+**Versión:** 8.6 (Certified Financial Integrity 📜)
 **Estado:** Production & Audit-Ready 🚀
 **Última Auditoría:** 16 de Mayo, 2026
 
@@ -17,8 +17,9 @@
 > - Engine API + Docs: http://localhost:8000/docs
 
 > [!TIP]
-> **CADENA DE INTEGRIDAD CRIPTOGRÁFICA (v8.0):** 
-> - **Blockchain-like Ledger**: Implementado SHA-256 Hash Chaining para documentos DTE en `engine/core/dte/dte_logic.py`.
+> **CERTIFIED ARCHIVAL (v8.6):** 
+> - **Financial Repository**: Implementado archivado inmutable de reportes con SHA-256 en `certified_reports`.
+> - **Blockchain-like Ledger**: SHA-256 Hash Chaining para DTEs en `engine/core/dte/dte_logic.py`.
 > - **Dossier Técnico**: Ver `docs/audit/DOC_CUMPLIMIENTO_TECNICO.md` para estándares normativos.
 > - **SSoT Utility**: Lógica unificada en `engine/core/utils/shared_utils.py`.
 
@@ -70,6 +71,11 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 *   **Blockchain Ledger:** Auditoría forense integrada en `DTELogic`.
 *   **Firmas Digitales:** Integración de `signature_base64` en documentos legales.
 
+### 2.4 📜 Módulo de Reportes Certificados
+*   **Archivado Inmutable:** Repositorio en la nube (Supabase Storage) con metadatos en DB.
+*   **Certificación Digital:** Sello SHA-256 único por reporte para auditoría forense.
+*   **Gestión de Historial:** Interfaz de usuario para descarga, validación y borrado seguro.
+
 ---
 
 ## 🚀 3. ROADMAP: LAS FASES DE EVOLUCIÓN
@@ -78,6 +84,7 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 *   [x] **SSoT Utility Engine:** Módulo `shared_utils.py` operativo.
 *   [x] **Higiene de Proyecto:** Eliminación de redundancias y scripts inseguros.
 *   [x] **Blockchain Integrity:** Implementación de SHA-256 Integrity Chaining en DTEs.
+*   [x] **Financial Certification:** Módulo de Reportes Certificados y Repositorio en la nube (v8.6).
 *   [x] **Dossier Técnico:** `DOC_CUMPLIMIENTO_TECNICO.md` creado.
 
 ### FASE 13: Despliegue a Producción 🌐 — **EN PROGRESO**

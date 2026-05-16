@@ -365,3 +365,133 @@ export async function exportLceMayorXmlAction(organizationId: string, periodoStr
     return { success: false, error: error.message };
   }
 }
+
+// --- REPOSITORIO DE REPORTES CERTIFICADOS ---
+
+export async function archiveCertifiedReport(data: {
+  organization_id: string;
+  report_type: string;
+  period_start: string;
+  period_end: string;
+  file_base64: string;
+  integrity_hash: string;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "No autorizado" };
+
+  try {
+    // 1. Convertir base64 a Buffer/Blob para subir a Storage
+    const base64Data = data.file_base64.split(',')[1] || data.file_base64;
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    const fileName = `${data.report_type}_${data.period_start}_${data.period_end}_${Date.now()}.pdf`;
+    const filePath = `${data.organization_id}/${fileName}`;
+
+    // 2. Subir al bucket 'certified_reports'
+    const { error: uploadError } = await supabase.storage
+      .from('certified_reports')
+      .upload(filePath, buffer, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+
+    if (uploadError) throw new Error(`Error al subir archivo: ${uploadError.message}`);
+
+    // 3. Registrar en la base de datos
+    const { error: dbError } = await supabase
+      .from('certified_reports')
+      .insert({
+        organization_id: data.organization_id,
+        report_type: data.report_type,
+        period_start: data.period_start,
+        period_end: data.period_end,
+        file_path: filePath,
+        integrity_hash: data.integrity_hash,
+        created_by: user.id
+      });
+
+    if (dbError) throw new Error(`Error al registrar en BD: ${dbError.message}`);
+
+    revalidatePath("/dashboard/accounting/trial-balance");
+    revalidatePath("/dashboard/accounting/reports");
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error archiving report:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getCertifiedReports(organizationId: string, reportType?: string) {
+  const { unstable_noStore: noStore } = await import('next/cache');
+  noStore();
+  
+  const supabase = await createClient();
+  
+  try {
+    let query = supabase
+      .from('certified_reports')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (reportType) {
+      query = query.eq('report_type', reportType);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Supabase DB Error fetching certs:", error);
+      throw error;
+    }
+
+    // Obtener URLs para cada reporte (usando public URL ya que el bucket es público)
+    const reportsWithUrls = (data || []).map((report) => {
+      const { data: { publicUrl } } = supabase.storage
+        .from('certified_reports')
+        .getPublicUrl(report.file_path);
+      
+      return {
+        ...report,
+        download_url: publicUrl
+      };
+    });
+
+    return reportsWithUrls;
+  } catch (error) {
+    console.error("Error fetching certified reports:", error);
+    return [];
+  }
+}
+
+export async function deleteCertifiedReport(reportId: string, filePath: string) {
+  const supabase = await createClient();
+  
+  try {
+    // 1. Borrar archivo del Storage
+    const { error: storageError } = await supabase.storage
+      .from('certified_reports')
+      .remove([filePath]);
+
+    if (storageError) {
+      console.error("Error deleting from storage:", storageError);
+      // Continuamos aunque falle el storage por si el archivo ya no existía
+    }
+
+    // 2. Borrar registro de la DB
+    const { error: dbError } = await supabase
+      .from('certified_reports')
+      .delete()
+      .eq('id', reportId);
+
+    if (dbError) throw dbError;
+
+    revalidatePath("/dashboard/accounting/trial-balance");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error deleting certified report:", error);
+    return { success: false, error: error.message };
+  }
+}
