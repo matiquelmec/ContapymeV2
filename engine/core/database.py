@@ -20,11 +20,11 @@ def get_supabase() -> Client:
     global _supabase_client
     if _supabase_client is None:
         url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
 
         if not url or not key:
             raise RuntimeError(
-                "SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben estar definidas en .env"
+                "SUPABASE_URL y (SUPABASE_SERVICE_ROLE_KEY o SUPABASE_SERVICE_KEY) deben estar definidas en el entorno."
             )
 
         _supabase_client = create_client(url, key)
