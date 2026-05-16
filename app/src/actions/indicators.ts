@@ -1,23 +1,27 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 import { parseError } from '@/lib/utils/errors'
 
 export async function getLatestIndicators() {
+  const supabase = await createClient()
   try {
-    const response = await engineFetch('/api/v1/indicators/latest', {
-      cache: 'no-store'
-    })
+    const { data, error } = await supabase
+      .from('economic_indicators')
+      .select('*')
+      .order('codigo')
     
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        return { success: false, error: parseError(errorData.detail || 'No se pudieron obtener indicadores.') }
+    if (error) {
+      console.error('[DATABASE ERROR] Fallo al obtener indicadores:', error.message)
+      return { success: false, error: 'No se pudieron obtener indicadores de la base de datos.' }
     }
-    const result = await response.json()
-    return { success: true, data: result.data || [] }
+
+    return { success: true, data: data || [] }
   } catch (err: any) {
-    return { success: false, error: 'Motor fuera de línea.' }
+    console.error("[Indicators Action Error]:", err.message);
+    return { success: false, error: 'Error de conexión con la central de indicadores.' }
   }
 }
 
