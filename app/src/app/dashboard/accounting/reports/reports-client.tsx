@@ -200,35 +200,37 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-muted/30 border-border">
-                      <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Código</TableHead>
-                      <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 text-foreground">Cuenta Maestro Contable</TableHead>
-                      <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-52">Monto Neto Percibido</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-border/30">
-                    {reports.estado_resultados.detalles.map((d: any) => (
-                      <TableRow 
-                        key={d.codigo} 
-                        className="group hover:bg-primary/[0.02] transition-colors cursor-pointer"
-                        onClick={() => window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`}
-                      >
-                        <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
-                        <TableCell className="px-10 py-6">
-                            <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
-                        </TableCell>
-                        <TableCell className={`text-right px-10 py-6 font-black text-sm group-hover:bg-primary/[0.02] transition-colors ${d.tipo === 'ingreso' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                          <div className="flex items-center justify-end gap-2">
-                             {d.tipo === 'ingreso' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                             ${d.monto.toLocaleString('es-CL')}
-                          </div>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent bg-muted/30 border-border">
+                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Código</TableHead>
+                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 text-foreground">Cuenta Maestro Contable</TableHead>
+                        <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-52">Monto Neto Percibido</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-border/30">
+                      {reports.estado_resultados.detalles.map((d: any) => (
+                        <TableRow 
+                          key={d.codigo} 
+                          className="group hover:bg-primary/[0.02] transition-colors cursor-pointer"
+                          onClick={() => window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`}
+                        >
+                          <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
+                          <TableCell className="px-10 py-6">
+                              <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
+                          </TableCell>
+                          <TableCell className={`text-right px-10 py-6 font-black text-sm group-hover:bg-primary/[0.02] transition-colors ${d.tipo === 'ingreso' ? 'text-emerald-700' : 'text-rose-600'}`}>
+                            <div className="flex items-center justify-end gap-2">
+                               {d.tipo === 'ingreso' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                               ${d.monto.toLocaleString('es-CL')}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -270,77 +272,79 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                 <CardDescription className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground mt-3">Ecuación fundamental de la contabilidad patrimonial.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent bg-muted/30 border-border">
-                      <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-32">Código</TableHead>
-                      <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60">Cuenta de Balance</TableHead>
-                      <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-44">Clasificación</TableHead>
-                      <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-44">Valorización Neta</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-border/30">
-                    {reports.balance_general.detalles.sort((a:any, b:any) => a.codigo.localeCompare(b.codigo)).map((d: any) => (
-                      <TableRow 
-                        key={d.codigo} 
-                        className={`group hover:bg-primary/[0.02] transition-colors ${d.is_virtual ? 'bg-indigo-50/20 italic' : 'cursor-pointer'}`}
-                        onClick={() => {
-                          if (!d.is_virtual) {
-                            window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`;
-                          }
-                        }}
-                      >
-                        <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
-                        <TableCell className="px-10 py-6">
-                            <div className="flex flex-col">
-                              <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
-                              {d.is_virtual && <span className="text-[9px] font-black text-indigo-600 tracking-widest mt-1 uppercase">Ajuste de Ejercicio</span>}
-                            </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent bg-muted/30 border-border">
+                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-32">Código</TableHead>
+                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60">Cuenta de Balance</TableHead>
+                        <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-44">Clasificación</TableHead>
+                        <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-44">Valorización Neta</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-border/30">
+                      {reports.balance_general.detalles.sort((a:any, b:any) => a.codigo.localeCompare(b.codigo)).map((d: any) => (
+                        <TableRow 
+                          key={d.codigo} 
+                          className={`group hover:bg-primary/[0.02] transition-colors ${d.is_virtual ? 'bg-indigo-50/20 italic' : 'cursor-pointer'}`}
+                          onClick={() => {
+                            if (!d.is_virtual) {
+                              window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`;
+                            }
+                          }}
+                        >
+                          <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
+                          <TableCell className="px-10 py-6">
+                              <div className="flex flex-col">
+                                <span className="text-foreground font-black uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{d.nombre}</span>
+                                {d.is_virtual && <span className="text-[9px] font-black text-indigo-600 tracking-widest mt-1 uppercase">Ajuste de Ejercicio</span>}
+                              </div>
+                          </TableCell>
+                          <TableCell className="px-10 py-6 capitalize">
+                             <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full border shadow-sm ${
+                               d.tipo === 'activo' ? 'bg-emerald-50/50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-50' : 
+                               d.tipo === 'pasivo' ? 'bg-rose-50/50 text-rose-700 border-rose-200 group-hover:bg-rose-50' : 
+                               'bg-indigo-50/50 text-indigo-700 border-indigo-200 group-hover:bg-indigo-50'
+                             } transition-colors`}>
+                               {d.tipo}
+                             </span>
+                          </TableCell>
+                          <TableCell className="text-right px-10 py-6">
+                             <span className="text-foreground font-black text-sm tracking-tight">${d.monto.toLocaleString('es-CL')}</span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      
+                      {/* Sumatoria de Cierre Institucional */}
+                      <TableRow className="bg-primary/5 hover:bg-primary/10 border-t-8 border-primary/20 transition-all">
+                        <TableCell colSpan={3} className="px-10 py-10">
+                          <div className="flex flex-col">
+                              <span className="text-primary/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2 leading-none">Activos Netos</span>
+                              <span className="text-primary font-black tracking-widest uppercase text-sm">Suma Total de Recursos (A)</span>
+                          </div>
                         </TableCell>
-                        <TableCell className="px-10 py-6 capitalize">
-                           <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full border shadow-sm ${
-                             d.tipo === 'activo' ? 'bg-emerald-50/50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-50' : 
-                             d.tipo === 'pasivo' ? 'bg-rose-50/50 text-rose-700 border-rose-200 group-hover:bg-rose-50' : 
-                             'bg-indigo-50/50 text-indigo-700 border-indigo-200 group-hover:bg-indigo-50'
-                           } transition-colors`}>
-                             {d.tipo}
-                           </span>
-                        </TableCell>
-                        <TableCell className="text-right px-10 py-6">
-                           <span className="text-foreground font-black text-sm tracking-tight">${d.monto.toLocaleString('es-CL')}</span>
+                        <TableCell className="text-right px-10 py-10 border-l border-primary/10">
+                          <span className="text-primary text-4xl font-black tracking-tighter">
+                            ${reports.balance_general.activos.toLocaleString('es-CL')}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    
-                    {/* Sumatoria de Cierre Institucional */}
-                    <TableRow className="bg-primary/5 hover:bg-primary/10 border-t-8 border-primary/20 transition-all">
-                      <TableCell colSpan={3} className="px-10 py-10">
-                        <div className="flex flex-col">
-                            <span className="text-primary/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2 leading-none">Activos Netos</span>
-                            <span className="text-primary font-black tracking-widest uppercase text-sm">Suma Total de Recursos (A)</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right px-10 py-10 border-l border-primary/10">
-                        <span className="text-primary text-4xl font-black tracking-tighter">
-                          ${reports.balance_general.activos.toLocaleString('es-CL')}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="bg-muted/30 hover:bg-muted/50 border-t border-border transition-all">
-                      <TableCell colSpan={3} className="px-10 py-10">
-                        <div className="flex flex-col">
-                            <span className="text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2 leading-none">Financiamiento Externo e Interno</span>
-                            <span className="text-foreground font-black tracking-widest uppercase text-sm">Total Pasivos + Patrimonio (P + K)</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right px-10 py-10 border-l border-border/50">
-                        <span className="text-foreground text-4xl font-black tracking-tighter opacity-80">
-                          ${(reports.balance_general.pasivos + reports.balance_general.patrimonio).toLocaleString('es-CL')}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                      <TableRow className="bg-muted/30 hover:bg-muted/50 border-t border-border transition-all">
+                        <TableCell colSpan={3} className="px-10 py-10">
+                          <div className="flex flex-col">
+                              <span className="text-muted-foreground/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2 leading-none">Financiamiento Externo e Interno</span>
+                              <span className="text-foreground font-black tracking-widest uppercase text-sm">Total Pasivos + Patrimonio (P + K)</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right px-10 py-10 border-l border-border/50">
+                          <span className="text-foreground text-4xl font-black tracking-tighter opacity-80">
+                            ${(reports.balance_general.pasivos + reports.balance_general.patrimonio).toLocaleString('es-CL')}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
