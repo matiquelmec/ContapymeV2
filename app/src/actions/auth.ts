@@ -30,8 +30,19 @@ export async function signInWithEmail(formData: FormData) {
       .eq('id', user.id)
       .single()
 
-    if (!profile?.onboarding_completed) {
+    // Verificamos si ya tiene empresas (cuentas legacy o pre-onboarding)
+    const { data: orgMember } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (!profile?.onboarding_completed && !orgMember) {
       return redirect('/onboarding')
+    } else if (!profile?.onboarding_completed && orgMember) {
+      // Auto-corregir el flag para el futuro
+      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
     }
   }
 

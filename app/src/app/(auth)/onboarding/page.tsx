@@ -16,14 +16,23 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
-  // If already completed onboarding, go to dashboard
   const { data: profile } = await supabase
     .from('profiles')
     .select('onboarding_completed')
     .eq('id', user.id)
     .single()
 
-  if (profile?.onboarding_completed) {
+  const { data: orgMember } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+
+  if (profile?.onboarding_completed || orgMember) {
+    if (!profile?.onboarding_completed && orgMember) {
+      await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
+    }
     redirect('/dashboard')
   }
 
