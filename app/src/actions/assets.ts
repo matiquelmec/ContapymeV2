@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { engineFetch } from '@/lib/engine-client'
 import { parseError } from '@/lib/utils/errors'
+import { getActiveOrganizationId } from './organizations'
 
 // Crear un activo fijo nuevo
 export async function createAsset(formData: FormData) {
@@ -12,8 +13,7 @@ export async function createAsset(formData: FormData) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
   if (authErr || !user) return { success: false, error: 'Sesión inválida.' }
 
-  const { data: orgs } = await supabase.from('organizations').select('id').limit(1)
-  const activeOrgId = orgs?.[0]?.id
+  const activeOrgId = await getActiveOrganizationId()
   if (!activeOrgId) return { success: false, error: 'No se encontró empresa activa.' }
 
   const nombre = formData.get('nombre') as string
@@ -67,8 +67,7 @@ export async function depreciateAssets() {
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
   if (authErr || !user) return { success: false, error: 'Sesión inválida.' }
 
-  const { data: orgs } = await supabase.from('organizations').select('id').limit(1)
-  const activeOrgId = orgs?.[0]?.id
+  const activeOrgId = await getActiveOrganizationId()
   if (!activeOrgId) return { success: false, error: 'No se encontró empresa activa.' }
 
   try {
