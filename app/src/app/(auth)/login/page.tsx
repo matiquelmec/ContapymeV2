@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <div className="w-full max-w-md">
       {/* Logo / Header */}
       <div className="text-center mb-10 group transition-transform duration-300 hover:scale-105">
-        <div className="relative inline-block mb-2">
+        <Link href="/" className="inline-block relative mb-2">
           <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-primary/10 to-teal-500/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           <Image 
             src="/logo-contapyme.png" 
@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             priority
             className="relative drop-shadow-md brightness-110 contrast-105 w-[220px] h-auto mx-auto"
           />
-        </div>
+        </Link>
         <p className="text-muted-foreground mt-4 text-sm font-medium tracking-wide italic">
           SISTEMA CONTABLE PROFESIONAL PARA PYMES
         </p>

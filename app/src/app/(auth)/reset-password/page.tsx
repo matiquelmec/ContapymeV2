@@ -23,7 +23,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   return (
     <div className="w-full max-w-md">
       <div className="text-center mb-10 group transition-transform duration-300 hover:scale-105">
-        <div className="relative inline-block mb-2">
+        <Link href="/" className="inline-block relative mb-2">
           <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-primary/10 to-teal-500/10 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           <Image 
             src="/logo-contapyme.png" 
@@ -33,7 +33,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
             priority
             className="relative drop-shadow-md brightness-110 contrast-105 w-[220px] h-auto mx-auto"
           />
-        </div>
+        </Link>
       </div>
 
       <Card className="bg-card/80 backdrop-blur-xl border-border shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-black/5">
