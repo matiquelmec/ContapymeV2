@@ -33,6 +33,7 @@ import { dashboardDataSchema } from '@/lib/schemas/dashboard'
 export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string }) {
   const { dashboardYear: targetYear, setDashboardYear: setTargetYear } = useUIStore()
   const [selectedNews, setSelectedNews] = useState<RegionalNews | null>(null)
+  const [forceRefresh, setForceRefresh] = useState(false)
 
   // ―― MOTOR ANALÍTICO: MÉTRICAS ――
   const { 
@@ -43,7 +44,11 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   } = useQuery({
     queryKey: ['executive-metrics', activeOrgId, targetYear],
     queryFn: async () => {
-      const res = await getExecutiveMetrics(targetYear, activeOrgId)
+      // Pasamos forceRefresh al server action
+      const res = await getExecutiveMetrics(targetYear, activeOrgId, forceRefresh)
+      if (forceRefresh) {
+        setForceRefresh(false)
+      }
       if (res && 'error' in res) {
         throw new Error(res.error as string)
       }
@@ -51,7 +56,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
       return dashboardDataSchema.parse(res)
     },
     retry: 1,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30, // Reducido a 30 segundos para mayor frescura y dinamismo
   })
 
   const data = rawData as DashboardData | null
@@ -143,7 +148,10 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
             ))}
           </select>
           <Button
-            onClick={() => refetchMetrics()}
+            onClick={() => {
+              setForceRefresh(true)
+              setTimeout(() => refetchMetrics(), 0)
+            }}
             variant="outline"
             className="h-12 px-6 rounded-2xl border-border font-black uppercase text-[10px] tracking-widest hover:bg-muted gap-2 shadow-sm active:scale-95 transition-all"
           >

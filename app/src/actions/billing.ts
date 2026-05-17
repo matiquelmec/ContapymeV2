@@ -104,6 +104,8 @@ export async function issueDTE(formData: {
 
     const data = await response.json()
     revalidatePath('/dashboard/billing')
+    revalidatePath('/dashboard/accounting/journal')
+    revalidatePath('/dashboard')
     return { success: true, data }
   } catch (err: any) {
     return { success: false, error: `Motor Python inalcanzable: ${err.message}` }

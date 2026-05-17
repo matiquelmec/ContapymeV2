@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 
-export async function getExecutiveMetrics(year: number, providedOrgId?: string) {
+export async function getExecutiveMetrics(year: number, providedOrgId?: string, refresh: boolean = false) {
   try {
     const supabase = await createClient()
     
@@ -23,7 +23,8 @@ export async function getExecutiveMetrics(year: number, providedOrgId?: string) 
       method: 'POST',
       body: JSON.stringify({
         organization_id: orgId,
-        year: year
+        year: year,
+        refresh: refresh
       }),
       cache: 'no-store'
     })

@@ -73,6 +73,8 @@ export async function saveReconciliationAction(data: {
     }
     
     revalidatePath("/dashboard/reconciliation");
+    revalidatePath("/dashboard/accounting/journal");
+    revalidatePath("/dashboard");
     return { success: true, message: result.message };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -111,6 +113,8 @@ export async function reconcileWithAdjustmentAction(data: {
     }
     
     revalidatePath("/dashboard/reconciliation");
+    revalidatePath("/dashboard/accounting/journal");
+    revalidatePath("/dashboard");
     return { success: true, message: result.message };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

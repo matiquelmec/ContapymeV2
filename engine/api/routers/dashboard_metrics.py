@@ -15,6 +15,7 @@ CACHE_TTL = 900  # 15 minutos (900 segundos)
 class MetricsRequest(BaseModel):
     organization_id: str
     year: int
+    refresh: bool = False
 
 def _get_from_cache(org_id: str, year: int):
     key = (org_id, year)
@@ -33,11 +34,14 @@ async def get_executive_metrics(req: MetricsRequest):
     Agrega todas las métricas financieras (Ventas, Compras, Activos, F29)
     para el Dashboard Ejecutivo V2.
     """
-    # 1. Verificar Caché
-    cached_data = _get_from_cache(req.organization_id, req.year)
-    if cached_data:
-        print(f"[CACHE HIT] Métricas servidas desde memoria para {req.organization_id}")
-        return {"success": True, "data": cached_data, "cached": True}
+    # 1. Verificar Caché (solo si no se solicita forzar actualización)
+    if not req.refresh:
+        cached_data = _get_from_cache(req.organization_id, req.year)
+        if cached_data:
+            print(f"[CACHE HIT] Métricas servidas desde memoria para {req.organization_id}")
+            return {"success": True, "data": cached_data, "cached": True}
+    else:
+        print(f"[CACHE BYPASS] Forzando recalculación de métricas para {req.organization_id}")
 
     db = get_supabase()
     
