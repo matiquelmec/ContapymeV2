@@ -247,8 +247,8 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                 onAction={statusModal.onAction}
             />
             <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl w-full p-0 overflow-hidden border-none rounded-[2rem] md:rounded-[3rem] bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.2)]">
-                <div className="bg-[#0f172a] p-6 md:p-10 text-white relative overflow-hidden">
+            <DialogContent className="max-w-5xl w-full p-0 border-none rounded-[2rem] md:rounded-[3rem] bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.2)] flex flex-col max-h-[95dvh] sm:max-h-[90vh]">
+                <div className="bg-[#0f172a] p-5 md:p-10 text-white relative overflow-hidden shrink-0 rounded-t-[2rem] md:rounded-t-[3rem]">
                     <div className="absolute -top-12 -right-12 p-8 opacity-[0.03] rotate-12">
                         <FileText className="w-64 h-64" />
                     </div>
@@ -260,14 +260,14 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-foreground/60">Emisión Certificada</span>
                             </div>
-                            <DialogTitle className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none">
+                            <DialogTitle className="text-xl md:text-4xl font-black uppercase tracking-tighter leading-none">
                                 EMISIÓN DE DTE <span className="text-primary italic">PRIME</span>
                             </DialogTitle>
                         </DialogHeader>
                     </div>
                 </div>
 
-                <div className="p-6 md:p-10 space-y-8 md:space-y-10 overflow-y-auto max-h-[70vh] bg-[#f8fafc]">
+                <div className="p-5 md:p-10 space-y-6 md:space-y-10 overflow-y-auto flex-1 min-h-0 bg-[#f8fafc]">
                     {/* SECCIÓN CONFIGURACIÓN BASE */}
                     <div className="flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8">
                         <div className="md:col-span-4 space-y-3">
@@ -390,7 +390,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                     </div>
                 </div>
 
-                <div className="bg-white p-6 md:p-10 border-t border-slate-100 flex flex-col gap-6">
+                <div className="bg-white p-5 md:p-10 border-t border-slate-100 flex flex-col gap-6 shrink-0 rounded-b-[2rem] md:rounded-b-[3rem]">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="flex flex-wrap gap-4 md:gap-10 items-center justify-center bg-slate-50/50 p-4 md:p-6 md:px-10 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 w-full md:w-auto">
                             <div className="text-center">
