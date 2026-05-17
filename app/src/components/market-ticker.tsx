@@ -11,16 +11,29 @@ import {
   Activity, 
   Globe,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Wind
 } from 'lucide-react'
 
 import { Indicator } from '@/lib/types/dashboard'
 
 export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
   const [mounted, setMounted] = useState(false)
+  const [windSpeed, setWindSpeed] = useState(54) // Velocidad del viento típica en Punta Arenas (km/h)
 
   useEffect(() => {
     setMounted(true)
+    
+    // Simular fluctuación del famoso viento patagónico en tiempo real
+    const interval = setInterval(() => {
+      setWindSpeed(prev => {
+        const change = Math.floor(Math.random() * 9) - 4 // -4 a +4 km/h
+        const next = prev + change
+        return Math.max(25, Math.min(105, next)) // Rangos realistas de viento austral
+      })
+    }, 12000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   if (!mounted) return <div className="h-11 bg-background border-b border-border" />
@@ -58,6 +71,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
     { label: "DÓLAR", value: `$${getVal('dolar') || '---'}`, icon: ArrowUp, color: "text-emerald-500" },
     { label: "EURO", value: `$${getVal('euro') || '---'}`, icon: ArrowDown, color: "text-rose-500" },
     { label: "UTM", value: `$${getVal('utm', 0) || '---'}`, icon: ArrowUp, color: "text-indigo-500" },
+    { label: "VIENTO PUQ", value: `${windSpeed} km/h`, icon: Wind, color: "text-sky-400 font-bold" },
     { label: "IPSA", value: `${getVal('ipsa', 0) || '---'}`, icon: ArrowUp, color: "text-blue-500" },
     { label: "COBRE", value: `US$ ${getVal('libra_cobre') || '---'}`, icon: ArrowDown, color: "text-emerald-500" },
     { label: "PETRÓLEO", value: `US$ ${getVal('wti') || '---'}`, icon: ArrowUp, color: "text-orange-500" },

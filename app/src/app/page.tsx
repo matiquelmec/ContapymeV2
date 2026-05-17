@@ -13,7 +13,14 @@ import {
   MapPin, 
   LayoutDashboard,
   CheckCircle2,
-  Users
+  Users,
+  Flame,
+  GitCompare,
+  Lock,
+  BookOpen,
+  Building,
+  AlertTriangle,
+  FileCheck
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getLatestIndicators } from "@/actions/indicators";
@@ -22,6 +29,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { DiarioRegionalSection } from "@/components/diario-regional-section";
 import { MarketTicker } from "@/components/market-ticker";
+import { AISandbox } from "@/components/ai-sandbox";
+import { TaxCalculator } from "@/components/tax-calculator";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -110,57 +119,196 @@ export default async function LandingPage() {
         {/* ===== DIARIO REGIONAL (Client Component) ===== */}
         <DiarioRegionalSection initialNews={regionalNews} indicators={indicators} />
 
-        {/* ===== FEATURES SECTION ===== */}
+        {/* ===== FEATURES SECTION (Matriz de Poder Contable) ===== */}
         <section id="features" className="py-24 bg-background scroll-mt-32">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16">
-              {/* FEATURE 1: DIARIO */}
-              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
-                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
-                  <Newspaper className="h-8 w-8 text-primary" />
+            <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Tecnología Financiera Austral</h2>
+              <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-foreground">
+                Matriz de Poder Contable <br /><span className="text-muted-foreground/30">e Integridad Operacional.</span>
+              </h3>
+              <p className="text-muted-foreground font-bold italic text-sm">
+                Conoce el conjunto completo de herramientas contables, tributarias y criptográficas diseñadas para el sur de Chile.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* CARD 1: BILLING */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <Flame className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Facturación SII Compliance</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Emite Facturas, Boletas, Guías de Despacho y Notas de Crédito con timbrado electrónico inmediato. Firmado digitalmente y sincronizado automáticamente con el SII.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Hemeroteca Regional</h3>
-                <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Acceso exclusivo a noticias de Punta Arenas y el mundo, con un enfoque financiero diseñado para la toma de decisiones estratégicas.
-                </p>
-                <Link href="/noticias" className="block">
+                <Link href="/dashboard" className="block pt-4">
                   <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
-                    Explorar Archivo <ArrowRight className="h-3.5 w-3.5" />
+                    Emitir DTE <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
 
-              {/* FEATURE 2: F29 */}
-              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
-                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
-                  <BarChart3 className="h-8 w-8 text-primary" />
+              {/* CARD 2: BANK RECONCILIATION */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <GitCompare className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Conciliación Bancaria</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Sube tus cartolas de cualquier banco chileno. Nuestro motor cruza automáticamente los movimientos con tus asientos contables y genera los ajustes correspondientes en segundos.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Automación Tributaria</h3>
-                <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Motor inteligente de procesamiento de F29 y RCV. Transforma horas de trabajo manual en segundos de precisión digital.
-                </p>
-                <Link href="/dashboard" className="block">
+                <Link href="/dashboard" className="block pt-4">
                   <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
-                    Iniciar Auditoría <ArrowRight className="h-3.5 w-3.5" />
+                    Conciliar Cuentas <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
 
-              {/* FEATURE 3: RRHH */}
-              <div className="space-y-6 group p-10 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500">
-                <div className="p-5 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
-                  <Users className="h-8 w-8 text-primary" />
+              {/* CARD 3: CRYPTO INTEGRITY */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <Lock className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Registro Criptográfico</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Seguridad forense total. Cada transacción y movimiento contable es sellado y encadenado criptográficamente mediante algoritmo SHA-256 libre de alteraciones.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Gestión Payroll LRE</h3>
-                <p className="text-muted-foreground italic font-medium leading-relaxed">
-                  Generación masiva de liquidaciones de sueldo y Libros de Remuneraciones Electrónicos listos para la Dirección del Trabajo.
-                </p>
-                <Link href="/dashboard" className="block">
+                <Link href="/dashboard" className="block pt-4">
                   <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
-                    Ver Módulo Sueldos <ArrowRight className="h-3.5 w-3.5" />
+                    Auditar Hashes <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
+
+              {/* CARD 4: JOURNAL */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <BookOpen className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Libro Diario Dinámico</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Cada hecho económico genera automáticamente asientos contables en partida doble (Debe/Haber). Cumplimiento estricto con IFRS y normativas contables del SII.
+                  </p>
+                </div>
+                <Link href="/dashboard" className="block pt-4">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
+                    Ver Libro Diario <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* CARD 5: PAYROLL LRE */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <Users className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Remuneraciones LRE</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Emite liquidaciones masivas de sueldo con exenciones de zona extrema. Genera el Libro de Remuneraciones Electrónico listo para la Dirección del Trabajo (DT).
+                  </p>
+                </div>
+                <Link href="/dashboard" className="block pt-4">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
+                    Gestionar Sueldos <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* CARD 6: FIXED ASSETS */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <Building className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Control de Activos Fijos</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Controla y calcula la depreciación lineal y acelerada de las maquinarias, vehículos e inmuebles de tu empresa, reflejando el impacto en tu balance general.
+                  </p>
+                </div>
+                <Link href="/dashboard" className="block pt-4">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
+                    Revisar Activos <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* CARD 7: F29 TRIBUTARIO */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <AlertTriangle className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Auditoría F29 & RCV</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Cruce predictivo mensual de IVA Débito e IVA Crédito. Compara tus libros físicos contra el Registro de Compras y Ventas (RCV) del SII de manera automática.
+                  </p>
+                </div>
+                <Link href="/dashboard" className="block pt-4">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
+                    Auditar IVA <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* CARD 8: CERTIFIED REPORTS */}
+              <div className="space-y-6 group p-8 rounded-[2.5rem] bg-white border border-border/50 hover:border-primary/20 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 flex flex-col justify-between min-h-[320px]">
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/5 rounded-2xl w-fit group-hover:bg-primary/10 transition-colors">
+                    <FileCheck className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-black italic tracking-tighter uppercase">Balances Certificados</h3>
+                  <p className="text-muted-foreground italic font-medium leading-relaxed text-xs">
+                    Genera Balances y Estados de Resultados sellados digitalmente con firma hash SHA-256 única y archivados de forma inmutable, listos para auditorías o bancos.
+                  </p>
+                </div>
+                <Link href="/dashboard" className="block pt-4">
+                  <Button variant="link" className="p-0 text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:no-underline gap-2">
+                    Validar Reportes <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== INTERACTIVE DEMOS SECTION (AI Sandbox & Tax Calculator) ===== */}
+        <section id="interactive-demos" className="py-24 bg-gradient-to-b from-background to-neutral-50/50 scroll-mt-32">
+          <div className="container mx-auto px-6 lg:px-12 space-y-24">
+            {/* AISandbox Block */}
+            <div className="space-y-8">
+              <div className="text-center max-w-3xl mx-auto space-y-4">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Simulación Cripto-Contable</h2>
+                <h3 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-foreground">
+                  Experimenta el Motor de Inteligencia en Vivo
+                </h3>
+                <p className="text-muted-foreground font-bold italic text-xs">
+                  Interactúa directamente con la consola virtual contable y observa cómo procesamos exenciones, remunaciones e inmutabilidad.
+                </p>
+              </div>
+              <AISandbox />
+            </div>
+
+            {/* TaxCalculator Block */}
+            <div className="space-y-8">
+              <div className="text-center max-w-3xl mx-auto space-y-4">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Análisis Tributario</h2>
+                <h3 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-foreground">
+                  Calcula tu Beneficio en Zonas Extremas
+                </h3>
+                <p className="text-muted-foreground font-bold italic text-xs">
+                  Compara los ahorros fiscales entre Zona Franca, Ley Navarino y el Régimen General del resto de Chile de forma instantánea.
+                </p>
+              </div>
+              <TaxCalculator />
             </div>
           </div>
         </section>
