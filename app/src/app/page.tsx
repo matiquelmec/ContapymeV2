@@ -95,7 +95,7 @@ export default async function LandingPage() {
               </div>
               <h1 className="text-[clamp(2.5rem,8vw,6.5rem)] font-black tracking-tighter uppercase leading-[0.95] italic animate-in fade-in slide-in-from-left-8 duration-700">
                 Precisión <span className="text-primary italic font-serif">Institucional</span> <br />
-                y Escalabilidad <span className="text-muted-foreground/10">Organizacional.</span>
+                y Escalabilidad <span className="text-muted-foreground/35">Organizacional.</span>
               </h1>
               <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                 Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.

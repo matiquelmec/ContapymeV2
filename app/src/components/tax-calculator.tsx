@@ -7,9 +7,6 @@ import {
   Send, 
   HelpCircle, 
   Check, 
-  TrendingUp, 
-  Sparkles,
-  ArrowRight,
   Download,
   DollarSign
 } from 'lucide-react'
@@ -71,31 +68,31 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
   }
 
   return (
-    <div className="w-full rounded-[3.5rem] bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 p-8 md:p-12 border border-neutral-850 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative overflow-hidden">
-      {/* Auroras Patagónicas de Neón en Azul Institucional (oklch 245) */}
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-primary/15 to-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/5 to-primary/10 rounded-full blur-[140px] pointer-events-none" />
+    <div className="w-full rounded-[3.5rem] bg-white/70 backdrop-blur-xl p-8 md:p-12 border border-neutral-200/60 shadow-[0_30px_80px_rgba(30,58,138,0.04)] relative overflow-hidden">
+      {/* Auroras Patagónicas en Azul y Cian Suaves */}
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-primary/10 to-sky-500/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/5 to-primary/5 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
         {/* Controles de Entrada (Izquierda) */}
         <div className="lg:col-span-6 space-y-8">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary/10 to-sky-500/10 border border-primary/20 shadow-[0_0_15px_rgba(30,58,138,0.15)]">
-              <Calculator className="h-3.5 w-3.5 text-sky-400" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-clip-text text-transparent bg-gradient-to-r from-sky-300 to-blue-200">Simulador de Franquicias</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary/5 to-sky-500/5 border border-primary/20 shadow-[0_5px_15px_rgba(30,58,138,0.03)]">
+              <Calculator className="h-3.5 w-3.5 text-primary animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-clip-text text-transparent bg-gradient-to-r from-primary to-sky-600">Simulador de Franquicias</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-white leading-none">
+            <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-neutral-900 leading-none">
               Exenciones & Franquicias <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-sky-400 to-blue-300 font-extrabold drop-shadow-[0_2px_10px_rgba(30,58,138,0.3)]">Tributarias Australes</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-sky-600 to-blue-500 font-extrabold drop-shadow-[0_2px_10px_rgba(30,58,138,0.1)]">Tributarias Australes</span>
             </h2>
-            <p className="text-neutral-400 font-bold italic text-xs leading-relaxed max-w-md">
+            <p className="text-neutral-500 font-bold italic text-xs leading-relaxed max-w-md">
               Elige tu régimen tributario e ingresa tus ingresos anuales estimados para simular de inmediato tu ahorro fiscal con las leyes vigentes de Magallanes.
             </p>
           </div>
 
           {/* Selector de Régimen */}
           <div className="space-y-4">
-            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-500">Régimen Contable a Evaluar</label>
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Régimen Contable a Evaluar</label>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'general', label: 'Régimen General', desc: 'Resto de Chile' },
@@ -107,8 +104,8 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
                   onClick={() => setRegimen(item.id as any)}
                   className={`p-4 rounded-2xl border text-center transition-all duration-500 ${
                     regimen === item.id 
-                      ? 'bg-neutral-800/60 border-primary/50 shadow-[0_10px_25px_rgba(30,58,138,0.15)] text-sky-300 scale-[1.02]' 
-                      : 'bg-neutral-900/30 border-neutral-800/80 hover:bg-neutral-900/60 hover:border-neutral-700 text-neutral-400'
+                      ? 'bg-neutral-50 border-primary/40 shadow-[0_10px_25px_rgba(30,58,138,0.06)] text-primary scale-[1.02]' 
+                      : 'bg-white/55 border-neutral-200/80 hover:bg-neutral-50 hover:border-neutral-300 text-neutral-600'
                   }`}
                 >
                   <div className="text-xs font-black uppercase tracking-wider leading-tight">{item.label}</div>
@@ -121,8 +118,8 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
           {/* Slider de Ingresos */}
           <div className="space-y-5">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-500">Ingresos Netos Anuales (CLP)</label>
-              <span className="text-md font-black tracking-tight text-sky-300 tabular-nums bg-gradient-to-r from-primary/15 to-sky-500/15 px-4 py-2 rounded-full border border-primary/20 shadow-[0_0_15px_rgba(30,58,138,0.15)]">
+              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Ingresos Netos Anuales (CLP)</label>
+              <span className="text-md font-black tracking-tight text-primary tabular-nums bg-gradient-to-r from-primary/5 to-sky-500/5 px-4 py-2 rounded-full border border-primary/20 shadow-[0_5px_15px_rgba(30,58,138,0.03)]">
                 {formatCLP(revenue)}
               </span>
             </div>
@@ -135,9 +132,9 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
                 step={5000000}
                 value={revenue}
                 onChange={(e) => setRevenue(Number(e.target.value))}
-                className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary slider-thumb-premium"
+                className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary slider-thumb-premium"
               />
-              <div className="flex justify-between text-[9px] font-bold text-neutral-600 italic">
+              <div className="flex justify-between text-[9px] font-bold text-neutral-400 italic">
                 <span>$10M CLP</span>
                 <span>$250M CLP</span>
                 <span>$500M CLP</span>
@@ -148,51 +145,51 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
 
         {/* Panel de Resultados (Derecha) */}
         <div className="lg:col-span-6 flex flex-col">
-          <div className="flex-1 rounded-[2.5rem] bg-neutral-950/80 backdrop-blur-xl text-white p-8 md:p-10 border border-neutral-800 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] flex flex-col justify-between space-y-8">
+          <div className="flex-1 rounded-[2.5rem] bg-white border border-neutral-200 shadow-[0_30px_70px_rgba(30,58,138,0.03)] text-neutral-800 p-8 md:p-10 flex flex-col justify-between space-y-8">
             
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-neutral-900">
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-400">Desglose de Ahorro Austral</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-sky-400 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(30,58,138,0.8)] animate-pulse" /> Ley Vigente
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-primary flex items-center gap-1.5 font-black">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(30,58,138,0.4)] animate-pulse" /> Ley Vigente
                 </span>
               </div>
 
               {/* Mapeo de Indicadores */}
               <div className="space-y-5">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-bold italic flex items-center gap-1.5">
-                    Exención IVA Ahorrada <HelpCircle className="h-3 w-3 text-neutral-600" />
+                  <span className="text-neutral-500 font-bold italic flex items-center gap-1.5">
+                    Exención IVA Ahorrada <HelpCircle className="h-3 w-3 text-neutral-300" />
                   </span>
-                  <span className="font-bold tabular-nums text-neutral-200">{formatCLP(ivaAhorro)}</span>
+                  <span className="font-bold tabular-nums text-neutral-800">{formatCLP(ivaAhorro)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-bold italic flex items-center gap-1.5">
-                    Bonificación DFL 15 (20%) <HelpCircle className="h-3 w-3 text-neutral-600" />
+                  <span className="text-neutral-500 font-bold italic flex items-center gap-1.5">
+                    Bonificación DFL 15 (20%) <HelpCircle className="h-3 w-3 text-neutral-300" />
                   </span>
-                  <span className="font-bold tabular-nums text-neutral-200">{formatCLP(bonificacionDFL15)}</span>
+                  <span className="font-bold tabular-nums text-neutral-800">{formatCLP(bonificacionDFL15)}</span>
                 </div>
 
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-neutral-400 font-bold italic flex items-center gap-1.5">
-                    Ahorro de Renta & Créditos <HelpCircle className="h-3 w-3 text-neutral-600" />
+                  <span className="text-neutral-500 font-bold italic flex items-center gap-1.5">
+                    Ahorro de Renta & Créditos <HelpCircle className="h-3 w-3 text-neutral-300" />
                   </span>
-                  <span className="font-bold tabular-nums text-neutral-200">{formatCLP(ahorroRenta)}</span>
+                  <span className="font-bold tabular-nums text-neutral-800">{formatCLP(ahorroRenta)}</span>
                 </div>
               </div>
             </div>
 
             {/* Total Beneficio */}
-            <div className="bg-gradient-to-r from-primary/15 via-blue-600/10 to-sky-500/10 p-6 rounded-3xl border border-primary/25 space-y-2 relative overflow-hidden shadow-[0_0_20px_rgba(30,58,138,0.05)]">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
+            <div className="bg-gradient-to-r from-primary/5 via-blue-600/5 to-sky-500/5 p-6 rounded-3xl border border-primary/15 space-y-2 relative overflow-hidden shadow-[0_0_20px_rgba(30,58,138,0.02)]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-[40px] pointer-events-none" />
               
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-400">Ahorro Total Fiscal Estimado</div>
-              <div className="text-4xl font-black italic tracking-tighter text-white tabular-nums flex items-baseline gap-1">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-200 via-sky-300 to-sky-400 font-black">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Ahorro Total Fiscal Estimado</div>
+              <div className="text-4xl font-black italic tracking-tighter text-neutral-900 tabular-nums flex items-baseline gap-1">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-sky-600 to-blue-500 font-black">
                   {formatCLP(totalBeneficios)}
                 </span>
-                <span className="text-[10px] font-black tracking-widest text-neutral-500 uppercase not-italic">/ año</span>
+                <span className="text-[10px] font-black tracking-widest text-neutral-400 uppercase not-italic">/ año</span>
               </div>
             </div>
 
@@ -200,7 +197,7 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
             <div className="space-y-4">
               <Button 
                 onClick={handleShareWhatsApp}
-                className="w-full py-6 rounded-2xl font-black uppercase tracking-[0.25em] text-xs gap-3 shadow-[0_15px_30px_-5px_rgba(30,58,138,0.3)] bg-gradient-to-r from-primary via-blue-600 to-sky-500 text-white hover:brightness-110 hover:shadow-[0_20px_40px_rgba(30,58,138,0.45)] transition-all duration-500 border-0"
+                className="w-full py-6 rounded-2xl font-black uppercase tracking-[0.25em] text-xs gap-3 shadow-[0_15px_30px_-5px_rgba(30,58,138,0.2)] bg-gradient-to-r from-primary via-blue-600 to-sky-500 text-white hover:brightness-105 hover:shadow-[0_20px_40px_rgba(30,58,138,0.3)] transition-all duration-500 border-0"
               >
                 <Share2 className="h-4 w-4" /> Enviar Reporte a WhatsApp
               </Button>
@@ -209,15 +206,15 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
                 <Button 
                   variant="outline" 
                   onClick={handleCopyLink}
-                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 text-neutral-300 hover:text-white"
+                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
                 >
-                  {copied ? <Check className="h-3.5 w-3.5 text-sky-400 animate-pulse" /> : <Send className="h-3.5 w-3.5 text-neutral-400" />}
+                  {copied ? <Check className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Send className="h-3.5 w-3.5 text-neutral-400" />}
                   {copied ? 'Copiado!' : 'Copiar Enlace'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => alert("Simulación lista. Para descargar el PDF oficial de auditoría, por favor inicia sesión o crea una cuenta.")}
-                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-800 bg-neutral-900/40 hover:bg-neutral-800 text-neutral-300 hover:text-white"
+                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
                 >
                   <Download className="h-3.5 w-3.5 text-neutral-400" /> Descargar PDF
                 </Button>
@@ -236,30 +233,30 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #2563eb;
           cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.4);
+          box-shadow: 0 0 10px rgba(37, 99, 235, 0.4), 0 0 20px rgba(37, 99, 235, 0.2);
           transition: all 0.3s ease;
         }
         input[type="range"]::-webkit-slider-thumb:hover {
           transform: scale(1.2);
-          background: #38bdf8;
-          box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 24px rgba(56, 189, 248, 0.4);
+          background: #0284c7;
+          box-shadow: 0 0 12px rgba(2, 132, 199, 0.5), 0 0 24px rgba(2, 132, 199, 0.25);
         }
         input[type="range"]::-moz-range-thumb {
           width: 20px;
           height: 20px;
           border: 0;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #2563eb;
           cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.4);
+          box-shadow: 0 0 10px rgba(37, 99, 235, 0.4), 0 0 20px rgba(37, 99, 235, 0.2);
           transition: all 0.3s ease;
         }
         input[type="range"]::-moz-range-thumb:hover {
           transform: scale(1.2);
-          background: #38bdf8;
-          box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 24px rgba(56, 189, 248, 0.4);
+          background: #0284c7;
+          box-shadow: 0 0 12px rgba(2, 132, 199, 0.5), 0 0 24px rgba(2, 132, 199, 0.25);
         }
       `}</style>
     </div>
