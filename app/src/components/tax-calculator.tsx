@@ -202,23 +202,14 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
                 <Share2 className="h-4 w-4" /> Enviar Reporte a WhatsApp
               </Button>
               
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCopyLink}
-                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Send className="h-3.5 w-3.5 text-neutral-400" />}
-                  {copied ? 'Copiado!' : 'Copiar Enlace'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => alert("Simulación lista. Para descargar el PDF oficial de auditoría, por favor inicia sesión o crea una cuenta.")}
-                  className="py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
-                >
-                  <Download className="h-3.5 w-3.5 text-neutral-400" /> Descargar PDF
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleCopyLink}
+                className="w-full py-5 rounded-2xl font-black uppercase tracking-[0.15em] text-[10px] gap-2 border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-800"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-primary animate-pulse" /> : <Share2 className="h-3.5 w-3.5 text-neutral-400" />}
+                {copied ? '¡Enlace de Simulación Copiado!' : 'Copiar Enlace del Simulador'}
+              </Button>
             </div>
             
           </div>
