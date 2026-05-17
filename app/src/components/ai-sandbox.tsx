@@ -144,23 +144,24 @@ export function AISandbox() {
   }, [activeScenario])
 
   return (
-    <div className="w-full rounded-[3rem] bg-gradient-to-br from-neutral-900 to-neutral-950 p-8 md:p-12 border border-neutral-800 shadow-2xl relative overflow-hidden">
-      {/* Luces de Fondo */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+    <div className="w-full rounded-[3.5rem] bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 p-8 md:p-12 border border-neutral-800/80 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative overflow-hidden">
+      {/* Auroras Australes de Neón */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-cyan-500/20 to-teal-500/10 rounded-full blur-[140px] pointer-events-none animate-pulse duration-[8000ms]" />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-violet-500/10 to-indigo-500/15 rounded-full blur-[140px] pointer-events-none animate-pulse duration-[12000ms]" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         {/* Panel Izquierdo: Selección de Escenarios */}
         <div className="lg:col-span-5 space-y-8">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Prueba en Vivo con IA</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/10 to-violet-500/10 border border-cyan-400/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+              <Sparkles className="h-4 w-4 text-cyan-400 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-violet-300">Prueba en Vivo con IA</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-white leading-none">
-              El Contador <br />del Estrecho
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-white leading-none">
+              El Contador <br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-violet-400 font-extrabold drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">del Estrecho</span>
             </h2>
-            <p className="text-neutral-400 font-bold italic text-xs leading-relaxed">
+            <p className="text-neutral-400 font-bold italic text-xs leading-relaxed max-w-sm">
               Prueba nuestro motor de inteligencia contable regional antes de registrarte. Elige un escenario y observa el cálculo patagónico automatizado.
             </p>
           </div>
@@ -171,19 +172,23 @@ export function AISandbox() {
                 key={idx}
                 disabled={isPlaying}
                 onClick={() => setActiveScenario(idx)}
-                className={`w-full text-left p-5 rounded-2xl border transition-all duration-300 flex items-start gap-4 ${
+                className={`w-full text-left p-5 rounded-3xl border transition-all duration-500 flex items-start gap-4 ${
                   activeScenario === idx 
-                    ? 'bg-neutral-800/80 border-primary/40 shadow-lg shadow-primary/5' 
-                    : 'bg-neutral-900/40 border-neutral-800/60 hover:bg-neutral-900/90 hover:border-neutral-700/60'
+                    ? 'bg-neutral-800/60 border-cyan-500/50 shadow-[0_10px_30px_rgba(34,211,238,0.1)] scale-[1.02]' 
+                    : 'bg-neutral-900/30 border-neutral-800 hover:bg-neutral-900/60 hover:border-neutral-700/60 hover:scale-[1.01]'
                 }`}
               >
-                <div className={`p-2.5 rounded-xl ${activeScenario === idx ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-400'}`}>
+                <div className={`p-3 rounded-2xl transition-all duration-300 ${
+                  activeScenario === idx 
+                    ? 'bg-gradient-to-br from-cyan-400 to-teal-400 text-neutral-950 shadow-[0_0_15px_rgba(34,211,238,0.4)]' 
+                    : 'bg-neutral-800/80 text-neutral-400'
+                }`}>
                   {idx === 0 && <ShieldCheck className="h-5 w-5" />}
                   {idx === 1 && <AlertTriangle className="h-5 w-5" />}
                   {idx === 2 && <DollarSign className="h-5 w-5" />}
                 </div>
                 <div className="space-y-1">
-                  <h4 className={`font-black uppercase tracking-wider text-xs ${activeScenario === idx ? 'text-white' : 'text-neutral-300'}`}>
+                  <h4 className={`font-black uppercase tracking-wider text-xs ${activeScenario === idx ? 'text-white font-black' : 'text-neutral-300 font-bold'}`}>
                     {sc.title}
                   </h4>
                   <p className="text-[10px] font-bold text-neutral-500 leading-normal italic">
@@ -197,15 +202,15 @@ export function AISandbox() {
           <Button 
             disabled={isPlaying}
             onClick={runSimulation}
-            className="w-full py-6 rounded-2xl font-black uppercase tracking-[0.2em] text-xs gap-3 shadow-xl hover:shadow-2xl transition-all duration-300"
+            className="w-full py-7 rounded-[1.8rem] font-black uppercase tracking-[0.25em] text-xs gap-3 shadow-[0_15px_30px_-5px_rgba(34,211,238,0.25)] bg-gradient-to-r from-cyan-400 via-teal-400 to-violet-500 text-neutral-950 hover:brightness-110 hover:shadow-[0_20px_40px_rgba(34,211,238,0.35)] transition-all duration-500 border-0"
           >
             {isPlaying ? (
               <>
-                <RefreshCw className="h-4 w-4 animate-spin" /> Procesando Auditoría IA
+                <RefreshCw className="h-4 w-4 animate-spin text-neutral-950" /> Procesando Auditoría IA
               </>
             ) : (
               <>
-                <Play className="h-4 w-4 fill-current" /> Ejecutar Simulación Contable
+                <Play className="h-4 w-4 fill-current text-neutral-950" /> Ejecutar Simulación Contable
               </>
             )}
           </Button>
@@ -213,86 +218,86 @@ export function AISandbox() {
 
         {/* Panel Derecho: Consola Interactiva */}
         <div className="lg:col-span-7">
-          <div className="w-full bg-black rounded-3xl border border-neutral-800 shadow-2xl overflow-hidden flex flex-col min-h-[480px]">
+          <div className="w-full bg-neutral-950/80 backdrop-blur-xl rounded-[2.5rem] border border-neutral-800 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col min-h-[480px]">
             {/* Cabecera de la Consola */}
-            <div className="px-6 py-4 bg-neutral-950 border-b border-neutral-900 flex items-center justify-between">
+            <div className="px-6 py-5 bg-neutral-950 border-b border-neutral-900 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Terminal className="h-4 w-4 text-primary" />
+                <Terminal className="h-4 w-4 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-400">Patagonia AI Engine v8.6</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/40" />
-                <span className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/40" />
-                <span className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
+              <div className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 rounded-full bg-rose-500/25 border border-rose-500/40 shadow-[0_0_8px_rgba(239,68,68,0.2)]" />
+                <span className="w-3.5 h-3.5 rounded-full bg-amber-500/25 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]" />
+                <span className="w-3.5 h-3.5 rounded-full bg-emerald-500/25 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]" />
               </div>
             </div>
 
             {/* Cuerpo de la Consola / Líneas de Código */}
-            <div className="flex-1 p-6 font-mono text-[11px] leading-relaxed text-neutral-300 space-y-3 overflow-y-auto max-h-[400px]">
-              <div className="text-neutral-500 italic">
+            <div className="flex-1 p-8 font-mono text-[11px] leading-relaxed text-neutral-300 space-y-4 overflow-y-auto max-h-[400px]">
+              <div className="text-neutral-600 italic">
                 // Consola lista. Selecciona un escenario a la izquierda y presiona Ejecutar.
               </div>
-              <div className="flex items-center gap-2 text-primary">
+              <div className="flex items-center gap-2 text-cyan-400 font-bold">
                 <span>$</span>
-                <span className="font-bold">{scenarios[activeScenario].prompt}</span>
+                <span>{scenarios[activeScenario].prompt}</span>
               </div>
 
               {consoleLines.map((line, idx) => (
                 <div 
                   key={idx} 
-                  className={`animate-in fade-in slide-in-from-left-2 duration-300 flex items-start gap-2 ${
-                    line.includes('⚠️') || line.includes('❗') ? 'text-amber-400 font-bold' : 
-                    line.includes('OK') || line.includes('bonificación') || line.includes('exención') ? 'text-emerald-400' : 'text-neutral-300'
+                  className={`animate-in fade-in slide-in-from-left-2 duration-300 flex items-start gap-3 ${
+                    line.includes('⚠️') || line.includes('❗') ? 'text-amber-400 font-black' : 
+                    line.includes('OK') || line.includes('bonificación') || line.includes('exención') ? 'text-emerald-400 font-semibold' : 'text-neutral-300'
                   }`}
                 >
-                  <span className="text-neutral-600 select-none">{`0${idx + 1}`}</span>
+                  <span className="text-neutral-700 select-none">{`0${idx + 1}`}</span>
                   <span>{line}</span>
                 </div>
               ))}
 
               {isPlaying && (
-                <div className="flex items-center gap-2 text-primary/80 animate-pulse">
+                <div className="flex items-center gap-2 text-cyan-400 animate-pulse">
                   <span>&gt;</span>
-                  <span className="h-3 w-1.5 bg-primary animate-blink" />
+                  <span className="h-3.5 w-2 bg-cyan-400 animate-blink shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
                 </div>
               )}
 
               {/* Resultado Exitoso */}
               {resultData && (
-                <div className="mt-6 pt-6 border-t border-neutral-900 space-y-4 animate-in fade-in zoom-in-95 duration-500">
-                  <div className="flex items-center gap-2.5 text-emerald-400">
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span className="font-bold uppercase tracking-wider text-xs">{resultData.title}</span>
+                <div className="mt-8 pt-8 border-t border-neutral-900 space-y-5 animate-in fade-in zoom-in-95 duration-500">
+                  <div className="flex items-center gap-3 text-emerald-400">
+                    <CheckCircle2 className="h-5 w-5 shadow-[0_0_10px_rgba(16,185,129,0.4)] rounded-full" />
+                    <span className="font-black uppercase tracking-widest text-xs bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-300">{resultData.title}</span>
                   </div>
                   <p className="text-[10px] text-neutral-400 italic font-bold leading-normal">
                     {resultData.summary}
                   </p>
 
                   {/* Detalle Asiento Contable (Partida Doble) */}
-                  <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-[9px] font-black uppercase text-neutral-500 border-b border-neutral-900 pb-1.5">
+                  <div className="bg-black/40 p-5 rounded-2xl border border-neutral-900 space-y-3 shadow-inner">
+                    <div className="grid grid-cols-12 gap-2 text-[9px] font-black uppercase text-neutral-500 border-b border-neutral-900 pb-2.5">
                       <div className="col-span-6">Cuenta Contable</div>
                       <div className="col-span-3 text-right">Debe</div>
                       <div className="col-span-3 text-right">Haber</div>
                     </div>
                     {resultData.ledger.map((ld: any, i: number) => (
-                      <div key={i} className="grid grid-cols-12 gap-2 text-[10px] tabular-nums font-medium">
+                      <div key={i} className="grid grid-cols-12 gap-2 text-[10px] tabular-nums font-bold">
                         <div className="col-span-6 text-neutral-300 truncate">{ld.acc}</div>
-                        <div className="col-span-3 text-right text-emerald-400">{ld.debe}</div>
-                        <div className="col-span-3 text-right text-neutral-400">{ld.haber}</div>
+                        <div className="col-span-3 text-right text-cyan-400">{ld.debe}</div>
+                        <div className="col-span-3 text-right text-violet-400">{ld.haber}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Sello de Inmutabilidad SHA-256 */}
                   {securedHash && (
-                    <div className="flex flex-col md:flex-row md:items-center gap-3 bg-primary/[0.03] p-4 rounded-2xl border border-primary/10">
-                      <div className="p-2.5 bg-primary/10 rounded-xl w-fit">
-                        <Lock className="h-4 w-4 text-primary" />
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 bg-gradient-to-r from-cyan-500/5 to-violet-500/5 p-5 rounded-2xl border border-cyan-500/10">
+                      <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-violet-500/20 rounded-2xl w-fit shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+                        <Lock className="h-4.5 w-4.5 text-cyan-400" />
                       </div>
                       <div className="space-y-1">
-                        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Sello SHA-256 de Inmutabilidad</div>
-                        <div className="text-[9px] font-mono text-neutral-500 break-all select-all">{securedHash}</div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-300">Sello SHA-256 de Inmutabilidad</div>
+                        <div className="text-[9px] font-mono text-neutral-500 break-all select-all font-semibold">{securedHash}</div>
                       </div>
                     </div>
                   )}
