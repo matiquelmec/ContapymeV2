@@ -42,18 +42,20 @@ export default async function BillingPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b-2 border-primary/5">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-primary/10 p-2 rounded-xl text-primary">
+            <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
               <FileText className="w-5 h-5" />
             </div>
-            <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter text-foreground uppercase">
               Facturación <span className="text-primary italic">Electrónica</span>
             </h1>
           </div>
-          <p className="text-muted-foreground font-bold italic flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-primary opacity-50" />
-            {org ? (
-              <><strong className="text-foreground not-italic">{org.nombre}</strong> — {org.rut_empresa}</>
-            ) : 'Gestión de DTEs y folios autorizados.'}
+          <p className="text-muted-foreground font-bold italic flex items-center gap-2 text-xs sm:text-sm">
+            <Building2 className="w-4 h-4 text-primary opacity-50 shrink-0" />
+            <span className="truncate max-w-full">
+              {org ? (
+                <><strong className="text-foreground not-italic">{org.nombre}</strong> — {org.rut_empresa}</>
+              ) : 'Gestión de DTEs y folios autorizados.'}
+            </span>
           </p>
         </div>
         

@@ -79,7 +79,7 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
     <div className="space-y-10 animate-in fade-in duration-700" suppressHydrationWarning>
       {entries.map((entry) => (
         <Card key={entry.id} className="bg-card border-border shadow-2xl overflow-hidden rounded-[2.5rem] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 border-l-8 border-l-primary group" suppressHydrationWarning>
-          <CardHeader className="bg-muted/5 border-b border-border/50 py-6 px-10" suppressHydrationWarning>
+          <CardHeader className="bg-muted/5 border-b border-border/50 py-5 px-4 sm:px-6 md:px-10" suppressHydrationWarning>
             <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between" suppressHydrationWarning>
               <div className="flex flex-col sm:flex-row sm:items-center gap-5" suppressHydrationWarning>
                 <Badge className="bg-white text-primary border-2 border-primary/20 font-black uppercase text-[11px] tracking-[0.2em] px-5 py-2.5 rounded-full shadow-lg shadow-primary/10 w-fit shrink-0">
@@ -105,21 +105,21 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
               <Table suppressHydrationWarning>
                 <TableHeader className="bg-muted/10 border-b border-border/50" suppressHydrationWarning>
                   <TableRow className="hover:bg-transparent" suppressHydrationWarning>
-                    <TableHead className="w-[180px] text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-10 py-6">Id. Contable</TableHead>
-                    <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-10 py-6">Asignación de Cuenta</TableHead>
-                    <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-10 py-6 w-48">Monto D (Cargo)</TableHead>
-                    <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-10 py-6 w-48">Monto H (Abono)</TableHead>
+                    <TableHead className="w-[180px] text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-4 sm:px-6 md:px-10 py-5 sm:py-6">Id. Contable</TableHead>
+                    <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-4 sm:px-6 md:px-10 py-5 sm:py-6">Asignación de Cuenta</TableHead>
+                    <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-4 sm:px-6 md:px-10 py-5 sm:py-6 w-48">Monto D (Cargo)</TableHead>
+                    <TableHead className="text-right text-foreground font-black uppercase text-[10px] tracking-[0.2em] px-4 sm:px-6 md:px-10 py-5 sm:py-6 w-48">Monto H (Abono)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-border/30" suppressHydrationWarning>
                   {entry.lines.map((line) => (
                     <TableRow key={line.id} className="hover:bg-primary/[0.02] transition-colors" suppressHydrationWarning>
-                      <TableCell className="font-mono text-[11px] font-black text-muted-foreground/60 px-10 py-5">
+                      <TableCell className="font-mono text-[11px] font-black text-muted-foreground/60 px-4 sm:px-6 md:px-10 py-4 sm:py-5">
                          <span className="bg-white border border-border px-3 py-1.5 rounded-lg shadow-sm group-hover:border-primary/20 transition-colors">
                            {line.cuenta_codigo}
                          </span>
                       </TableCell>
-                      <TableCell className="px-10 py-5" suppressHydrationWarning={true}>
+                      <TableCell className="px-4 sm:px-6 md:px-10 py-4 sm:py-5" suppressHydrationWarning={true}>
                           {line.tipo === 'haber' ? (
                               <div className="flex items-center gap-4 pl-10 relative" suppressHydrationWarning={true}>
                                   <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-6 bg-primary/20 rounded-full" suppressHydrationWarning={true} />
@@ -133,10 +133,10 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
                               </div>
                           )}
                       </TableCell>
-                      <TableCell className={`text-right font-black px-10 py-5 ${line.tipo === 'debe' ? 'text-emerald-700 bg-emerald-50/30 font-mono text-sm' : ''}`} suppressHydrationWarning>
+                      <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'debe' ? 'text-emerald-700 bg-emerald-50/30 font-mono text-sm' : ''}`} suppressHydrationWarning>
                         {line.tipo === 'debe' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
                       </TableCell>
-                      <TableCell className={`text-right font-black px-10 py-5 ${line.tipo === 'haber' ? 'text-primary bg-primary/5 font-mono text-sm' : ''}`} suppressHydrationWarning>
+                      <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'haber' ? 'text-primary bg-primary/5 font-mono text-sm' : ''}`} suppressHydrationWarning>
                         {line.tipo === 'haber' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
                       </TableCell>
                     </TableRow>
@@ -144,7 +144,7 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
                 </TableBody>
               </Table>
             </div>
-            <div className="bg-muted/10 py-5 px-10 border-t border-border flex justify-between items-center sm:hidden md:flex flex-row md:flex-row gap-4" suppressHydrationWarning={true}>
+            <div className="bg-muted/10 py-4 sm:py-5 px-4 sm:px-6 md:px-10 border-t border-border flex justify-between items-center sm:hidden md:flex flex-row md:flex-row gap-4" suppressHydrationWarning={true}>
                  <div className="flex items-center gap-3 opacity-60" suppressHydrationWarning={true}>
                     <Activity className="w-4 h-4 text-emerald-600" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Partida Doble Calibrada</span>

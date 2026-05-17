@@ -59,21 +59,23 @@ export default async function DashboardPage() {
       {/* ===== CABECERA PREMIUM ===== */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b-2 border-primary/5">
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter text-foreground uppercase mb-2">
               Panel <span className="text-primary italic">Ejecutivo</span>
             </h1>
-            <p className="text-muted-foreground font-bold italic flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-primary opacity-50" />
-              {org ? (
-                <><strong className="text-foreground not-italic">{org.nombre}</strong> — {org.giro || 'Sin giro registrado'}</>
-              ) : 'Bienvenido a Contapymepuq.'}
+            <p className="text-muted-foreground font-bold italic flex items-center gap-2 text-xs sm:text-sm">
+              <Building2 className="w-4 h-4 text-primary opacity-50 shrink-0" />
+              <span className="truncate max-w-full">
+                {org ? (
+                  <><strong className="text-foreground not-italic">{org.nombre}</strong> — {org.giro || 'Sin giro registrado'}</>
+                ) : 'Bienvenido a Contapymepuq.'}
+              </span>
             </p>
           </div>
         </div>
 
       {/* ===== MONITOR DE IMPLEMENTACIÓN ORGANIZACIONAL ===== */}
       {showOnboardingChecklist && (
-        <section className="bg-gradient-to-br from-primary/[0.08] via-background to-transparent border border-primary/20 rounded-[2.5rem] p-10 shadow-xl shadow-primary/5 relative overflow-hidden">
+        <section className="bg-gradient-to-br from-primary/[0.08] via-background to-transparent border border-primary/20 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-10 shadow-xl shadow-primary/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] -z-10" />
           <div className="flex items-start gap-6 mb-10">
             <div className="bg-primary/10 p-4 rounded-2xl text-primary border border-primary/20">

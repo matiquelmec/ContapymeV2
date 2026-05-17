@@ -14,10 +14,10 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Botón flotante para regresar al inicio */}
+      {/* Botón flotante para regresar al inicio (fijo para que no se pierda al hacer scroll) */}
       <Link 
         href="/" 
-        className="absolute top-6 left-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-neutral-200/80 bg-white/80 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.15em] text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-50 shadow-sm transition-all duration-300 z-50 group"
+        className="fixed top-4 left-4 sm:top-6 sm:left-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-neutral-200/80 bg-white/90 backdrop-blur-md text-[10px] font-black uppercase tracking-[0.15em] text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-neutral-50 shadow-md transition-all duration-300 z-50 group"
       >
         <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-1 transition-transform" /> Volver al Inicio
       </Link>

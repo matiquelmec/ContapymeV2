@@ -264,15 +264,6 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
               <Share2 className="mr-2 h-4 w-4" /> Compartir Link
             </Button>
 
-            {/* Descargar imagen para subir manualmente */}
-            <Button
-              variant="ghost"
-              onClick={handleDownloadStory}
-              disabled={isGenerating}
-              className="rounded-xl h-12 px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 hover:text-foreground transition-all"
-            >
-              <Download className="mr-2 h-4 w-4" /> Descargar
-            </Button>
           </div>
         </div>
       </div>

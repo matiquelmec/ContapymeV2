@@ -15,18 +15,18 @@ export function AssetSummaryCard({ assets }: AssetSummaryCardProps) {
 
   return (
     <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-indigo-500/10">
-      <CardHeader className="bg-muted/5 border-b border-border p-8">
+      <CardHeader className="bg-muted/5 border-b border-border p-5 sm:p-8">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+          <div className="p-3 bg-indigo-50 rounded-2xl border border-indigo-100 shrink-0">
             <Package className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <CardTitle className="text-lg font-black text-foreground uppercase tracking-tight">Gestión de Activos</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-black text-foreground uppercase tracking-tight">Gestión de Activos</CardTitle>
             <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">VALOR LIBRO Y DEPRECIACIÓN ACUMULADA</CardDescription>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-8">
+      <CardContent className="p-5 sm:p-8">
         <div className="space-y-1">
           <div className="flex justify-between items-center py-5 border-b border-border">
             <span className="text-muted-foreground font-bold text-sm">Total Inversión Bruta</span>

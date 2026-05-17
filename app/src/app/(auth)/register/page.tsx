@@ -104,13 +104,18 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-4">
             <p className="text-sm text-muted-foreground">
               ¿Ya tienes cuenta?{' '}
               <Link href="/login" className="text-primary font-bold hover:underline transition-colors">
                 Inicia sesión
               </Link>
             </p>
+            <div className="pt-3 border-t border-border/40">
+              <Link href="/" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-muted-foreground/60 hover:text-primary transition-colors">
+                ← Volver a la página principal
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -97,7 +97,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
 
           <div className="mt-6 space-y-3 text-center">
-            <Link href="/reset-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/reset-password" className="text-sm text-muted-foreground hover:text-primary transition-colors block">
               ¿Olvidaste tu contraseña?
             </Link>
             <p className="text-sm text-muted-foreground">
@@ -106,6 +106,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Regístrate aquí
               </Link>
             </p>
+            <div className="pt-3 border-t border-border/40">
+              <Link href="/" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-muted-foreground/60 hover:text-primary transition-colors">
+                ← Volver a la página principal
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

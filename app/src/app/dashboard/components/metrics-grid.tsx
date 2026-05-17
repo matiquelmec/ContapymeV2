@@ -45,16 +45,16 @@ export function MetricsGrid({ financials }: MetricsGridProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {kpis.map(k => (
         <div 
           key={k.label} 
-          className={`p-5 rounded-[2rem] border-2 transition-all hover:scale-[1.02] duration-300 ${k.bg}`}
+          className={`p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] border-2 transition-all hover:scale-[1.02] duration-300 ${k.bg}`}
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1.5">
             {k.label}
           </p>
-          <p className={`text-lg font-black tracking-tighter ${k.color} break-all`}>
+          <p className={`text-base sm:text-lg font-black tracking-tighter ${k.color} break-all`}>
             {k.value}
           </p>
         </div>

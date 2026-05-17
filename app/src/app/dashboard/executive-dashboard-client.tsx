@@ -124,7 +124,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
       >
 
       {/* ―― CABECERA DEL MOTOR ―― */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-8 bg-card border border-border shadow-xl rounded-[2.5rem]">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 p-5 sm:p-8 bg-card border border-border shadow-xl rounded-[2.5rem]">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
             <Brain className="w-6 h-6 text-primary" />
@@ -163,7 +163,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
       {/* ―― RESUMEN EJECUTIVO ―― */}
       <Card className={`bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 ${style.border} relative`}>
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/3 rounded-full blur-[120px] pointer-events-none" />
-        <CardHeader className="bg-muted/5 border-b border-border p-10 relative z-10">
+        <CardHeader className="bg-muted/5 border-b border-border p-5 sm:p-8 md:p-10 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className={`p-5 rounded-3xl border-2 inline-flex shadow-lg ${style.bg} ${style.text} border-opacity-20`}>
               <AssessIcon className="w-9 h-9" />
@@ -181,7 +181,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-10 relative z-10 space-y-8">
+        <CardContent className="p-5 sm:p-8 md:p-10 relative z-10 space-y-8">
           {/* KPIs financieros - COMPONENTE MODULAR */}
           <MetricsGrid financials={data.financials} />
 

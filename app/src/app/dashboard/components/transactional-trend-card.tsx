@@ -18,13 +18,13 @@ export function TransactionalTrendCard({ trend, year }: TransactionalTrendCardPr
 
   return (
     <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500/10">
-      <CardHeader className="bg-muted/5 border-b border-border p-8">
+      <CardHeader className="bg-muted/5 border-b border-border p-5 sm:p-8">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+          <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 shrink-0">
             <LineChart className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <CardTitle className="text-lg font-black text-foreground uppercase tracking-tight">Flujo Transaccional {year}</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-black text-foreground uppercase tracking-tight">Flujo Transaccional {year}</CardTitle>
             <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">VENTAS VS COMPRAS — MES A MES</CardDescription>
           </div>
         </div>
@@ -37,14 +37,14 @@ export function TransactionalTrendCard({ trend, year }: TransactionalTrendCardPr
             </div>
           ) : (
             activeTrends.map((m) => (
-              <div key={m.month} className="flex justify-between items-center py-3 px-5 hover:bg-muted/30 rounded-2xl transition-colors group">
+              <div key={m.month} className="flex justify-between items-center py-3 px-3 sm:px-5 hover:bg-muted/30 rounded-2xl transition-colors group">
                 <span className="text-foreground/50 uppercase font-black text-[10px] tracking-[0.25em] w-10 shrink-0">{m.month}</span>
-                <div className="flex-1 px-4 flex justify-between gap-2 overflow-hidden">
+                <div className="flex-1 px-2 sm:px-4 flex flex-wrap sm:flex-nowrap justify-between gap-x-2 gap-y-1 overflow-hidden">
                   <span className="text-emerald-600 font-black text-[10px] tabular-nums" title="Ventas">V: {fCLP(m.sales)}</span>
                   <span className="text-rose-600 font-black text-[10px] tabular-nums" title="Compras">C: {fCLP(m.purchases)}</span>
                   <span className="text-orange-600 font-black text-[10px] tabular-nums" title="Remuneraciones">R: {fCLP(m.payroll)}</span>
                 </div>
-                <span className={`font-black text-xs tabular-nums w-24 text-right ${m.margin > 0 ? 'text-primary' : 'text-rose-600'}`}>
+                <span className={`font-black text-xs tabular-nums w-20 sm:w-24 text-right shrink-0 ${m.margin > 0 ? 'text-primary' : 'text-rose-600'}`}>
                   {fCLP(m.margin)}
                 </span>
               </div>
