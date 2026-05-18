@@ -8,7 +8,7 @@ export async function getRegionalNews() {
     const { data, error } = await supabase
       .from('regional_news')
       .select('*')
-      .order('published_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(20)
     
     if (error || !data || data.length === 0) {
