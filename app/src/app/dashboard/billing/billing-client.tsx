@@ -300,7 +300,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-xs font-bold text-muted-foreground">
-                                        {new Date(dte.fecha_emision).toLocaleDateString('es-CL')}
+                                        {dte.fecha_emision ? new Date(dte.fecha_emision).toLocaleDateString('es-CL') : '—'}
                                     </TableCell>
                                     <TableCell className="font-black text-sm tracking-tighter">
                                         {formatCurrency(dte.monto_total)}
