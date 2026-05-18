@@ -90,8 +90,14 @@ class DTELogic:
             if not master_pass:
                 raise Exception("El cliente no tiene certificado y el Certificado Maestro no está configurado (DTE_MASTER_CERT_PASSWORD).")
                 
+            # Strip quotes if loaded literally
+            master_pass = master_pass.strip('"').strip("'")
+            
             try:
-                res = self.supabase.storage.from_("dte_certificates").download("system/master_cert.pfx")
+                try:
+                    res = self.supabase.storage.from_("dte_certificates").download("system/master_cert.pfx")
+                except Exception:
+                    res = self.supabase.storage.from_("dte_certificates").download("Certificado E-Certchile (14).pfx")
                 pfx_bytes = res
                 return pfx_bytes, master_pass
             except Exception as e:
