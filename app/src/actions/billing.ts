@@ -98,8 +98,19 @@ export async function issueDTE(formData: {
     })
 
     if (!response.ok) {
-      const err = await response.json()
-      return { success: false, error: parseError(err.detail || 'Error al emitir DTE.') }
+      let errorMessage = 'Error al emitir DTE.'
+      try {
+        const err = await response.json()
+        errorMessage = err.detail || errorMessage
+      } catch (jsonErr) {
+        try {
+          const textErr = await response.text()
+          errorMessage = textErr.substring(0, 150) || errorMessage
+        } catch (textErr) {
+          // ignore
+        }
+      }
+      return { success: false, error: parseError(errorMessage) }
     }
 
     const data = await response.json()
