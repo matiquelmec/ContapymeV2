@@ -195,6 +195,7 @@ export default function SettingsPageClient({
       const { cert_password, ...restDteForm } = dteForm;
       const dtePayload = {
         ...restDteForm,
+        resolucion_fecha: restDteForm.resolucion_fecha || null,
         rut: cleanRUT(dteForm.rut),
         acteco: parseInt(dteForm.acteco.toString()) || 0,
         resolucion_numero: parseInt(dteForm.resolucion_numero.toString()) || 0,
