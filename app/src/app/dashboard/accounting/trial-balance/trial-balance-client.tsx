@@ -376,35 +376,35 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
   return (
     <div className="space-y-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
       {/* 1. Panel de Control y Filtros Premium */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-8 bg-card border border-border rounded-[2.5rem] shadow-2xl">
-        <div className="flex flex-wrap items-end gap-6">
-          <div className="space-y-2.5">
+      <div className="flex flex-col xl:flex-row justify-between gap-6 p-6 sm:p-8 bg-card border border-border rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 w-full xl:w-auto">
+          <div className="space-y-2.5 w-full sm:w-auto">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Ciclo de Inicio</label>
-            <div className="relative">
+            <div className="relative w-full">
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
               <Input 
                 type="date" 
                 value={dates.start} 
                 onChange={(e) => setDates({...dates, start: e.target.value})}
-                className="pl-12 bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 w-48 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all hover:border-primary/50"
+                className="pl-12 bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 w-full sm:w-48 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all hover:border-primary/50"
               />
             </div>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 w-full sm:w-auto">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Ciclo de Término</label>
-            <div className="relative">
+            <div className="relative w-full">
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
               <Input 
                 type="date" 
                 value={dates.end} 
                 onChange={(e) => setDates({...dates, end: e.target.value})}
-                className="pl-12 bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 w-48 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all hover:border-primary/50"
+                className="pl-12 bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 w-full sm:w-48 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all hover:border-primary/50"
               />
             </div>
           </div>
           <Button 
               onClick={fetchData} 
-              className="gap-3 font-black uppercase text-[10px] tracking-widest rounded-full shadow-xl shadow-primary/20 h-14 px-10 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto"
+              className="gap-3 font-black uppercase text-[10px] tracking-widest rounded-full shadow-xl shadow-primary/20 h-14 px-8 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shrink-0"
               disabled={loading}
           >
             {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Filter className="h-5 w-5" />}
@@ -412,18 +412,18 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
           </Button>
         </div>
         
-        <div className="flex items-center gap-3 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
             <Button 
                 onClick={() => handleExportPDF(false)}
                 variant="outline" 
-                className="gap-2 font-black uppercase text-[10px] tracking-widest h-14 px-8 rounded-full border-2 border-border hover:bg-muted shadow-sm active:scale-95 transition-all flex-1 lg:flex-none"
+                className="gap-2 font-black uppercase text-[10px] tracking-widest h-14 px-6 rounded-full border-2 border-border hover:bg-muted shadow-sm active:scale-95 transition-all w-full sm:w-auto sm:flex-1 xl:flex-none"
             >
                 <FileText className="h-5 w-5 text-primary" /> PDF Local
             </Button>
             <Button 
                 onClick={() => handleExportPDF(true)}
                 disabled={isArchiving}
-                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest h-14 px-8 rounded-full shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex-1 lg:flex-none"
+                className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest h-14 px-6 rounded-full shadow-xl shadow-indigo-600/20 active:scale-95 transition-all w-full sm:w-auto sm:flex-1 xl:flex-none"
             >
                 {isArchiving ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -435,7 +435,7 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
             <Button 
                 onClick={handleExportCSV}
                 variant="outline" 
-                className="gap-2 font-black uppercase text-[10px] tracking-widest h-14 px-8 rounded-full border-2 border-border hover:bg-muted shadow-sm active:scale-95 transition-all flex-1 lg:flex-none"
+                className="gap-2 font-black uppercase text-[10px] tracking-widest h-14 px-6 rounded-full border-2 border-border hover:bg-muted shadow-sm active:scale-95 transition-all w-full sm:w-auto sm:flex-1 xl:flex-none"
             >
                 <Download className="h-5 w-5 text-primary" /> Data Export
             </Button>
@@ -443,9 +443,9 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       </div>
 
       {/* 2. Estado de Cuadratura - Indicador Visual */}
-      <div className={`p-8 rounded-[2.5rem] border-2 flex items-center justify-between shadow-lg transition-all duration-500 overflow-hidden relative ${isSquare ? 'bg-emerald-50/50 border-emerald-500/20 text-emerald-800' : 'bg-rose-50/50 border-rose-500/20 text-rose-800'}`}>
-        <div className="flex items-center gap-6 z-10">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 shadow-inner ${isSquare ? 'bg-emerald-100 border-emerald-500/30' : 'bg-rose-100 border-rose-500/30'}`}>
+      <div className={`p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border-2 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-lg transition-all duration-500 overflow-hidden relative ${isSquare ? 'bg-emerald-50/50 border-emerald-500/20 text-emerald-800' : 'bg-rose-50/50 border-rose-500/20 text-rose-800'}`}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 z-10">
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 shrink-0 shadow-inner ${isSquare ? 'bg-emerald-100 border-emerald-500/30' : 'bg-rose-100 border-rose-500/30'}`}>
             {isSquare ? <CheckCircle2 className="h-8 w-8 text-emerald-600" /> : <AlertCircle className="h-8 w-8 text-rose-600" />}
           </div>
           <div className="space-y-1">
@@ -455,9 +455,9 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
             </p>
           </div>
         </div>
-        <div className="flex flex-col items-end z-10">
+        <div className="flex flex-col items-start md:items-end z-10">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">Diferencia Neta Detectada</span>
-            <span className="text-4xl font-black tracking-tighter">{fCurrency(Math.abs(totalSumas.debe - totalSumas.haber))}</span>
+            <span className="text-3xl sm:text-4xl font-black tracking-tighter">{fCurrency(Math.abs(totalSumas.debe - totalSumas.haber))}</span>
         </div>
         {/* Decorative background element */}
         <div className={`absolute -right-8 -bottom-8 opacity-[0.03] transform rotate-12 ${isSquare ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -466,8 +466,8 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       </div>
 
       {/* 3. Estructura del Balance */}
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary animate-in slide-in-from-bottom-4 duration-500">
-        <CardHeader className="bg-muted/5 border-b border-border/50 py-8 px-10">
+      <Card className="bg-card border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary animate-in slide-in-from-bottom-4 duration-500">
+        <CardHeader className="bg-muted/5 border-b border-border/50 py-6 sm:py-8 px-6 sm:px-10">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div className="space-y-2">
                     <CardTitle className="text-2xl font-black uppercase tracking-tight text-foreground">Detalle de Sumas y Saldos</CardTitle>
@@ -484,35 +484,35 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent bg-muted/30 border-border">
-                  <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-32">Código IFRS</TableHead>
-                  <TableHead className="px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60">Cuenta Contable Estratégica</TableHead>
-                  <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Débitos Suma</TableHead>
-                  <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Créditos Suma</TableHead>
-                  <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-primary/80 w-44 bg-blue-50/20">Saldo Deudor</TableHead>
-                  <TableHead className="text-right px-10 py-6 font-black uppercase text-[10px] tracking-[0.15em] text-amber-700/80 w-44 bg-amber-50/20">Saldo Acreedor</TableHead>
+                  <TableHead className="px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-32">Código IFRS</TableHead>
+                  <TableHead className="px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60">Cuenta Contable Estratégica</TableHead>
+                  <TableHead className="text-right px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Débitos Suma</TableHead>
+                  <TableHead className="text-right px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-foreground/60 w-40">Créditos Suma</TableHead>
+                  <TableHead className="text-right px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-primary/80 w-44 bg-blue-50/20">Saldo Deudor</TableHead>
+                  <TableHead className="text-right px-4 sm:px-10 py-4 sm:py-6 font-black uppercase text-[10px] tracking-[0.15em] text-amber-700/80 w-44 bg-amber-50/20">Saldo Acreedor</TableHead>
                 </TableRow>
               </TableHeader>
                 <TableBody className="divide-y divide-border/30">
                 {data.map((row) => (
                   <TableRow key={row.codigo} className="hover:bg-primary/[0.02] transition-colors group">
-                    <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">
+                    <TableCell className="px-4 sm:px-10 py-4 sm:py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">
                         {row.codigo}
                     </TableCell>
-                    <TableCell className="px-10 py-6">
+                    <TableCell className="px-4 sm:px-10 py-4 sm:py-6">
                         <span className="text-foreground font-black uppercase text-xs tracking-tight">{row.nombre}</span>
                     </TableCell>
-                    <TableCell className="text-right px-10 py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    <TableCell className="text-right px-4 sm:px-10 py-4 sm:py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                         {row.debe > 0 ? fCurrency(row.debe) : <span className="opacity-0">—</span>}
                     </TableCell>
-                    <TableCell className="text-right px-10 py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    <TableCell className="text-right px-4 sm:px-10 py-4 sm:py-6 font-bold text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                         {row.haber > 0 ? fCurrency(row.haber) : <span className="opacity-0">—</span>}
                     </TableCell>
-                    <TableCell className="text-right px-10 py-6 bg-blue-50/10 group-hover:bg-blue-50/30 transition-colors">
+                    <TableCell className="text-right px-4 sm:px-10 py-4 sm:py-6 bg-blue-50/10 group-hover:bg-blue-50/30 transition-colors">
                         <span className="text-sm font-black text-primary">
                             {row.saldo_deudor > 0 ? fCurrency(row.saldo_deudor) : <span className="opacity-0">—</span>}
                         </span>
                     </TableCell>
-                    <TableCell className="text-right px-10 py-6 bg-amber-50/10 group-hover:bg-amber-50/30 transition-colors">
+                    <TableCell className="text-right px-4 sm:px-10 py-4 sm:py-6 bg-amber-50/10 group-hover:bg-amber-50/30 transition-colors">
                          <span className="text-sm font-black text-amber-600">
                             {row.saldo_acreedor > 0 ? fCurrency(row.saldo_acreedor) : <span className="opacity-0">—</span>}
                          </span>
@@ -536,28 +536,28 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
               {data.length > 0 && (
                 <tfoot className="bg-muted/30 border-t-8 border-primary/10">
                     <TableRow className="hover:bg-transparent">
-                        <TableCell colSpan={2} className="px-10 py-10 font-black uppercase text-[11px] tracking-[0.2em] text-foreground">Total Consolidado Institucional</TableCell>
-                        <TableCell className="text-right px-10 py-10">
+                        <TableCell colSpan={2} className="px-4 sm:px-10 py-6 sm:py-10 font-black uppercase text-[11px] tracking-[0.2em] text-foreground">Total Consolidado</TableCell>
+                        <TableCell className="text-right px-4 sm:px-10 py-6 sm:py-10">
                             <div className="flex flex-col items-end">
                                 <span className="text-sm font-black text-foreground">{fCurrency(totalSumas.debe)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Suma Débitos</span>
                             </div>
                         </TableCell>
-                        <TableCell className="text-right px-10 py-10">
+                        <TableCell className="text-right px-4 sm:px-10 py-6 sm:py-10">
                              <div className="flex flex-col items-end">
                                 <span className="text-sm font-black text-foreground">{fCurrency(totalSumas.haber)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Suma Créditos</span>
                              </div>
                         </TableCell>
-                        <TableCell className="text-right px-10 py-10 bg-primary/5 border-l border-primary/10">
+                        <TableCell className="text-right px-4 sm:px-10 py-6 sm:py-10 bg-primary/5 border-l border-primary/10">
                              <div className="flex flex-col items-end">
-                                <span className="text-primary text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_deudor)}</span>
+                                <span className="text-primary text-xl sm:text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_deudor)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 mt-1 whitespace-nowrap">Acumulado Deudor</span>
                              </div>
                         </TableCell>
-                        <TableCell className="text-right px-10 py-10 bg-amber-600/5 border-l border-amber-600/10">
+                        <TableCell className="text-right px-4 sm:px-10 py-6 sm:py-10 bg-amber-600/5 border-l border-amber-600/10">
                              <div className="flex flex-col items-end">
-                                <span className="text-amber-600 text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_acreedor)}</span>
+                                <span className="text-amber-600 text-xl sm:text-2xl font-black tracking-tighter">{fCurrency(totalSumas.saldo_acreedor)}</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-600/60 mt-1 whitespace-nowrap">Acumulado Acreedor</span>
                              </div>
                         </TableCell>
@@ -570,7 +570,7 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       </Card>
       
       {/* Institutional Legal Disclaimer & Help */}
-      <div className="flex items-start gap-5 p-8 bg-blue-50/50 border border-blue-100 rounded-[2.5rem] shadow-inner mb-6">
+      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5 p-6 sm:p-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] sm:rounded-[2.5rem] shadow-inner mb-6">
         <div className="h-14 w-14 rounded-2xl bg-white border border-blue-200 shadow-sm flex items-center justify-center shrink-0">
           <Info className="h-6 w-6 text-primary" />
         </div>
@@ -583,11 +583,11 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       </div>
 
       {/* Historial de Certificaciones */}
-      <Card className="bg-white border-border shadow-2xl rounded-[2.5rem] overflow-hidden">
-        <CardHeader className="p-8 border-b border-border bg-slate-50/30">
-          <div className="flex items-center justify-between">
+      <Card className="bg-white border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="p-6 sm:p-8 border-b border-border bg-slate-50/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100">
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shrink-0">
                 <History className="h-6 w-6 text-indigo-600" />
               </div>
               <div>
@@ -595,12 +595,12 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
                 <CardDescription className="text-xs font-bold">Registro inmutable de balances generados y archivados</CardDescription>
               </div>
             </div>
-            <Badge variant="outline" className="rounded-lg font-black text-[10px] uppercase px-3 py-1 bg-white">
+            <Badge variant="outline" className="rounded-lg font-black text-[10px] uppercase px-3 py-1 bg-white w-fit">
               {history.length} Documentos
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-8">
+        <CardContent className="p-6 sm:p-8">
           {history.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
               <FileCheck className="h-12 w-12 mb-4 opacity-20" />
