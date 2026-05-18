@@ -11,6 +11,7 @@ interface StoryCardProps {
 }
 
 // 🎨 Paletas de Diseño "Patagonia Digital" adaptadas al contenido
+// Alineadas 100% con los colores de marca de Diario Punta Arenas y ContaPyme (Azul Real Patagónico y tonos australes)
 const THEMES = {
   deportes: {
     gradient: 'linear-gradient(180deg, #021a0f 0%, #050d0a 60%, #000000 100%)',
@@ -40,31 +41,31 @@ const THEMES = {
     radial: 'radial-gradient(circle at 50% 20%, rgba(192, 132, 252, 0.15) 0%, transparent 70%)',
   },
   finanzas: {
-    gradient: 'linear-gradient(180deg, #1e1b4b 0%, #090d16 60%, #000000 100%)',
-    borderColor: 'rgba(234, 179, 8, 0.4)',
-    accentColor: '#eab308',
+    gradient: 'linear-gradient(180deg, #1b1202 0%, #070400 60%, #000000 100%)', // Dorado súper profundo
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+    accentColor: '#f59e0b',
     textColor: '#fef08a',
     slogan: 'PULSO ECONÓMICO Y FINANCIERO',
-    badgeBg: 'rgba(234, 179, 8, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(234, 179, 8, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(245, 158, 11, 0.15)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 70%)',
   },
   sii: {
-    gradient: 'linear-gradient(180deg, #0f172a 0%, #020617 60%, #000000 100%)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
-    accentColor: '#3b82f6',
+    gradient: 'linear-gradient(180deg, #09122c 0%, #030612 60%, #000000 100%)', // Azul de marca profundo
+    borderColor: 'rgba(30, 98, 208, 0.4)',
+    accentColor: '#1e62d0', // Azul real patagónico oficial
     textColor: '#93c5fd',
     slogan: 'ACTUALIDAD TRIBUTARIA / SII',
-    badgeBg: 'rgba(59, 130, 246, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(30, 98, 208, 0.15)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(30, 98, 208, 0.15) 0%, transparent 70%)',
   },
   default: {
-    gradient: 'linear-gradient(180deg, #0a0a0a 0%, #171725 60%, #000000 100%)',
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    accentColor: '#3b82f6',
-    textColor: '#60a5fa',
-    slogan: 'NOTICIA DE ÚLTIMA HORA',
-    badgeBg: 'rgba(59, 130, 246, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
+    gradient: 'linear-gradient(180deg, #081226 0%, #030710 60%, #000000 100%)', // Master Brand Deep Space Blue!
+    borderColor: 'rgba(30, 98, 208, 0.4)',
+    accentColor: '#1e62d0', // Azul real patagónico oficial
+    textColor: '#93c5fd', // Azul hielo austral
+    slogan: 'PATAGONIA ACTUAL / ÚLTIMO MINUTO',
+    badgeBg: 'rgba(30, 98, 208, 0.15)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(30, 98, 208, 0.15) 0%, transparent 70%)',
   }
 }
 
@@ -130,7 +131,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           width: '1080px',
           height: '1920px',
           overflow: 'hidden',
-          fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+          fontFamily: "var(--font-geist-sans), 'Inter', 'Helvetica Neue', Arial, sans-serif",
           background: theme.gradient,
           display: 'flex',
           flexDirection: 'column',
