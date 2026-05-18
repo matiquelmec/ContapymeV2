@@ -306,9 +306,9 @@ export default function SettingsPageClient({
             open: true,
             type: 'success',
             title: 'Certificado Protegido',
-            description: 'El certificado digital ha sido almacenado de forma encriptada.',
+            description: 'El certificado digital ha sido almacenado de forma encriptada y su contraseña ha sido protegida mediante cifrado simétrico AES-256.',
             actionLabel: 'Aceptar',
-            onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
+            onAction: () => window.location.reload()
           });
         } else {
           setStatusModal({
@@ -600,6 +600,105 @@ export default function SettingsPageClient({
                     value={dteForm.ciudad}
                     onChange={(e) => setDteForm({ ...dteForm, ciudad: e.target.value })}
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* CERTIFICADO DIGITAL */}
+            <div id="cert-section" className="space-y-6 pt-6 sm:pt-10 border-t border-border/50">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Fingerprint className="w-3.5 h-3.5" /> CERTIFICADO DIGITAL (FIRMA ELECTRÓNICA)
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/60 italic font-bold uppercase tracking-wider">
+                    BÓVEDA DE SEGURIDAD PARA LA FIRMA ELECTRÓNICA REQUERIDA POR EL SII
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ESTADO ACTUAL */}
+                <div className="p-6 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estado del Certificado</Label>
+                    {initialDTEConfig?.cert_path ? (
+                      <div className="p-4 bg-emerald-500/[0.03] border-2 border-emerald-500/10 rounded-2xl flex gap-4 items-center">
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl shrink-0">
+                          <Shield className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs text-emerald-800 uppercase tracking-tight">Certificado Activo</p>
+                          <p className="text-[9px] text-emerald-700/70 font-bold leading-none mt-1">
+                            Protegido en bóveda descentralizada (AES-256)
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-amber-500/[0.03] border-2 border-amber-500/10 rounded-2xl flex gap-4 items-center">
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl shrink-0">
+                          <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs text-amber-800 uppercase tracking-tight">Sin Certificado Propio</p>
+                          <p className="text-[9px] text-amber-700/70 font-bold leading-none mt-1">
+                            Se utilizará el Certificado Maestro centralizado
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-4 bg-muted/20 border border-border/50 rounded-2xl">
+                    <p className="text-[9px] text-muted-foreground/80 font-bold leading-relaxed">
+                      El certificado digital (.pfx) es personal e intransferible. Al subirlo a Contapyme, 
+                      se almacena encriptado de forma simétrica utilizando el hash único de su organización como sal criptográfica.
+                    </p>
+                  </div>
+                </div>
+
+                {/* FORMULARIO DE CARGA */}
+                <div className="p-6 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem] space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">CONTRASEÑA DEL CERTIFICADO</Label>
+                    <PInput
+                      type="password"
+                      value={dteForm.cert_password}
+                      onChange={(e) => setDteForm({ ...dteForm, cert_password: e.target.value })}
+                      placeholder="••••••••••••"
+                      className="font-mono"
+                    />
+                    <p className="text-[9px] text-muted-foreground/60 italic ml-1">
+                      Clave de seguridad provista al comprar su firma digital.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 items-stretch justify-end">
+                    <input 
+                      type="file" 
+                      id="cert-upload" 
+                      className="hidden" 
+                      accept=".pfx" 
+                      onChange={handleUploadCert}
+                      disabled={loadingCert}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (!dteForm.cert_password) {
+                          toast.error("Contraseña Obligatoria", {
+                            description: "Debe ingresar la contraseña del certificado antes de subir el archivo."
+                          });
+                          return;
+                        }
+                        document.getElementById('cert-upload')?.click();
+                      }}
+                      disabled={loadingCert}
+                      className="w-full h-14 rounded-2xl bg-amber-600 text-white hover:bg-amber-700 font-black uppercase text-xs tracking-[0.2em] px-8 shadow-lg hover:scale-[1.03] transition-all gap-3"
+                    >
+                      {loadingCert ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
+                      CARGAR CERTIFICADO (.PFX)
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
