@@ -210,7 +210,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                 </head>
                 <body>
                     <div class="max-w-3xl mx-auto p-4 bg-white border border-gray-100 rounded-3xl">
-                        \${printContent.innerHTML}
+                        ${printContent.innerHTML}
                     </div>
                     <script>
                         window.onload = function() {
@@ -238,7 +238,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
         await new Promise((resolve) => setTimeout(resolve, 1500))
         setSendingEmail(false)
         setShowEmailForm(false)
-        toast.success(`DTE (PDF + XML) enviado con éxito al correo: \${emailInput}`)
+        toast.success(`DTE (PDF + XML) enviado con éxito al correo: ${emailInput}`)
     }
 
     return (

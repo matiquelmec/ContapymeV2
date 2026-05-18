@@ -113,9 +113,9 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
             return true
         })
         .filter(dte => 
-            dte.receptor_razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            dte.folio.toString().includes(searchTerm) ||
-            dte.receptor_rut.includes(searchTerm)
+            (dte.receptor_razon_social || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (dte.folio || '').toString().includes(searchTerm) ||
+            (dte.receptor_rut || '').includes(searchTerm)
         )
 
     const formatCurrency = (value: number) => {
