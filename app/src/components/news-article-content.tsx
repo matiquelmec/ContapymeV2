@@ -6,6 +6,7 @@ import { Globe, Calendar, MessageCircle, Share2, Instagram, Download, Loader2, C
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { StoryCard } from './story-card'
+import { toast } from 'sonner'
 
 interface NewsArticleContentProps {
   news: any
@@ -78,9 +79,16 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       const file = await generateStoryImage()
 
       if (!file) {
-        // Fallback si no se pudo generar la imagen
         handleShareFallback()
         return
+      }
+
+      // 📋 Copiar el enlace automáticamente al portapapeles antes de compartir para facilitar la UX
+      try {
+        await navigator.clipboard.writeText(getCanonicalUrl())
+        toast.success("¡Imagen lista! Enlace copiado al portapapeles. Pégalo usando el Sticker de Enlace de Instagram 🔗")
+      } catch (e) {
+        console.warn("No se pudo copiar automáticamente:", e)
       }
 
       // Verificar si el navegador soporta compartir archivos
@@ -93,9 +101,9 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       } else {
         // Si no soporta share con archivos, descargar la imagen
         downloadImage(file)
+        toast.info("Imagen descargada. ¡Ya puedes subirla a tus historias y pegar el enlace de tu portapapeles!")
       }
     } catch (error: any) {
-      // Si el usuario canceló el share, no es un error
       if (error?.name !== 'AbortError') {
         console.error('Error al compartir:', error)
         handleShareFallback()
@@ -128,6 +136,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       const file = await generateStoryImage()
       if (file) {
         downloadImage(file)
+        toast.success("¡Imagen descargada exitosamente!")
       }
     } finally {
       setIsGenerating(false)
@@ -147,18 +156,24 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
     if (navigator.share) {
       try {
         await navigator.share(shareData)
+        toast.success("Enlace compartido")
       } catch (err) {
         console.log("Error sharing", err)
       }
     } else {
-      navigator.clipboard.writeText(getCanonicalUrl())
-      alert("Enlace copiado al portapapeles")
+      try {
+        await navigator.clipboard.writeText(getCanonicalUrl())
+        toast.success("Enlace copiado al portapapeles")
+      } catch (e) {
+        console.error(e)
+      }
     }
   }
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(`📍 *NOTICIA REGIONAL* - ${news.title}\n\nLee más en el portal oficial:\n${getCanonicalUrl()}`)
     window.open(`https://wa.me/?text=${text}`, '_blank')
+    toast.success("Redirigiendo a WhatsApp...")
   }
 
   return (
