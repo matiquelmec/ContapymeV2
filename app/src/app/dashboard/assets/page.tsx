@@ -57,7 +57,7 @@ export default async function AssetsPage() {
             <strong className="text-foreground not-italic">{orgData?.nombre || 'la empresa'}</strong>.
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
           <CreateAssetButton />
           <DepreciateButton />
         </div>
@@ -66,7 +66,7 @@ export default async function AssetsPage() {
       {/* ===== KPI DASHBOARD ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 border-l-primary hover:scale-[1.02] transition-all group">
-          <CardContent className="p-8">
+          <CardContent className="p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] leading-none mb-2">Activos Operativos</p>
@@ -81,7 +81,7 @@ export default async function AssetsPage() {
         </Card>
 
         <Card className="bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 border-l-indigo-600 hover:scale-[1.02] transition-all group">
-          <CardContent className="p-8">
+          <CardContent className="p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] leading-none mb-2">Valor Adquisición</p>
@@ -96,7 +96,7 @@ export default async function AssetsPage() {
         </Card>
 
         <Card className="bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 border-l-emerald-600 hover:scale-[1.02] transition-all group">
-          <CardContent className="p-8">
+          <CardContent className="p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] leading-none mb-2">Valor Libro Actual</p>
@@ -111,7 +111,7 @@ export default async function AssetsPage() {
         </Card>
 
         <Card className="bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 border-l-amber-600 hover:scale-[1.02] transition-all group">
-          <CardContent className="p-8">
+          <CardContent className="p-6 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] leading-none mb-2">Dep. Mensual Total</p>
@@ -127,10 +127,10 @@ export default async function AssetsPage() {
       </div>
 
       {/* ===== INVENTARIO PRINCIPAL ===== */}
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10">
-        <CardHeader className="bg-muted/5 border-b border-border p-10">
+      <Card className="bg-card border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10">
+        <CardHeader className="bg-muted/5 border-b border-border p-6 sm:p-10">
           <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Inventario de Activos Fijos</CardTitle>
-          <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
+          <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic leading-relaxed">
             DEPRECIACIÓN Y VALOR LIBRO PROCESADOS POR EL MOTOR PYTHON CONTABLE
           </CardDescription>
         </CardHeader>
@@ -141,7 +141,7 @@ export default async function AssetsPage() {
                 <TableHeader>
                   <TableRow className="bg-muted/30 border-border">
                     {['Bien de Capital', 'Adquisición', 'Método / Vida', 'Valor Adq.', 'Dep. Acum.', 'Dep. Mensual', 'Valor Libro', 'Estado'].map(h => (
-                      <TableHead key={h} className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-8 py-6 whitespace-nowrap">
+                      <TableHead key={h} className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-4 sm:px-8 py-4 sm:py-6 whitespace-nowrap">
                         {h}
                       </TableHead>
                     ))}
@@ -150,7 +150,7 @@ export default async function AssetsPage() {
                 <TableBody className="divide-y divide-border/50">
                   {assets.map((asset) => (
                     <TableRow key={asset.id} className="border-border hover:bg-primary/[0.01] transition-colors group">
-                      <TableCell className="px-8 py-6">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6">
                         <div className="flex flex-col">
                           <span className="font-black text-foreground uppercase text-xs tracking-tight group-hover:text-primary transition-colors">{asset.nombre}</span>
                           {asset.descripcion && (
@@ -158,26 +158,26 @@ export default async function AssetsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="px-8 py-6 font-mono text-xs font-black text-foreground/70">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 font-mono text-xs font-black text-foreground/70">
                         {new Date(asset.fecha_adquisicion).toLocaleDateString('es-CL')}
                       </TableCell>
-                      <TableCell className="px-8 py-6">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6">
                         <span className="font-black text-foreground/80 text-xs uppercase">{metodoLabel[asset.metodo_depreciacion] || asset.metodo_depreciacion}</span>
                         <span className="block text-[10px] text-muted-foreground/50 uppercase tracking-tighter font-bold italic">{asset.vida_util_meses} meses</span>
                       </TableCell>
-                      <TableCell className="px-8 py-6 text-right font-black text-foreground/80 tabular-nums text-xs">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 text-right font-black text-foreground/80 tabular-nums text-xs">
                         {fCLP(Number(asset.valor_adquisicion))}
                       </TableCell>
-                      <TableCell className="px-8 py-6 text-right font-black text-rose-600 tabular-nums text-xs">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 text-right font-black text-rose-600 tabular-nums text-xs">
                         -{fCLP(Number(asset.depreciacion_acumulada || 0))}
                       </TableCell>
-                      <TableCell className="px-8 py-6 text-right font-black text-amber-700 tabular-nums text-xs">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 text-right font-black text-amber-700 tabular-nums text-xs">
                         {fCLP(Number(asset.depreciacion_mensual || 0))}
                       </TableCell>
-                      <TableCell className="px-8 py-6 text-right font-black text-emerald-700 tabular-nums text-xs bg-emerald-50/50">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 text-right font-black text-emerald-700 tabular-nums text-xs bg-emerald-50/50">
                         {fCLP(Number(asset.valor_libro_actual || asset.valor_adquisicion))}
                       </TableCell>
-                      <TableCell className="px-8 py-6 text-center">
+                      <TableCell className="px-4 sm:px-8 py-4 sm:py-6 text-center">
                         <span className={`inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${condicionColor[asset.condicion] || 'bg-muted text-muted-foreground border-border'}`}>
                           {asset.condicion.replace('_', ' ')}
                         </span>
@@ -188,12 +188,12 @@ export default async function AssetsPage() {
               </Table>
             </div>
           ) : (
-            <div className="py-32 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-border/50 m-10 rounded-[2.5rem] bg-muted/5">
-              <div className="bg-muted/20 p-8 rounded-full mb-6">
+            <div className="py-20 sm:py-32 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-border/50 m-4 sm:m-10 rounded-[2rem] sm:rounded-[2.5rem] bg-muted/5">
+              <div className="bg-muted/20 p-6 sm:p-8 rounded-full mb-6">
                 <Box className="w-16 h-16 text-muted-foreground/20" />
               </div>
-              <p className="font-black uppercase text-xl tracking-[0.2em] text-foreground/30">Sin Activos Registrados</p>
-              <p className="text-sm font-bold mt-3 opacity-50 italic max-w-xs text-center">Use el botón "Nuevo Activo" para comenzar el inventario de bienes de capital.</p>
+              <p className="font-black uppercase text-xl tracking-[0.2em] text-foreground/30 text-center">Sin Activos Registrados</p>
+              <p className="text-sm font-bold mt-3 opacity-50 italic max-w-xs text-center px-4">Use el botón "Nuevo Activo" para comenzar el inventario de bienes de capital.</p>
             </div>
           )}
         </CardContent>

@@ -181,14 +181,14 @@ const F29Fields = ({ config, handleChange }: { config: AccountConfig, handleChan
     <div className="space-y-5 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-muted/5 rounded-[2rem] border border-border">
       <div className="space-y-3">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">Activo: PPM Pagado</Label>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <Input value={config.tax_ppm_code || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
           <Input value={config.tax_ppm_name || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
         </div>
       </div>
       <div className="space-y-3">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">Pasivo: F29 por Pagar</Label>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <Input value={config.tax_f29_payable_code || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
           <Input value={config.tax_f29_payable_name || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
         </div>
@@ -422,17 +422,17 @@ export function ConfigClient({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
       {configs.map((config) => (
-        <Card key={config.id} className="border-border shadow-2xl rounded-[2.5rem] overflow-hidden group hover:shadow-primary/5 transform transition-all duration-300 border-t-8 border-t-primary">
-          <CardHeader className="bg-muted/5 p-8 lg:p-10 border-b border-border/50">
+        <Card key={config.id} className="border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden group hover:shadow-primary/5 transform transition-all duration-300 border-t-8 border-t-primary">
+          <CardHeader className="bg-muted/5 p-6 sm:p-8 lg:p-10 border-b border-border/50">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
               <div className="space-y-3">
-                <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-4 text-foreground">
-                  <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm">
+                <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 sm:gap-4 text-foreground">
+                  <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm shrink-0">
                     <Settings2 className="h-6 w-6 text-primary" />
                   </div>
-                  {config.display_name}
+                  <span className="truncate">{config.display_name}</span>
                 </CardTitle>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <Badge variant="outline" className="text-[9px] font-black uppercase tracking-[0.2em] border-2 border-border text-muted-foreground/80 px-4 py-1.5 rounded-full">
                     Módulo: {config.module_name}
                   </Badge>
@@ -443,7 +443,7 @@ export function ConfigClient({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-8 lg:p-10 space-y-10">
+          <CardContent className="p-6 sm:p-8 lg:p-10 space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
               {config.module_name === 'payroll' ? (
                 <PayrollFields config={config} handleChange={handleChange} />
@@ -456,7 +456,7 @@ export function ConfigClient({
               )}
             </div>
 
-            <div className="flex items-start gap-5 p-6 bg-primary/5 rounded-[2rem] border border-primary/10 text-[11px] font-bold text-muted-foreground leading-relaxed italic">
+            <div className="flex items-start gap-4 sm:gap-5 p-4 sm:p-6 bg-primary/5 rounded-[1.5rem] sm:rounded-[2rem] border border-primary/10 text-[11px] font-bold text-muted-foreground leading-relaxed italic">
               <Info className="h-6 w-6 text-primary shrink-0 opacity-50" />
               <span>Las modificaciones operativas en esta sección se aplicarán exclusivamente a la generación de asientos <span className="text-foreground font-black not-italic border-b border-primary/20 pb-0.5 inline-block ml-1">POSTERIORES</span> a la actualización. No hay retroactividad estructural.</span>
             </div>
@@ -469,7 +469,7 @@ export function ConfigClient({
               {loading === config.id ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center gap-3">
                   <Save className="h-5 w-5" />
                   Preservar Configuración Centralizada
                 </div>
@@ -479,24 +479,24 @@ export function ConfigClient({
         </Card>
       ))}
       {/* --- SECCIÓN DE MAPEO GRANULAR (RCV ENTITY mapping) --- */}
-      <Card className="xl:col-span-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="p-8 lg:p-10 border-b border-border/50">
+      <Card className="xl:col-span-2 border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-500 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="p-6 sm:p-8 lg:p-10 border-b border-border/50">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
-              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-4 text-foreground">
-                <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm">
+              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 sm:gap-4 text-foreground">
+                <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm shrink-0">
                   <UserPlus className="h-6 w-6 text-emerald-500" />
                 </div>
-                Excepciones por Entidad (RUT)
+                <span>Excepciones por Entidad (RUT)</span>
               </CardTitle>
-              <CardDescription className="text-xs font-bold italic text-muted-foreground uppercase tracking-widest">
+              <CardDescription className="text-xs font-bold italic text-muted-foreground uppercase tracking-widest leading-relaxed">
                 Mapeo inteligente para proveedores o clientes específicos (Sobrescribe configuración centralizada)
               </CardDescription>
             </div>
             
             <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
             <DialogTrigger render={
-              <Button className="gap-3 bg-emerald-600 hover:bg-emerald-700 font-extrabold uppercase text-[10px] tracking-widest px-8 h-12 rounded-2xl shadow-lg shadow-emerald-500/20">
+              <Button className="w-full md:w-auto gap-3 bg-emerald-600 hover:bg-emerald-700 font-extrabold uppercase text-[10px] tracking-widest px-8 h-12 rounded-2xl shadow-lg shadow-emerald-500/20">
                 <Plus className="h-5 w-5" /> Nueva Excepción
               </Button>
             } />
@@ -551,80 +551,82 @@ export function ConfigClient({
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/10 border-b border-border">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Identificador de Entidad</TableHead>
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Cuenta Asignada (Override)</TableHead>
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground text-right w-32">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-border">
-              {rules.length > 0 ? rules.map((rule) => (
-                <TableRow key={rule.id} className="hover:bg-primary/[0.02] transition-colors group">
-                  <TableCell className="py-6 px-10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
-                         <Search className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <span className="font-black tracking-widest uppercase text-xs text-foreground">
-                        {String(rule.context)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-6 px-10">
-                    <div className="flex flex-col">
-                      <span className="font-black text-xs text-foreground">{rule.chart_of_accounts?.nombre}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground/60 font-mono tracking-tighter">{rule.chart_of_accounts?.codigo}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-6 px-10 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDeleteRule(rule.id)}
-                      disabled={loading === rule.id}
-                      className="h-10 w-10 text-muted-foreground/30 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all rounded-xl shadow-inner border border-transparent hover:border-rose-100"
-                    >
-                      {loading === rule.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/10 border-b border-border">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground whitespace-nowrap">Identificador de Entidad</TableHead>
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground whitespace-nowrap">Cuenta Asignada (Override)</TableHead>
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground text-right w-32 whitespace-nowrap">Acciones</TableHead>
                 </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="py-32 text-center">
-                    <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                      <div className="p-6 bg-muted/20 rounded-full border border-border border-dashed">
-                        <AlertCircle className="h-10 w-10 opacity-20" />
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
+                {rules.length > 0 ? rules.map((rule) => (
+                  <TableRow key={rule.id} className="hover:bg-primary/[0.02] transition-colors group">
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 shrink-0">
+                           <Search className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <span className="font-black tracking-widest uppercase text-xs text-foreground">
+                          {String(rule.context)}
+                        </span>
                       </div>
-                      <span className="font-extrabold italic uppercase text-[10px] tracking-widest opacity-40">No existen reglas de excepción para esta organización.</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10">
+                      <div className="flex flex-col">
+                        <span className="font-black text-xs text-foreground whitespace-nowrap">{rule.chart_of_accounts?.nombre}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground/60 font-mono tracking-tighter">{rule.chart_of_accounts?.codigo}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10 text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteRule(rule.id)}
+                        disabled={loading === rule.id}
+                        className="h-10 w-10 text-muted-foreground/30 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all rounded-xl shadow-inner border border-transparent hover:border-rose-100"
+                      >
+                        {loading === rule.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-20 sm:py-32 text-center">
+                      <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                        <div className="p-6 bg-muted/20 rounded-full border border-border border-dashed">
+                          <AlertCircle className="h-10 w-10 opacity-20" />
+                        </div>
+                        <span className="font-extrabold italic uppercase text-[10px] tracking-widest opacity-40">No existen reglas de excepción para esta organización.</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       {/* --- SECCIÓN DE CUENTAS BANCARIAS --- */}
-      <Card className="xl:col-span-2 border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="p-8 lg:p-10 border-b border-border/50">
+      <Card className="xl:col-span-2 border-border shadow-2xl rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="p-6 sm:p-8 lg:p-10 border-b border-border/50">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
-              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-4 text-foreground">
-                <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm">
+              <CardTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 sm:gap-4 text-foreground">
+                <div className="p-3 bg-white rounded-2xl border-2 border-border shadow-sm shrink-0">
                   <Landmark className="h-6 w-6 text-blue-500" />
                 </div>
-                Cuentas Bancarias Maestro
+                <span>Cuentas Bancarias Maestro</span>
               </CardTitle>
-              <CardDescription className="text-xs font-bold italic text-muted-foreground uppercase tracking-widest">
+              <CardDescription className="text-xs font-bold italic text-muted-foreground uppercase tracking-widest leading-relaxed">
                 Configure las cuentas corrientes de la empresa para habilitar la conciliación persistente.
               </CardDescription>
             </div>
             
             <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
               <DialogTrigger render={
-                <Button className="gap-3 bg-blue-600 hover:bg-blue-700 font-extrabold uppercase text-[10px] tracking-widest px-8 h-12 rounded-2xl shadow-lg shadow-blue-500/20">
+                <Button className="w-full md:w-auto gap-3 bg-blue-600 hover:bg-blue-700 font-extrabold uppercase text-[10px] tracking-widest px-8 h-12 rounded-2xl shadow-lg shadow-blue-500/20">
                   <Plus className="h-5 w-5" /> Registrar Banco
                 </Button>
               } />
@@ -702,57 +704,59 @@ export function ConfigClient({
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/10 border-b border-border">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Banco / Institución</TableHead>
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Número de Cuenta</TableHead>
-                <TableHead className="py-6 px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground">Asignación Contable</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-border">
-              {bankAccounts.length > 0 ? bankAccounts.map((bank) => (
-                <TableRow key={bank.id} className="hover:bg-primary/[0.02] transition-colors group">
-                  <TableCell className="py-6 px-10">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
-                         <Landmark className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-black tracking-widest uppercase text-xs text-foreground">
-                          {String(bank.bank_name)}
-                        </span>
-                        <span className="text-[9px] font-black uppercase text-blue-500 opacity-60 tracking-[0.2em] italic">Cuenta {String(bank.account_type)}</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-6 px-10">
-                    <span className="font-black text-xs text-foreground font-mono tracking-tighter bg-muted/30 px-3 py-1.5 rounded-lg border border-border">{bank.account_number}</span>
-                  </TableCell>
-                  <TableCell className="py-6 px-10">
-                    {bank.chart_account_id ? (
-                      <Badge variant="outline" className="font-black uppercase text-[9px] border-emerald-200 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
-                        Vinculada ID: {String(bank.chart_account_id).substring(0,8)}
-                      </Badge>
-                    ) : (
-                      <span className="text-[10px] font-bold text-rose-400 italic uppercase">Sin vinculación contable</span>
-                    )}
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/10 border-b border-border">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground whitespace-nowrap">Banco / Institución</TableHead>
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground whitespace-nowrap">Número de Cuenta</TableHead>
+                  <TableHead className="py-4 sm:py-6 px-4 sm:px-10 font-black uppercase tracking-[0.2em] text-[10px] text-foreground whitespace-nowrap">Asignación Contable</TableHead>
                 </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="py-32 text-center">
-                    <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                      <div className="p-6 bg-muted/20 rounded-full border border-border border-dashed">
-                        <Landmark className="h-10 w-10 opacity-20" />
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
+                {bankAccounts.length > 0 ? bankAccounts.map((bank) => (
+                  <TableRow key={bank.id} className="hover:bg-primary/[0.02] transition-colors group">
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20 shrink-0">
+                           <Landmark className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-black tracking-widest uppercase text-xs text-foreground whitespace-nowrap">
+                            {String(bank.bank_name)}
+                          </span>
+                          <span className="text-[9px] font-black uppercase text-blue-500 opacity-60 tracking-[0.2em] italic">Cuenta {String(bank.account_type)}</span>
+                        </div>
                       </div>
-                      <span className="font-extrabold italic uppercase text-[10px] tracking-widest opacity-40">No hay cuentas bancarias registradas para el cruce.</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10">
+                      <span className="font-black text-xs text-foreground font-mono tracking-tighter bg-muted/30 px-3 py-1.5 rounded-lg border border-border whitespace-nowrap">{bank.account_number}</span>
+                    </TableCell>
+                    <TableCell className="py-4 sm:py-6 px-4 sm:px-10">
+                      {bank.chart_account_id ? (
+                        <Badge variant="outline" className="font-black uppercase text-[9px] border-emerald-200 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full whitespace-nowrap">
+                          Vinculada ID: {String(bank.chart_account_id).substring(0,8)}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] font-bold text-rose-400 italic uppercase whitespace-nowrap">Sin vinculación contable</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="py-20 sm:py-32 text-center">
+                      <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                        <div className="p-6 bg-muted/20 rounded-full border border-border border-dashed">
+                          <Landmark className="h-10 w-10 opacity-20" />
+                        </div>
+                        <span className="font-extrabold italic uppercase text-[10px] tracking-widest opacity-40">No hay cuentas bancarias registradas para el cruce.</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
