@@ -192,13 +192,13 @@ export default function SettingsPageClient({
   const handleSaveDTE = async () => {
     setLoadingDTE(true);
     try {
+      const { cert_password, ...restDteForm } = dteForm;
       const dtePayload = {
-        ...dteForm,
+        ...restDteForm,
         rut: cleanRUT(dteForm.rut),
         acteco: parseInt(dteForm.acteco.toString()) || 0,
         resolucion_numero: parseInt(dteForm.resolucion_numero.toString()) || 0,
       };
-      delete dtePayload.cert_password;
       const res = await updateDTEConfig(organizationId, dtePayload);
       if (res.success) {
         setStatusModal({
