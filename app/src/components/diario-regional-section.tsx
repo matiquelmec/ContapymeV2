@@ -175,59 +175,63 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                    </p>
                 </div>
               )}
-           </div>
+            </div>
+            {/* 🏛️ ESPACIOS PUBLICITARIOS Y ALIANZAS (Premium Ad Slots) */}
+            <div className="lg:col-span-4 space-y-10">
+               {/* 📣 ESPACIO PUBLICITARIO DESTACADO */}
+               <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
+                  {/* Orbe de luz difuminado */}
+                  <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700 animate-pulse" />
+                  
+                  <div className="relative space-y-4">
+                     <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary px-3 py-1 bg-primary/10 rounded-full">
+                           Publicidad Destacada
+                        </span>
+                        <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">Patrocinado</span>
+                     </div>
+                     
+                     <div className="space-y-2 mt-4">
+                        <h4 className="text-2xl font-black italic tracking-tighter uppercase text-foreground leading-none">
+                           Austral <span className="font-serif italic text-primary">Inversiones</span>
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                           Asesoría Financiera & Tributaria Regional
+                        </p>
+                     </div>
 
-           {/* 🏛️ INDICADORES Y PLUS (Market Pulse Intel) */}
-           <div className="lg:col-span-4 space-y-10">
-              <div className="p-8 rounded-[2.5rem] bg-muted/40 backdrop-blur-md border border-border/50 space-y-6 relative overflow-hidden group">
-                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <TrendingUp className="h-20 w-20 text-primary" />
-                 </div>
-                 <div className="relative">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Market Pulse</p>
-                    <h4 className="text-xl font-black italic mb-6 text-foreground">Resumen Económico</h4>
-                    <div className="space-y-4">
-                       {pulseData.map((m, i) => (
-                         <Link key={i} href="/dashboard" className="block group/item">
-                           <div className="flex justify-between items-center py-4 border-b border-border/50 last:border-none group-hover/item:bg-primary/5 transition-all px-2 rounded-xl">
-                              <div className="flex flex-col">
-                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest group-hover/item:text-primary transition-colors">{m.label}</span>
-                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-base font-black tabular-nums transition-colors ${m.color}`}>
-                                       {m.format(m.value as number)}
-                                    </span>
-                                    {m.trend === "up" ? (
-                                       <ArrowUpRight className={`h-4 w-4 ${m.color} animate-pulse`} />
-                                    ) : (
-                                       <ArrowDownRight className={`h-4 w-4 ${m.color} animate-pulse`} />
-                                    )}
-                                 </div>
-                              </div>
-                              <div className="text-[8px] font-black text-muted-foreground/30 uppercase tracking-tighter italic">LIVE</div>
+                     <div className="p-6 bg-white/80 backdrop-blur-md rounded-2xl border border-primary/10 shadow-sm mt-4 group-hover:border-primary/30 transition-all">
+                        <p className="text-xs font-semibold text-muted-foreground italic leading-relaxed">
+                           "Optimizamos la gestión patrimonial y tributaria de empresas y familias en Magallanes con estándares globales."
+                        </p>
+                     </div>
+                     
+                     <div className="pt-2">
+                        <Link href="/#contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[10px] uppercase tracking-widest rounded-xl h-10 px-5 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95">
+                           <span>Consultar Servicios</span>
+                           <ArrowUpRight className="h-4 w-4 text-primary-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                        </Link>
+                     </div>
+                  </div>
+               </div>
+
+               <Link href="/#contacto" className="block">
+                  <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden group cursor-pointer hover:border-primary/30 hover:shadow-xl transition-all duration-500">
+                     <div className="relative space-y-4">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
+                           <Sparkles className="h-3 w-3 animate-spin" style={{ animationDuration: '6s' }} /> Espacio Institucional
+                        </div>
+                        <div className="h-32 bg-white/80 backdrop-blur-lg rounded-2xl flex items-center justify-center p-6 border border-primary/10 shadow-sm">
+                           <div className="text-center">
+                              <p className="text-lg font-black italic leading-none text-foreground/80">ALIANZAS 2026</p>
+                              <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Conectando a Magallanes</p>
                            </div>
-                         </Link>
-                       ))}
-                    </div>
-                 </div>
-              </div>
-
-              <Link href="/dashboard" className="block">
-                <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden group cursor-pointer hover:border-primary/20 transition-colors">
-                   <div className="relative space-y-4">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
-                         <Sparkles className="h-3 w-3" /> Espacio Institucional
-                      </div>
-                      <div className="h-32 bg-white/80 backdrop-blur-lg rounded-2xl flex items-center justify-center p-6 border border-primary/10 shadow-sm">
-                         <div className="text-center">
-                            <p className="text-lg font-black italic leading-none text-foreground/80">ALIANZAS 2026</p>
-                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Conectando a Magallanes</p>
-                         </div>
-                      </div>
-                      <p className="text-[10px] font-medium text-muted-foreground/60 italic text-center text-shadow-xs">Impulsando la economía del extremo sur.</p>
-                   </div>
-                </div>
-              </Link>
-           </div>
+                        </div>
+                        <p className="text-[10px] font-medium text-muted-foreground/60 italic text-center text-shadow-xs">Impulsando la economía del extremo sur.</p>
+                     </div>
+                  </div>
+               </Link>
+            </div>
         </div>
 
         {/* 📰 GRILLA DE NOTICIAS SECUNDARIAS (Smart Mix) */}
