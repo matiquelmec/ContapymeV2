@@ -41,3 +41,4 @@ dev_tools/*/  # Ignorar scripts locales si son muy pesados o sensibles
 node_modules/
 dist/
 build/
+*.pfx
