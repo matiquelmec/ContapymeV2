@@ -168,17 +168,33 @@ export async function updateDTEConfig(organizationId: string, formData: any) {
     if (!user) throw new Error('No autorizado')
 
     const payload = { ...formData }
-    if (!payload.id) delete payload.id
 
-    const { error } = await supabase
-      .from('dte_companies')
-      .upsert({
-        organization_id: organizationId,
-        ...payload,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'organization_id,rut' })
-
-    if (error) throw error
+    if (payload.id) {
+      // Actualizar registro existente
+      const { id, ...updateData } = payload;
+      const { error } = await supabase
+        .from('dte_companies')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('organization_id', organizationId);
+      
+      if (error) throw error;
+    } else {
+      // Crear nuevo registro
+      delete payload.id;
+      const { error } = await supabase
+        .from('dte_companies')
+        .insert({
+          organization_id: organizationId,
+          ...payload,
+          updated_at: new Date().toISOString()
+        });
+        
+      if (error) throw error;
+    }
 
     await recordAuditAction({
       action: 'UPDATE_DTE_CONFIG',
