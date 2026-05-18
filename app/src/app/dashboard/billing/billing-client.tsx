@@ -30,6 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { exportDTEToCSV } from '@/actions/billing'
 import { IssueInvoiceDialog } from './issue-invoice-dialog'
+import { DTEPreviewDialog } from './dte-preview-dialog'
 import { toast } from 'sonner'
 
 interface BillingClientProps {
@@ -48,6 +49,32 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
     const [searchTerm, setSearchTerm] = useState('')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [exporting, setExporting] = useState(false)
+    const [selectedDTE, setSelectedDTE] = useState<any | null>(null)
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+    const [previewTab, setPreviewTab] = useState<'visual' | 'security' | 'xml'>('visual')
+
+    const openPreview = (dte: any, tab: 'visual' | 'security' | 'xml') => {
+        setSelectedDTE(dte)
+        setPreviewTab(tab)
+        setIsPreviewOpen(true)
+    }
+
+    const downloadXML = (dte: any) => {
+        if (!dte.xml_content) {
+            toast.error('Este DTE no tiene contenido XML firmado.')
+            return
+        }
+        const blob = new Blob([dte.xml_content], { type: 'application/xml;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.setAttribute('href', url)
+        link.setAttribute('download', `DTE_${dte.tipo_dte}_Folio_${dte.folio}.xml`)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        toast.success(`XML del DTE ${dte.tipo_dte} (Folio ${dte.folio}) descargado con éxito.`)
+    }
 
     const handleExport = async () => {
         setExporting(true)
@@ -229,13 +256,31 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                                     </TableCell>
                                     <TableCell className="text-right pr-8">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                                onClick={() => openPreview(dte, 'visual')}
+                                                title="Ver Detalle / Factura SII"
+                                            >
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                                onClick={() => downloadXML(dte)}
+                                                title="Descargar XML Firmado"
+                                            >
                                                 <Download className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-emerald-50 hover:text-emerald-600">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 rounded-lg hover:bg-emerald-50 hover:text-emerald-600"
+                                                onClick={() => openPreview(dte, 'security')}
+                                                title="Auditar Integridad Criptográfica"
+                                            >
                                                 <ShieldCheck className="w-4 h-4" />
                                             </Button>
                                         </div>
@@ -257,6 +302,13 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                 open={isDialogOpen} 
                 onOpenChange={setIsDialogOpen} 
                 organizationId={organizationId} 
+            />
+
+            <DTEPreviewDialog 
+                open={isPreviewOpen} 
+                onOpenChange={setIsPreviewOpen} 
+                dte={selectedDTE} 
+                initialTab={previewTab}
             />
 
             {/* ===== INTEGRITY FOOTER ===== */}
