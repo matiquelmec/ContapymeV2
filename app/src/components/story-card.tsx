@@ -161,9 +161,9 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           pointerEvents: 'none',
         }} />
 
-        {/* Header / Branding */}
+        {/* Header / Branding (Espaciado y tamaños maximizados geométricamente) */}
         <div style={{
-          padding: '80px 80px 40px',
+          padding: '100px 80px 50px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -175,36 +175,37 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '24px',
             flex: 1,
           }}>
-            {/* Logo Oficial de Contapymepuq */}
+            {/* Logo Oficial de Contapymepuq - Aumentado geométricamente para alta definición (1080px) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/logo-contapyme.png" 
               alt="Contapymepuq Logo"
               style={{
-                height: '65px',
+                height: '110px',
                 width: 'auto',
                 objectFit: 'contain',
               }}
               crossOrigin="anonymous"
             />
+            {/* Línea divisoria más visible */}
             <div style={{
-              height: '35px',
-              width: '2px',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              margin: '0 8px'
+              height: '65px',
+              width: '3px',
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              margin: '0 24px'
             }} />
+            
             <div style={{
               display: 'flex',
               flexDirection: 'column',
             }}>
               <span style={{
                 color: '#ffffff',
-                fontSize: '20px',
+                fontSize: '34px',
                 fontWeight: 900,
-                letterSpacing: '5px',
+                letterSpacing: '6px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 lineHeight: 1.1,
@@ -213,31 +214,31 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               </span>
               <span style={{
                 color: theme.textColor,
-                fontSize: '12px',
+                fontSize: '18px',
                 fontWeight: 800,
-                letterSpacing: '3px',
+                letterSpacing: '4px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
-                marginTop: '2px',
+                marginTop: '4px',
               }}>
                 Punta Arenas
               </span>
             </div>
           </div>
           
-          {/* Categoria Badge */}
+          {/* Categoria Badge más imponente */}
           <div style={{
             background: theme.badgeBg,
-            border: `1px solid ${theme.borderColor}`,
-            borderRadius: '24px',
-            padding: '12px 28px',
+            border: `2px solid ${theme.borderColor}`,
+            borderRadius: '32px',
+            padding: '16px 36px',
             color: theme.accentColor,
-            fontSize: '16px',
+            fontSize: '22px',
             fontWeight: 900,
             textTransform: 'uppercase',
-            letterSpacing: '3px',
+            letterSpacing: '4px',
             fontStyle: 'italic',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
             {category}
           </div>
