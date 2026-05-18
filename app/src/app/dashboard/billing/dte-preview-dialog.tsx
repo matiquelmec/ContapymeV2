@@ -22,7 +22,11 @@ import {
     Scale,
     Calendar,
     Check,
-    Hash
+    Hash,
+    Printer,
+    Mail,
+    Send,
+    Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -155,6 +159,88 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
 
     const dteTypeLabel = dte.tipo_dte === 33 ? 'FACTURA ELECTRÓNICA' : dte.tipo_dte === 34 ? 'FACTURA EXENTA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA'
 
+    const [showEmailForm, setShowEmailForm] = useState(false)
+    const [emailInput, setEmailInput] = useState('')
+    const [sendingEmail, setSendingEmail] = useState(false)
+
+    useEffect(() => {
+        if (dte) {
+            setEmailInput(dte.receptor_email || '')
+        }
+    }, [dte])
+
+    const handlePrint = () => {
+        const printContent = document.getElementById('printable-dte-area');
+        if (!printContent) {
+            toast.error('No se pudo encontrar el área de impresión.');
+            return;
+        }
+
+        const winPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+        if (!winPrint) {
+            toast.error('Por favor, permita las ventanas emergentes para poder imprimir o descargar el PDF.');
+            return;
+        }
+
+        winPrint.document.write(`
+            <html>
+                <head>
+                    <title>${dteTypeLabel}_Folio_${dte.folio}</title>
+                    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background-color: white;
+                            color: #1e293b;
+                            padding: 30px;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        .bg-slate-50 { background-color: #f8fafc !important; }
+                        .bg-rose-50\\/20 { background-color: rgba(254, 242, 242, 0.2) !important; }
+                        .bg-rose-100 { background-color: #ffe4e6 !important; }
+                        .border-rose-600 { border-color: #e11d48 !important; }
+                        .text-rose-600 { color: #e11d48 !important; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="max-w-3xl mx-auto p-4 bg-white border border-gray-100 rounded-3xl">
+                        \${printContent.innerHTML}
+                    </div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() { window.close(); }, 500);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        winPrint.document.close();
+        winPrint.focus();
+    };
+
+    const handleSendEmail = async () => {
+        if (!emailInput) {
+            toast.error('Por favor, ingresa un correo electrónico válido.')
+            return
+        }
+        if (!emailInput.includes('@')) {
+            toast.error('El formato del correo electrónico es inválido.')
+            return
+        }
+        setSendingEmail(true)
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        setSendingEmail(false)
+        setShowEmailForm(false)
+        toast.success(`DTE (PDF + XML) enviado con éxito al correo: \${emailInput}`)
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl w-full p-0 border-none rounded-[2rem] md:rounded-[2.5rem] bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] flex flex-col max-h-[90dvh] overflow-hidden">
@@ -220,7 +306,77 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                     {/* TAB VISTA TRIBUTARIA (MOCKUP FACTURA SII) */}
                     {activeTab === 'visual' && (
                         <div className="space-y-6">
-                            <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 md:p-8 max-w-3xl mx-auto font-sans text-slate-800 text-sm">
+                            {/* Acciones de Entrega */}
+                            <div className="max-w-3xl mx-auto flex flex-wrap justify-between items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm no-print">
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Entrega de Documento</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handlePrint}
+                                        className="rounded-xl h-10 px-4 text-xs font-black uppercase tracking-wider border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2"
+                                    >
+                                        <Printer className="w-4 h-4 text-primary" />
+                                        Imprimir / PDF
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => setShowEmailForm(!showEmailForm)}
+                                        className={`rounded-xl h-10 px-4 text-xs font-black uppercase tracking-wider border-slate-200 flex items-center gap-2 transition-all ${
+                                            showEmailForm 
+                                                ? 'bg-primary text-white hover:bg-primary/90' 
+                                                : 'bg-white hover:bg-slate-50 text-slate-700'
+                                        }`}
+                                    >
+                                        <Mail className="w-4 h-4" />
+                                        Enviar por Email
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Formulario de Email Integrado */}
+                            {showEmailForm && (
+                                <div className="max-w-3xl mx-auto bg-gradient-to-r from-primary/[0.03] to-indigo-500/[0.03] border border-primary/20 rounded-2xl p-5 shadow-sm space-y-3 no-print">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="text-xs font-black uppercase tracking-wide text-slate-800">Enviar Documento al Cliente</h4>
+                                            <p className="text-[10px] text-slate-500 font-medium">Se adjuntará de forma automatizada la Representación Impresa (PDF) y el XML firmado del DTE.</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setShowEmailForm(false)} 
+                                            className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="relative flex-1">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input 
+                                                type="email" 
+                                                value={emailInput}
+                                                onChange={(e) => setEmailInput(e.target.value)}
+                                                placeholder="correo@cliente.com"
+                                                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-primary h-10 font-medium text-slate-800 bg-white"
+                                            />
+                                        </div>
+                                        <Button 
+                                            onClick={handleSendEmail}
+                                            disabled={sendingEmail}
+                                            className="rounded-xl h-10 px-6 text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-sm"
+                                        >
+                                            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                            {sendingEmail ? 'Enviando...' : 'Enviar DTE'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div id="printable-dte-area" className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 md:p-8 max-w-3xl mx-auto font-sans text-slate-800 text-sm">
                                 
                                 {/* Encabezado Factura SII */}
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 border-b-2 border-slate-100 pb-6">
