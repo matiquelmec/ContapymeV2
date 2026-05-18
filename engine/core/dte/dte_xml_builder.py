@@ -56,7 +56,6 @@ class DTEXMLBuilder:
         {self._build_items_xml(items)}
     </Documento>
 </DTE>"""
-</DTE>"""
         return xml
 
     def build_envio_dte(self, signed_dte_xml: str, dte_data: Dict[str, Any]) -> str:
