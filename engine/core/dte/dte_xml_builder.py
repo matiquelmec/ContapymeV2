@@ -67,6 +67,12 @@ class DTEXMLBuilder:
         
         envio_id = f"SetDoc_{dte_data.get('folio', 1)}"
         
+        # Eliminar cualquier declaración de XML anidada para evitar errores en el parseador
+        if isinstance(signed_dte_xml, str) and signed_dte_xml.strip().startswith("<?xml"):
+            decl_end = signed_dte_xml.find("?>")
+            if decl_end != -1:
+                signed_dte_xml = signed_dte_xml[decl_end + 2:].strip()
+                
         envio_xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <EnvioDTE xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte EnvioDTE_v10.xsd" version="1.0">
     <SetDTE ID="{envio_id}">
