@@ -64,28 +64,30 @@ export default async function ReconciliationPage() {
     <div className="space-y-10 animate-in fade-in zoom-in duration-700">
 
       {/* ===== CABECERA PREMIUM ===== */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black tracking-tighter text-foreground uppercase flex items-center gap-4 mb-2">
-            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-sm">
-              <Landmark className="w-8 h-8 text-primary" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4 sm:px-0">
+        <div className="space-y-3">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-foreground uppercase flex flex-row items-center gap-3 sm:gap-4 mb-2">
+            <div className="p-2.5 sm:p-3 bg-primary/10 rounded-2xl border border-primary/20 shadow-sm shrink-0">
+              <Landmark className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            Conciliación <span className="text-primary italic ml-2">Bancaria</span>
+            <span className="leading-tight">
+              Conciliación <span className="text-primary italic block sm:inline">Bancaria</span>
+            </span>
           </h1>
-          <p className="text-muted-foreground font-bold italic tracking-wide text-sm flex items-center gap-2">
+          <p className="text-muted-foreground font-bold italic tracking-wide text-xs sm:text-sm leading-relaxed max-w-2xl">
             Cruza cartolas bancarias contra asientos del Libro Diario generados por el motor RCV.
           </p>
         </div>
 
         {/* Contador de Auditorías (Visibilidad real de lo guardado) */}
-        <div className="flex items-center gap-4 bg-emerald-500/5 px-6 py-4 rounded-3xl border border-emerald-500/10">
-            <div className="flex flex-col items-end">
+        <div className="flex items-center justify-between sm:justify-start gap-4 bg-emerald-500/5 px-6 py-4 rounded-3xl border border-emerald-500/10 w-full md:w-auto">
+            <div className="flex flex-col items-start sm:items-end">
                 <span className="text-[10px] font-black uppercase text-emerald-600 leading-none">Auditorías Guardadas</span>
                 <span className="text-2xl font-black text-emerald-600 leading-none mt-1">
                     {reconciledCount}
                 </span>
             </div>
-            <div className="w-1.5 h-10 bg-emerald-500/10 mx-2" />
+            <div className="w-px sm:w-1.5 h-10 bg-emerald-500/10 mx-2" />
             <div className="p-2 bg-white rounded-xl border border-emerald-500/10 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             </div>
