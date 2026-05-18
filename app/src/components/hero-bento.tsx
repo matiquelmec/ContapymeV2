@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   Cloud, 
   Sun, 
@@ -42,7 +43,7 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
     loading: true
   })
 
-  // 1. Sincronización en Tiempo Real de los Indicadores del Bento
+  // Sincronización en Tiempo Real de los Indicadores del Bento
   const [liveIndicators, setLiveIndicators] = useState<Indicator[]>(indicators)
   const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({})
 
@@ -117,7 +118,7 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
     })
   }
 
-  // 2. Consultar el clima real en Punta Arenas mediante la API libre Open-Meteo
+  // Consultar el clima real en Punta Arenas mediante la API libre Open-Meteo
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -274,37 +275,83 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
         </div>
       </div>
 
-      {/* 💳 WIDGET 3: PORTAL DIGITAL EXPRESS (Última Noticia Dinámica) */}
+      {/* 💳 WIDGET 3: PORTAL DIGITAL EXPRESS (Última Noticia Dinámica con Imagen de Fondo) */}
       <Link 
         href={latestNews ? `/noticias/${latestNews.slug}` : '#diario'}
-        className="group relative p-6 rounded-[2rem] bg-white/40 border border-white/20 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] hover:border-primary/20 hover:shadow-[0_30px_60px_-25px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[190px] overflow-hidden cursor-pointer"
+        className={`group relative p-6 rounded-[2rem] border transition-all duration-500 flex flex-col justify-between min-h-[190px] overflow-hidden cursor-pointer ${
+          latestNews && latestNews.image_url 
+            ? 'border-zinc-800 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.3)] hover:border-primary/40' 
+            : 'bg-white/40 border-white/20 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] hover:border-primary/20'
+        }`}
       >
-        <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all duration-500" />
-
-        <div>
-          <div className="flex items-center justify-between">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-              {latestNews ? latestNews.category : 'Diario Regional'}
-            </span>
-            <Radio className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
-          </div>
-          
-          <div className="mt-4 space-y-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-black text-emerald-600 uppercase tracking-wider">
-              <Activity className="h-2 w-2" /> {latestNews ? 'Último Minuto' : 'Al Instante'}
+        {latestNews && latestNews.image_url ? (
+          <>
+            {/* Imagen de fondo premium de la noticia */}
+            <div className="absolute inset-0 z-0">
+              <Image 
+                src={latestNews.image_url} 
+                alt={latestNews.title} 
+                fill 
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-zinc-950/40" />
             </div>
-            <h4 className="text-xs font-black italic uppercase leading-snug text-foreground tracking-tight line-clamp-3 group-hover:text-primary transition-colors">
-              {latestNews ? latestNews.title : 'Información fidedigna, inmutable y verificada criptográficamente en Magallanes.'}
-            </h4>
-          </div>
-        </div>
+            
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white/70">
+                  {latestNews.category}
+                </span>
+                <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[8px] font-black text-emerald-400 uppercase tracking-wider">
+                  <Activity className="h-2 w-2" /> Último Minuto
+                </div>
+                <h4 className="text-xs font-black italic uppercase leading-snug text-white tracking-tight line-clamp-3 group-hover:text-primary transition-colors">
+                  {latestNews.title}
+                </h4>
+              </div>
+            </div>
 
-        <div className="flex items-center justify-between border-t border-zinc-200/50 pt-3 mt-4">
-          <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-wider">
-            {latestNews ? (latestNews.source_name || 'ContaPyme PUQ') : 'ContaPyme PUQ'}
-          </span>
-          <ArrowUpRight className="h-4 w-4 text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-        </div>
+            <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-3 mt-4">
+              <span className="text-[8px] font-black text-white/50 uppercase tracking-wider">
+                {latestNews.source_name || 'Diario Punta Arenas'}
+              </span>
+              <ArrowUpRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all duration-500" />
+
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                  Diario Regional
+                </span>
+                <Radio className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+              </div>
+              
+              <div className="mt-4 space-y-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-black text-emerald-600 uppercase tracking-wider">
+                  <Activity className="h-2 w-2" /> Al Instante
+                </div>
+                <h4 className="text-xs font-black italic uppercase leading-snug text-foreground tracking-tight line-clamp-3 group-hover:text-primary transition-colors">
+                  Información fidedigna, inmutable y verificada criptográficamente en Magallanes.
+                </h4>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-zinc-200/50 pt-3 mt-4">
+              <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-wider">
+                ContaPyme PUQ
+              </span>
+              <ArrowUpRight className="h-4 w-4 text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </div>
+          </>
+        )}
       </Link>
 
     </div>
