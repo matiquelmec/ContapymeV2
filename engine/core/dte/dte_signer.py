@@ -38,31 +38,45 @@ class DTESigner:
         self.certificate = certificate
 
     def sign_xml(self, xml_string: str, reference_id: str) -> str:
-        """
-        Firma el documento XML usando el estándar XMLDSig requerido por el SII.
-        """
+        """Firma el documento XML (DTE)."""
+        parser = etree.XMLParser(remove_blank_text=True)
+        root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id)
+        
+    def sign_seed(self, seed: str) -> str:
+        """Firma la semilla (getToken)"""
+        xml_string = f"<getToken><item><Semilla>{seed}</Semilla></item></getToken>"
+        parser = etree.XMLParser(remove_blank_text=True)
+        root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
+        return self._sign_node(root, ".", "")
+        
+    def sign_envio(self, envio_xml: str, set_dte_id: str) -> str:
+        """Firma el EnvioDTE (SetDTE)"""
+        parser = etree.XMLParser(remove_blank_text=True)
+        root = etree.fromstring(envio_xml.encode('ISO-8859-1'), parser)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id)
+
+    def _sign_node(self, root: etree._Element, node_xpath: str, reference_id: str) -> str:
         if not self.private_key or not self.certificate:
             raise Exception("Certificado no cargado.")
             
-        parser = etree.XMLParser(remove_blank_text=True)
-        root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
-        
-        # 1. Obtener el nodo a firmar (Documento)
-        documento = root.find(".//{http://www.sii.cl/SiiDte}Documento")
-        if documento is None:
-            raise Exception("No se encontró el nodo Documento para firmar.")
+        if node_xpath == ".":
+            node_to_sign = root
+        else:
+            node_to_sign = root.find(node_xpath)
             
-        # 2. Calcular DigestValue del Documento (Canonicalized)
-        # El SII usa C14N (sin comentarios)
-        c14n_doc = etree.tostring(documento, method="c14n", exclusive=False, with_comments=False)
+        if node_to_sign is None:
+            raise Exception(f"No se encontró el nodo {node_xpath} para firmar.")
+            
+        c14n_doc = etree.tostring(node_to_sign, method="c14n", exclusive=False, with_comments=False)
         digest_value = base64.b64encode(hashlib.sha1(c14n_doc).digest()).decode()
         
-        # 3. Construir nodo SignedInfo
-        # (Esto es una simplificación, en producción se debe ser muy estricto con los namespaces)
+        uri_str = f' URI="#{reference_id}"' if reference_id else ' URI=""'
+        
         signed_info = f"""<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
     <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
     <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
-    <Reference URI="#{reference_id}">
+    <Reference{uri_str}>
         <Transforms>
             <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
         </Transforms>
@@ -71,7 +85,6 @@ class DTESigner:
     </Reference>
 </SignedInfo>"""
         
-        # 4. Calcular SignatureValue del SignedInfo (Canonicalized)
         signed_info_elem = etree.fromstring(signed_info)
         c14n_signed_info = etree.tostring(signed_info_elem, method="c14n", exclusive=False, with_comments=False)
         
@@ -82,12 +95,10 @@ class DTESigner:
         )
         signature_value = base64.b64encode(signature).decode()
         
-        # 5. Obtener X509Certificate (base64)
         cert_b64 = base64.b64encode(
             self.certificate.public_bytes(serialization.Encoding.DER)
         ).decode()
         
-        # 6. Ensamblar nodo Signature completo
         signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}
     <SignatureValue>{signature_value}</SignatureValue>
@@ -104,7 +115,6 @@ class DTESigner:
     </KeyInfo>
 </Signature>"""
         
-        # Insertar Signature en el root (después de Documento)
         signature_elem = etree.fromstring(signature_xml)
         root.append(signature_elem)
         

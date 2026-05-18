@@ -162,3 +162,89 @@ async def upload_caf(
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/upload-pfx")
+async def upload_pfx(
+    organization_id: str = Body(...),
+    pfx_base64: str = Body(...),
+    cert_password: str = Body(...),
+    auth: dict = Depends(verify_token)
+):
+    """
+    Valida un certificado PFX y lo sube a la bóveda (Storage) encriptando la clave en la BD.
+    """
+    await verify_org_role(organization_id, required_roles=["owner", "admin"], auth=auth)
+    
+    from core.database import get_supabase
+    db = get_supabase()
+    
+    import base64
+    from cryptography.hazmat.primitives.serialization import pkcs12
+    from cryptography.hazmat.backends import default_backend
+    
+    try:
+        # Decodificar Base64
+        pfx_data = base64.b64decode(pfx_base64)
+        
+        # Validar la contraseña cargando el certificado
+        try:
+            private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(
+                pfx_data,
+                cert_password.encode('utf-8'),
+                backend=default_backend()
+            )
+        except Exception as e:
+            raise Exception("La contraseña del certificado es incorrecta o el archivo es inválido.")
+            
+        # Nombre del archivo en el bucket
+        file_path = f"{organization_id}/cert.pfx"
+        
+        # Subir a Supabase Storage (dte_certificates)
+        try:
+            # Usar API de Python supabase para storage upload
+            db.storage.from_("dte_certificates").upload(
+                file=pfx_data,
+                path=file_path,
+                file_options={"content-type": "application/x-pkcs12", "upsert": "true"}
+            )
+        except Exception as upload_err:
+            # Si el upsert real falla en supabase-py, a veces lanza excepción de duplicado. 
+            # Si falla, intentamos hacer update
+            try:
+                db.storage.from_("dte_certificates").update(
+                    file=pfx_data,
+                    path=file_path,
+                    file_options={"content-type": "application/x-pkcs12", "upsert": "true"}
+                )
+            except Exception as update_err:
+                raise Exception(f"No se pudo subir el archivo al Storage: {str(update_err)}")
+        
+        # Cifrar la clave mediante RPC
+        enc_res = db.rpc(
+            "encrypt_cert_password", 
+            {"password": cert_password, "org_id": organization_id}
+        ).execute()
+        
+        if not enc_res.data:
+            raise Exception("Error interno: No se pudo cifrar la clave del certificado.")
+            
+        encrypted_pass = enc_res.data
+        
+        # Actualizar la referencia en dte_companies
+        db.table("dte_companies")\
+            .update({
+                "cert_password_encrypted": encrypted_pass,
+                "cert_path": file_path
+            })\
+            .eq("organization_id", organization_id)\
+            .execute()
+            
+        return {
+            "success": True, 
+            "message": "Certificado cargado exitosamente."
+        }
+        
+    except Exception as e:
+        print("Error uploading PFX:", str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+

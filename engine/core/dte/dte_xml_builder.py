@@ -56,7 +56,37 @@ class DTEXMLBuilder:
         {self._build_items_xml(items)}
     </Documento>
 </DTE>"""
+</DTE>"""
         return xml
+
+    def build_envio_dte(self, signed_dte_xml: str, dte_data: Dict[str, Any]) -> str:
+        """
+        Envuelve uno o más DTEs firmados en un EnvioDTE para ser enviado al SII.
+        """
+        fecha_resolucion = self.company.get('resolucion_fecha', '2014-08-22')
+        nro_resolucion = self.company.get('resolucion_numero', 0)
+        
+        envio_id = f"SetDoc_{dte_data.get('folio', 1)}"
+        
+        envio_xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
+<EnvioDTE xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte EnvioDTE_v10.xsd" version="1.0">
+    <SetDTE ID="{envio_id}">
+        <Caratula version="1.0">
+            <RutEmisor>{self.company['rut']}</RutEmisor>
+            <RutEnvia>{self.company['rut']}</RutEnvia>
+            <RutReceptor>{dte_data['receptor_rut']}</RutReceptor>
+            <FchResol>{fecha_resolucion}</FchResol>
+            <NroResol>{nro_resolucion}</NroResol>
+            <TmstFirmaEnv>{datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}</TmstFirmaEnv>
+            <SubTotDTE>
+                <TpoDTE>{dte_data['tipo_dte']}</TpoDTE>
+                <NroDTE>1</NroDTE>
+            </SubTotDTE>
+        </Caratula>
+        {signed_dte_xml}
+    </SetDTE>
+</EnvioDTE>"""
+        return envio_xml
 
     def _build_items_xml(self, items: List[Dict[str, Any]]) -> str:
         items_xml = ""

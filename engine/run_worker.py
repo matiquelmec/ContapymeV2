@@ -10,6 +10,7 @@ import logging
 import signal
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
+from workers.track_id_worker import run_worker as start_dte_worker
 
 # Configuración de Logging Profesional
 logging.basicConfig(
@@ -30,7 +31,10 @@ async def main():
     # 2. Iniciar el motor de noticias regionales con IA
     await start_news_worker()
     
-    logger.info("✅ Schedulers activos y monitoreando (Pulsa Ctrl+C para detener)")
+    # 3. Iniciar vigilante de Track ID DTE (SII)
+    dte_task = asyncio.create_task(start_dte_worker())
+    
+    logger.info("✅ Schedulers y DTE Worker activos y monitoreando (Pulsa Ctrl+C para detener)")
     
     try:
         # Mantener el proceso vivo indefinidamente

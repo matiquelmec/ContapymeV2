@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
 import { inviteMember, deleteInvitation, getPendingInvitations } from "@/actions/members";
 import { getAuditLogs, getAuditActions } from "@/actions/audit";
-import { updateDTEConfig, uploadCAF } from "@/actions/billing";
+import { updateDTEConfig, uploadCAF, uploadPFX } from "@/actions/billing";
 import { formatRUT, cleanRUT } from "@/lib/utils/rut";
 import { cn } from "@/lib/utils";
 import { 
@@ -60,6 +60,7 @@ export default function SettingsPageClient({
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingDTE, setLoadingDTE] = useState(false);
   const [loadingCAF, setLoadingCAF] = useState(false);
+  const [loadingCert, setLoadingCert] = useState(false);
   const [cafRecords, setCafRecords] = useState<any[]>(initialCAFRecords || []);
   const [cafEnv, setCafEnv] = useState<'certification' | 'production'>('certification');
   const [loadingAudit, setLoadingAudit] = useState(false);
@@ -107,6 +108,7 @@ export default function SettingsPageClient({
     acteco: initialDTEConfig?.acteco || "",
     resolucion_numero: initialDTEConfig?.resolucion_numero || "",
     resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
+    cert_password: "",
   });
 
   useEffect(() => {
@@ -141,6 +143,7 @@ export default function SettingsPageClient({
       acteco: initialDTEConfig?.acteco || "",
       resolucion_numero: initialDTEConfig?.resolucion_numero || "",
       resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
+      cert_password: "",
     });
   }, [initialDTEConfig]);
 
@@ -275,11 +278,52 @@ export default function SettingsPageClient({
       });
       setLoadingCAF(false);
     }
-  };
+  const handleUploadCert = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
+    if (!dteForm.cert_password) {
+      toast.error("Contraseña Obligatoria", {
+        description: "Debe ingresar la contraseña del certificado antes de subir el archivo."
+      });
+      return;
+    }
 
-
-  return (
+    setLoadingCert(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Content = (e.target?.result as string).split(',')[1]; // Remover prefijo base64
+        
+        const res = await uploadPFX(organizationId, base64Content, dteForm.cert_password);
+        
+        if (res.success) {
+          setStatusModal({
+            open: true,
+            type: 'success',
+            title: 'Certificado Protegido',
+            description: 'El certificado digital ha sido almacenado de forma encriptada.',
+            actionLabel: 'Aceptar',
+            onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
+          });
+        } else {
+          setStatusModal({
+            open: true,
+            type: 'error',
+            title: 'Error de Procesamiento',
+            description: res.error || 'No se pudo procesar el archivo o la contraseña es incorrecta.',
+            actionLabel: 'Reintentar',
+            onAction: () => setStatusModal(prev => ({ ...prev, open: false }))
+          });
+        }
+        setLoadingCert(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error("Error leyendo archivo .pfx");
+      setLoadingCert(false);
+    }
+  };  return (
     <div className="space-y-6">
       <StatusModal 
         open={statusModal.open}

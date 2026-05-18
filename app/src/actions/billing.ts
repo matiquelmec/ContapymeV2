@@ -243,3 +243,37 @@ export async function getCAFRecords(organizationId: string) {
     return { success: false, error: parseError(err), data: [] }
   }
 }
+
+export async function uploadPFX(organizationId: string, base64Content: string, certPassword: string) {
+  try {
+    const response = await engineFetch('/api/v1/dte/upload-pfx', {
+      method: 'POST',
+      body: {
+        organization_id: organizationId,
+        pfx_base64: base64Content,
+        cert_password: certPassword
+      }
+    })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      return { success: false, error: parseError(errData.detail || 'Error al procesar el certificado PFX') }
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
+      await recordAuditAction({
+        action: 'UPLOAD_PFX',
+        entity_type: 'DTE_CERT',
+        entity_id: organizationId,
+        details: 'Certificado digital actualizado'
+      })
+      revalidatePath('/dashboard/settings')
+    }
+
+    return data
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}
