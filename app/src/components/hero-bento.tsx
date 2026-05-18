@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { 
   Cloud, 
   Sun, 
@@ -14,9 +15,11 @@ import {
   Activity 
 } from 'lucide-react'
 import { Indicator } from '@/lib/types/dashboard'
+import { createClient } from '@/lib/supabase/client'
 
 interface HeroBentoGridProps {
   indicators: Indicator[]
+  news?: any[]
 }
 
 interface WeatherData {
@@ -28,19 +31,85 @@ interface WeatherData {
   loading: boolean
 }
 
-export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
+export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps) {
+  // Estado para el clima
   const [weather, setWeather] = useState<WeatherData>({
-    temp: 4.2,
-    humidity: 84,
-    windSpeed: 45,
+    temp: 8.7,
+    humidity: 92,
+    windSpeed: 36,
     code: 3,
-    description: 'Nublado Austral',
+    description: 'Parcialmente Nublado',
     loading: true
   })
 
-  // Obtener indicadores específicos de la lista provista por el servidor
+  // 1. Sincronización en Tiempo Real de los Indicadores del Bento
+  const [liveIndicators, setLiveIndicators] = useState<Indicator[]>(indicators)
+  const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setLiveIndicators(indicators)
+  }, [indicators])
+
+  // Obtener la última noticia destacada o la más reciente
+  const latestNews = news.length > 0 ? (news.find(n => n.is_featured) || news[0]) : null
+
+  // Suscribirse a Supabase Realtime para cambios en los indicadores
+  useEffect(() => {
+    let channel: any
+    try {
+      const supabase = createClient()
+      channel = supabase
+        .channel('bento_indicators_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'economic_indicators'
+          },
+          (payload) => {
+            console.log('🔄 [Bento Realtime] Cambio detectado:', payload)
+            const newRecord = payload.new as Indicator
+            if (newRecord && newRecord.codigo) {
+              setLiveIndicators(prev => {
+                const updated = [...prev]
+                const idx = updated.findIndex(i => i.codigo === newRecord.codigo)
+                if (idx !== -1) {
+                  updated[idx] = { ...updated[idx], ...newRecord }
+                } else {
+                  updated.push(newRecord)
+                }
+                return updated
+              })
+
+              // Micro-animación de destello verde en el Bento
+              setUpdatedCodes(prev => ({ ...prev, [newRecord.codigo]: true }))
+              setTimeout(() => {
+                setUpdatedCodes(prev => ({ ...prev, [newRecord.codigo]: false }))
+              }, 2000)
+            }
+          }
+        )
+      channel.subscribe()
+    } catch (e) {
+      console.error('❌ Error al suscribir Bento Grid a Supabase Realtime:', e)
+    }
+
+    return () => {
+      if (channel) {
+        try {
+          const supabase = createClient()
+          supabase.removeChannel(channel)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+  }, [])
+
+  // Obtener el valor formateado de un indicador
   const getIndicatorVal = (code: string) => {
-    const ind = indicators.find(i => i.codigo === code)
+    const ind = liveIndicators.find(i => i.codigo === code)
     if (!ind) return '---'
     return Number(ind.valor).toLocaleString('es-CL', {
       minimumFractionDigits: 0,
@@ -48,7 +117,7 @@ export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
     })
   }
 
-  // 1. Consultar el clima real en Punta Arenas mediante la API libre Open-Meteo
+  // 2. Consultar el clima real en Punta Arenas mediante la API libre Open-Meteo
   useEffect(() => {
     async function fetchWeather() {
       try {
@@ -61,7 +130,6 @@ export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
         const current = data.current
         const code = current.weather_code
         
-        // Mapeo básico de códigos Open-Meteo a descripciones en español
         let desc = 'Nublado'
         if (code === 0) desc = 'Cielo Despejado'
         else if (code >= 1 && code <= 3) desc = 'Parcialmente Nublado'
@@ -82,7 +150,6 @@ export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
         })
       } catch (err) {
         console.error('⚠️ Error al consultar el clima real de Punta Arenas:', err)
-        // Mantenemos los valores patagónicos típicos por defecto
         setWeather(prev => ({ ...prev, loading: false }))
       }
     }
@@ -162,7 +229,7 @@ export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
         </div>
       </div>
 
-      {/* 💳 WIDGET 2: INDICADORES ECONÓMICOS CLAVE */}
+      {/* 💳 WIDGET 2: INDICADORES ECONÓMICOS CLAVE (Con Supabase Realtime) */}
       <div className="group relative p-6 rounded-[2rem] bg-white/40 border border-white/20 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] hover:border-primary/20 transition-all duration-500 flex flex-col justify-between min-h-[190px]">
         <div className="absolute -top-6 -right-6 w-20 h-20 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all duration-500" />
         
@@ -173,52 +240,72 @@ export function HeroBentoGrid({ indicators = [] }: HeroBentoGridProps) {
           </div>
           
           <div className="mt-4 space-y-3.5">
-            <div className="flex items-center justify-between">
+            <div className={`flex items-center justify-between transition-all duration-500 rounded px-1 -mx-1 ${
+              updatedCodes['uf'] ? 'bg-emerald-500/10 text-emerald-600 font-bold scale-[1.03]' : ''
+            }`}>
               <span className="text-xs font-black text-muted-foreground/80 italic">UF</span>
-              <span className="text-xs font-black text-foreground tabular-nums">${getIndicatorVal('uf')}</span>
+              <span className={`text-xs font-black tabular-nums transition-colors duration-500 ${
+                updatedCodes['uf'] ? 'text-emerald-500' : 'text-foreground'
+              }`}>${getIndicatorVal('uf')}</span>
             </div>
-            <div className="flex items-center justify-between">
+            
+            <div className={`flex items-center justify-between transition-all duration-500 rounded px-1 -mx-1 ${
+              updatedCodes['dolar'] ? 'bg-emerald-500/10 text-emerald-600 font-bold scale-[1.03]' : ''
+            }`}>
               <span className="text-xs font-black text-muted-foreground/80 italic">DÓLAR</span>
-              <span className="text-xs font-black text-foreground tabular-nums">${getIndicatorVal('dolar')}</span>
+              <span className={`text-xs font-black tabular-nums transition-colors duration-500 ${
+                updatedCodes['dolar'] ? 'text-emerald-500' : 'text-foreground'
+              }`}>${getIndicatorVal('dolar')}</span>
             </div>
-            <div className="flex items-center justify-between">
+            
+            <div className={`flex items-center justify-between transition-all duration-500 rounded px-1 -mx-1 ${
+              updatedCodes['utm'] ? 'bg-emerald-500/10 text-emerald-600 font-bold scale-[1.03]' : ''
+            }`}>
               <span className="text-xs font-black text-muted-foreground/80 italic">UTM</span>
-              <span className="text-xs font-black text-foreground tabular-nums">${getIndicatorVal('utm')}</span>
+              <span className={`text-xs font-black tabular-nums transition-colors duration-500 ${
+                updatedCodes['utm'] ? 'text-emerald-500' : 'text-foreground'
+              }`}>${getIndicatorVal('utm')}</span>
             </div>
           </div>
         </div>
 
         <div className="text-[7.5px] font-black text-muted-foreground/40 uppercase tracking-widest text-right mt-4">
-          Carga Automática
+          Conexión en Vivo
         </div>
       </div>
 
-      {/* 💳 WIDGET 3: PORTAL DIGITAL EXPRESS */}
-      <div className="group relative p-6 rounded-[2rem] bg-white/40 border border-white/20 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] hover:border-primary/20 transition-all duration-500 flex flex-col justify-between min-h-[190px] overflow-hidden">
-        {/* Decoración de pulso de ondas */}
+      {/* 💳 WIDGET 3: PORTAL DIGITAL EXPRESS (Última Noticia Dinámica) */}
+      <Link 
+        href={latestNews ? `/noticias/${latestNews.slug}` : '#diario'}
+        className="group relative p-6 rounded-[2rem] bg-white/40 border border-white/20 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] hover:border-primary/20 hover:shadow-[0_30px_60px_-25px_rgba(0,0,0,0.08)] transition-all duration-500 flex flex-col justify-between min-h-[190px] overflow-hidden cursor-pointer"
+      >
         <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all duration-500" />
 
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Diario Regional</span>
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+              {latestNews ? latestNews.category : 'Diario Regional'}
+            </span>
             <Radio className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
           </div>
           
           <div className="mt-4 space-y-2">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-black text-emerald-600 uppercase tracking-wider">
-              <Activity className="h-2 w-2" /> Al Instante
+              <Activity className="h-2 w-2" /> {latestNews ? 'Último Minuto' : 'Al Instante'}
             </div>
-            <h4 className="text-xs font-black italic uppercase leading-snug text-foreground tracking-tight line-clamp-3">
-              Información fidedigna, inmutable y verificada criptográficamente en Magallanes.
+            <h4 className="text-xs font-black italic uppercase leading-snug text-foreground tracking-tight line-clamp-3 group-hover:text-primary transition-colors">
+              {latestNews ? latestNews.title : 'Información fidedigna, inmutable y verificada criptográficamente en Magallanes.'}
             </h4>
           </div>
         </div>
 
         <div className="flex items-center justify-between border-t border-zinc-200/50 pt-3 mt-4">
-          <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-wider">ContaPyme PUQ</span>
+          <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-wider">
+            {latestNews ? (latestNews.source_name || 'ContaPyme PUQ') : 'ContaPyme PUQ'}
+          </span>
           <ArrowUpRight className="h-4 w-4 text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </div>
-      </div>
+      </Link>
 
     </div>
   )

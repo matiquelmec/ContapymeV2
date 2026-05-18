@@ -124,7 +124,7 @@ export default async function LandingPage() {
               
               {/* Right Column (HeroBentoGrid) */}
               <div className="lg:col-span-5 w-full animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-                <HeroBentoGrid indicators={indicators} />
+                <HeroBentoGrid indicators={indicators} news={regionalNews} />
               </div>
               
             </div>
