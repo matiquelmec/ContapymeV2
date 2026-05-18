@@ -52,6 +52,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
     const [selectedDTE, setSelectedDTE] = useState<any | null>(null)
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
     const [previewTab, setPreviewTab] = useState<'visual' | 'security' | 'xml'>('visual')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'official' | 'draft'>('official')
 
     const openPreview = (dte: any, tab: 'visual' | 'security' | 'xml') => {
         setSelectedDTE(dte)
@@ -101,11 +102,21 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
         }
     }
 
-    const filteredData = initialData.filter(dte => 
-        dte.receptor_razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dte.folio.toString().includes(searchTerm) ||
-        dte.receptor_rut.includes(searchTerm)
-    )
+    const filteredData = initialData
+        .filter(dte => {
+            if (statusFilter === 'official') {
+                return ['signed', 'accepted', 'sent'].includes(dte.status)
+            }
+            if (statusFilter === 'draft') {
+                return ['draft', 'error_signing'].includes(dte.status) || !dte.status
+            }
+            return true
+        })
+        .filter(dte => 
+            dte.receptor_razon_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            dte.folio.toString().includes(searchTerm) ||
+            dte.receptor_rut.includes(searchTerm)
+        )
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value)
@@ -121,8 +132,12 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                 return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200"><Clock className="w-3 h-3 mr-1" /> Enviado</Badge>
             case 'rejected':
                 return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200"><AlertCircle className="w-3 h-3 mr-1" /> Rechazado</Badge>
+            case 'draft':
+                return <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-slate-200"><FileText className="w-3 h-3 mr-1" /> Borrador</Badge>
+            case 'error_signing':
+                return <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-rose-200"><AlertCircle className="w-3 h-3 mr-1" /> Error de Firma</Badge>
             default:
-                return <Badge variant="outline">{status}</Badge>
+                return <Badge variant="outline">{status || 'Borrador'}</Badge>
         }
     }
 
@@ -209,6 +224,45 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                     >
                         <Plus className="w-4 h-4" /> Emitir Factura
                     </Button>
+                </div>
+            </div>
+
+            {/* ===== TABS DE ESTADO (DISEÑO PREMIUM) ===== */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/40 pb-2">
+                <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-2xl border border-border/30 backdrop-blur-sm">
+                    <button 
+                        onClick={() => setStatusFilter('official')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
+                            statusFilter === 'official' 
+                                ? 'bg-white text-primary shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        Emitidos (Oficiales)
+                    </button>
+                    <button 
+                        onClick={() => setStatusFilter('draft')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
+                            statusFilter === 'draft' 
+                                ? 'bg-white text-primary shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        Borradores / Errores
+                    </button>
+                    <button 
+                        onClick={() => setStatusFilter('all')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
+                            statusFilter === 'all' 
+                                ? 'bg-white text-primary shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        Todos
+                    </button>
+                </div>
+                <div className="text-xs text-muted-foreground font-black uppercase tracking-tight pl-2">
+                    Mostrando {filteredData.length} documento(s)
                 </div>
             </div>
 

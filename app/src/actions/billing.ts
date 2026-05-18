@@ -32,6 +32,7 @@ export async function getDTEStats(organizationId: string) {
       .from('dte_issued')
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
+      .in('status', ['signed', 'accepted', 'sent'])
 
     const { count: acceptedDTEs } = await supabase
       .from('dte_issued')
@@ -49,6 +50,7 @@ export async function getDTEStats(organizationId: string) {
       .from('dte_issued')
       .select('monto_total')
       .eq('organization_id', organizationId)
+      .in('status', ['signed', 'accepted', 'sent'])
 
     const totalFacturado = (totalRow || []).reduce((sum: number, r: any) => sum + (r.monto_total || 0), 0)
 
@@ -128,7 +130,7 @@ export async function exportDTEToCSV(organizationId: string) {
     const res = await getDTEsForOrganization(organizationId)
     if (!res.success) return { success: false, error: res.error }
 
-    const dtes = res.data
+    const dtes = res.data.filter((d: any) => ['signed', 'accepted', 'sent'].includes(d.status))
     const headers = ['Tipo Docto', 'Folio', 'RUT Receptor', 'Razón Social', 'Fecha', 'Monto Neto', 'Monto IVA', 'Monto Total']
     
     const rows = dtes.map((d: any) => [
