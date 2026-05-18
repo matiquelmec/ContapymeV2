@@ -191,8 +191,7 @@ class DTELogic:
                 if os.path.exists(tmp_pfx_path):
                     os.remove(tmp_pfx_path)
         except Exception as e:
-            # Si falla la firma, actualizamos el status a error o dejamos el error burbujear
-            self.supabase.table("dte_issued").update({"status": "error_signing"}).eq("id", dte_id).execute()
+            # Si falla la firma, dejamos el registro en "draft" y burbujeamos el error real
             raise Exception(f"Error durante la firma o envío del DTE: {str(e)}")
         
         # 5. Sincronizar con RCV (sales_records) para reportes inmediatos

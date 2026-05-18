@@ -112,17 +112,24 @@ async def upload_caf(
         range_end = int(da_node.find(".//H").text)
         fecha_auth = da_node.find("FA").text
         
-        # Buscar el company_id en dte_companies
+        # Buscar el company_id en dte_companies con normalización de RUT
         comp_res = db.table("dte_companies")\
-            .select("id")\
+            .select("id, rut")\
             .eq("organization_id", organization_id)\
-            .eq("rut", rut_emisor)\
             .execute()
             
-        if not comp_res.data:
+        from core.utils import clean_rut_simple
+        cleaned_xml_rut = clean_rut_simple(rut_emisor)
+        company = None
+        for c in comp_res.data:
+            if clean_rut_simple(c.get("rut")) == cleaned_xml_rut:
+                company = c
+                break
+            
+        if not company:
             raise Exception(f"Emisor No Encontrado: El RUT {rut_emisor} presente en el archivo CAF no coincide con la empresa configurada en esta organización. Por favor, verifique que el RUT en 'Configuración de Empresa > Facturación' sea el correcto antes de subir el archivo.")
             
-        company_id = comp_res.data[0]["id"]
+        company_id = company["id"]
         
         # Guardar en dte_caf_folios
         caf_data = {
