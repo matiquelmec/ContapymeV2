@@ -369,53 +369,55 @@ export function ConfigClient({
 
   if (configs.length === 0) {
     return (
-      <Card className="flex flex-col items-center justify-center py-32 px-10 text-center bg-card border-border border-dashed border-4 rounded-[2.5rem] shadow-inner opacity-60">
-        <div className="bg-white p-8 rounded-3xl shadow-2xl mb-8 border border-border">
-          <Settings2 className="h-16 w-16 text-primary/20" />
-        </div>
-        <div className="max-w-md space-y-4">
-          <CardTitle className="text-xl font-black uppercase tracking-tight text-foreground">Configuración No Inicializada</CardTitle>
-          <CardDescription className="text-muted-foreground text-sm font-bold italic leading-relaxed">
-            No se han detectado mapeos maestros para esta entidad fiscal. 
-            Esto es habitual tras la creación de una nueva organización o reestructuración del plan contable.
-          </CardDescription>
-          <div className="pt-6 inline-flex">
-            <Button 
-              onClick={async () => {
-                setInitializing(true);
-                const promise = initializeAccountingConfigAction(organizationId);
-                
-                toast.promise(promise, {
-                  loading: 'Inicializando parámetros contables...',
-                  success: (res: any) => {
-                    if (res.success) {
-                      setTimeout(() => window.location.reload(), 1500);
-                      return "Configuración inicializada correctamente";
-                    }
-                    throw new Error(res.error || "Error al inicializar");
-                  },
-                  error: (err) => err.message || "Error inesperado al inicializar"
-                });
-
-                try {
-                  await promise;
-                } finally {
-                  setInitializing(false);
-                }
-              }}
-              disabled={initializing}
-              className="inline-flex items-center gap-3 px-8 py-6 bg-primary hover:bg-primary/90 rounded-full text-xs font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border border-primary/20 transition-all hover:scale-105 active:scale-95"
-            >
-              {initializing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Info className="h-5 w-5" />
-              )}
-              {initializing ? "INICIALIZANDO..." : "Sincronizar el Plan de Cuentas (ERP)"}
-            </Button>
+      <div className="w-full px-4 sm:px-0">
+        <Card className="flex flex-col items-center justify-center py-16 sm:py-32 px-4 sm:px-10 text-center bg-card border-border border-dashed border-2 rounded-[2rem] sm:rounded-[2.5rem] shadow-inner opacity-80 max-w-xl mx-auto w-full">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl mb-6 sm:mb-8 border border-border shrink-0">
+            <Settings2 className="h-12 w-12 sm:h-16 sm:w-16 text-primary/20" />
           </div>
-        </div>
-      </Card>
+          <div className="max-w-md space-y-4">
+            <CardTitle className="text-lg sm:text-xl font-black uppercase tracking-tight text-foreground">Configuración No Inicializada</CardTitle>
+            <CardDescription className="text-xs sm:text-sm font-bold italic text-muted-foreground leading-relaxed max-w-sm mx-auto">
+              No se han detectado mapeos maestros para esta entidad fiscal. 
+              Esto es habitual tras la creación de una nueva organización o reestructuración del plan contable.
+            </CardDescription>
+            <div className="pt-6 w-full flex justify-center">
+              <Button 
+                onClick={async () => {
+                  setInitializing(true);
+                  const promise = initializeAccountingConfigAction(organizationId);
+                  
+                  toast.promise(promise, {
+                    loading: 'Inicializando parámetros contables...',
+                    success: (res: any) => {
+                      if (res.success) {
+                        setTimeout(() => window.location.reload(), 1500);
+                        return "Configuración inicializada correctamente";
+                      }
+                      throw new Error(res.error || "Error al inicializar");
+                    },
+                    error: (err) => err.message || "Error inesperado al inicializar"
+                  });
+
+                  try {
+                    await promise;
+                  } finally {
+                    setInitializing(false);
+                  }
+                }}
+                disabled={initializing}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-5 sm:py-6 bg-primary hover:bg-primary/95 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wide sm:tracking-[0.2em] text-primary-foreground shadow-xl border border-primary/20 transition-all hover:scale-105 active:scale-95 whitespace-normal text-center"
+              >
+                {initializing ? (
+                  <Loader2 className="h-5 w-5 animate-spin shrink-0" />
+                ) : (
+                  <Info className="h-5 w-5 shrink-0" />
+                )}
+                <span className="leading-snug">{initializing ? "INICIALIZANDO..." : "Sincronizar el Plan de Cuentas (ERP)"}</span>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
     );
   }
 
