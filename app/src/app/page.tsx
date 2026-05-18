@@ -31,6 +31,7 @@ import { DiarioRegionalSection } from "@/components/diario-regional-section";
 import { MarketTicker } from "@/components/market-ticker";
 import { AISandbox } from "@/components/ai-sandbox";
 import { TaxCalculator } from "@/components/tax-calculator";
+import { HeroBentoGrid } from "@/components/hero-bento";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -86,32 +87,46 @@ export default async function LandingPage() {
 
       <main className="flex-1">
         {/* ===== HERO SECTION ===== */}
-        <section className="relative pt-32 pb-20 overflow-hidden" suppressHydrationWarning>
+        <section className="relative pt-20 pb-20 overflow-hidden" suppressHydrationWarning>
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10" suppressHydrationWarning />
+          
+          {/* Orbe decorativo de luz Patagonian Glow */}
+          <div className="absolute top-20 right-[-10%] w-[550px] h-[550px] bg-primary/10 rounded-full blur-[130px] -z-10 pointer-events-none opacity-60 animate-pulse duration-[8000ms]" />
+          
           <div className="container mx-auto px-6 lg:px-12 relative" suppressHydrationWarning>
-            <div className="max-w-4xl space-y-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-in fade-in slide-in-from-top-4 duration-700" suppressHydrationWarning>
-                <ShieldCheck className="h-3 w-3" /> Precisión Patagonia
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+              
+              {/* Left Column (Content) */}
+              <div className="lg:col-span-7 space-y-8">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-in fade-in slide-in-from-top-4 duration-700" suppressHydrationWarning>
+                  <ShieldCheck className="h-3 w-3" /> Precisión Patagonia
+                </div>
+                <h1 className="text-[clamp(2.5rem,5.5vw,5.5rem)] font-black tracking-tighter uppercase leading-[0.95] italic animate-in fade-in slide-in-from-left-8 duration-700">
+                  Precisión <span className="text-primary italic font-serif">Institucional</span> <br />
+                  y Escalabilidad <span className="text-muted-foreground/35">Organizacional.</span>
+                </h1>
+                <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+                  Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-6 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
+                  <Link href="/dashboard">
+                    <Button size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all group">
+                      Comenzar Ahora | 7 Días Gratis <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                  <Link href="#diario">
+                    <Button variant="outline" size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-10 rounded-2xl border-2 hover:bg-muted transition-all">
+                      Ver Diario Regional
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              <h1 className="text-[clamp(2.5rem,8vw,6.5rem)] font-black tracking-tighter uppercase leading-[0.95] italic animate-in fade-in slide-in-from-left-8 duration-700">
-                Precisión <span className="text-primary italic font-serif">Institucional</span> <br />
-                y Escalabilidad <span className="text-muted-foreground/35">Organizacional.</span>
-              </h1>
-              <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-                Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-6 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-                <Link href="/dashboard">
-                  <Button size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all group">
-                    Comenzar Ahora | 7 Días Gratis <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-                <Link href="#diario">
-                  <Button variant="outline" size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-10 rounded-2xl border-2 hover:bg-muted transition-all">
-                    Ver Diario Regional
-                  </Button>
-                </Link>
+              
+              {/* Right Column (HeroBentoGrid) */}
+              <div className="lg:col-span-5 w-full animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
+                <HeroBentoGrid indicators={indicators} />
               </div>
+              
             </div>
           </div>
         </section>

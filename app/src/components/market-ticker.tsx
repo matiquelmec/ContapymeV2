@@ -205,7 +205,6 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
     { label: "DÓLAR", value: `$${getVal('dolar') || '---'}`, icon: ArrowUp, color: "text-emerald-500", code: 'dolar' },
     { label: "EURO", value: `$${getVal('euro') || '---'}`, icon: ArrowDown, color: "text-rose-500", code: 'euro' },
     { label: "UTM", value: `$${getVal('utm', 0) || '---'}`, icon: ArrowUp, color: "text-indigo-500", code: 'utm' },
-    { label: "VIENTO PUQ", value: `${windSpeed} km/h`, icon: Wind, color: "text-sky-400 font-bold", code: 'viento' },
     { label: "IPSA", value: `${getVal('ipsa', 0) || '---'}`, icon: ArrowUp, color: "text-blue-500", code: 'ipsa' },
     { label: "COBRE", value: `US$ ${getVal('libra_cobre') || '---'}`, icon: ArrowDown, color: "text-emerald-500", code: 'libra_cobre' },
     { label: "PETRÓLEO", value: `US$ ${getVal('wti') || '---'}`, icon: ArrowUp, color: "text-orange-500", code: 'wti' },
