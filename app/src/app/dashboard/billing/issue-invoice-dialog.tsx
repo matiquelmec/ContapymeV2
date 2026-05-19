@@ -210,6 +210,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                 receptor_giro: receptor.giro || undefined,
                 receptor_direccion: receptor.direccion || undefined,
                 receptor_comuna: receptor.comuna || undefined,
+                receptor_ciudad: receptor.comuna || undefined,
                 monto_neto: totals.neto,
                 monto_iva: totals.iva,
                 monto_total: totals.total,

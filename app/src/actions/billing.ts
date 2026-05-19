@@ -84,6 +84,7 @@ export async function issueDTE(formData: {
   receptor_giro?: string
   receptor_direccion?: string
   receptor_comuna?: string
+  receptor_ciudad?: string
   monto_neto: number
   monto_iva: number
   monto_total: number
