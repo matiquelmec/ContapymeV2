@@ -32,12 +32,75 @@ class CAFManager:
 
     @staticmethod
     def get_private_key_from_caf(xml_content: str) -> Optional[str]:
-        """Extrae la llave privada (RSAPK) del CAF para firmar el timbre."""
+        """
+        Extrae la llave privada (RSASK) del CAF y la reconstruye en formato PEM.
+        """
+        import base64
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+
         try:
-            tree = ET.fromstring(xml_content)
-            rsapk = tree.find(".//RSAPK")
-            if rsapk is not None:
-                return ET.tostring(rsapk, encoding='unicode')
-            return None
-        except:
+            # Eliminar posibles espacios en blanco al inicio
+            xml_content = xml_content.strip()
+            tree = ET.fromstring(xml_content.encode('utf-8'))
+            
+            # Buscar el nodo RSASK (llave privada) y RSAPK (llave pública para el módulo M y exp E)
+            rsask_node = tree.find(".//RSASK")
+            rsapk_node = tree.find(".//RSAPK")
+            
+            if rsask_node is None or rsapk_node is None:
+                return None
+                
+            # Extraer valores Base64
+            s_val = rsask_node.find("S").text.strip() if rsask_node.find("S") is not None else None
+            p_val = rsask_node.find("p").text.strip() if rsask_node.find("p") is not None else None
+            q_val = rsask_node.find("q").text.strip() if rsask_node.find("q") is not None else None
+            m_val = rsapk_node.find("M").text.strip() if rsapk_node.find("M") is not None else None
+            e_val = rsapk_node.find("E").text.strip() if rsapk_node.find("E") is not None else None
+            
+            if not all([s_val, p_val, q_val, m_val, e_val]):
+                return None
+                
+            # Función auxiliar para convertir Base64 a entero
+            def b64_to_int(b64_str: str) -> int:
+                clean_str = b64_str.replace('\n', '').replace('\r', '').strip()
+                missing_padding = len(clean_str) % 4
+                if missing_padding:
+                    clean_str += '=' * (4 - missing_padding)
+                decoded_bytes = base64.b64decode(clean_str)
+                return int.from_bytes(decoded_bytes, byteorder='big')
+                
+            d = b64_to_int(s_val)
+            p = b64_to_int(p_val)
+            q = b64_to_int(q_val)
+            n = b64_to_int(m_val)
+            e = b64_to_int(e_val)
+            
+            # Calcular parámetros faltantes para RSAPrivateNumbers
+            dmp1 = d % (p - 1)
+            dmq1 = d % (q - 1)
+            iqmp = pow(q, -1, p)
+            
+            # Construir clave privada RSA
+            public_numbers = rsa.RSAPublicNumbers(e, n)
+            private_numbers = rsa.RSAPrivateNumbers(
+                p=p,
+                q=q,
+                d=d,
+                dmp1=dmp1,
+                dmq1=dmq1,
+                iqmp=iqmp,
+                public_numbers=public_numbers
+            )
+            private_key = private_numbers.private_key()
+            
+            # Exportar a formato PEM
+            pem_bytes = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+            return pem_bytes.decode('utf-8')
+        except Exception as e:
+            print(f"Error extrayendo clave privada del CAF: {str(e)}")
             return None

@@ -1,3 +1,4 @@
+import os
 import base64
 import hashlib
 from cryptography import x509
@@ -134,3 +135,26 @@ class DTESigner:
         exponent = numbers.e
         exponent_bytes = exponent.to_bytes((exponent.bit_length() + 7) // 8, byteorder='big')
         return base64.b64encode(exponent_bytes).decode()
+
+    def sign_ted(self, dd_xml_str: str, rsask_pem: str) -> str:
+        """
+        Firma el bloque <DD> del Timbre Electrónico DTE (TED) usando la clave privada del CAF.
+        """
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+        from cryptography.hazmat.backends import default_backend
+        
+        try:
+            private_key = load_pem_private_key(
+                rsask_pem.encode('utf-8'), 
+                password=None, 
+                backend=default_backend()
+            )
+            
+            signature = private_key.sign(
+                dd_xml_str.encode('ISO-8859-1'),
+                padding.PKCS1v15(),
+                hashes.SHA1()
+            )
+            return base64.b64encode(signature).decode('utf-8')
+        except Exception as e:
+            raise Exception(f"Error firmando el TED con la clave privada del CAF: {str(e)}")
