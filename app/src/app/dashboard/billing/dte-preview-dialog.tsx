@@ -89,6 +89,9 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
     const [activeTab, setActiveTab] = useState<'visual' | 'security' | 'xml'>(initialTab)
     const [copied, setCopied] = useState(false)
     const [parsedData, setParsedData] = useState<any>(null)
+    const [showEmailForm, setShowEmailForm] = useState(false)
+    const [emailInput, setEmailInput] = useState('')
+    const [sendingEmail, setSendingEmail] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -102,6 +105,12 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
             setParsedData(parsed)
         } else {
             setParsedData(null)
+        }
+    }, [dte])
+
+    useEffect(() => {
+        if (dte) {
+            setEmailInput(dte.receptor_email || '')
         }
     }, [dte])
 
@@ -159,15 +168,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
 
     const dteTypeLabel = dte.tipo_dte === 33 ? 'FACTURA ELECTRÓNICA' : dte.tipo_dte === 34 ? 'FACTURA EXENTA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA'
 
-    const [showEmailForm, setShowEmailForm] = useState(false)
-    const [emailInput, setEmailInput] = useState('')
-    const [sendingEmail, setSendingEmail] = useState(false)
-
-    useEffect(() => {
-        if (dte) {
-            setEmailInput(dte.receptor_email || '')
-        }
-    }, [dte])
+    // Hooks moved above early return to comply with React rules of hooks
 
     const handlePrint = () => {
         const printContent = document.getElementById('printable-dte-area');
