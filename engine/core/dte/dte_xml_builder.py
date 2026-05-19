@@ -16,7 +16,7 @@ class DTEXMLBuilder:
         """
         tipo_dte = dte_data.get("tipo_dte")
         folio = dte_data.get("folio")
-        fecha = dte_data.get("fecha_emision", datetime.date.today().isoformat())
+        fecha = dte_data.get("fecha_emision") or datetime.date.today().isoformat()
         
         # Estructura básica simplificada (Para ser extendida con el esquema completo del SII)
         # NOTA: El SII requiere un formato muy específico y namespaces.
@@ -62,8 +62,8 @@ class DTEXMLBuilder:
         """
         Envuelve uno o más DTEs firmados en un EnvioDTE para ser enviado al SII.
         """
-        fecha_resolucion = self.company.get('resolucion_fecha', '2014-08-22')
-        nro_resolucion = self.company.get('resolucion_numero', 0)
+        fecha_resolucion = self.company.get('resolucion_fecha') or '2014-08-22'
+        nro_resolucion = self.company.get('resolucion_numero') or 0
         
         envio_id = f"SetDoc_{dte_data.get('folio', 1)}"
         

@@ -126,7 +126,7 @@ class DTELogic:
             "company_id": self.company_data["id"],
             "tipo_dte": tipo_dte,
             "folio": folio,
-            "fecha_emision": invoice_data.get("fecha_emision", "2026-05-15"),
+            "fecha_emision": invoice_data.get("fecha_emision") or datetime.date.today().isoformat(),
             "receptor_rut": invoice_data["receptor_rut"],
             "receptor_razon_social": invoice_data["receptor_razon_social"],
             "monto_neto": invoice_data["monto_neto"],
