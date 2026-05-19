@@ -92,6 +92,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
     const [showEmailForm, setShowEmailForm] = useState(false)
     const [emailInput, setEmailInput] = useState('')
     const [sendingEmail, setSendingEmail] = useState(false)
+    const [generatingPDF, setGeneratingPDF] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -170,60 +171,64 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
 
     // Hooks moved above early return to comply with React rules of hooks
 
-    const handlePrint = () => {
-        const printContent = document.getElementById('printable-dte-area');
-        if (!printContent) {
-            toast.error('No se pudo encontrar el área de impresión.');
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('printable-dte-area');
+        if (!element) {
+            toast.error('No se pudo encontrar el área del documento para exportar.');
             return;
         }
 
-        const winPrint = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
-        if (!winPrint) {
-            toast.error('Por favor, permita las ventanas emergentes para poder imprimir o descargar el PDF.');
-            return;
-        }
+        setGeneratingPDF(true);
+        const toastId = toast.loading('Generando PDF de alta definición...');
 
-        winPrint.document.write(`
-            <html>
-                <head>
-                    <title>${dteTypeLabel}_Folio_${dte.folio}</title>
-                    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
-                        body {
-                            font-family: 'Inter', sans-serif;
-                            background-color: white;
-                            color: #1e293b;
-                            padding: 30px;
-                            -webkit-print-color-adjust: exact !important;
-                            print-color-adjust: exact !important;
-                        }
-                        .bg-slate-50 { background-color: #f8fafc !important; }
-                        .bg-rose-50\\/20 { background-color: rgba(254, 242, 242, 0.2) !important; }
-                        .bg-rose-100 { background-color: #ffe4e6 !important; }
-                        .border-rose-600 { border-color: #e11d48 !important; }
-                        .text-rose-600 { color: #e11d48 !important; }
-                        @media print {
-                            body { padding: 0; }
-                            .no-print { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="max-w-3xl mx-auto p-4 bg-white border border-gray-100 rounded-3xl">
-                        ${printContent.innerHTML}
-                    </div>
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                            setTimeout(function() { window.close(); }, 500);
-                        };
-                    </script>
-                </body>
-            </html>
-        `);
-        winPrint.document.close();
-        winPrint.focus();
+        try {
+            // Importaciones dinámicas de jsPDF y html2canvas-pro
+            const html2canvas = (await import('html2canvas-pro')).default;
+            const { jsPDF } = await import('jspdf');
+
+            // Renderizar el contenedor del DTE con escala 2x para perfecta legibilidad de textos y códigos
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowWidth: 794, // Ancho ideal para emular hoja de impresión en pixel a 96 DPI
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const margin = 10;
+            const contentWidth = pdfWidth - (margin * 2);
+            
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = imgWidth / imgHeight;
+            const contentHeight = contentWidth / ratio;
+
+            // Si es más alto que la página, lo escalamos para que quepa en la primera plana, respetando los márgenes
+            const positionY = contentHeight < (pdfHeight - margin * 2) 
+                ? (pdfHeight - contentHeight) / 2 
+                : margin;
+
+            pdf.addImage(imgData, 'JPEG', margin, positionY, contentWidth, contentHeight, undefined, 'FAST');
+            pdf.save(`DTE_${dte.tipo_dte}_Folio_${dte.folio}.pdf`);
+            
+            toast.success('Documento PDF descargado exitosamente.', { id: toastId });
+        } catch (err: any) {
+            console.error('Error al generar PDF:', err);
+            toast.error('Error al generar el PDF: ' + err.message, { id: toastId });
+        } finally {
+            setGeneratingPDF(false);
+        }
     };
 
     const handleSendEmail = async () => {
@@ -317,11 +322,16 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        onClick={handlePrint}
+                                        onClick={handleDownloadPDF}
+                                        disabled={generatingPDF}
                                         className="rounded-xl h-10 px-4 text-xs font-black uppercase tracking-wider border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2"
                                     >
-                                        <Printer className="w-4 h-4 text-primary" />
-                                        Imprimir / PDF
+                                        {generatingPDF ? (
+                                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                        ) : (
+                                            <Download className="w-4 h-4 text-primary" />
+                                        )}
+                                        {generatingPDF ? 'Generando...' : 'Descargar PDF'}
                                     </Button>
                                     <Button 
                                         variant="outline" 
