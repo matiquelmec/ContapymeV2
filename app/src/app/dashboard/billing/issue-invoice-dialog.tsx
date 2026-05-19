@@ -65,7 +65,9 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
     const [receptor, setReceptor] = useState({
         rut: '',
         razon_social: '',
-        giro: ''
+        giro: '',
+        direccion: '',
+        comuna: ''
     })
     const [items, setItems] = useState<DTEItem[]>([
         { id: crypto.randomUUID(), product_name: '', quantity: 1, unit_price: 0, total_amount: 0, is_exempt: false }
@@ -100,19 +102,39 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
             // Debounce manual
             const timeoutId = setTimeout(async () => {
                 try {
-                    const { data } = await supabase
-                        .from('sales_records')
-                        .select('receptor_razon_social')
+                    // Consultar último DTE emitido a este RUT en dte_issued para autocompletar dirección, comuna, giro y razón social
+                    const { data, error } = await supabase
+                        .from('dte_issued')
+                        .select('receptor_razon_social, receptor_giro, receptor_direccion, receptor_comuna')
                         .eq('receptor_rut', formatted)
                         .order('created_at', { ascending: false })
                         .limit(1)
                         .maybeSingle();
 
-                    if (data?.receptor_razon_social) {
-                        setReceptor(prev => ({ ...prev, razon_social: data.receptor_razon_social }));
+                    if (data) {
+                        setReceptor(prev => ({ 
+                            ...prev, 
+                            razon_social: data.receptor_razon_social || prev.razon_social,
+                            giro: data.receptor_giro || prev.giro || '',
+                            direccion: data.receptor_direccion || '',
+                            comuna: data.receptor_comuna || ''
+                        }));
+                    } else {
+                        // Fallback a sales_records
+                        const { data: salesData } = await supabase
+                            .from('sales_records')
+                            .select('receptor_razon_social')
+                            .eq('receptor_rut', formatted)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        if (salesData?.receptor_razon_social) {
+                            setReceptor(prev => ({ ...prev, razon_social: salesData.receptor_razon_social }));
+                        }
                     }
                 } catch (err) {
-                    console.error("Error looking up Razón Social:", err);
+                    console.error("Error looking up rich receptor details:", err);
                 }
             }, 500);
 
@@ -185,7 +207,9 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                 tipo_dte: parseInt(tipoDte),
                 receptor_rut: receptor.rut,
                 receptor_razon_social: receptor.razon_social,
-                receptor_giro: receptor.giro,
+                receptor_giro: receptor.giro || undefined,
+                receptor_direccion: receptor.direccion || undefined,
+                receptor_comuna: receptor.comuna || undefined,
                 monto_neto: totals.neto,
                 monto_iva: totals.iva,
                 monto_total: totals.total,
@@ -207,7 +231,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                     onAction: () => {
                         // Aquí iría la lógica para abrir el PDF
                         onOpenChange(false)
-                        setReceptor({ rut: '', razon_social: '', giro: '' })
+                        setReceptor({ rut: '', razon_social: '', giro: '', direccion: '', comuna: '' })
                         setItems([{ id: crypto.randomUUID(), product_name: '', quantity: 1, unit_price: 0, total_amount: 0, is_exempt: false }])
                     }
                 })
@@ -313,10 +337,37 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 <div className="md:col-span-8 space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Razón Social</Label>
                                     <Input 
-                                        placeholder="Nombre completo" 
+                                        placeholder="Nombre completo o Razón Social" 
                                         className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white font-bold"
                                         value={receptor.razon_social}
                                         onChange={e => setReceptor({...receptor, razon_social: e.target.value})}
+                                    />
+                                </div>
+                                <div className="md:col-span-4 space-y-2">
+                                    <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Giro Comercial</Label>
+                                    <Input 
+                                        placeholder="Giro (ej: Venta al por menor)" 
+                                        className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
+                                        value={receptor.giro}
+                                        onChange={e => setReceptor({...receptor, giro: e.target.value})}
+                                    />
+                                </div>
+                                <div className="md:col-span-5 space-y-2">
+                                    <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Dirección Comercial</Label>
+                                    <Input 
+                                        placeholder="Ej: Av. España 1230" 
+                                        className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
+                                        value={receptor.direccion}
+                                        onChange={e => setReceptor({...receptor, direccion: e.target.value})}
+                                    />
+                                </div>
+                                <div className="md:col-span-3 space-y-2">
+                                    <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Comuna</Label>
+                                    <Input 
+                                        placeholder="Ej: Punta Arenas" 
+                                        className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
+                                        value={receptor.comuna}
+                                        onChange={e => setReceptor({...receptor, comuna: e.target.value})}
                                     />
                                 </div>
                             </div>

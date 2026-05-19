@@ -82,6 +82,8 @@ export async function issueDTE(formData: {
   receptor_rut: string
   receptor_razon_social: string
   receptor_giro?: string
+  receptor_direccion?: string
+  receptor_comuna?: string
   monto_neto: number
   monto_iva: number
   monto_total: number
