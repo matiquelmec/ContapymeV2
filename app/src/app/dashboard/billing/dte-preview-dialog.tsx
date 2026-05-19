@@ -121,6 +121,21 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
         return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(value || 0)
     }
 
+    const formatDTEDate = (dateVal: any) => {
+        if (!dateVal) return '—'
+        try {
+            // Si es un Date o string, forzamos formatearlo considerando la zona horaria del documento (UTC / local sin offset)
+            const dateStr = typeof dateVal === 'string' ? dateVal.split('T')[0] : new Date(dateVal).toISOString().split('T')[0]
+            const parts = dateStr.split('-')
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`
+            }
+        } catch (e) {
+            console.error('Error formatting date', e)
+        }
+        return new Date(dateVal).toLocaleDateString('es-CL')
+    }
+
     const handleCopyXML = () => {
         if (!dte.xml_content) return
         navigator.clipboard.writeText(dte.xml_content)
@@ -416,7 +431,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">DESPACHO / INFO</p>
                                         <p><strong className="text-slate-500 font-bold">DIRECCIÓN:</strong> {receptorDir}</p>
                                         <p><strong className="text-slate-500 font-bold">COMUNA:</strong> {receptorComuna}</p>
-                                        <p className="flex items-center gap-1.5 mt-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> <strong className="text-slate-500 font-bold">FECHA:</strong> {dte.fecha_emision ? new Date(dte.fecha_emision).toLocaleDateString('es-CL') : '—'}</p>
+                                        <p className="flex items-center gap-1.5 mt-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> <strong className="text-slate-500 font-bold">FECHA:</strong> {formatDTEDate(dte.fecha_emision)}</p>
                                     </div>
                                 </div>
 
