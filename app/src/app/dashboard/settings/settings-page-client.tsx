@@ -670,6 +670,7 @@ export default function SettingsPageClient({
                         onChange={(e) => setDteForm({ ...dteForm, cert_password: e.target.value })}
                         placeholder="••••••••••••"
                         className="font-mono pr-12"
+                        autoComplete="new-password"
                       />
                       <Button
                         type="button"
