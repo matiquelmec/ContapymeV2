@@ -11,7 +11,7 @@ import {
   Save, UserCircle, Building2, Users2, Shield, Loader2, 
   CheckCircle2, Mail, Phone, MapPin, FileText, Globe, UserCog,
   History, Fingerprint, Activity, Plus, Trash2, X, Send, 
-  UploadCloud, FileUp, AlertTriangle, Info
+  UploadCloud, FileUp, AlertTriangle, Info, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
@@ -110,6 +110,8 @@ export default function SettingsPageClient({
     resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
     cert_password: "",
   });
+
+  const [showCertPassword, setShowCertPassword] = useState(false);
 
   useEffect(() => {
     setProfileForm({
@@ -661,13 +663,23 @@ export default function SettingsPageClient({
                 <div className="p-6 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem] space-y-6">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">CONTRASEÑA DEL CERTIFICADO</Label>
-                    <PInput
-                      type="password"
-                      value={dteForm.cert_password}
-                      onChange={(e) => setDteForm({ ...dteForm, cert_password: e.target.value })}
-                      placeholder="••••••••••••"
-                      className="font-mono"
-                    />
+                    <div className="relative">
+                      <PInput
+                        type={showCertPassword ? "text" : "password"}
+                        value={dteForm.cert_password}
+                        onChange={(e) => setDteForm({ ...dteForm, cert_password: e.target.value })}
+                        placeholder="••••••••••••"
+                        className="font-mono pr-12"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground hover:bg-transparent h-10 w-10 p-0 rounded-full"
+                        onClick={() => setShowCertPassword(!showCertPassword)}
+                      >
+                        {showCertPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </Button>
+                    </div>
                     <p className="text-[9px] text-muted-foreground/60 italic ml-1">
                       Clave de seguridad provista al comprar su firma digital.
                     </p>
