@@ -464,17 +464,32 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                                             <span className="text-[8px] font-black uppercase tracking-wider text-slate-600">Timbre Electrónico SII</span>
                                             <span className="text-[7px] font-bold text-slate-400">Res. 80 del 2014</span>
                                         </div>
-                                        {/* Styled Barcode Matrix Grid Mockup */}
-                                        <div className="w-full h-16 bg-white flex flex-wrap content-start overflow-hidden opacity-85 gap-0.5 filter blur-[0.3px]">
-                                            {Array.from({ length: 90 }).map((_, i) => (
-                                                <div 
-                                                    key={i} 
-                                                    className="h-1 bg-slate-900 rounded-sm" 
-                                                    style={{ 
-                                                        width: `\${[6, 12, 18, 4, 10, 8, 14, 2][i % 8]}px`,
-                                                        opacity: (i % 3 === 0) ? 0.3 : 0.95 
-                                                    }} 
-                                                />
+                                        {/* Matriz del Timbre PDF417 Premium y compatible con html2canvas */}
+                                        <div 
+                                            className="w-full bg-white flex flex-col gap-[2px] p-1 overflow-hidden"
+                                            style={{ minHeight: '64px' }}
+                                        >
+                                            {Array.from({ length: 8 }).map((_, rowIndex) => (
+                                                <div key={rowIndex} className="w-full flex justify-between gap-[1px]">
+                                                    {Array.from({ length: 32 }).map((_, colIndex) => {
+                                                        const keyVal = (rowIndex * 32) + colIndex;
+                                                        const barWidths = [1, 2, 3, 5, 2, 4, 1, 3, 2, 1, 4, 2];
+                                                        const width = barWidths[keyVal % barWidths.length];
+                                                        const isWhite = (keyVal % 3 === 0) || (keyVal % 7 === 0);
+                                                        
+                                                        return (
+                                                            <div 
+                                                                key={colIndex}
+                                                                style={{
+                                                                    flexGrow: width,
+                                                                    height: '6px',
+                                                                    backgroundColor: isWhite ? 'transparent' : '#0f172a',
+                                                                    opacity: isWhite ? 0 : 0.95
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
                                             ))}
                                         </div>
                                         <span className="text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-2">Verifique documento en www.sii.cl</span>
