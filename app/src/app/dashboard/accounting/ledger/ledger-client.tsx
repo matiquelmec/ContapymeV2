@@ -585,14 +585,23 @@ export default function LedgerClient({ organizationId, accounts, orgName, orgRut
       )}
 
       {!ledgerData && !loading && (
-        <div className="flex flex-col items-center justify-center py-32 bg-card border-4 border-dashed rounded-[2.5rem] opacity-60 border-border shadow-inner animate-pulse">
-           <div className="bg-white p-8 rounded-3xl shadow-2xl mb-8 border border-border">
-            <BookOpen className="h-16 w-16 text-primary/20" />
+        <div className="flex flex-col items-center justify-center py-24 bg-card border border-border/80 rounded-[2.5rem] shadow-xl relative overflow-hidden bg-gradient-to-tr from-slate-50 via-white to-primary/[0.02] group">
+           {/* Subtle decorative glow */}
+           <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
+           
+           <div className="relative z-10 flex flex-col items-center max-w-md text-center px-6">
+             <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 mb-6 group-hover:scale-105 transition-transform duration-300">
+               <BookOpen className="h-12 w-12 text-primary" />
+             </div>
+             <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">Visualizador del Mayor</h3>
+             <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mt-1 mb-4">Módulo de Mayorización Dinámica</p>
+             <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8">
+               Para comenzar el análisis transaccional IFRS, selecciona una cuenta contable estratégica y define el rango de fechas en la barra superior.
+             </p>
+             <div className="flex items-center gap-3 py-2.5 px-5 bg-primary/5 border border-primary/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">
+               <Info className="w-3.5 h-3.5" /> Selecciona una cuenta arriba para comenzar
+             </div>
            </div>
-           <h3 className="text-xl font-black uppercase tracking-tight text-foreground">Requerimiento de Consulta</h3>
-           <p className="text-muted-foreground text-sm font-bold italic max-w-sm text-center mt-3 leading-relaxed">
-             Seleccione la cuenta analítica y determine el rango temporal para generar el reporte de mayorización dinámica.
-           </p>
         </div>
       )}
 

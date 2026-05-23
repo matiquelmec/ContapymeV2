@@ -212,15 +212,23 @@ export default function LREClient({
                 </TableHeader>
                 <TableBody className="divide-y divide-border/50">
                   {books.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-24 text-muted-foreground border-border border-2 border-dashed m-10 rounded-[2rem] bg-muted/5">
-                        <div className="bg-muted/20 p-8 rounded-full inline-block mb-6">
-                            <Clock className="w-16 h-16 text-muted-foreground/20" />
-                        </div>
-                        <p className="font-black uppercase text-xl tracking-[0.2em] text-foreground/30">Sin Libros Emitidos</p>
-                        <p className="text-sm font-bold mt-2 italic max-w-xs mx-auto">Inicie un proceso de consolidación utilizando el panel superior.</p>
-                      </TableCell>
-                    </TableRow>
+                     <TableRow>
+                       <TableCell colSpan={6} className="p-10">
+                         <div className="flex flex-col items-center justify-center py-20 bg-muted/5 border border-dashed border-border rounded-[2rem] text-center bg-gradient-to-tr from-slate-50 to-emerald-500/[0.01]">
+                           <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 mb-6">
+                             <FileSpreadsheet className="h-10 w-10 text-primary" />
+                           </div>
+                           <h3 className="text-base font-black uppercase tracking-tight text-slate-800">Historial LRE Vacío</h3>
+                           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 mb-3">CONSOLIDACIÓN ELECTRÓNICA DE REMUNERACIONES</p>
+                           <p className="text-xs text-slate-500 max-w-xs leading-relaxed mb-6 font-medium">
+                             No se registran libros emitidos para esta organización en el historial. Selecciona un período fiscal en el panel superior para generar el archivo mensual de 147 columnas.
+                           </p>
+                           <div className="flex items-center gap-2 py-2 px-4 bg-emerald-50 border border-emerald-100 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-700">
+                             <Info className="w-3.5 h-3.5" /> Genera un nuevo libro arriba
+                           </div>
+                         </div>
+                       </TableCell>
+                     </TableRow>
                   ) : (
                     books.map((book) => (
                       <TableRow key={book.id} className="border-border hover:bg-emerald-600/[0.01] transition-colors group">
