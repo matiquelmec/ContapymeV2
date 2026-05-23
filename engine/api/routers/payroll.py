@@ -16,7 +16,7 @@ from calculators.chilean_payroll import (
     calcular_liquidacion,
     to_db_dict,
 )
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.logger import log_activity
 from fastapi import Depends
 from calculators.national_params import (
@@ -46,6 +46,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
       - Parámetros de EMPRESA → Se leen de organization_payroll_settings (manuales)
       - Indicadores (UF/UTM) → Se buscan en economic_indicators por fecha (históricos)
     """
+    await verify_org_role(req.org_id, auth=current_user)
     db = get_supabase()
 
     try:
@@ -259,22 +260,22 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
                     db.table("journal_entries").delete().eq("id", e["id"]).execute()
 
-                # c) Crear el asiento consolidado final vía RPC
-                db.rpc("create_journal_entry_with_lines", {
+                # c) Crear el asiento consolidado final vía RPC (retorna el UUID del asiento)
+                res_rpc = db.rpc("create_journal_entry_with_lines", {
                     "p_organization_id": req.org_id,
                     "p_fecha": fecha_asiento,
                     "p_glosa": glosa_centralizacion,
                     "p_lines": journal_lines
                 }).execute()
+                
+                journal_entry_id = res_rpc.data
 
-                # d) Marcar el asiento recién creado con su ADN exacto para el índice único
-                db.table("journal_entries") \
-                    .update({"source_type": "NOMINA", "source_id": periodo_clean}) \
-                    .eq("organization_id", req.org_id) \
-                    .eq("fecha", fecha_asiento) \
-                    .eq("glosa", glosa_centralizacion) \
-                    .is_("source_type", "null") \
-                    .execute()
+                # d) Marcar el asiento recién creado con su ADN exacto para el índice único usando el UUID directo
+                if journal_entry_id:
+                    db.table("journal_entries") \
+                        .update({"source_type": "NOMINA", "source_id": periodo_clean}) \
+                        .eq("id", journal_entry_id) \
+                        .execute()
 
                 logger.info(f"🏦 Asiento de centralización (idempótico metadata) exitoso para {req.periodo}")
 

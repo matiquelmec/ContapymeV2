@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
 import { inviteMember, deleteInvitation, getPendingInvitations } from "@/actions/members";
 import { getAuditLogs, getAuditActions } from "@/actions/audit";
-import { updateDTEConfig, uploadCAF, uploadPFX } from "@/actions/billing";
+import { updateDTEConfig, uploadCAF, uploadPFX, getCAFRecords } from "@/actions/billing";
 import { formatRUT, cleanRUT } from "@/lib/utils/rut";
 import { cn } from "@/lib/utils";
 import { 
@@ -62,6 +62,7 @@ export default function SettingsPageClient({
   const [loadingCAF, setLoadingCAF] = useState(false);
   const [loadingCert, setLoadingCert] = useState(false);
   const [cafRecords, setCafRecords] = useState<any[]>(initialCAFRecords || []);
+  const [hasCert, setHasCert] = useState(!!initialDTEConfig?.cert_path);
   const [cafEnv, setCafEnv] = useState<'certification' | 'production'>('certification');
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -136,17 +137,19 @@ export default function SettingsPageClient({
   useEffect(() => {
     setDteForm({
       id: initialDTEConfig?.id || null,
-      rut: initialDTEConfig?.rut ? formatRUT(initialDTEConfig.rut) : "",
-      razon_social: initialDTEConfig?.razon_social || "",
-      giro: initialDTEConfig?.giro || "",
-      direccion: initialDTEConfig?.direccion || "",
-      comuna: initialDTEConfig?.comuna || "",
-      ciudad: initialDTEConfig?.ciudad || "",
+      rut: initialDTEConfig?.rut ? formatRUT(initialDTEConfig.rut) : (orgForm.rut_empresa || ""),
+      razon_social: initialDTEConfig?.razon_social || orgForm.nombre || "",
+      giro: initialDTEConfig?.giro || orgForm.giro || "",
+      direccion: initialDTEConfig?.direccion || orgForm.direccion || "",
+      comuna: initialDTEConfig?.comuna || orgForm.comuna || "",
+      ciudad: initialDTEConfig?.ciudad || orgForm.region || "",
       acteco: initialDTEConfig?.acteco || "",
       resolucion_numero: initialDTEConfig?.resolucion_numero || "",
       resolucion_fecha: initialDTEConfig?.resolucion_fecha || "",
       cert_password: "",
     });
+    setHasCert(!!initialDTEConfig?.cert_path);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDTEConfig]);
 
   const handleSaveProfile = async () => {
@@ -256,7 +259,13 @@ export default function SettingsPageClient({
             title: 'Folios Cargados',
             description: res.message || 'El archivo CAF ha sido procesado e inyectado correctamente en el sistema.',
             actionLabel: 'Aceptar',
-            onAction: () => window.location.reload()
+            onAction: async () => {
+              setStatusModal(prev => ({ ...prev, open: false }));
+              const newCafs = await getCAFRecords(organizationId);
+              if (newCafs.success) {
+                setCafRecords(newCafs.data);
+              }
+            }
           });
         } else {
           setStatusModal({
@@ -310,7 +319,10 @@ export default function SettingsPageClient({
             title: 'Certificado Protegido',
             description: 'El certificado digital ha sido almacenado de forma encriptada y su contraseña ha sido protegida mediante cifrado simétrico AES-256.',
             actionLabel: 'Aceptar',
-            onAction: () => window.location.reload()
+            onAction: () => {
+              setStatusModal(prev => ({ ...prev, open: false }));
+              setHasCert(true);
+            }
           });
         } else {
           setStatusModal({
@@ -518,9 +530,32 @@ export default function SettingsPageClient({
             
             {/* IDENTIDAD DTE */}
             <div className="space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5" /> CREDENCIALES TRIBUTARIAS
-              </p>
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5" /> CREDENCIALES TRIBUTARIAS
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setDteForm(prev => ({
+                      ...prev,
+                      rut: orgForm.rut_empresa || prev.rut,
+                      razon_social: orgForm.nombre || prev.razon_social,
+                      giro: orgForm.giro || prev.giro,
+                      direccion: orgForm.direccion || prev.direccion,
+                      comuna: orgForm.comuna || prev.comuna,
+                      ciudad: orgForm.region || prev.ciudad,
+                    }));
+                    toast.success("Autocompletado Mágico", {
+                        description: "Los datos han sido sincronizados con la ficha de Empresa."
+                    });
+                  }}
+                  className="rounded-xl h-9 px-4 text-[10px] font-black uppercase tracking-widest text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Autocompletar desde Empresa
+                </Button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 sm:p-6 md:p-8 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem]">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">RUT EMISOR</Label>
@@ -624,7 +659,7 @@ export default function SettingsPageClient({
                 <div className="p-6 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estado del Certificado</Label>
-                    {initialDTEConfig?.cert_path ? (
+                    {hasCert ? (
                       <div className="p-4 bg-emerald-500/[0.03] border-2 border-emerald-500/10 rounded-2xl flex gap-4 items-center">
                         <div className="p-2.5 bg-emerald-500/10 rounded-xl shrink-0">
                           <Shield className="w-5 h-5 text-emerald-600" />

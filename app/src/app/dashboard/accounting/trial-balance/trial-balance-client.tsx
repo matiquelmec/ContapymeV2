@@ -151,9 +151,15 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     
     try {
       const doc = new jsPDF();
-      const integrityHash = `SHA256-${Math.random().toString(36).substring(2, 15).toUpperCase()}`;
-    const verifyUrl = `https://contapymepuq.cl/verify/tb-${organizationId.slice(0,8)}`;
-    const qrBase64 = await fetchQRBase64(verifyUrl);
+      
+      // Calcular hash SHA-256 real sobre los datos del balance para integridad forense
+      const msgUint8 = new TextEncoder().encode(JSON.stringify(data));
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const integrityHash = `SHA256-${hashArray.map(b => b.toString(16).padStart(2, "0")).toUpperCase()}`;
+
+      const verifyUrl = `https://contapymepuq.cl/verify/tb-${organizationId.slice(0,8)}`;
+      const qrBase64 = await fetchQRBase64(verifyUrl);
     
     // Header
     doc.setFontSize(20);

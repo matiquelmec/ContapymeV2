@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from core.database import get_supabase
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.logger import log_activity
 
 router = APIRouter()
@@ -518,7 +518,11 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
 
 
 @router.get("/chart-of-accounts")
-async def get_chart_of_accounts(organization_id: str):
+async def get_chart_of_accounts(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     res = db.table("chart_of_accounts").select("*").eq("organization_id", organization_id).order("codigo").execute()
     return res.data or []
@@ -579,8 +583,12 @@ async def update_account(account_id: str, req: UpdateAccountRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/chart-of-accounts/stats")
-async def get_chart_stats(organization_id: str):
+async def get_chart_stats(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """Obtiene estadísticas de salud del plan de cuentas."""
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("chart_of_accounts").select("*").eq("organization_id", organization_id).execute()
@@ -599,13 +607,30 @@ async def get_chart_stats(organization_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/trial-balance")
-async def get_trial_balance(organization_id: str, start_date: str, end_date: str):
+async def get_trial_balance(
+    organization_id: str, 
+    start_date: str, 
+    end_date: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Genera el Balance de Comprobación y Saldos (Trial Balance) con integridad histórica.
     Calcula: 
     1. Sumas del Periodo (Debe/Haber).
     2. Saldos Finales Acumulados (Deudor/Acreedor) incluyendo arrastre anterior.
     """
+    await verify_org_role(organization_id, auth=current_user)
+    
+    # Registrar visualización de balance en bitácora de auditoría
+    log_activity(
+        action="view_trial_balance",
+        organization_id=organization_id,
+        user_id=current_user.get("user_id"),
+        entity_type="accounting_period",
+        entity_id=f"{organization_id}_{start_date}_{end_date}",
+        details={"start_date": start_date, "end_date": end_date}
+    )
+    
     db = get_supabase()
     try:
         # 1. Obtener TODO el Plan de Cuentas para asegurar integridad
@@ -630,9 +655,9 @@ async def get_trial_balance(organization_id: str, start_date: str, end_date: str
                 "saldo_acreedor": 0
             }
 
-        # 2. CÁLCULO DE SALDO ANTERIOR
+        # 2. CÁLCULO DE SALDO ANTERIOR (Optimizado: Omitimos organization_id en select de relación)
         prev_res = db.table("journal_entry_lines") \
-            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha, organization_id)") \
+            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha)") \
             .eq("journal_entries.organization_id", organization_id) \
             .lt("journal_entries.fecha", start_date) \
             .execute()
@@ -649,9 +674,9 @@ async def get_trial_balance(organization_id: str, start_date: str, end_date: str
             else:
                 accounts_data[code]["saldo_anterior"] -= monto
 
-        # 3. MOVIMIENTOS DEL PERIODO
+        # 3. MOVIMIENTOS DEL PERIODO (Optimizado: Omitimos organization_id en select de relación)
         period_res = db.table("journal_entry_lines") \
-            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha, organization_id)") \
+            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha)") \
             .eq("journal_entries.organization_id", organization_id) \
             .gte("journal_entries.fecha", start_date) \
             .lte("journal_entries.fecha", end_date) \
@@ -691,8 +716,26 @@ async def get_trial_balance(organization_id: str, start_date: str, end_date: str
         raise HTTPException(status_code=500, detail=f"Falla crítica en cálculo de balance: {str(e)}")
 
 @router.get("/ledger")
-async def get_ledger(organization_id: str, account_code: str, start_date: Optional[str] = None, end_date: Optional[str] = None):
+async def get_ledger(
+    organization_id: str, 
+    account_code: str, 
+    start_date: Optional[str] = None, 
+    end_date: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
     """Obtiene el libro mayor con saldo acumulado y SALDO ANTERIOR (Apertura)."""
+    await verify_org_role(organization_id, auth=current_user)
+    
+    # Registrar visualización de libro mayor en bitácora de auditoría
+    log_activity(
+        action="view_ledger",
+        organization_id=organization_id,
+        user_id=current_user.get("user_id"),
+        entity_type="account",
+        entity_id=f"{organization_id}_{account_code}",
+        details={"account_code": account_code, "start_date": start_date, "end_date": end_date}
+    )
+    
     db = get_supabase()
     account_code = account_code.strip()
     
@@ -787,8 +830,25 @@ async def get_ledger(organization_id: str, account_code: str, start_date: Option
         raise HTTPException(status_code=500, detail=f"Error en auditoría de mayor: {str(e)}")
 
 @router.get("/reports")
-async def get_financial_reports(organization_id: str, year: int, month: Optional[int] = None):
+async def get_financial_reports(
+    organization_id: str, 
+    year: int, 
+    month: Optional[int] = None,
+    current_user: dict = Depends(verify_token)
+):
     """Genera Estado de Resultados y Balance General."""
+    await verify_org_role(organization_id, auth=current_user)
+    
+    # Registrar visualización de reportes financieros en bitácora de auditoría
+    log_activity(
+        action="view_financial_reports",
+        organization_id=organization_id,
+        user_id=current_user.get("user_id"),
+        entity_type="financial_report",
+        entity_id=f"{organization_id}_{year}_{month or 'annual'}",
+        details={"year": year, "month": month}
+    )
+    
     db = get_supabase()
     try:
         import calendar
@@ -897,8 +957,12 @@ async def get_financial_reports(organization_id: str, year: int, month: Optional
 
 
 @router.get("/config")
-async def get_accounting_config_endpoint(organization_id: str):
+async def get_accounting_config_endpoint(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """Retorna todas las configuraciones contables activas."""
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("centralized_account_config").select("*").eq("organization_id", organization_id).execute()
@@ -989,8 +1053,12 @@ async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountin
 # --- ENDPOINTS PARA REGLAS DE MAPEO (RCV ENTITY MAPPING) ---
 
 @router.get("/mapping-rules")
-async def get_mapping_rules(organization_id: str):
+async def get_mapping_rules(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """Obtiene las reglas de mapeo específicas (RUT -> Cuenta)."""
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("account_mapping_rules") \
@@ -1035,11 +1103,16 @@ def get_iso_time():
     return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).replace(microsecond=0).isoformat()
 
 @router.get("/lce_mayor")
-async def export_lce_mayor_xml(organization_id: str, periodo: str):
+async def export_lce_mayor_xml(
+    organization_id: str, 
+    periodo: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Genera el archivo XML Oficial del SII LceEnvioLibros -> LceMayor y LceMayorRes.
     Periodo debe venir en formato YYYY-MM.
     """
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         # 1. Obtener datos Organización
