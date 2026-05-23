@@ -156,7 +156,7 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
       const msgUint8 = new TextEncoder().encode(JSON.stringify(data));
       const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const integrityHash = `SHA256-${hashArray.map(b => b.toString(16).padStart(2, "0")).toUpperCase()}`;
+      const integrityHash = `SHA256-${hashArray.map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
 
       const verifyUrl = `https://contapymepuq.cl/verify/tb-${organizationId.slice(0,8)}`;
       const qrBase64 = await fetchQRBase64(verifyUrl);
