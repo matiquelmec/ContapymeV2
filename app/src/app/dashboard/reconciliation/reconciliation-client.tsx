@@ -6,11 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark, Plus } from 'lucide-react'
+import { UploadCloud, CheckCircle2, CircleDashed, ArrowRightLeft, FileType, XCircle, Search, History, Landmark, Plus, Save, Loader2 } from 'lucide-react'
 import { analyzeBankStatementAction, saveReconciliationAction, reconcileWithAdjustmentAction } from '@/actions/bank-reconciliation'
 import { suggestAccountWithSovereignAI } from '@/actions/ai-classifier'
 import { toast } from 'sonner'
 import { fCurrency } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface BankAccount {
     id: string;
@@ -36,18 +47,55 @@ interface ReconciliationMatch {
 
 export function ReconciliationClient({ 
     accountingEntries,
-    bankAccounts,
+    bankAccounts: initialBankAccounts,
+    accounts,
     organizationId 
 }: { 
     accountingEntries: any[],
     bankAccounts: BankAccount[],
+    accounts: any[],
     organizationId: string
 }) {
+    const [bankAccounts, setBankAccounts] = useState<BankAccount[]>(initialBankAccounts)
     const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>('')
     const [file, setFile] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [matches, setMatches] = useState<ReconciliationMatch[]>([])
     const [error, setError] = useState<string | null>(null)
+    const [isBankDialogOpen, setIsBankDialogOpen] = useState(false)
+    const [newBank, setNewBank] = useState({
+        bank_name: "",
+        account_number: "",
+        account_type: "corriente",
+        chart_account_id: ""
+    })
+    const [creatingBank, setCreatingBank] = useState(false)
+
+    const handleCreateBank = async () => {
+        if (!newBank.bank_name || !newBank.account_number) {
+            toast.error("Complete el nombre y número de cuenta")
+            return
+        }
+        setCreatingBank(true)
+        const { createBankAccount } = await import("@/actions/bank-reconciliation")
+        try {
+            const result = await createBankAccount({
+                ...newBank,
+                organization_id: organizationId
+            })
+            if (result.success) {
+                toast.success("Cuenta bancaria registrada con éxito")
+                setIsBankDialogOpen(false)
+                window.location.reload()
+            } else {
+                toast.error(result.error || "Error al registrar banco")
+            }
+        } catch (error) {
+            toast.error("Error al conectar con el motor bancario")
+        } finally {
+            setCreatingBank(false)
+        }
+    }
 
     // Si solo hay una cuenta, seleccionarla por defecto
     useEffect(() => {
@@ -213,17 +261,121 @@ export function ReconciliationClient({
         }
     }
 
+    if (bankAccounts.length === 0) {
+        return (
+            <div className="space-y-8 animate-in fade-in duration-700" suppressHydrationWarning={true}>
+                <div className="flex flex-col items-center justify-center py-24 bg-card border border-border/80 rounded-[2.5rem] shadow-xl relative overflow-hidden bg-gradient-to-tr from-slate-50 via-white to-primary/[0.02] group">
+                   {/* Glow decorativo sutil */}
+                   <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
+                   
+                   <div className="relative z-10 flex flex-col items-center max-w-md text-center px-6">
+                     <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 mb-6 group-hover:scale-105 transition-transform duration-300">
+                       <Landmark className="h-12 w-12 text-primary" />
+                     </div>
+                     <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">Cuentas Bancarias Vacías</h3>
+                     <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mt-1 mb-4">Conciliación Bancaria Persistente</p>
+                     <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8">
+                       No se han detectado cuentas corrientes configuradas para esta empresa. Registre su primera cuenta bancaria para habilitar la importación de cartolas y el cruce automatizado V2.
+                     </p>
+
+                     <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+                       <DialogTrigger render={
+                         <Button className="w-full inline-flex items-center justify-center gap-3 px-8 py-6 bg-primary hover:bg-primary/95 text-primary-foreground font-black uppercase text-xs tracking-widest rounded-3xl shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all">
+                           <Plus className="h-5 w-5" /> Registrar Cuenta Bancaria
+                         </Button>
+                       } />
+                       <DialogContent className="sm:max-w-[480px] rounded-[2.5rem] border-border bg-card shadow-2xl p-8">
+                         <DialogHeader className="space-y-4 pb-6 border-b border-border">
+                           <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">Nueva Cuenta Bancaria</DialogTitle>
+                           <DialogDescription className="text-xs font-bold italic text-muted-foreground leading-relaxed">
+                             Vincule su cuenta corriente al Plan de Cuentas para registrar automáticamente las conciliaciones.
+                           </DialogDescription>
+                         </DialogHeader>
+                         <div className="grid gap-6 py-8">
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-3">
+                               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Institución</Label>
+                               <Input 
+                                 placeholder="Ej: Santander"
+                                 value={newBank.bank_name}
+                                 onChange={(e) => setNewBank({...newBank, bank_name: e.target.value})}
+                                 className="bg-muted/10 border-2 border-border font-black h-12 rounded-2xl px-4"
+                               />
+                             </div>
+                             <div className="space-y-3">
+                               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tipo</Label>
+                               <Select 
+                                 value={newBank.account_type}
+                                 onValueChange={(val: string | null) => setNewBank({...newBank, account_type: val || "corriente"})}
+                               >
+                                 <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl font-black text-xs uppercase px-4">
+                                   <SelectValue />
+                                 </SelectTrigger>
+                                 <SelectContent className="bg-white border-border rounded-xl">
+                                   <SelectItem value="corriente" className="font-bold text-xs uppercase">Corriente</SelectItem>
+                                   <SelectItem value="vista" className="font-bold text-xs uppercase">Vista</SelectItem>
+                                   <SelectItem value="ahorro" className="font-bold text-xs uppercase">Ahorro</SelectItem>
+                                 </SelectContent>
+                               </Select>
+                             </div>
+                           </div>
+                           <div className="space-y-3">
+                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Número de Cuenta</Label>
+                             <Input 
+                               placeholder="000-1234567-8"
+                               value={newBank.account_number}
+                               onChange={(e) => setNewBank({...newBank, account_number: e.target.value})}
+                               className="bg-muted/10 border-2 border-border font-black h-12 rounded-2xl px-4"
+                             />
+                           </div>
+                           <div className="space-y-3">
+                             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vincular a Cuenta Contable (Libro Diario)</Label>
+                             <Select 
+                               onValueChange={(val: string | null) => setNewBank({...newBank, chart_account_id: val || ""})}
+                             >
+                               <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl px-6 font-black text-xs uppercase">
+                                 <SelectValue placeholder="Seleccione Cuenta en Plan de Cuentas" />
+                               </SelectTrigger>
+                               <SelectContent className="max-h-60 bg-white border-border rounded-2xl shadow-2xl p-2">
+                                 {accounts.filter((a: any) => a.codigo.startsWith('1.1.01') || a.nombre.toLowerCase().includes('banco')).map((acc: any) => (
+                                   <SelectItem key={acc.id} value={acc.id} className="font-bold text-[10px] uppercase">
+                                     {acc.codigo} - {acc.nombre}
+                                   </SelectItem>
+                                 ))}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                         </div>
+                         <DialogFooter className="border-t border-border pt-6 mt-4">
+                           <Button 
+                             onClick={handleCreateBank}
+                             disabled={creatingBank}
+                             className="w-full h-12 bg-primary text-primary-foreground font-extrabold uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/20 gap-2"
+                           >
+                             {creatingBank ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                             Registrar Cuenta Bancaria
+                           </Button>
+                         </DialogFooter>
+                       </DialogContent>
+                     </Dialog>
+
+                   </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-12 animate-in fade-in duration-700" suppressHydrationWarning={true}>
             
-            <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-center">
+            <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-end">
                 <div className="w-full md:w-80">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 block">Cuenta Bancaria Activa</label>
                     <Select value={selectedBankAccountId} onValueChange={(val) => setSelectedBankAccountId(val || '')}>
                         <SelectTrigger className="h-14 rounded-2xl bg-card border-border shadow-md font-black uppercase text-xs">
                             <SelectValue placeholder="Seleccione una cuenta..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white border-border rounded-xl">
                             {bankAccounts.map(acc => (
                                 <SelectItem key={acc.id} value={acc.id} className="font-bold text-xs uppercase">
                                     {acc.bank_name} - {acc.account_number}
@@ -232,6 +384,87 @@ export function ReconciliationClient({
                         </SelectContent>
                     </Select>
                 </div>
+
+                <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+                  <DialogTrigger render={
+                    <Button variant="outline" className="h-14 px-5 rounded-2xl border-2 border-dashed border-primary/30 hover:border-primary text-primary font-black uppercase text-xs tracking-wider transition-all gap-2 flex items-center justify-center shrink-0 w-full md:w-auto">
+                        <Plus className="w-5 h-5" /> Registrar Cuenta
+                    </Button>
+                  } />
+                  <DialogContent className="sm:max-w-[480px] rounded-[2.5rem] border-border bg-card shadow-2xl p-8">
+                    <DialogHeader className="space-y-4 pb-6 border-b border-border">
+                      <DialogTitle className="text-xl font-black uppercase tracking-tight text-foreground">Nueva Cuenta Bancaria</DialogTitle>
+                      <DialogDescription className="text-xs font-bold italic text-muted-foreground leading-relaxed">
+                        Vincule su cuenta corriente al Plan de Cuentas para registrar automáticamente las conciliaciones.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-6 py-8">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Institución</Label>
+                          <Input 
+                            placeholder="Ej: Santander"
+                            value={newBank.bank_name}
+                            onChange={(e) => setNewBank({...newBank, bank_name: e.target.value})}
+                            className="bg-muted/10 border-2 border-border font-black h-12 rounded-2xl px-4"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tipo</Label>
+                          <Select 
+                            value={newBank.account_type}
+                            onValueChange={(val: string | null) => setNewBank({...newBank, account_type: val || "corriente"})}
+                          >
+                            <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl font-black text-xs uppercase px-4">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-border rounded-xl">
+                              <SelectItem value="corriente" className="font-bold text-xs uppercase">Corriente</SelectItem>
+                              <SelectItem value="vista" className="font-bold text-xs uppercase">Vista</SelectItem>
+                              <SelectItem value="ahorro" className="font-bold text-xs uppercase">Ahorro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Número de Cuenta</Label>
+                        <Input 
+                          placeholder="000-1234567-8"
+                          value={newBank.account_number}
+                          onChange={(e) => setNewBank({...newBank, account_number: e.target.value})}
+                          className="bg-muted/10 border-2 border-border font-black h-12 rounded-2xl px-4"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vincular a Cuenta Contable (Libro Diario)</Label>
+                        <Select 
+                          onValueChange={(val: string | null) => setNewBank({...newBank, chart_account_id: val || ""})}
+                        >
+                          <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl px-6 font-black text-xs uppercase">
+                            <SelectValue placeholder="Seleccione Cuenta en Plan de Cuentas" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60 bg-white border-border rounded-2xl shadow-2xl p-2">
+                            {accounts.filter((a: any) => a.codigo.startsWith('1.1.01') || a.nombre.toLowerCase().includes('banco')).map((acc: any) => (
+                              <SelectItem key={acc.id} value={acc.id} className="font-bold text-[10px] uppercase">
+                                {acc.codigo} - {acc.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter className="border-t border-border pt-6 mt-4">
+                      <Button 
+                        onClick={handleCreateBank}
+                        disabled={creatingBank}
+                        className="w-full h-12 bg-primary text-primary-foreground font-extrabold uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/20 gap-2"
+                      >
+                        {creatingBank ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                        Registrar Cuenta Bancaria
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

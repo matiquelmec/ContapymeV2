@@ -28,8 +28,9 @@ export default async function ReconciliationPage() {
 
   // Consulta REFORZADA con join robusto
   const { getBankAccounts } = await import('@/actions/bank-reconciliation')
+  const { getChartOfAccounts } = await import('@/actions/accounting')
   
-  const [accountingEntriesRes, bankAccounts] = await Promise.all([
+  const [accountingEntriesRes, bankAccounts, accounts] = await Promise.all([
     supabase
       .from('journal_entry_lines')
       .select(`
@@ -45,7 +46,8 @@ export default async function ReconciliationPage() {
       .eq('journal_entries.organization_id', activeOrgId)
       .order('created_at', { ascending: false })
       .limit(100),
-    getBankAccounts(activeOrgId)
+    getBankAccounts(activeOrgId),
+    getChartOfAccounts(activeOrgId)
   ]);
 
   const { data: accountingEntries, error } = accountingEntriesRes;
@@ -146,6 +148,7 @@ export default async function ReconciliationPage() {
         key={activeOrgId}
         accountingEntries={accountingEntries || []} 
         bankAccounts={bankAccounts || []}
+        accounts={accounts || []}
         organizationId={activeOrgId}
       />
 
