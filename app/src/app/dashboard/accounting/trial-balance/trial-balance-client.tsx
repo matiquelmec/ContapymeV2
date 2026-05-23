@@ -51,9 +51,12 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
 
   useEffect(() => {
     setMounted(true);
+    const today = new Date();
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const localLastDayStr = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
     setDates({
-      start: `${new Date().getFullYear()}-01-01`,
-      end: new Date().toISOString().split('T')[0]
+      start: `${today.getFullYear()}-01-01`,
+      end: localLastDayStr
     });
   }, []);
 
