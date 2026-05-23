@@ -260,7 +260,8 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
 
                 # 7.2. Definir Líneas del Asiento de Centralización
                 # Glosa institucional
-                glosa_centralizacion = f"Centralización Remuneraciones Periodo {req.periodo}"
+                glosa_centralizacion = f"Centralización Remuneraciones Periodo {periodo_clean}"
+                legacy_glosa = f"Centralización de Remuneraciones {periodo_clean}"
                 
                 journal_lines = [
                     # GASTOS (Debe)
@@ -279,12 +280,11 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 last_day_contable = calendar.monthrange(year_part, month_part)[1]
                 fecha_asiento = f"{periodo_clean}-{last_day_contable}"
 
-                # a) Buscar asientos antiguos usando su Meta-Referencia (Garantía Arquitectónica)
+                # a) Buscar asientos antiguos usando su Meta-Referencia (Garantía Arquitectónica) o Glosa
                 existing_entries = db.table("journal_entries") \
                     .select("id") \
                     .eq("organization_id", req.org_id) \
-                    .eq("source_type", "NOMINA") \
-                    .eq("source_id", periodo_clean) \
+                    .or_(f"and(source_type.eq.NOMINA,source_id.eq.{periodo_clean}),glosa.eq.\"{glosa_centralizacion}\",glosa.eq.\"{legacy_glosa}\"") \
                     .execute()
 
                 # b) Eliminar primero sus líneas y luego el asiento

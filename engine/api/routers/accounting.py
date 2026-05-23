@@ -357,11 +357,15 @@ async def generate_from_rcv(
 
 
 @router.post("/generate-from-payroll")
-async def generate_from_payroll(req: GenerateFromPayrollRequest):
+async def generate_from_payroll(
+    req: GenerateFromPayrollRequest,
+    current_user: dict = Depends(verify_token)
+):
     """
     Centraliza las remuneraciones aprobadas en un asiento contable.
     Crea un comprobante por todas las liquidaciones en estado 'aprobado'.
     """
+    await verify_org_role(req.organization_id, auth=current_user)
     db = get_supabase()
     try:
         config = get_accounting_config(db, req.organization_id, 'payroll', 'monthly')
@@ -483,19 +487,23 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
                     detail=f"Error de Integridad: El asiento de remuneraciones esta descuadrado por ${diff:,.0f}. Auditoria requerida en liquidaciones."
                 )
 
-        glosa = f"Centralización de Remuneraciones {req.periodo[:7]}"
+        base_period = req.periodo[:7]
+        glosa = f"Centralización Remuneraciones Periodo {base_period}"
+        legacy_glosa = f"Centralización de Remuneraciones {base_period}"
         
-        # ELIMINAR centralización previa de este mes (Idempotencia)
-        db.table("journal_entries").delete() \
+        # ELIMINAR centralización previa de este mes (Idempotencia robusta unificada)
+        existing_res = db.table("journal_entries").select("id") \
             .eq("organization_id", req.organization_id) \
-            .eq("glosa", glosa) \
+            .or_(f"and(source_type.eq.NOMINA,source_id.eq.{base_period}),glosa.eq.\"{glosa}\",glosa.eq.\"{legacy_glosa}\"") \
             .execute()
+        
+        for e in (existing_res.data or []):
+            db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
+            db.table("journal_entries").delete().eq("id", e["id"]).execute()
 
         # Ajustamos fecha al último día del mes
         from datetime import datetime
         import calendar
-        # Parseamos asumiendo que puede venir como YYYY-MM-DD o YYYY-MM
-        base_period = req.periodo[:7]
         p_date = datetime.strptime(base_period + "-01", "%Y-%m-%d")
         last_day = calendar.monthrange(p_date.year, p_date.month)[1]
         fecha_asiento = f"{p_date.year}-{p_date.month:02d}-{last_day}"
@@ -507,8 +515,24 @@ async def generate_from_payroll(req: GenerateFromPayrollRequest):
             "p_lines": lines_to_insert
         }).execute()
         
-        if rpc_res.data:
-            return {"success": True, "entries_created": 1, "journal_entry_id": rpc_res.data}
+        journal_entry_id = rpc_res.data
+        if journal_entry_id:
+            # Sincronizar metadata para mantener idempotencia con modulo nomina
+            db.table("journal_entries") \
+                .update({"source_type": "NOMINA", "source_id": base_period}) \
+                .eq("id", journal_entry_id) \
+                .execute()
+            
+            # Registrar actividad en bitácora
+            log_activity(
+                action="generate_accounting_from_payroll",
+                organization_id=req.organization_id,
+                user_id=current_user.get("id"),
+                entity_type="accounting_period",
+                entity_id=f"{req.organization_id}_{base_period}",
+                details={"periodo": base_period, "entries_created": 1, "journal_entry_id": journal_entry_id}
+            )
+            return {"success": True, "entries_created": 1, "journal_entry_id": journal_entry_id}
             
         return {"success": False, "error": "Falló RPC"}
     except Exception as e:
