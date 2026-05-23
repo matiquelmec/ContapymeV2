@@ -793,7 +793,7 @@ async def get_ledger(
 
         # 3. Obtener movimientos del periodo actual
         query = db.table("journal_entry_lines") \
-            .select("*, journal_entries!inner(fecha, glosa, organization_id)") \
+            .select("*, journal_entries!inner(fecha, glosa, organization_id, source_type)") \
             .eq("cuenta_codigo", account_code) \
             .eq("journal_entries.organization_id", organization_id)
         
@@ -833,7 +833,8 @@ async def get_ledger(
             movements.append({
                 "fecha": je.get("fecha"),
                 "glosa": je.get("glosa", "S/G"),
-                "numero_asiento": str(m.get("journal_entry_id", ""))[:8].upper() if m.get("journal_entry_id") else "S/N",
+                "numero_asiento": str(m.get("entry_id") or m.get("journal_entry_id") or "")[:8].upper() if (m.get("entry_id") or m.get("journal_entry_id")) else "S/N",
+                "source_type": je.get("source_type"),
                 "debe": debe,
                 "haber": haber,
                 "saldo": saldo_acumulado
