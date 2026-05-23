@@ -131,6 +131,24 @@ async def upload_caf(
             
         company_id = company["id"]
         
+        # --- VALIDACIÓN CONTRA SOLAPAMIENTO DE RANGOS CAF ---
+        existing_cafs = db.table("dte_caf_folios")\
+            .select("range_start, range_end")\
+            .eq("organization_id", organization_id)\
+            .eq("company_id", company_id)\
+            .eq("tipo_dte", tipo_dte)\
+            .eq("environment", environment)\
+            .execute()
+            
+        for ec in (existing_cafs.data or []):
+            e_start = int(ec["range_start"])
+            e_end = int(ec["range_end"])
+            if range_start <= e_end and range_end >= e_start:
+                raise Exception(
+                    f"Conflicto de Rangos: El rango de folios provisto ({range_start}-{range_end}) se solapa "
+                    f"con el rango preexistente ({e_start}-{e_end}) ya registrado en el sistema."
+                )
+        
         # Guardar en dte_caf_folios
         caf_data = {
             "organization_id": organization_id,

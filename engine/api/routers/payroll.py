@@ -84,19 +84,51 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
         except Exception as e:
             logger.warning(f"⚠️ Usando indicadores de emergencia por fallo en DB: {e}")
 
-        # ── 3. Construir PayrollSettings (NACIONALES autónomos + EMPRESA manuales) ──
+        # ── 3. Obtener Parámetros Nacionales Legales del Periodo (Desacoplamiento Dinámico) ──
+        # Valores por defecto de emergencia (desde national_params.py)
+        p_sueldo_minimo = SUELDO_MINIMO
+        p_tope_afp = TOPE_AFP_UF
+        p_tope_salud = TOPE_SALUD_UF
+        p_tope_afc = TOPE_AFC_UF
+        p_sis = SIS_PCT
+        p_afc_ind_trab = AFC_INDEFINIDO_TRABAJADOR_PCT
+        p_afc_ind_emp = AFC_INDEFINIDO_EMPRESA_PCT
+        p_afc_fijo_emp = AFC_FIJO_EMPRESA_PCT
+        
+        try:
+            param_res = db.table("national_payroll_params") \
+                .select("*") \
+                .eq("periodo", target_period_start) \
+                .execute()
+                
+            if param_res.data:
+                p_data = param_res.data[0]
+                p_sueldo_minimo = int(p_data.get("sueldo_minimo", p_sueldo_minimo))
+                p_tope_afp = float(p_data.get("tope_afp_uf", p_tope_afp))
+                p_tope_salud = float(p_data.get("tope_salud_uf", p_tope_salud))
+                p_tope_afc = float(p_data.get("tope_afc_uf", p_tope_afc))
+                p_sis = float(p_data.get("sis_pct", p_sis))
+                p_afc_ind_trab = float(p_data.get("afc_indefinido_trabajador_pct", p_afc_ind_trab))
+                p_afc_ind_emp = float(p_data.get("afc_indefinido_empresa_pct", p_afc_ind_emp))
+                p_afc_fijo_emp = float(p_data.get("afc_fijo_empresa_pct", p_afc_fijo_emp))
+                logger.info(f"⚖️ Parámetros legales obtenidos de DB para {req.periodo}.")
+            else:
+                logger.warning(f"⚠️ Sin parámetros legales en DB para {req.periodo}. Usando constantes estáticas.")
+        except Exception as e_param:
+            logger.warning(f"⚠️ Error al consultar parámetros legales en DB: {e_param}. Usando fallbacks estáticos.")
+
         settings = PayrollSettings(
             uf_valor=uf_valor,
-            # Topes NACIONALES (autónomos desde national_params.py)
-            uf_tope_afp=TOPE_AFP_UF,
-            uf_tope_salud=TOPE_SALUD_UF,
-            uf_tope_afc=TOPE_AFC_UF,
-            sueldo_minimo=SUELDO_MINIMO,
-            # Tasas NACIONALES
-            afp_sis_pct=SIS_PCT,
-            afc_indefinido_trabajador_pct=AFC_INDEFINIDO_TRABAJADOR_PCT,
-            afc_indefinido_empresa_pct=AFC_INDEFINIDO_EMPRESA_PCT,
-            afc_fijo_empresa_pct=AFC_FIJO_EMPRESA_PCT,
+            # Topes dinámicos
+            uf_tope_afp=p_tope_afp,
+            uf_tope_salud=p_tope_salud,
+            uf_tope_afc=p_tope_afc,
+            sueldo_minimo=p_sueldo_minimo,
+            # Tasas dinámicas
+            afp_sis_pct=p_sis,
+            afc_indefinido_trabajador_pct=p_afc_ind_trab,
+            afc_indefinido_empresa_pct=p_afc_ind_emp,
+            afc_fijo_empresa_pct=p_afc_fijo_emp,
         )
 
         # ── 4. Traer empleados activos ────────────────────────────────────────
