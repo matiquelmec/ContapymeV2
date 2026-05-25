@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_CL",
-    url: "https://contapymepuq.cl",
+    url: "https://www.contapymepuq.cl",
     siteName: "Contapymepuq",
     title: "Contapymepuq | Inteligencia Contable y Regional",
     description: "Gestión contable de vanguardia y noticias regionales para Magallanes.",
