@@ -32,6 +32,7 @@ import { MarketTicker } from "@/components/market-ticker";
 import { AISandbox } from "@/components/ai-sandbox";
 import { TaxCalculator } from "@/components/tax-calculator";
 import { HeroBentoGrid } from "@/components/hero-bento";
+import { ContactForm } from "@/components/contact-form";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -442,41 +443,7 @@ export default async function LandingPage() {
                   </div>
                 </div>
                 
-                <div className="bg-white/80 backdrop-blur-xl p-6 sm:p-10 rounded-[2.5rem] border border-primary/10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06)] space-y-6">
-                  <div className="space-y-1">
-                    <h4 className="text-foreground text-xl font-black uppercase italic tracking-tight">Envíanos un Mensaje</h4>
-                    <p className="text-muted-foreground text-[10px] font-bold italic">Canal directo con ingenieros de soporte en Magallanes.</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="relative group">
-                      <input 
-                        type="text"
-                        className="w-full h-14 bg-zinc-50 border border-zinc-200/80 rounded-xl px-6 text-foreground text-xs font-bold uppercase tracking-wider outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all" 
-                        placeholder="Tu Nombre Completo" 
-                      />
-                    </div>
-                    
-                    <div className="relative group">
-                      <input 
-                        type="email"
-                        className="w-full h-14 bg-zinc-50 border border-zinc-200/80 rounded-xl px-6 text-foreground text-xs font-bold uppercase tracking-wider outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all" 
-                        placeholder="Email Institucional" 
-                      />
-                    </div>
-                    
-                    <div className="relative group">
-                      <textarea 
-                        className="w-full h-32 bg-zinc-50 border border-zinc-200/80 rounded-xl p-6 text-foreground text-xs font-bold uppercase tracking-wider outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all resize-none" 
-                        placeholder="Consulta Técnica" 
-                      />
-                    </div>
-                    
-                    <Button className="w-full h-14 bg-primary hover:bg-primary/95 text-primary-foreground font-black uppercase tracking-[0.2em] text-[10px] rounded-xl shadow-xl shadow-primary/15 hover:shadow-2xl hover:shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all">
-                      Enviar Solicitud
-                    </Button>
-                  </div>
-                </div>
+                <ContactForm />
               </div>
             </div>
           </div>
