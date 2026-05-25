@@ -132,7 +132,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           height: '1920px',
           overflow: 'hidden',
           fontFamily: "var(--font-geist-sans), 'Inter', 'Helvetica Neue', Arial, sans-serif",
-          background: '#f8fafc', // Fondo blanco premium (Slate 50)
+          background: '#ffffff', // Fondo blanco puro para fusionar el logo
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
@@ -167,56 +167,34 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             display: 'flex',
             alignItems: 'center',
           }}>
-            {/* Logo Oficial de Contapymepuq - Aumentado a tamaño prominente (180px de ancho) */}
-            <div style={{
-              background: '#ffffff',
-              border: '2px solid #0f172a',
-              borderRadius: '24px',
-              padding: '24px 30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 12px 40px rgba(15, 23, 42, 0.08)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src="/logo-contapyme.png" 
-                alt="Contapymepuq Logo"
-                style={{
-                  height: '95px',
-                  width: 'auto',
-                  objectFit: 'contain',
-                }}
-                crossOrigin="anonymous"
-              />
-            </div>
+            {/* Logo Oficial de Contapymepuq - Sin recuadros, se fusiona directamente con el fondo */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/logo-contapyme.png" 
+              alt="Contapymepuq Logo"
+              style={{
+                height: '140px',
+                width: 'auto',
+                objectFit: 'contain',
+              }}
+              crossOrigin="anonymous"
+            />
             
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              marginLeft: '32px'
+              marginLeft: '36px'
             }}>
               <span style={{
                 color: '#0f172a',
-                fontSize: '36px',
+                fontSize: '44px',
                 fontWeight: 950,
-                letterSpacing: '3px',
+                letterSpacing: '5px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 lineHeight: 1.1,
               }}>
                 DIARIO
-              </span>
-              <span style={{
-                color: '#00b4d8', // Turquesa de marca
-                fontSize: '18px',
-                fontWeight: 900,
-                letterSpacing: '2.5px',
-                textTransform: 'uppercase',
-                fontStyle: 'italic',
-                marginTop: '4px',
-              }}>
-                CONTAPYMEPUQ
               </span>
             </div>
           </div>
