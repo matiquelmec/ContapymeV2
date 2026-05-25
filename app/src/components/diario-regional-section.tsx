@@ -215,22 +215,42 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   </div>
                </div>
 
-               <Link href="/#contacto" className="block">
-                  <div className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/20 space-y-4 relative overflow-hidden group cursor-pointer hover:border-primary/30 hover:shadow-xl transition-all duration-500">
-                     <div className="relative space-y-4">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
-                           <Sparkles className="h-3 w-3 animate-spin" style={{ animationDuration: '6s' }} /> Espacio Institucional
-                        </div>
-                        <div className="h-32 bg-white/80 backdrop-blur-lg rounded-2xl flex items-center justify-center p-6 border border-primary/10 shadow-sm">
-                           <div className="text-center">
-                              <p className="text-lg font-black italic leading-none text-foreground/80">ALIANZAS 2026</p>
-                              <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Conectando a Magallanes</p>
-                           </div>
-                        </div>
-                        <p className="text-[10px] font-medium text-muted-foreground/60 italic text-center text-shadow-xs">Impulsando la economía del extremo sur.</p>
+               <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
+                  {/* Orbe de luz difuminado */}
+                  <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all duration-700 animate-pulse" />
+                  
+                  <div className="relative space-y-4">
+                     <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-600 px-3 py-1 bg-emerald-500/10 rounded-full flex items-center gap-1.5">
+                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Presentación Oficial
+                        </span>
+                        <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">Facturín</span>
                      </div>
+                     
+                     <div className="space-y-2">
+                        <h4 className="text-2xl font-black italic tracking-tighter uppercase text-foreground leading-none">
+                           ¿Cómo <span className="font-serif italic text-primary">Funciona?</span>
+                        </h4>
+                        <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                           Tu Facturación Electrónica al Instante
+                        </p>
+                     </div>
+
+                     <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/10 shadow-md bg-black group-hover:border-primary/30 transition-all">
+                        <video 
+                          src="/Facturin.mp4" 
+                          controls 
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover"
+                        />
+                     </div>
+                     
+                     <p className="text-[9px] font-medium text-muted-foreground/60 italic text-center leading-normal">
+                        Conoce a Facturín y simplifica la emisión de boletas y facturas cumpliendo con la normativa del SII en Punta Arenas.
+                     </p>
                   </div>
-               </Link>
+               </div>
             </div>
         </div>
 
