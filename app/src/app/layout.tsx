@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     description: "Gestión contable de vanguardia y noticias regionales para Magallanes.",
     images: [
       {
-        url: "/og-image.png", // Asumimos que existe o se creará
+        url: "https://www.contapymepuq.cl/og-image.png",
         width: 1200,
         height: 630,
         alt: "Contapymepuq Dashboard",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contapymepuq | Inteligencia Contable y Regional",
     description: "Gestión contable avanzada para Punta Arenas.",
-    images: ["/og-image.png"],
+    images: ["https://www.contapymepuq.cl/og-image.png"],
   },
 };
 
