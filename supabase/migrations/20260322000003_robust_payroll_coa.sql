@@ -15,7 +15,9 @@ WHERE a.id > b.id
   AND a.organization_id = b.organization_id 
   AND a.codigo = b.codigo;
 
--- Ahora sí agregamos el constraint
+-- Ahora sí agregamos el constraint de forma idempotente
+ALTER TABLE public.chart_of_accounts 
+  DROP CONSTRAINT IF EXISTS uq_chart_of_accounts_org_codigo;
 ALTER TABLE public.chart_of_accounts 
   ADD CONSTRAINT uq_chart_of_accounts_org_codigo 
   UNIQUE (organization_id, codigo);
