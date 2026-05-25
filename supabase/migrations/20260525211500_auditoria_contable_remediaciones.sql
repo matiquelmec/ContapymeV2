@@ -73,4 +73,4 @@ ALTER TABLE public.chart_of_accounts
 
 ALTER TABLE public.chart_of_accounts 
   ADD CONSTRAINT check_chart_of_accounts_tipo 
-  CHECK (tipo = ANY (ARRAY['activo'::text, 'pasivo'::text, 'patrimonio'::text, 'ingreso'::text, 'egreso'::text]));
+  CHECK (tipo = ANY (ARRAY['activo'::text, 'pasivo'::text, 'patrimonio'::text, 'ingreso'::text, 'egreso'::text, 'gasto'::text]));
