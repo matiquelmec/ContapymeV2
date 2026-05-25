@@ -240,7 +240,7 @@ async def _fetch_and_process_news():
             # Prioridad 3: Stock Profesional (Ahora asíncrono y seguro)
             if not image_url or "placeholder" in image_url:
                 category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
-                image_url = await get_category_fallback_url(category)
+                image_url = await get_category_fallback_url(category, ai_data.get("title", ""))
                 logger.info(f"[News Worker] 🖼️ Usando stock seguro en Supabase para: {category}")
 
             # Formatear Fecha

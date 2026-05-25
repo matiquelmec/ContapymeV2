@@ -28,9 +28,13 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
   const wordCount = news.content ? news.content.split(/\s+/).length : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
-  // Dividir el contenido de la noticia en párrafos para un renderizado editorial óptimo
+  // Dividir el contenido en párrafos por doble salto de línea (delimitador real de párrafo)
+  // y normalizar los saltos de línea simples internos a espacios para que el texto justificado fluya continuamente.
   const paragraphs = news.content 
-    ? news.content.split(/\n+/).map((p: string) => p.trim()).filter(Boolean)
+    ? news.content
+        .split(/\n\s*\n/)
+        .map((p: string) => p.replace(/\s*\n\s*/g, ' ').trim())
+        .filter(Boolean)
     : []
 
   /**
