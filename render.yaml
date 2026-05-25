@@ -34,4 +34,6 @@ services:
         sync: false
       - key: HF_TOKEN
         sync: false
+      - key: DTE_MASTER_CERT_PASSWORD
+        sync: false
     autoDeploy: true  # Deploy automático en cada push a main

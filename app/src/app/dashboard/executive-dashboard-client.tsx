@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
@@ -34,6 +34,11 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   const { dashboardYear: targetYear, setDashboardYear: setTargetYear } = useUIStore()
   const [selectedNews, setSelectedNews] = useState<RegionalNews | null>(null)
   const [forceRefresh, setForceRefresh] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // ―― MOTOR ANALÍTICO: MÉTRICAS ――
   const { 
@@ -75,10 +80,29 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   const error = metricsError ? (metricsError instanceof Error ? metricsError.message : "Error crítico conectando al motor financiero Python.") : null
 
 
+  if (!mounted) {
+    return (
+      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 mt-6">
+        <CardContent className="p-16 flex flex-col items-center justify-center text-center gap-6">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <Brain className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Cargando Dashboard...</h3>
+            <p className="text-muted-foreground font-bold italic text-sm">
+              Iniciando analíticas de Contapymepuq en tu navegador.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   // ―― ESTADO: Calculando ――
   if (isAnalyzing) {
     return (
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 mt-6" suppressHydrationWarning={true}>
+      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 mt-6">
         <CardContent className="p-16 flex flex-col items-center justify-center text-center gap-6">
           <div className="relative">
             <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -98,7 +122,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   // ―― ESTADO: Error ――
   if (error) {
     return (
-      <div className="flex items-center gap-4 p-6 border-2 border-rose-100 rounded-3xl bg-rose-50/50 mt-6" suppressHydrationWarning={true}>
+      <div className="flex items-center gap-4 p-6 border-2 border-rose-100 rounded-3xl bg-rose-50/50 mt-6">
         <AlertCircle className="w-6 h-6 text-rose-600 shrink-0" />
         <p className="text-rose-800 font-bold text-sm">{error}</p>
       </div>
@@ -120,7 +144,6 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="space-y-8" 
-        suppressHydrationWarning={true}
       >
 
       {/* ―― CABECERA DEL MOTOR ―― */}

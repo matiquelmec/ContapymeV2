@@ -114,7 +114,7 @@ class DTELogic:
         """Obtiene el hash del último DTE emitido para mantener la cadena de integridad."""
         last_dte = self.supabase.table("dte_issued")\
             .select("integrity_hash")\
-            .eq("organization_id", self.organization_id)\
+            .eq("company_id", self.company_data["id"])\
             .eq("tipo_dte", tipo_dte)\
             .order("folio", desc=True)\
             .limit(1)\
@@ -307,7 +307,7 @@ class DTELogic:
         """
         all_dtes = self.supabase.table("dte_issued")\
             .select("*")\
-            .eq("organization_id", self.organization_id)\
+            .eq("company_id", self.company_data["id"])\
             .eq("tipo_dte", tipo_dte)\
             .order("folio", desc=False)\
             .execute()

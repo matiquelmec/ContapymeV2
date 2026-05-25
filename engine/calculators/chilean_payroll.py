@@ -197,29 +197,18 @@ def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 44)
 def calcular_asignacion_familiar(base_imponible: int, num_cargas: int) -> int:
     """
     Calcula el monto de Asignación Familiar según tramo de renta (Cargas Familiares).
-    Valores vigentes 2025.
+    Usa los parámetros centralizados en national_params.py para garantizar SSoT.
     """
     if num_cargas <= 0:
         return 0
         
-    # Tramos de renta imponible (Referencial 2025)
-    TRAMO_A = 539_330
-    TRAMO_B = 787_747
-    TRAMO_C = 1_228_614
+    from .national_params import ASIGNACION_FAMILIAR
     
-    # Montos por carga
-    MONTO_A = 21_463
-    MONTO_B = 13_169
-    MONTO_C = 4_161
-    
-    if base_imponible <= TRAMO_A:
-        return MONTO_A * num_cargas
-    elif base_imponible <= TRAMO_B:
-        return MONTO_B * num_cargas
-    elif base_imponible <= TRAMO_C:
-        return MONTO_C * num_cargas
-    else:
-        return 0
+    for tramo in ["tramo_a", "tramo_b", "tramo_c"]:
+        if base_imponible <= ASIGNACION_FAMILIAR[tramo]["tope_renta"]:
+            return ASIGNACION_FAMILIAR[tramo]["monto"] * num_cargas
+            
+    return 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
