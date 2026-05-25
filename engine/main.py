@@ -54,6 +54,7 @@ ALLOWED_ORIGINS = [
     "https://*.vercel.app",  # Preview deployments de Vercel
     # Dominio de producción:
     "https://contapymepuq.cl",
+    "https://www.contapymepuq.cl",
 ]
 
 app.add_middleware(
