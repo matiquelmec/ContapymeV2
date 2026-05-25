@@ -173,7 +173,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               src="/logo-contapyme.png" 
               alt="Contapymepuq Logo"
               style={{
-                height: '140px',
+                height: '190px',
                 width: 'auto',
                 objectFit: 'contain',
               }}
