@@ -42,35 +42,6 @@ export async function sendContactMessage(formData: { name: string; email: string
       }
     }
 
-    // 3. Enviar correo de notificación a través de Web3Forms (de forma asíncrona pero controlada)
-    const accessKey = process.env.WEB3FORMS_ACCESS_KEY
-    if (accessKey) {
-      try {
-        const response = await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            access_key: accessKey,
-            name: name,
-            email: email,
-            message: message,
-            subject: `Nueva consulta de soporte: ${name}`,
-            from_name: "Contapymepuq Web"
-          })
-        })
-        
-        const resData = await response.json()
-        if (!response.ok || !resData.success) {
-          console.warn('[WEB3FORMS WARNING] Fallo al notificar por correo:', resData.message || response.statusText)
-        }
-      } catch (mailErr: any) {
-        console.error('[WEB3FORMS ERROR] Error al conectar con Web3Forms:', mailErr.message)
-      }
-    }
-
     return { success: true }
   } catch (err: any) {
     console.error("[Contact Action Error]:", err.message)

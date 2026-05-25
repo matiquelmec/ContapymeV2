@@ -23,18 +23,49 @@ export function ContactForm() {
 
     setIsPending(true);
     try {
+      // 1. Guardar en Supabase a través de la Server Action (Servidor)
       const response = await sendContactMessage({ name, email, message });
-      if (response.success) {
+      if (!response.success) {
+        toast.error(response.error || "No se pudo procesar tu solicitud.");
+        setIsPending(false);
+        return;
+      }
+
+      // 2. Enviar correo usando Web3Forms directamente desde el navegador (Cliente)
+      // Como es una clave pública, se puede exponer en el código cliente de forma segura.
+      const web3Response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          access_key: "bf02614b-d7c7-4c07-8870-d9ce571e6ede",
+          name,
+          email,
+          message,
+          subject: `Nueva consulta de soporte: ${name}`,
+          from_name: "Contapymepuq Web"
+        })
+      });
+
+      const web3Data = await web3Response.json();
+      if (web3Response.ok && web3Data.success) {
         toast.success("¡Solicitud enviada! Nos contactaremos a la brevedad.");
         setName("");
         setEmail("");
         setMessage("");
       } else {
-        toast.error(response.error || "No se pudo procesar tu solicitud.");
+        console.warn("[Web3Forms Warning]:", web3Data.message || web3Response.statusText);
+        // Si por alguna razón falla el envío de correo pero ya se guardó en Supabase:
+        toast.success("¡Solicitud recibida en la base de datos! Nos contactaremos pronto.");
+        setName("");
+        setEmail("");
+        setMessage("");
       }
     } catch (error) {
       console.error("[ContactForm Error]:", error);
-      toast.error("Error al conectar con la base de datos.");
+      toast.error("Error de conexión al procesar el mensaje.");
     } finally {
       setIsPending(false);
     }
