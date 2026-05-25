@@ -14,58 +14,58 @@ interface StoryCardProps {
 // Alineadas 100% con los colores de marca de Diario Punta Arenas y ContaPyme (Azul Real Patagónico y tonos australes)
 const THEMES = {
   deportes: {
-    gradient: 'linear-gradient(180deg, #021a0f 0%, #050d0a 60%, #000000 100%)',
-    borderColor: 'rgba(16, 185, 129, 0.4)',
-    accentColor: '#10b981',
-    textColor: '#34d399',
-    slogan: 'PULSO DEPORTIVO',
-    badgeBg: 'rgba(16, 185, 129, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 70%)',
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)',
+    borderColor: 'rgba(0, 242, 254, 0.3)',
+    accentColor: '#00f2fe',
+    textColor: '#00f2fe',
+    slogan: 'PULSO DEPORTIVO / MAGALLANES',
+    badgeBg: 'rgba(0, 242, 254, 0.1)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(0, 242, 254, 0.15) 0%, transparent 70%)',
   },
   clima: {
-    gradient: 'linear-gradient(180deg, #081a30 0%, #040a12 60%, #000000 100%)',
-    borderColor: 'rgba(56, 189, 248, 0.4)',
-    accentColor: '#38bdf8',
-    textColor: '#7dd3fc',
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)',
+    borderColor: 'rgba(0, 180, 216, 0.3)',
+    accentColor: '#00b4d8',
+    textColor: '#90e0ef',
     slogan: 'METEOROLOGÍA AUSTRAL',
-    badgeBg: 'rgba(56, 189, 248, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(0, 180, 216, 0.1)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(0, 180, 216, 0.15) 0%, transparent 70%)',
   },
   horoscopo: {
-    gradient: 'linear-gradient(180deg, #1e0b36 0%, #0b071e 60%, #000000 100%)',
-    borderColor: 'rgba(192, 132, 252, 0.4)',
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)',
+    borderColor: 'rgba(192, 132, 252, 0.3)',
     accentColor: '#c084fc',
     textColor: '#e9d5ff',
     slogan: 'PREDICCIONES DEL SUR',
-    badgeBg: 'rgba(192, 132, 252, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(192, 132, 252, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(192, 132, 252, 0.1)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(192, 132, 252, 0.1) 0%, transparent 70%)',
   },
   finanzas: {
-    gradient: 'linear-gradient(180deg, #1b1202 0%, #070400 60%, #000000 100%)', // Dorado súper profundo
-    borderColor: 'rgba(245, 158, 11, 0.4)',
-    accentColor: '#f59e0b',
-    textColor: '#fef08a',
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)',
+    borderColor: 'rgba(0, 242, 254, 0.4)',
+    accentColor: '#00f2fe',
+    textColor: '#90e0ef',
     slogan: 'PULSO ECONÓMICO Y FINANCIERO',
-    badgeBg: 'rgba(245, 158, 11, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(0, 242, 254, 0.15)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(0, 242, 254, 0.2) 0%, transparent 70%)',
   },
   sii: {
-    gradient: 'linear-gradient(180deg, #09122c 0%, #030612 60%, #000000 100%)', // Azul de marca profundo
-    borderColor: 'rgba(30, 98, 208, 0.4)',
-    accentColor: '#1e62d0', // Azul real patagónico oficial
-    textColor: '#93c5fd',
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)',
+    borderColor: 'rgba(0, 82, 212, 0.4)',
+    accentColor: '#4364f7',
+    textColor: '#6fb1fc',
     slogan: 'ACTUALIDAD TRIBUTARIA / SII',
-    badgeBg: 'rgba(30, 98, 208, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(30, 98, 208, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(0, 82, 212, 0.15)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(0, 82, 212, 0.2) 0%, transparent 70%)',
   },
   default: {
-    gradient: 'linear-gradient(180deg, #081226 0%, #030710 60%, #000000 100%)', // Master Brand Deep Space Blue!
-    borderColor: 'rgba(30, 98, 208, 0.4)',
-    accentColor: '#1e62d0', // Azul real patagónico oficial
-    textColor: '#93c5fd', // Azul hielo austral
+    gradient: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)', // Master Brand Deep Space Blue!
+    borderColor: 'rgba(0, 242, 254, 0.3)',
+    accentColor: '#00f2fe', // Azul real patagónico oficial
+    textColor: '#90e0ef', // Azul hielo austral
     slogan: 'PATAGONIA ACTUAL / ÚLTIMO MINUTO',
-    badgeBg: 'rgba(30, 98, 208, 0.15)',
-    radial: 'radial-gradient(circle at 50% 20%, rgba(30, 98, 208, 0.15) 0%, transparent 70%)',
+    badgeBg: 'rgba(0, 242, 254, 0.1)',
+    radial: 'radial-gradient(circle at 50% 20%, rgba(0, 242, 254, 0.15) 0%, transparent 70%)',
   }
 }
 
@@ -100,7 +100,7 @@ const getTheme = (cat: string, title: string) => {
  * para html2canvas.
  */
 export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
-  ({ title, category, imageUrl, date, sourceName = 'Diario Punta Arenas' }, ref) => {
+  ({ title, category, imageUrl, date, sourceName = 'Diario Contapymepuq' }, ref) => {
     const theme = getTheme(category, title);
 
     const formattedDate = new Date(date).toLocaleDateString('es-CL', {
@@ -177,35 +177,41 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             alignItems: 'center',
             flex: 1,
           }}>
-            {/* Logo Oficial de Contapymepuq - Aumentado geométricamente para alta definición (1080px) */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/logo-contapyme.png" 
-              alt="Contapymepuq Logo"
-              style={{
-                height: '110px',
-                width: 'auto',
-                objectFit: 'contain',
-              }}
-              crossOrigin="anonymous"
-            />
-            {/* Línea divisoria más visible */}
+            {/* Contenedor Glassmorphic para destacar el Logo Oficial */}
             <div style={{
-              height: '65px',
-              width: '3px',
-              backgroundColor: 'rgba(255, 255, 255, 0.25)',
-              margin: '0 24px'
-            }} />
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '24px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+              backdropFilter: 'blur(10px)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/logo-contapyme.png" 
+                alt="Contapymepuq Logo"
+                style={{
+                  height: '80px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+                crossOrigin="anonymous"
+              />
+            </div>
             
             <div style={{
               display: 'flex',
               flexDirection: 'column',
+              marginLeft: '24px'
             }}>
               <span style={{
                 color: '#ffffff',
-                fontSize: '34px',
-                fontWeight: 900,
-                letterSpacing: '6px',
+                fontSize: '32px',
+                fontWeight: 950,
+                letterSpacing: '4px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 lineHeight: 1.1,
@@ -216,12 +222,12 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
                 color: theme.textColor,
                 fontSize: '18px',
                 fontWeight: 800,
-                letterSpacing: '4px',
+                letterSpacing: '3px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 marginTop: '4px',
               }}>
-                Punta Arenas
+                CONTAPYMEPUQ
               </span>
             </div>
           </div>
@@ -244,7 +250,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           </div>
         </div>
 
-        {/* Image Frame Glassmorphic */}
+        {/* Image Frame Glassmorphic con bordes neón */}
         <div style={{
           margin: '0 80px',
           borderRadius: '40px',
@@ -252,8 +258,8 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           flex: '1',
           maxHeight: '940px',
           position: 'relative',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
+          border: `2px solid ${theme.borderColor}`,
+          boxShadow: `0 20px 50px rgba(0, 242, 254, 0.1), 0 30px 60px rgba(0,0,0,0.6)`,
           zIndex: 10,
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
