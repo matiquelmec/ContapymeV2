@@ -109,13 +109,13 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
       year: 'numeric'
     })
 
-    // Generamos un hash SHA-256 simulado y consistente para la estética criptográfica
+    // Generamos un hash SHA-256 consistente para la estética criptográfica
     const generateShortHash = (str: string) => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = (hash << 5) - hash + char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
       }
       return Math.abs(hash).toString(16).padEnd(8, 'f').substring(0, 8).toUpperCase();
     }
@@ -132,38 +132,29 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           height: '1920px',
           overflow: 'hidden',
           fontFamily: "var(--font-geist-sans), 'Inter', 'Helvetica Neue', Arial, sans-serif",
-          background: theme.gradient,
+          background: '#f8fafc', // Fondo blanco premium (Slate 50)
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
+          border: '24px solid #0f172a', // Marco elegante de contraste (Slate 900)
         }}
       >
-        {/* Capa radial de iluminación decorativa */}
+        {/* Líneas geométricas minimalistas de fondo */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: theme.radial,
+          borderRight: '1px solid rgba(15, 23, 42, 0.05)',
+          borderLeft: '1px solid rgba(15, 23, 42, 0.05)',
+          margin: '0 80px',
           pointerEvents: 'none',
         }} />
 
-        {/* Textura de Fondo de Carbono / Fibra Fina */}
+        {/* Header / Branding (Alineación superior minimalista) */}
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")',
-          opacity: 0.04,
-          pointerEvents: 'none',
-        }} />
-
-        {/* Header / Branding (Espaciado y tamaños maximizados geométricamente) */}
-        <div style={{
-          padding: '100px 80px 50px',
+          padding: '100px 80px 40px 80px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -175,26 +166,24 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            flex: 1,
           }}>
-            {/* Contenedor Glassmorphic para destacar el Logo Oficial */}
+            {/* Logo Oficial de Contapymepuq - Aumentado a tamaño prominente (180px de ancho) */}
             <div style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: '#ffffff',
+              border: '2px solid #0f172a',
               borderRadius: '24px',
-              padding: '16px 20px',
+              padding: '24px 30px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
-              backdropFilter: 'blur(10px)',
+              boxShadow: '0 12px 40px rgba(15, 23, 42, 0.08)',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src="/logo-contapyme.png" 
                 alt="Contapymepuq Logo"
                 style={{
-                  height: '80px',
+                  height: '95px',
                   width: 'auto',
                   objectFit: 'contain',
                 }}
@@ -205,13 +194,13 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              marginLeft: '24px'
+              marginLeft: '32px'
             }}>
               <span style={{
-                color: '#ffffff',
-                fontSize: '32px',
+                color: '#0f172a',
+                fontSize: '36px',
                 fontWeight: 950,
-                letterSpacing: '4px',
+                letterSpacing: '3px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 lineHeight: 1.1,
@@ -219,10 +208,10 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
                 DIARIO
               </span>
               <span style={{
-                color: theme.textColor,
+                color: '#00b4d8', // Turquesa de marca
                 fontSize: '18px',
-                fontWeight: 800,
-                letterSpacing: '3px',
+                fontWeight: 900,
+                letterSpacing: '2.5px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
                 marginTop: '4px',
@@ -232,34 +221,32 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             </div>
           </div>
           
-          {/* Categoria Badge más imponente */}
+          {/* Categoria Badge minimalista en negro */}
           <div style={{
-            background: theme.badgeBg,
-            border: `2px solid ${theme.borderColor}`,
-            borderRadius: '32px',
+            background: '#0f172a',
+            borderRadius: '16px',
             padding: '16px 36px',
-            color: theme.accentColor,
+            color: '#ffffff',
             fontSize: '22px',
             fontWeight: 900,
             textTransform: 'uppercase',
             letterSpacing: '4px',
             fontStyle: 'italic',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
             {category}
           </div>
         </div>
 
-        {/* Image Frame Glassmorphic con bordes neón */}
+        {/* Marco de Imagen de alto impacto - Asimétrico */}
         <div style={{
-          margin: '0 80px',
-          borderRadius: '40px',
+          margin: '20px 80px 40px 80px',
+          borderRadius: '32px',
           overflow: 'hidden',
           flex: '1',
-          maxHeight: '940px',
+          maxHeight: '850px',
           position: 'relative',
-          border: `2px solid ${theme.borderColor}`,
-          boxShadow: `0 20px 50px rgba(0, 242, 254, 0.1), 0 30px 60px rgba(0,0,0,0.6)`,
+          border: '3px solid #0f172a',
+          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
           zIndex: 10,
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -273,20 +260,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               objectFit: 'cover',
             }}
           />
-          {/* Degradado oscuro inferior en la foto para fundir con la tarjeta */}
-          <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '250px',
-            background: 'linear-gradient(to top, #000000, transparent)',
-          }} />
         </div>
 
-        {/* Title & Glassmorphic Content Plate */}
+        {/* Sección de Textos (Diseño suizo editorial masivo) */}
         <div style={{
-          padding: '60px 80px 40px',
+          padding: '0 80px 40px 80px',
           flex: '0 0 auto',
           position: 'relative',
           zIndex: 10,
@@ -295,59 +273,59 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            color: theme.textColor,
-            fontSize: '13px',
+            color: '#00b4d8',
+            fontSize: '14px',
             fontWeight: 900,
             textTransform: 'uppercase',
-            letterSpacing: '5px',
+            letterSpacing: '6px',
             fontStyle: 'italic',
-            marginBottom: '20px',
+            marginBottom: '24px',
           }}>
             <span style={{
-              width: '24px',
-              height: '2px',
-              backgroundColor: theme.accentColor,
+              width: '32px',
+              height: '3px',
+              backgroundColor: '#0f172a',
             }} />
             {theme.slogan}
           </div>
           
+          {/* Título de la noticia gigante y de altísimo contraste */}
           <h2 style={{
-            color: '#ffffff',
-            fontSize: '56px',
-            fontWeight: 900,
+            color: '#0f172a',
+            fontSize: '66px',
+            fontWeight: 950,
             fontStyle: 'italic',
             letterSpacing: '-2px',
-            lineHeight: 1.1,
+            lineHeight: 1.05,
             textTransform: 'uppercase',
             margin: 0,
             display: '-webkit-box',
             WebkitLineClamp: 4,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textShadow: '0 4px 15px rgba(0,0,0,0.8)',
           }}>
             {title}
           </h2>
         </div>
 
-        {/* Footer Criptográfico e Institucional */}
+        {/* Footer Minimalista de Contraste */}
         <div style={{
-          padding: '30px 80px 80px',
+          padding: '40px 80px 80px 80px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderTop: '2px solid #0f172a',
           marginTop: 'auto',
           position: 'relative',
           zIndex: 10,
           width: '100%',
           boxSizing: 'border-box',
         }}>
-          <div style={{ flex: 1 }}>
+          <div>
             <div style={{
-              color: 'rgba(255,255,255,0.4)',
-              fontSize: '16px',
-              fontWeight: 800,
+              color: '#0f172a',
+              fontSize: '18px',
+              fontWeight: 900,
               textTransform: 'uppercase',
               letterSpacing: '4px',
               fontStyle: 'italic',
@@ -355,12 +333,12 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               {sourceName}
             </div>
             <div style={{
-              color: 'rgba(255,255,255,0.2)',
+              color: '#64748b',
               fontSize: '14px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '2px',
-              marginTop: '6px',
+              marginTop: '4px',
             }}>
               {formattedDate}
             </div>
@@ -373,25 +351,22 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             alignItems: 'flex-end',
           }}>
             <div style={{
-              background: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              background: 'rgba(15, 23, 42, 0.05)',
+              border: '2px solid #0f172a',
               borderRadius: '8px',
               padding: '6px 14px',
-              color: '#34d399',
+              color: '#0f172a',
               fontSize: '12px',
               fontWeight: 900,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
               marginBottom: '6px',
               fontStyle: 'italic',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
             }}>
-              <span style={{ fontSize: '14px' }}>✓</span> INTEGRIDAD VERIFICADA
+              ✓ INTEGRIDAD VERIFICADA
             </div>
             <div style={{
-              color: 'rgba(255,255,255,0.15)',
+              color: '#64748b',
               fontSize: '12px',
               fontFamily: 'monospace',
               letterSpacing: '1px',
