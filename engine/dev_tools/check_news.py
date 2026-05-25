@@ -9,10 +9,11 @@ from core.database import get_supabase
 
 async def check():
     db = get_supabase()
-    res = db.table("regional_news").select("id, title, is_featured").execute()
+    res = db.table("regional_news").select("id, title, is_featured, image_url").execute()
     print(f"📊 Total noticias en la base de datos: {len(res.data)}")
     for n in res.data:
         print(f"- [{n['id']}] {'⭐️ ' if n['is_featured'] else ''}{n['title']}")
+        print(f"  Image URL: {n['image_url']}")
 
 if __name__ == "__main__":
     asyncio.run(check())

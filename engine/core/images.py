@@ -4,6 +4,7 @@ import logging
 import httpx
 import random
 import traceback
+import urllib.parse
 from core.database import get_supabase
 
 logger = logging.getLogger("contapyme.images")
@@ -13,21 +14,22 @@ async def generate_and_upload_image(prompt: str, news_id: str = None) -> str:
     try:
         art_style = "hyperrealistic photorealistic news photography, highly detailed, cinematic lighting, shot on 35mm lens, authentic documentary style"
         full_prompt = f"{prompt}, {art_style}"
+        encoded_prompt = urllib.parse.quote(full_prompt)
         seed = random.randint(1, 999999)
         
         # MOTOR 1: Pollinations (FLUX)
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
             try:
-                gen_url = f"https://image.pollinations.ai/prompt/{full_prompt.replace(' ', '%20')}?width=1024&height=768&seed={seed}&model=flux&nologo=true"
+                gen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=768&seed={seed}&model=flux&nologo=true"
                 response = await client.get(gen_url)
                 if response.status_code == 200 and len(response.content) > 15000:
                     return await _upload_to_supabase(response.content, "flux")
-            except:
-                logger.warning("[Images] Pollinations falló, intentando MOTOR 2 (Airforce)...")
+            except Exception as pe:
+                logger.warning(f"[Images] Pollinations falló ({pe}), intentando MOTOR 2 (Airforce)...")
                 
                 # MOTOR 2: Airforce (SDXL) - Basado en tu repo de recursos gratuitos
-                af_url = f"https://api.airforce/v1/imagine2?prompt={full_prompt.replace(' ', '%20')}&seed={seed}"
-                response = await client.get(af_url, timeout=30.0)
+                af_url = f"https://api.airforce/v1/imagine2?prompt={encoded_prompt}&seed={seed}"
+                response = await client.get(af_url, timeout=30.0, follow_redirects=True)
                 if response.status_code == 200 and len(response.content) > 10000:
                     return await _upload_to_supabase(response.content, "airforce")
 

@@ -34,7 +34,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     REGLAS DE ORO PARA EL ANALISTA:
     1. ORIGINALIDAD Y VALOR: Redacta desde una perspectiva institucional. Si la noticia es económica, resalta el impacto (ej. cómo afecta el dólar al comercio local).
     2. PERSPECTIVA EDITORIAL: Habla desde el noticiero de 'Contapymepuq'. Usa un tono ejecutivo y serio.
-    3. ESTILO VISUAL: Prompt de imagen "Studio Ghibli meets Cyberpunk 2077", elegante, con un toque tecnológico/financiero pero siempre regional (Patagonia).
+    3. ESTILO VISUAL: Prompt de imagen de estilo fotografía de prensa fotorrealista e hiperrealista, seria y documental, con iluminación cinematográfica y detalles reales del entorno de la Patagonia (Magallanes).
     4. ESTRUCTURA:
        - 'title': Titular profesional (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
        - 'summary': Resumen de 3 líneas enfocado en lo que el lector necesita saber.
@@ -50,7 +50,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         "summary": "Resumen ejecutivo.",
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
-        "visual_prompt": "Descripción visual detallada en inglés. DEBE seguir este ADN: 'Studio Ghibli hand-drawn aesthetic, soft cyberpunk neon accents, lush Magallanes landscapes, cinematic anime lighting, vibrant pastel and neon colors, masterpiece, 8k'."
+        "visual_prompt": "Descripción visual detallada en inglés. DEBE seguir este ADN: 'A hyperrealistic, high-fidelity news documentary photograph, natural ambient lighting, authentic environments of Punta Arenas/Magallanes, Patagonia, shot on 35mm lens, f/2.8, raw photo, lifelike details, 8k'."
     }}
     """
 
@@ -84,7 +84,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
                     "summary": data.get("summary", ""),
                     "full_content": data.get("full_content", content),
                     "is_featured": data.get("is_featured", False),
-                    "visual_prompt": data.get("visual_prompt", f"Studio Ghibli style, soft cyberpunk, Punta Arenas, Magallanes, 8k, vibrant colors.")
+                    "visual_prompt": data.get("visual_prompt", f"A hyperrealistic news photograph of Punta Arenas, Magallanes, Patagonia, 8k, cinematic lighting, realistic colors.")
                 }
             else:
                 logger.error(f"[AI] Error en Groq: {response.status_code} - {response.text}")
