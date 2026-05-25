@@ -236,13 +236,16 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                         </p>
                      </div>
 
-                     <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/10 shadow-md bg-black group-hover:border-primary/30 transition-all">
+                     <div className="relative rounded-2xl overflow-hidden border border-primary/10 shadow-md bg-black group-hover:border-primary/30 transition-all">
                         <video 
                           src="/Facturin.mp4" 
-                          controls 
+                          autoPlay
+                          muted
+                          loop
                           playsInline
+                          controls 
                           preload="metadata"
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto object-contain block"
                         />
                      </div>
                      
