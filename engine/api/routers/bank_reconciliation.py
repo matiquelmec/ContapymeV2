@@ -43,6 +43,43 @@ class ReconciliationSaveRequest(BaseModel):
     matches: List[ReconcileMatch]
     organization_id: str
 
+@router.post("/save-reconciliation")
+async def save_reconciliation(req: ReconciliationSaveRequest, current_user: dict = Depends(verify_token)):
+    """Guarda múltiples conciliaciones en lote y actualiza el estado de las líneas."""
+    db = get_supabase()
+    try:
+        if not req.matches:
+            return {"success": True, "message": "No hay coincidencias que guardar."}
+
+        reconciliation_records = []
+        for m in req.matches:
+            reconciliation_records.append({
+                "bank_line_id": m.bank_line_id,
+                "journal_entry_line_id": m.journal_entry_line_id,
+                "organization_id": req.organization_id,
+                "match_type": "manual",
+                "confidence_score": 1.0,
+                "status": m.status,
+                "notes": m.notes or "Conciliación manual."
+            })
+
+        res = db.table("bank_reconciliations").insert(reconciliation_records).execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Error al guardar conciliaciones en base de datos")
+
+        log_activity(
+            action="save_reconciliation",
+            organization_id=req.organization_id,
+            user_id=current_user.get("id"),
+            entity_type="bank_reconciliation",
+            entity_id=req.organization_id,
+            details={"count": len(req.matches)}
+        )
+
+        return {"success": True, "message": f"Se registraron {len(req.matches)} conciliaciones exitosamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/accounts")
 async def get_bank_accounts(organization_id: str, current_user: dict = Depends(verify_token)):
     """Obtiene las cuentas bancarias de la empresa (Cacheado 5 min)."""
