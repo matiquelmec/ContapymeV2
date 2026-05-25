@@ -300,6 +300,13 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                      <p className="text-[9px] font-medium text-muted-foreground/60 italic text-center leading-normal">
                         Conoce a Facturín y simplifica la emisión de boletas y facturas cumpliendo con la normativa del SII en Punta Arenas.
                      </p>
+
+                     <div className="pt-2">
+                        <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl h-11 px-5 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20 transition-all active:scale-95 group/btn">
+                           <span>Probar Sistema Gratis</span>
+                           <ArrowRight className="h-4 w-4 text-white group-hover/btn:translate-x-0.5 transition-transform" />
+                        </Link>
+                     </div>
                   </div>
                </div>
             </div>
