@@ -11,7 +11,7 @@ logger = logging.getLogger("contapyme.images")
 async def generate_and_upload_image(prompt: str, news_id: str = None) -> str:
     """Genera imagen con motor dual (Pollinations + Airforce) para evitar fallos."""
     try:
-        art_style = "Studio Ghibli aesthetic, anime style, soft cyberpunk, Magallanes"
+        art_style = "hyperrealistic photorealistic news photography, highly detailed, cinematic lighting, shot on 35mm lens, authentic documentary style"
         full_prompt = f"{prompt}, {art_style}"
         seed = random.randint(1, 999999)
         
