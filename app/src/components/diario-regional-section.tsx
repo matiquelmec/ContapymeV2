@@ -175,6 +175,54 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                    </p>
                 </div>
               )}
+               {/* 📣 GRILLA DE PUBLICIDAD SECUNDARIA (Para balancear altura de columnas) */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                  {/* Ad 1: Zona Franca */}
+                  <div className="p-6 rounded-[2rem] bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/60 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+                     <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all duration-500" />
+                     <div className="relative space-y-3">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[8px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded">
+                              Alianza Comercial
+                           </span>
+                           <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Patrocinado</span>
+                        </div>
+                        <h5 className="text-base font-black italic tracking-tighter uppercase text-foreground leading-tight">
+                           Zona Franca <br/><span className="text-primary font-serif">Punta Arenas</span>
+                        </h5>
+                        <p className="text-[10px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
+                           El polo comercial libre de impuestos más grande de la Patagonia. Encuentra tecnología, retail e importaciones liberadas.
+                        </p>
+                        <Link href="/#contacto" className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-primary pt-2 hover:underline">
+                           <span>Ver Catálogo de Tiendas</span>
+                           <ArrowUpRight className="h-3 w-3" />
+                        </Link>
+                     </div>
+                  </div>
+
+                  {/* Ad 2: Cerveza Austral */}
+                  <div className="p-6 rounded-[2rem] bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/60 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300">
+                     <div className="absolute -top-12 -right-12 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all duration-500" />
+                     <div className="relative space-y-3">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/5 px-2 py-0.5 rounded">
+                              Gastronomía Local
+                           </span>
+                           <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Patrocinado</span>
+                        </div>
+                        <h5 className="text-base font-black italic tracking-tighter uppercase text-foreground leading-tight">
+                           Cerveza Austral <br/><span className="text-emerald-600 font-serif">Origen Patagónico</span>
+                        </h5>
+                        <p className="text-[10px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
+                           Elaborada con las aguas más puras del fin del mundo desde 1896. Un orgullo cervecero de nuestra región.
+                        </p>
+                        <Link href="/#contacto" className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-600 pt-2 hover:underline">
+                           <span>Conocer Variedades</span>
+                           <ArrowUpRight className="h-3 w-3" />
+                        </Link>
+                     </div>
+                  </div>
+               </div>
             </div>
             {/* 🏛️ ESPACIOS PUBLICITARIOS Y ALIANZAS (Premium Ad Slots) */}
             <div className="lg:col-span-4 space-y-10">
