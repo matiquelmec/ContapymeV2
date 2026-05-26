@@ -292,6 +292,40 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
 
                   {/* Ads Patrocinados & Facturín */}
                   <div className="space-y-6">
+                     {/* Video de Facturín */}
+                     <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-4 relative overflow-hidden group shadow-md hover:shadow-lg transition-all duration-300">
+                        <div className="relative space-y-3">
+                           <div className="flex items-center justify-between">
+                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded-full">
+                                  Facturín
+                              </span>
+                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">SII / Legal</span>
+                           </div>
+                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
+                              Facturación <span className="font-serif italic text-primary">Express</span>
+                           </h5>
+                           <div className="relative rounded-xl overflow-hidden border border-primary/10 shadow bg-black w-full">
+                              <video 
+                                src="/Facturin.mp4" 
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                controls 
+                                preload="metadata"
+                                className="w-full h-auto object-contain block"
+                              />
+                           </div>
+                           <p className="text-[8.5px] font-semibold text-muted-foreground/60 italic text-center leading-normal">
+                              Emisión de boletas y facturas al instante bajo normativa del SII.
+                           </p>
+                           <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest rounded-lg h-9 px-4 hover:bg-emerald-700 transition-all active:scale-95 group/btn">
+                              <span>Probar Gratis</span>
+                              <ArrowRight className="h-3.5 w-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform" />
+                           </Link>
+                        </div>
+                     </div>
+
                      {/* Ad 1: Zona Franca */}
                      <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/60 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300">
                         <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all duration-500" />
@@ -357,40 +391,6 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                            <Link href="/#contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
                               <span>Consultar</span>
                               <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
-                           </Link>
-                        </div>
-                     </div>
-
-                     {/* Video de Facturín */}
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-4 relative overflow-hidden group shadow-md hover:shadow-lg transition-all duration-300">
-                        <div className="relative space-y-3">
-                           <div className="flex items-center justify-between">
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded-full">
-                                 Facturín
-                              </span>
-                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">SII / Legal</span>
-                           </div>
-                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-                              Facturación <span className="font-serif italic text-primary">Express</span>
-                           </h5>
-                           <div className="relative rounded-xl overflow-hidden border border-primary/10 shadow bg-black w-full">
-                              <video 
-                                src="/Facturin.mp4" 
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                controls 
-                                preload="metadata"
-                                className="w-full h-auto object-contain block"
-                              />
-                           </div>
-                           <p className="text-[8.5px] font-semibold text-muted-foreground/60 italic text-center leading-normal">
-                              Emisión de boletas y facturas al instante bajo normativa del SII.
-                           </p>
-                           <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest rounded-lg h-9 px-4 hover:bg-emerald-700 transition-all active:scale-95 group/btn">
-                              <span>Probar Gratis</span>
-                              <ArrowRight className="h-3.5 w-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform" />
                            </Link>
                         </div>
                      </div>
