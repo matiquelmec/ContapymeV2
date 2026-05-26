@@ -169,10 +169,13 @@ export async function getLatestIndicators() {
         })
     }
 
+    // Convertir de forma segura para TypeScript.
+    // Mapeamos el valor del campo 'fuente' (donde guardamos la telemetría en la DB)
+    // al campo 'unidad_medida' de la interfaz de TypeScript para el frontend.
     const formattedIndicators: Indicator[] = indicators.map(ind => ({
       codigo: ind.codigo,
       nombre: ind.nombre,
-      unidad_medida: ind.unidad_medida || '',
+      unidad_medida: ind.fuente || '',
       fecha: ind.fecha,
       valor: Number(ind.valor)
     }))
@@ -325,15 +328,17 @@ export async function syncIndicatorsAction() {
             price: valorActual
           })
 
+          // Guardamos la telemetría serializada directamente en la columna 'fuente' de la DB
+          // para evitar realizar alteraciones al esquema de base de datos de producción.
           const { error } = await supabase.from('economic_indicators').upsert({
             codigo,
             nombre: info.nombre,
             valor: valorActual,
             fecha: hoyStr,
-            fuente: 'Yahoo Finance & Slingshot',
-            unidad_medida: telemetryJson, // Telemetría inyectada
+            fuente: telemetryJson,
             updated_at: new Date().toISOString()
           }, { onConflict: 'codigo' })
+
 
           if (error) {
             console.error(`[Sync Indicators] Error guardando Yahoo ${codigo}:`, error.message)
