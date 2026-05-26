@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { 
   Globe, 
   Target, 
@@ -13,8 +13,14 @@ import {
   Database,
   Sliders,
   Activity,
-  RefreshCw
+  RefreshCw,
+  MessageCircle,
+  Share2,
+  Instagram,
+  Loader2
 } from 'lucide-react'
+import { toast } from 'sonner'
+
 
 import { Indicator } from '@/lib/types/dashboard'
 
@@ -172,7 +178,96 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
         setIsAnalyzing(false)
       }
     }, 500)
+  }
 
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const getCanonicalUrl = () => {
+    if (typeof window === 'undefined') return ''
+    return `${window.location.protocol}//${window.location.host}`
+  }
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(`📊 *ANÁLISIS MACROECONÓMICO* - ${localAnalysis.title}\n\nRevisa el reporte en vivo en el Diario Regional:\n${getCanonicalUrl()}`)
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+    toast.success("Redirigiendo a WhatsApp...")
+  }
+
+  const handleShareLink = async () => {
+    const url = getCanonicalUrl()
+    const shareData = {
+      title: localAnalysis.title,
+      text: `📊 ANÁLISIS MACROECONÓMICO: ${localAnalysis.title}`,
+      url: url
+    }
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+        toast.success("Enlace compartido")
+      } catch (err) {
+        console.log("Error sharing", err)
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url)
+        toast.success("Enlace copiado al portapapeles 🔗")
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
+
+  const handleShareStory = async () => {
+    if (!panelRef.current) return
+    setIsGenerating(true)
+    const toastId = toast.loading('Generando imagen para historia...')
+    
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default
+      
+      const canvas = await html2canvas(panelRef.current, {
+        scale: 2, // Mayor calidad
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      })
+
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          const file = new File([blob], 'analisis-macro-contapyme.png', { type: 'image/png' })
+          
+          try {
+            await navigator.clipboard.writeText(getCanonicalUrl())
+          } catch (e) {}
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: localAnalysis.title,
+              text: `📊 ${localAnalysis.title} — Diario Regional Contapymepuq`,
+            })
+            toast.success('¡Listo para compartir!', { id: toastId })
+          } else {
+            const url = URL.createObjectURL(file)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = 'analisis-macro-contapyme.png'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(url)
+            toast.success('¡Imagen descargada! Enlace copiado al portapapeles 🔗', { id: toastId })
+          }
+        }
+      }, 'image/png')
+    } catch (error) {
+      console.error(error)
+      toast.error('No se pudo generar la imagen para historia', { id: toastId })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const formatPrice = (price: number, isCrypto?: boolean) => {
@@ -202,7 +297,8 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-8 rounded-[2.5rem] bg-white border border-border/65 hover:border-primary/20 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] transition-all duration-500 min-h-[460px] relative overflow-hidden group">
+    <div ref={panelRef} className="w-full h-full flex flex-col justify-between p-8 rounded-[2.5rem] bg-white border border-border/65 hover:border-primary/20 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] transition-all duration-500 min-h-[460px] relative overflow-hidden group">
+
       {/* Luz trasera decorativa */}
       <div className="absolute -top-20 -right-20 w-44 h-44 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-500" />
       
@@ -303,8 +399,36 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
         )}
       </div>
 
+      {/* Botones de Compartir Reporte */}
+      <div className="flex items-center gap-3 border-t border-zinc-100 pt-3.5 my-1.5 justify-end">
+        <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest mr-auto">Compartir reporte</span>
+        
+        <button
+          onClick={handleShareWhatsApp}
+          className="flex items-center gap-1.5 text-[8.5px] font-black uppercase text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl px-3 py-1.5 transition-all cursor-pointer shrink-0"
+        >
+          <MessageCircle className="h-3 w-3" /> WhatsApp
+        </button>
+
+        <button
+          onClick={handleShareStory}
+          disabled={isGenerating}
+          className="flex items-center gap-1.5 text-[8.5px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl px-3 py-1.5 transition-all disabled:opacity-50 cursor-pointer shrink-0"
+        >
+          {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Instagram className="h-3 w-3" />} Historias
+        </button>
+
+        <button
+          onClick={handleShareLink}
+          className="flex items-center gap-1.5 text-[8.5px] font-black uppercase text-zinc-600 bg-zinc-100 hover:bg-zinc-200 rounded-xl px-3 py-1.5 transition-all cursor-pointer shrink-0"
+        >
+          <Share2 className="h-3 w-3" /> Enlace
+        </button>
+      </div>
+
       {/* Pie de Diagnóstico */}
       <div className="border-t border-zinc-150 pt-4 flex items-center justify-between">
+
         <div className="flex items-center gap-2">
           <Cpu className="h-4 w-4 text-primary shrink-0" />
           <div className="flex flex-col leading-none">
