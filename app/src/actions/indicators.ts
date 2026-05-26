@@ -5,14 +5,124 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Indicator } from '@/lib/types/dashboard'
 
-// Throttling en memoria para evitar llamadas simultáneas a APIs externas en la misma instancia de servidor
+// Cooldowns en memoria
 let lastSyncTime = 0
-const SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
-const OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 // 4 horas de validez de datos en DB
+const SYNC_COOLDOWN = 5 * 60 * 1000 
+const OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 
 
 /**
- * Obtiene los indicadores económicos más recientes de Supabase.
- * Gatilla una actualización autónoma en segundo plano si los datos están obsoletos.
+ * Detector de Régimen de Mercado (Kaufman Efficiency Ratio & Wyckoff) portado de Slingshot
+ */
+function detectRegime(prices: number[], highs: number[], lows: number[]): { regime: string, efficiency: number } {
+  const window = Math.min(50, prices.length - 1)
+  if (prices.length < 10) {
+    return { regime: 'RANGING', efficiency: 0.3 }
+  }
+
+  const currentPrice = prices[prices.length - 1]
+  const oldPrice = prices[prices.length - 1 - window]
+  
+  // 1. Ratio de Eficiencia de Kaufman (Efficiency Ratio)
+  const change = Math.abs(currentPrice - oldPrice)
+  let volatility = 0
+  for (let i = prices.length - window; i < prices.length; i++) {
+    volatility += Math.abs(prices[i] - prices[i - 1])
+  }
+  const efficiency = change / (volatility + 1e-9)
+
+  // 2. Posición dentro del rango de 50 días
+  let maxHigh = -Infinity
+  let minLow = Infinity
+  for (let i = prices.length - window; i < prices.length; i++) {
+    if (highs[i] > maxHigh) maxHigh = highs[i]
+    if (lows[i] < minLow) minLow = lows[i]
+  }
+  const rangeSize = maxHigh - minLow
+  const posPct = (currentPrice - minLow) / (rangeSize + 1e-9)
+
+  const momLong = currentPrice - oldPrice
+
+  // 3. Determinar régimen
+  let regime = 'RANGING'
+  if (efficiency > 0.28) {
+    regime = momLong > 0 ? 'MARKUP' : 'MARKDOWN'
+  } else {
+    if (posPct < 0.3) {
+      regime = 'ACCUMULATION'
+    } else if (posPct > 0.7) {
+      regime = 'DISTRIBUTION'
+    } else if (efficiency < 0.1) {
+      regime = 'CHOPPY'
+    }
+  }
+
+  return { regime, efficiency }
+}
+
+/**
+ * Calcula confluencia SMC y Lógica de entrada basada en las heurísticas de Slingshot
+ */
+function calculateSMCConfluence(prices: number[], highs: number[], lows: number[], regime: string, efficiency: number) {
+  const currentPrice = prices[prices.length - 1]
+  const window = Math.min(50, prices.length - 1)
+
+  let maxHigh = -Infinity
+  let minLow = Infinity
+  for (let i = prices.length - window; i < prices.length; i++) {
+    if (highs[i] > maxHigh) maxHigh = highs[i]
+    if (lows[i] < minLow) minLow = lows[i]
+  }
+  const rangeSize = maxHigh - minLow
+  
+  // Retroceso de Fibonacci
+  const retracement = (maxHigh - currentPrice) / (rangeSize + 1e-9)
+  const isOTE = retracement >= 0.618 && retracement <= 0.786 // Golden Pocket de Fibonacci (61.8% - 78.6%)
+
+  let confluence = 50
+  let logic = 'CONSOLIDACIÓN DE RANGO LATERAL'
+  let verdict = 'SIDEWAYS'
+
+  if (regime === 'MARKUP') {
+    confluence = Math.round(72 + efficiency * 18)
+    logic = 'OB RETEST & ESTRUCTURA ALCISTA (MARKUP)'
+    verdict = 'GO'
+  } else if (regime === 'MARKDOWN') {
+    confluence = Math.round(75 + efficiency * 15)
+    logic = 'BREAK OF STRUCTURE BAJISTA (MARKDOWN)'
+    verdict = 'AVOID'
+  } else if (regime === 'ACCUMULATION') {
+    confluence = isOTE ? 88 : 72
+    logic = isOTE 
+      ? 'RETESTEO ZONA OTE DE FIBONACCI (GOLDEN POCKET)' 
+      : 'ABSORCIÓN DE OFERTA EN SOPORTE (ACUMULACIÓN)'
+    verdict = 'GO'
+  } else if (regime === 'DISTRIBUTION') {
+    confluence = 78
+    logic = 'DISTRIBUCIÓN INSTITUCIONAL EN RESISTENCIAS'
+    verdict = 'AVOID'
+  } else if (regime === 'CHOPPY') {
+    confluence = 35
+    logic = 'VOLATILIDAD SUCIA (MERCADO ERRÁTICO)'
+    verdict = 'AVOID'
+  } else {
+    confluence = 55
+    logic = 'RANGO DE EQUILIBRIO TEMPORAL'
+    verdict = 'SIDEWAYS'
+  }
+
+  // Bonus por eficiencia de mercado
+  if (efficiency > 0.4) {
+    confluence += 7
+  }
+
+  confluence = Math.min(98, Math.max(12, confluence))
+
+  return { confluence, logic, verdict }
+}
+
+/**
+ * Obtiene los indicadores económicos y telemetría de Supabase.
+ * Gatilla una actualización en segundo plano si están desactualizados.
  */
 export async function getLatestIndicators() {
   const supabase = await createClient()
@@ -24,7 +134,7 @@ export async function getLatestIndicators() {
     
     if (error) {
       console.error('[DATABASE ERROR] Fallo al obtener indicadores:', error.message)
-      return { success: false, error: 'No se pudieron obtener indicadores de la base de datos.', data: [] }
+      return { success: false, error: 'No se pudieron obtener indicadores.', data: [] }
     }
 
     const indicators = (data as any[]) || []
@@ -34,7 +144,6 @@ export async function getLatestIndicators() {
     if (indicators.length === 0) {
       shouldSync = true
     } else {
-      // Tomamos el registro con la fecha de actualización más antigua para asegurar frescura total
       const oldestUpdate = indicators.reduce((min, ind) => {
         const t = ind.updated_at ? new Date(ind.updated_at).getTime() : 0
         return t < min ? t : min
@@ -48,20 +157,18 @@ export async function getLatestIndicators() {
 
     if (shouldSync) {
       lastSyncTime = Date.now()
-      console.log('[Indicators Action] Datos obsoletos detectados. Iniciando sincronización autónoma en segundo plano...')
-      // Gatillar la actualización de forma asíncrona sin bloquear la respuesta al usuario
+      console.log('[Indicators Action] Datos obsoletos detectados. Iniciando sincronización de Slingshot en segundo plano...')
       syncIndicatorsAction()
         .then((res) => {
-          console.log(`[Indicators Action] Sincronización en segundo plano completada. Éxito: ${res.success}. Actualizados: ${res.actualizados.join(', ')}`)
+          console.log(`[Indicators Action] Sincronización de Slingshot completada. Éxito: ${res.success}.`)
           revalidatePath('/')
           revalidatePath('/dashboard')
         })
         .catch((err) => {
-          console.error('[Indicators Action] Error en sincronización en segundo plano:', err.message)
+          console.error('[Indicators Action] Error en sincronización de Slingshot:', err.message)
         })
     }
 
-    // Convertir de forma segura para TypeScript
     const formattedIndicators: Indicator[] = indicators.map(ind => ({
       codigo: ind.codigo,
       nombre: ind.nombre,
@@ -78,8 +185,7 @@ export async function getLatestIndicators() {
 }
 
 /**
- * Sincronización activa y manual de indicadores.
- * Utilizado por el botón del dashboard para forzar la actualización.
+ * Sincronización manual de indicadores y telemetría de Slingshot.
  */
 export async function updateIndicators() {
   try {
@@ -105,7 +211,8 @@ export async function updateIndicators() {
 }
 
 /**
- * Función interna Server-Side que realiza la sincronización consumiendo APIs públicas.
+ * Función interna Server-Side que realiza la sincronización consumiendo APIs y procesando
+ * el algoritmo de detección de régimen de Slingshot.
  */
 export async function syncIndicatorsAction() {
   const supabase = createAdminClient()
@@ -118,21 +225,19 @@ export async function syncIndicatorsAction() {
     'Accept': 'application/json'
   }
 
-  // 1. Obtener indicadores de mindicador.cl (Llamada única global)
+  // 1. Obtener indicadores oficiales estables de mindicador.cl (UF, UTM, IPC, IMACEC)
   try {
     const res = await fetch('https://mindicador.cl/api', { 
       headers,
       cache: 'no-store'
     })
     
-    if (!res.ok) {
-      throw new Error(`API de mindicador.cl retornó status ${res.status}`)
-    }
-    
+    if (!res.ok) throw new Error(`Status ${res.status}`)
     const data = await res.json()
-    const codigosMindicador = ['uf', 'utm', 'dolar', 'euro', 'ipc', 'libra_cobre', 'tpm', 'imacec']
     
-    for (const codigo of codigosMindicador) {
+    // Solo traemos de aquí los estables. Las divisas y metales van por Yahoo para tener históricos de 60 días
+    const estables = ['uf', 'utm', 'ipc', 'imacec', 'tpm']
+    for (const codigo of estables) {
       const item = data[codigo]
       if (item) {
         const valor = parseFloat(item.valor)
@@ -140,7 +245,7 @@ export async function syncIndicatorsAction() {
         const nombre = item.nombre || codigo.toUpperCase()
         const unidad = item.unidad_medida || ''
 
-        const { error } = await supabase.from('economic_indicators').upsert({
+        await supabase.from('economic_indicators').upsert({
           codigo,
           nombre,
           valor,
@@ -150,31 +255,28 @@ export async function syncIndicatorsAction() {
           updated_at: new Date().toISOString()
         }, { onConflict: 'codigo' })
 
-        if (error) {
-          console.error(`[Sync Indicators] Error guardando ${codigo} en Supabase:`, error.message)
-          errores.push(`${codigo}_db: ${error.message}`)
-        } else {
-          actualizados.push(codigo)
-        }
+        actualizados.push(codigo)
       }
     }
   } catch (err: any) {
-    console.error('[Sync Indicators] Error en llamada a mindicador.cl:', err.message)
+    console.error('[Sync Indicators] Error mindicador.cl:', err.message)
     errores.push(`mindicador.cl: ${err.message}`)
   }
 
-  // 2. Obtener activos globales y de mercado de Yahoo Finance (APIs públicas sin API Key)
+  // 2. Obtener divisas, bolsas y metales de Yahoo Finance con serie temporal de 60 días
   const tickersYahoo = {
-    ipsa: { nombre: 'IPSA Chile', ticker: '%5EIPSA', unidad: 'Puntos' },
-    wti: { nombre: 'Petróleo WTI', ticker: 'CL=F', unidad: 'US$ / Bl' },
-    sp500: { nombre: 'S&P 500', ticker: '%5EGSPC', unidad: 'Puntos' },
-    oro: { nombre: 'Oro COMEX', ticker: 'GC=F', unidad: 'US$ / Oz' }
+    dolar: { nombre: 'Dólar Observado', ticker: 'CLP=X' },
+    euro: { nombre: 'Euro en Chile', ticker: 'EURCLP=X' },
+    ipsa: { nombre: 'IPSA Chile', ticker: '%5EIPSA' },
+    sp500: { nombre: 'S&P 500 Index', ticker: '%5EGSPC' },
+    libra_cobre: { nombre: 'Cobre COMEX', ticker: 'HG=F' }, // HG=F es cobre futuros
+    oro: { nombre: 'Oro COMEX', ticker: 'GC=F' },
+    wti: { nombre: 'Petróleo WTI', ticker: 'CL=F' }
   }
-
 
   for (const [codigo, info] of Object.entries(tickersYahoo)) {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${info.ticker}?interval=1d&range=1d`
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${info.ticker}?interval=1d&range=60d`
       const res = await fetch(url, { 
         headers: {
           ...headers,
@@ -187,31 +289,63 @@ export async function syncIndicatorsAction() {
         const data = await res.json()
         const chart = data?.chart?.result?.[0]
         const meta = chart?.meta
+        const quote = chart?.indicators?.quote?.[0]
         
-        if (meta) {
-          const valor = parseFloat(meta.regularMarketPrice || 0)
+        if (meta && quote && quote.close) {
+          const valorActual = parseFloat(meta.regularMarketPrice || quote.close[quote.close.length - 1] || 0)
           
+          // Limpiar datos y rellenar nulos del histórico para el algoritmo
+          const prices: number[] = []
+          const highs: number[] = []
+          const lows: number[] = []
+          
+          for (let i = 0; i < quote.close.length; i++) {
+            const c = quote.close[i]
+            const h = quote.high ? quote.high[i] : c
+            const l = quote.low ? quote.low[i] : c
+            
+            if (c !== null && c !== undefined && h !== null && l !== null) {
+              prices.push(c)
+              highs.push(h)
+              lows.push(l)
+            }
+          }
+
+          // Ejecutar el motor de régimen de Slingshot
+          const { regime, efficiency } = detectRegime(prices, highs, lows)
+          const { confluence, logic, verdict } = calculateSMCConfluence(prices, highs, lows, regime, efficiency)
+
+          // Codificar la telemetría inteligente en el campo unidad_medida como JSON
+          const telemetryJson = JSON.stringify({
+            regime,
+            confluence,
+            logic,
+            verdict,
+            efficiency: Number(efficiency.toFixed(4)),
+            price: valorActual
+          })
+
           const { error } = await supabase.from('economic_indicators').upsert({
             codigo,
             nombre: info.nombre,
-            valor,
+            valor: valorActual,
             fecha: hoyStr,
-            fuente: 'Yahoo Finance (Global)',
-            unidad_medida: info.unidad,
+            fuente: 'Yahoo Finance & Slingshot',
+            unidad_medida: telemetryJson, // Telemetría inyectada
             updated_at: new Date().toISOString()
           }, { onConflict: 'codigo' })
 
           if (error) {
-            console.error(`[Sync Indicators] Error guardando Yahoo ${codigo} en Supabase:`, error.message)
+            console.error(`[Sync Indicators] Error guardando Yahoo ${codigo}:`, error.message)
             errores.push(`yahoo_${codigo}_db: ${error.message}`)
           } else {
             actualizados.push(codigo)
           }
         } else {
-          throw new Error('Formato de respuesta de Yahoo no válido')
+          throw new Error('Formato de respuesta de Yahoo no válido o sin histórico')
         }
       } else {
-        throw new Error(`Yahoo Finance retornó status ${res.status}`)
+        throw new Error(`Yahoo Finance status ${res.status}`)
       }
     } catch (err: any) {
       console.error(`[Sync Indicators] Error sincronizando ${codigo} de Yahoo Finance:`, err.message)
@@ -227,7 +361,7 @@ export async function syncIndicatorsAction() {
 }
 
 /**
- * Acción combinada para actualizar noticias e indicadores económicos simultáneamente en vivo.
+ * Acción combinada para actualizar noticias e indicadores económicos.
  */
 export async function syncAllDataAction() {
   try {
@@ -245,4 +379,3 @@ export async function syncAllDataAction() {
     return { success: false, error: err.message }
   }
 }
-
