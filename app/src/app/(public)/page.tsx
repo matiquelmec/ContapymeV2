@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { getLatestIndicators } from "@/actions/indicators";
 import { getRegionalNews } from "@/actions/news";
 import { DiarioRegionalSection } from "@/components/diario-regional-section";
-import { MarketTicker } from "@/components/market-ticker";
 import { HeroBentoGrid } from "@/components/hero-bento";
 import { GlobalMarketPanel } from "@/components/global-market-panel";
 import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
@@ -20,9 +19,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* MarketTicker — solo en la portada del Diario */}
-      <MarketTicker indicators={indicators} />
-
       {/* Malla Superior de Información en Tiempo Real (Local, Macro Global & Calendario Crítico) */}
       <section className="py-12 bg-background" suppressHydrationWarning>
         <div className="container mx-auto px-6 lg:px-12">

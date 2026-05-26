@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PublicNav } from "@/components/public-nav";
+import { MarketTicker } from "@/components/market-ticker";
+import { getLatestIndicators } from "@/actions/indicators";
 
 export default async function PublicLayout({
   children,
@@ -13,10 +15,16 @@ export default async function PublicLayout({
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
 
+  const indicatorsRes = await getLatestIndicators();
+  const indicators = indicatorsRes.success ? indicatorsRes.data : [];
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground font-sans selection:bg-primary/20" suppressHydrationWarning>
+      {/* ===== TICKER SUPERIOR DE INDICADORES ===== */}
+      <MarketTicker indicators={indicators} />
+
       {/* ===== HEADER / NAVBAR CON TABS ===== */}
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl" suppressHydrationWarning>
+      <header className="sticky top-11 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl" suppressHydrationWarning>
         <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12" suppressHydrationWarning>
           <Link href="/" className="flex items-center gap-4 group transition-transform duration-300">
             <Image
