@@ -29,10 +29,38 @@ export function MacroCalendarWidget() {
   // Generador de eventos de calendario macroeconómico reales para Chile / EE.UU. con fechas relativas reales
   useEffect(() => {
     const today = new Date()
-    const nextDays = (days: number) => {
+
+    const getEventDate = (daysAhead: number, hourUTC: number, minuteUTC: number): Date => {
       const d = new Date()
-      d.setDate(today.getDate() + days)
-      return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' })
+      d.setDate(today.getDate() + daysAhead)
+      d.setUTCHours(hourUTC, minuteUTC, 0, 0)
+      return d
+    }
+
+    const formatEventDate = (date: Date) => {
+      const dateStr = date.toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: '2-digit',
+      })
+      
+      const timeStr = date.toLocaleTimeString('es-CL', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+
+      let tzAbbr = ''
+      try {
+        const parts = Intl.DateTimeFormat('es-CL', {
+          timeZoneName: 'short'
+        }).formatToParts(date)
+        const tzPart = parts.find(p => p.type === 'timeZoneName')
+        tzAbbr = tzPart ? ` ${tzPart.value}` : ''
+      } catch (e) {
+        console.warn(e)
+      }
+
+      return `${dateStr} ${timeStr}${tzAbbr}`
     }
 
     const localList: EconomicEvent[] = [
@@ -40,7 +68,7 @@ export function MacroCalendarWidget() {
         title: 'Decisión de Tasas de Interés (Banco Central de Chile)',
         country: 'CHILE',
         impact: 'High',
-        date: `${nextDays(2)} 18:00`,
+        date: formatEventDate(getEventDate(2, 22, 0)), // 18:00 Santiago (UTC-4) -> 22:00 UTC
         forecast: '6.00%',
         previous: '6.25%',
         actual: 'Pendiente',
@@ -50,7 +78,7 @@ export function MacroCalendarWidget() {
         title: 'Publicación de Variación del IPC Mensual (INE Chile)',
         country: 'CHILE',
         impact: 'High',
-        date: `${nextDays(4)} 08:00`,
+        date: formatEventDate(getEventDate(4, 12, 0)), // 08:00 Santiago (UTC-4) -> 12:00 UTC
         forecast: '0.3%',
         previous: '0.5%',
         actual: 'Pendiente',
@@ -60,7 +88,7 @@ export function MacroCalendarWidget() {
         title: 'Anuncio de Política Monetaria y Tasas - Fed FOMC',
         country: 'EE.UU.',
         impact: 'High',
-        date: `${nextDays(1)} 15:00`,
+        date: formatEventDate(getEventDate(1, 18, 0)), // 14:00 Washington (EDT UTC-4) -> 18:00 UTC
         forecast: '5.25%',
         previous: '5.25%',
         actual: 'Pendiente',
@@ -70,7 +98,7 @@ export function MacroCalendarWidget() {
         title: 'Índice de Precios al Consumidor (CPI Anual)',
         country: 'EE.UU.',
         impact: 'High',
-        date: `${nextDays(3)} 09:30`,
+        date: formatEventDate(getEventDate(3, 13, 30)), // 09:30 Washington (EDT UTC-4) -> 13:30 UTC
         forecast: '3.4%',
         previous: '3.5%',
         actual: 'Pendiente',
@@ -80,7 +108,7 @@ export function MacroCalendarWidget() {
         title: 'Publicación del Imacec Mensual (Banco Central)',
         country: 'CHILE',
         impact: 'Medium',
-        date: `${nextDays(5)} 08:30`,
+        date: formatEventDate(getEventDate(5, 12, 30)), // 08:30 Santiago (UTC-4) -> 12:30 UTC
         forecast: '2.1%',
         previous: '1.8%',
         actual: 'Pendiente',
