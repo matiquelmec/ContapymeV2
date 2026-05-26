@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { engineFetch } from "@/lib/engine-client";
 import { parseError } from "@/lib/utils/errors";
 
+// TODO: Cambiar a false una vez que se integre la pasarela de pagos
+const BYPASS_PLAN_LIMITS = true;
+
 export async function getLREBooks(organizationId: string) {
   try {
     const response = await engineFetch(`/api/v1/payroll/lre/list?organization_id=${organizationId}`, {
@@ -42,7 +45,7 @@ export async function generateLREAction(formData: {
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.plan === "personal") {
+    if ((!profile || profile.plan === "personal") && !BYPASS_PLAN_LIMITS) {
       throw new Error("El Libro de Remuneraciones Electrónico (LRE) está bloqueado en el plan Personal. Por favor, suba de plan a Estudio Contable o superior.");
     }
 
@@ -74,7 +77,7 @@ export async function exportLREAction(bookId: string) {
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.plan === "personal") {
+    if ((!profile || profile.plan === "personal") && !BYPASS_PLAN_LIMITS) {
       throw new Error("La exportación LRE requiere una suscripción Estudio Contable o superior.");
     }
 

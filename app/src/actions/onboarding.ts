@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { normalizeRUT } from '@/lib/utils/rut'
 
+// TODO: Cambiar a false una vez que se integre la pasarela de pagos
+const BYPASS_PLAN_LIMITS = true;
+
 // ────────────────────────────────────────────────
 // PASO 1: Actualizar perfil profesional
 // ────────────────────────────────────────────────
@@ -66,7 +69,7 @@ export async function createOrganization(data: {
   const userPlan = profile.plan || 'personal'
 
   // 2. Si el plan no es 'consorcio', contar las organizaciones creadas por el usuario
-  if (userPlan !== 'consorcio') {
+  if (userPlan !== 'consorcio' && !BYPASS_PLAN_LIMITS) {
     const { data: memberships, error: countError } = await supabase
       .from('organization_members')
       .select('id')
