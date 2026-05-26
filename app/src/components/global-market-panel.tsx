@@ -113,15 +113,15 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
     return null
   }
 
-  // Nombre legible para el régimen de mercado
+  // Nombre legible para el régimen de mercado (adaptado a usuarios)
   const getRegimeName = (regimeCode: string) => {
     switch (regimeCode) {
-      case 'MARKUP': return 'Markup (Alza)'
-      case 'MARKDOWN': return 'Markdown (Baja)'
-      case 'ACCUMULATION': return 'Acumulación (Descuento)'
-      case 'DISTRIBUTION': return 'Distribución (Premium)'
-      case 'CHOPPY': return 'Choppy (Incertidumbre)'
-      default: return 'Consolidación Rango'
+      case 'MARKUP': return 'Precios en Alza (Impulso Alcista)'
+      case 'MARKDOWN': return 'Precios en Baja (Tendencia Bajista)'
+      case 'ACCUMULATION': return 'Zona Barata (Inversionistas Comprando)'
+      case 'DISTRIBUTION': return 'Zona Cara (Inversionistas Tomando Ganancias)'
+      case 'CHOPPY': return 'Mercado Inestable (Mucha Volatilidad)'
+      default: return 'Consolidación Lateral (Precios Estables)'
     }
   }
 
@@ -141,22 +141,22 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
       let advice = ''
       switch (telemetry.regime) {
         case 'MARKUP':
-          advice = `Fuerte bias alcista institucional confirmado para ${name}. El ratio de eficiencia de Kaufman es elevado (${telemetry.efficiency}), sugiriendo una expansión de precio y absorción limpia de la oferta.`
+          advice = `Se confirma una tendencia clara al alza para ${name}. Esto sugiere que los compradores están dominando la oferta y el precio tiene impulso para seguir subiendo en el corto plazo.`
           break
         case 'MARKDOWN':
-          advice = `Estructura bajista acelerada en ${name}. Los algoritmos detectan distribución agresiva y flujo neto de venta. Se aconseja extremar cautela y evitar incorporarse en compras hasta mitigación de rangos macro.`
+          advice = `Tendencia a la baja detectada en ${name}. Los precios están cayendo rápidamente. Se aconseja precaución si planeas realizar compras o transacciones grandes, y esperar a que el valor se estabilice.`
           break
         case 'ACCUMULATION':
-          advice = `El activo ${name} muestra un canal de acumulación institucional clásico bajo la metodología Wyckoff. El precio cotiza en zona de descuento de Fibonacci. Convicción alta por absorción del dinero inteligente.`
+          advice = `El activo ${name} está en una fase de acumulación o preparación. Esto significa que los inversionistas grandes están comprando discretamente a precios bajos. Es un buen momento para observar oportunidades.`
           break
         case 'DISTRIBUTION':
-          advice = `Mitigación en zona premium superior detectada para ${name}. Se observa una absorción pasiva con volumen relativo elevado, característico de una fase de distribución y toma de ganancias institucional.`
+          advice = `El activo ${name} se encuentra en zona de precios máximos y los grandes operadores están vendiendo para tomar ganancias. Ten cuidado, ya que el precio podría comenzar a corregir a la baja pronto.`
           break
         case 'CHOPPY':
-          advice = `Volatilidad errática e ineficiente en ${name}. El indicador de ruido temporal supera los límites operativos estándar. Recomendación: Mantenerse al margen para proteger el capital.`
+          advice = `El mercado para ${name} está muy inestable y sin una dirección clara (sube y baja rápidamente). Te recomendamos esperar a que se tranquilice antes de tomar decisiones financieras importantes.`
           break
         default:
-          advice = `El precio de ${name} se encuentra en equilibrio lateral estable. Se recomienda esperar rupturas de los límites superior/inferior del Value Area para posicionarse con el volumen real.`
+          advice = `El precio de ${name} se mantiene estable y moviéndose hacia los lados, sin grandes sorpresas. Es un escenario ideal para planificar tus costos y presupuestos de forma predecible.`
       }
       setAdvisorAdvice(advice)
     } else {
@@ -165,7 +165,7 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
       setVerdict('SIDEWAYS')
       setLogic('DIAGNÓSTICO ESTÁNDAR')
       setThreat('MEDIUM')
-      setAdvisorAdvice('Cargando telemetría del motor de confluencia técnica para evaluar el comportamiento en vivo del activo.')
+      setAdvisorAdvice('Cargando datos del asistente para evaluar de forma sencilla el comportamiento de este indicador financiero.')
     }
   }, [selectedAsset, indicators])
 
@@ -180,101 +180,101 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
     switch (code) {
       case 'sp500':
         return {
-          title: 'Presión en el S&P 500 ante Ajustes de Liquidez Global',
+          title: 'El termómetro de las empresas de EE.UU. (S&P 500) y su efecto en Chile',
           category: 'Bolsas Internacionales',
           date: defaultDate,
           author: 'Unidad de Inferencia Global',
           development: [
-            'El índice bursátil estadounidense S&P 500 ha mostrado anomalías en su Kaufman Efficiency Ratio tras los últimos discursos de política monetaria en Estados Unidos. El flujo de órdenes institucional ha entrado en una fase crítica de retesteo sobre los mínimos del mes pasado, buscando liquidez flotante.',
-            'Los algoritmos detectan una barrida de mínimos locales previa a los cierres diarios. La confluencia técnica SMC de la telemetría Slingshot indica un balanceo de riesgo macro, evaluando si el bloque de órdenes alcista de gráficos de temporalidad semanal sostendrá la cotización o si veremos un quiebre de estructura.'
+            'El S&P 500 mide el valor de las 500 empresas más grandes de Estados Unidos. Cuando este índice sube o baja con fuerza, los inversionistas de todo el mundo cambian su estrategia. Si hay nerviosismo o caídas en EE.UU., los fondos globales suelen retirar dinero de países en desarrollo como Chile para refugiarse en el dólar, lo que encarece el tipo de cambio aquí.',
+            'Actualmente, las bolsas internacionales muestran un comportamiento cauteloso debido a las tasas de interés globales. Esto significa que los mercados están a la espera de señales claras para definir si el dinero volverá a fluir hacia economías de Latinoamérica o si el dólar se mantendrá como el refugio favorito.'
           ],
-          outcome: 'Perspectiva de mediano plazo neutral a la espera de confirmación de volumen en los límites del rango de volatilidad actual.'
+          outcome: 'Perspectiva de mercado estable a corto plazo. Es una buena oportunidad para observar precios de insumos antes de comprar al extranjero.'
         }
       case 'oro':
         return {
-          title: 'Reserva de Valor del Oro frente a Tensiones Geopolíticas',
-          category: 'Metales Refugio',
+          title: 'El Oro como refugio seguro en tiempos de incertidumbre mundial',
+          category: 'Metales / Refugio de Valor',
           date: defaultDate,
           author: 'Mesa de Commodities',
           development: [
-            'El oro futuros continúa actuando como principal catalizador de liquidez institucional en el plano de metales preciosos. Se observa una acumulación persistente por parte de bancos centrales de economías emergentes en las zonas de descuento de corto plazo.',
-            'El análisis de Order Flow Yosh revela una firma de absorción limpia. Los desequilibrios de compra en los límites inferiores del Value Area se han intensificado, manteniendo al metal en un sesgo alcista de confluencia sólida a pesar del fortalecimiento global del dólar.'
+            'Históricamente, cuando el mundo financiero o la política internacional se vuelven inestables, los inversionistas compran oro. Al ser un recurso físico y escaso, funciona como un escudo protector de tu patrimonio frente a la inflación y las devaluaciones, lo que hace que su precio suba cuando las bolsas caen.',
+            'Nuestros indicadores muestran compras constantes de oro a nivel mundial. Esta acumulación constante nos enseña que el mercado internacional sigue buscando seguridad frente al panorama global, manteniendo un soporte firme en los precios del metal precioso.'
           ],
-          outcome: 'Sesgo alcista confirmado por absorción de oferta institucional. El oro se encamina a testear resistencias históricas.'
+          outcome: 'Tendencia alcista firme. El oro sigue mostrando que los inversionistas prefieren resguardarse ante cualquier riesgo global.'
         }
       case 'wti':
         return {
-          title: 'Ajuste del Crudo WTI por Incertidumbre en la Oferta OPEP+',
-          category: 'Energía / Commodities',
+          title: 'El precio del Petróleo y cómo influye en el costo de tus despachos',
+          category: 'Combustibles / Logística',
           date: defaultDate,
           author: 'Mesa de Energía',
           development: [
-            'El petróleo crudo West Texas Intermediate (WTI) ha registrado retrocesos hacia la zona de descuento óptima (OTE) tras reportes de incremento en inventarios. El volumen relativo (RVOL) ha superado el 1.5x en contratos de futuros de corto vencimiento.',
-            'El Gatekeeper de Slingshot detecta un estado de balance en el POC (Point of Control) mensual. Las firmas institucionales de trading muestran un comportamiento pasivo a la espera del próximo anuncio de cuotas de producción, manteniendo la eficiencia en niveles de consolidación lateral.'
+            'El petróleo WTI es la referencia para las bencinas y el diésel que consumimos. Dado que Chile importa casi todo el petróleo que usa, cualquier cambio en su precio internacional afecta de forma directa el valor del transporte, fletes y distribución de mercadería hacia zonas extremas como Punta Arenas.',
+            'Por el momento, los países productores mantienen su nivel de oferta controlado. El precio se encuentra estable en su promedio mensual, lo que evita alzas repentinas en el transporte terrestre y da un respiro en la planificación de costos operativos para las PYMES locales.'
           ],
-          outcome: 'Consolidación en torno a la media del rango de precios mensual con baja convicción direccional.'
+          outcome: 'Precio estable. Se prevé que los costos de fletes y logística mantengan sus valores sin grandes alzas en las próximas semanas.'
         }
       case 'dolar':
         return {
-          title: 'Dinámica Cambiaria del Tipo de Cambio USD/CLP en la Zona de Soporte',
-          category: 'Divisas Locales',
+          title: 'El comportamiento del Dólar en Chile y cómo planificar tus costos',
+          category: 'Divisas y Tipo de Cambio',
           date: defaultDate,
           author: 'Mesa de Divisas',
           development: [
-            'El par de divisas Dólar Observado contra el Peso Chileno (USD/CLP) se encuentra testeando la media del canal de regresión institucional. Las mesas de dinero locales reportan una absorción gradual del flujo de venta en torno al nivel clave de los $925.',
-            'La barrida de mínimos ocurrida en la semana previa sugiere que los operadores institucionales han completado la recolección de órdenes en la zona de descuento óptima, mitigando de forma limpia el bloque de órdenes alcista registrado en gráficos diarios.'
+            'El precio del dólar en Chile determina cuánto nos cuestan los productos importados, la tecnología y las materias primas. Cuando el dólar se mantiene estable, las empresas y negocios locales pueden calcular sus costos y cotizar inventario con mayor tranquilidad, sin temor a sorpresas en sus cuentas de cobro.',
+            'El tipo de cambio ha encontrado un piso firme cerca de los $925 pesos. Las transacciones diarias sugieren que la demanda y la oferta están en equilibrio temporal, lo que disminuye las variaciones bruscas y favorece la toma de decisiones comerciales tranquilas.'
           ],
-          outcome: 'Perspectiva técnica proyecta una compresión de volatilidad lateral mientras no ocurra una ruptura confirmada.'
+          outcome: 'Estabilidad cambiaria lateral. El dólar se mantiene en un rango predecible entre $925 y $940, ideal para planificar compras futuras.'
         }
       case 'euro':
         return {
-          title: 'Comportamiento de la Paridad EUR/CLP frente a Políticas de la Eurozona',
+          title: 'El Euro en Chile y sus ventajas para el comercio tecnológico',
           category: 'Mercados de Divisas',
           date: defaultDate,
           author: 'Mesa de Divisas',
           development: [
-            'El Euro contra el Peso Chileno refleja la incertidumbre y debilidad macro del bloque europeo frente a los últimos datos de manufactura. El flujo de órdenes institucional mantiene un comportamiento pasivo con rangos de cotización sumamente comprimidos.',
-            'La eficiencia de Kaufman en el Euro ha descendido a mínimos del trimestre, sugiriendo un balanceo lateral en el cual ni la oferta ni la demanda ejercen control dominante sobre el volumen diario.'
+            'El Euro es la moneda oficial de la Eurozona. Para los emprendedores chilenos, monitorear el euro es clave si importan maquinaria agrícola, vehículos de transporte o tecnología industrial provenientes de Europa, siendo una alternativa de diversificación frente al dólar tradicional.',
+            'El euro ha mostrado un movimiento lateral frente al peso chileno en las últimas semanas. La menor velocidad en el comercio europeo mantiene la cotización estable, sin grandes tendencias alcistas que encarezcan las importaciones.'
           ],
-          outcome: 'Tendencia lateral consolidativa con sesgo neutral y bajo nivel de confluencia direccional.'
+          outcome: 'Comportamiento lateral estable. Buen escenario para cotizar maquinaria y servicios europeos con costos predecibles.'
         }
       case 'ipsa':
         return {
-          title: 'Evolución del IPSA local y Flujo de Capitales Institucionales',
+          title: 'La Bolsa Chilena (IPSA): ¿Cómo le va a las grandes empresas del país?',
           category: 'Renta Variable Chile',
           date: defaultDate,
           author: 'Unidad de Inferencia Global',
           development: [
-            'El índice accionario IPSA de la Bolsa de Santiago se mantiene sosteniendo su canal técnico principal. Se observa una rotación institucional hacia sectores defensivos chilenos y compras selectivas en commodities locales.',
-            'El análisis de flujo de órdenes del motor Slingshot revela acumulación táctica por parte de fondos de pensiones locales. Las firmas de trading son moderadamente alcistas y respetan la estructura de mínimos crecientes.'
+            'El IPSA es el índice que agrupa a las 30 empresas más grandes de la Bolsa de Santiago (como Copec, Falabella, Cencosud, etc.). Si el IPSA sube, significa que hay confianza en el mercado nacional y que las principales industrias están sanas y generando utilidades, lo que atrae inversión extranjera al país.',
+            'El mercado accionario chileno se encuentra respetando su tendencia alcista principal gracias a la buena valoración de recursos locales. Esto refleja un clima de negocios saludable y estable, disminuyendo el riesgo país percibido.'
           ],
-          outcome: 'Estructura alcista saludable con bajo nivel de volatilidad de corto plazo.'
+          outcome: 'Tendencia nacional saludable. El buen desempeño bursátil local apoya un clima de estabilidad para el ecosistema empresarial chileno.'
         }
       case 'libra_cobre':
       default:
         return {
-          title: 'Desequilibrios de Liquidez en el Cobre y su Impacto en el Dólar Local',
+          title: 'El Cobre como motor económico de Chile y su relación con el Dólar',
           category: 'Mercado Cambiario / Minería',
           date: defaultDate,
           author: 'Unidad de Inteligencia',
           development: [
-            'La apertura del mercado financiero de esta semana ha revelado un escenario de alta confluencia técnica en las zonas de descuento macro. Mientras el Cobre COMEX sostiene un canal de acumulación institucional a la espera de definiciones físicas de demanda desde Asia, el Dólar contra el Peso Chileno (USD/CLP) muestra claras señales de absorción pasiva por parte de mesas de dinero institucionales en torno al soporte de $925.',
-            'Nuestros algoritmos de análisis de flujo de órdenes detectan una anomalía de volumen relativo (RVOL) de 1.7x en las paridades de divisas. La barrida de liquidez ocurrida en el mínimo de la semana previa (Previous Weekly Low) sugiere que los operadores institucionales han completado la recolección de órdenes en la zona de descuento OTE (Optimal Trade Entry), mitigando de forma limpia el bloque de órdenes alcista registrado en gráficos de 4 horas.'
+            'El cobre es el sueldo de Chile. Cuando el precio de la libra de cobre sube a nivel internacional, entran más dólares al país por concepto de exportaciones. Al haber más dólares circulando en la economía local, el precio del dólar tiende a bajar, abaratando las importaciones y la tecnología extranjera.',
+            'Actualmente, el mercado del cobre en Asia mantiene una demanda constante, lo que le da un soporte sólido al precio de la libra. Este equilibrio internacional ayuda a mitigar las alzas fuertes del dólar en el mercado nacional.'
           ],
-          outcome: 'La perspectiva técnica para el corto plazo apunta a una compresión de volatilidad lateral. Se prevé que el tipo de cambio mantenga su cotización dentro del rango de soporte de $925 - $940 mientras la confluencia global no alcance niveles críticos de ruptura (bias direccional neutral).'
+          outcome: 'Precio del cobre con soporte firme. Esto favorece la contención del dólar local en el corto plazo.'
         }
     }
   }
 
-  // Inferencia interactiva de la red neural
+  // Inferencia interactiva de la red neural (con explicaciones sencillas)
   const runSimulationAnalysis = () => {
     setIsAnalyzing(true)
     const steps = [
-      'Iniciando Auditor IA Slingshot...',
-      'Calculando Kaufman Efficiency Ratio...',
-      'Analizando niveles OTE de Fibonacci en 50d...',
-      'Escaneando bloques de órdenes (OB) institucionales...',
-      'Diagnóstico de confluencia finalizado con éxito.'
+      'Iniciando Asistente de Análisis de Mercado...',
+      'Evaluando la estabilidad y tendencia del precio...',
+      'Buscando zonas óptimas de compra y venta...',
+      'Analizando el volumen de transacciones en Chile...',
+      'Diagnóstico completado y simplificado con éxito.'
     ]
 
     let stepIdx = 0
@@ -473,18 +473,18 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
             <div className="p-4 bg-zinc-50 border border-border/50 rounded-2xl space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[8px] font-black text-primary uppercase tracking-widest flex items-center gap-1">
-                  <Target className="h-3.5 w-3.5" /> Confluencia & Veredicto SMC
+                  <Target className="h-3.5 w-3.5" /> Recomendación de Mercado
                 </span>
                 <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono ${
                   verdict === 'GO' ? 'text-emerald-600 bg-emerald-50' : verdict === 'AVOID' ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50'
                 }`}>
-                  {verdict === 'GO' ? `COMPRA / ${confluence}%` : verdict === 'AVOID' ? `EVITAR / ${confluence}%` : `ESPERAR / ${confluence}%`}
+                  {verdict === 'GO' ? `BUEN MOMENTO / ${confluence}%` : verdict === 'AVOID' ? `PRECAUCIÓN / ${confluence}%` : `ESPERAR / ${confluence}%`}
                 </span>
               </div>
               
               <div className="flex items-center justify-between text-[8px] font-bold text-zinc-400 uppercase tracking-wider border-b border-zinc-200/50 pb-1.5">
-                <span>Régimen: {getRegimeName(realRegime)}</span>
-                <span>Alerta: {threat === 'LOW' ? 'Baja' : threat === 'MEDIUM' ? 'Media' : 'Alta'}</span>
+                <span>Estado: {getRegimeName(realRegime)}</span>
+                <span>Nivel de Riesgo: {threat === 'LOW' ? 'Bajo' : threat === 'MEDIUM' ? 'Medio' : 'Alto'}</span>
               </div>
 
               <p className="text-[10.5px] font-medium text-muted-foreground italic leading-relaxed text-justify">
@@ -529,9 +529,9 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
         <div className="flex items-center gap-2">
           <Cpu className="h-4 w-4 text-primary shrink-0" />
           <div className="flex flex-col leading-none">
-            <span className="text-[7.5px] font-black text-muted-foreground/60 uppercase tracking-widest">Motor Inteligente</span>
+            <span className="text-[7.5px] font-black text-muted-foreground/60 uppercase tracking-widest">Tecnología de Análisis</span>
             <span className="text-[9px] font-black text-foreground uppercase tracking-wider mt-0.5">
-              SMC & Wyckoff de Slingshot
+              Analizador de Tendencias Slingshot
             </span>
           </div>
         </div>
