@@ -52,3 +52,9 @@ export function formatRUT(rut: string): string {
   const formattedBody = Number(bodyStr).toLocaleString('es-CL');
   return `${formattedBody}-${vdv}`;
 }
+
+export function normalizeRUT(rut: string): string {
+  const cleaned = cleanRUT(rut);
+  if (cleaned.length < 2) return cleaned;
+  return `${cleaned.slice(0, -1)}-${cleaned.slice(-1)}`;
+}

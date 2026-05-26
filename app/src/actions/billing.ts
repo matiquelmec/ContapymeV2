@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 
 import { parseError } from '@/lib/utils/errors'
 import { recordAuditAction } from '@/actions/audit'
+import { normalizeRUT } from '@/lib/utils/rut'
 
 export async function getDTEsForOrganization(organizationId: string) {
   try {
@@ -96,6 +97,7 @@ export async function issueDTE(formData: {
   }>
 }) {
   try {
+    formData.receptor_rut = normalizeRUT(formData.receptor_rut)
     const response = await engineFetch('/api/v1/dte/issue', {
       method: 'POST',
       body: JSON.stringify(formData),
@@ -184,6 +186,9 @@ export async function updateDTEConfig(organizationId: string, formData: any) {
     if (!user) throw new Error('No autorizado')
 
     const payload = { ...formData }
+    if (payload.rut) {
+      payload.rut = normalizeRUT(payload.rut)
+    }
 
     if (payload.id) {
       // Actualizar registro existente

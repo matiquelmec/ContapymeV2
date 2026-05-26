@@ -39,7 +39,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { issueDTE } from '@/actions/billing'
-import { cleanRUT, formatRUT, validateRUT } from '@/lib/utils/rut'
+import { cleanRUT, formatRUT, validateRUT, normalizeRUT } from '@/lib/utils/rut'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { StatusModal, StatusType } from '../components/status-modal'
@@ -102,11 +102,12 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
             // Debounce manual
             const timeoutId = setTimeout(async () => {
                 try {
+                    const normalizedSearch = normalizeRUT(cleaned);
                     // Consultar último DTE emitido a este RUT en dte_issued para autocompletar dirección, comuna, giro y razón social
                     const { data, error } = await supabase
                         .from('dte_issued')
                         .select('receptor_razon_social, receptor_giro, receptor_direccion, receptor_comuna')
-                        .eq('receptor_rut', formatted)
+                        .eq('receptor_rut', normalizedSearch)
                         .order('created_at', { ascending: false })
                         .limit(1)
                         .maybeSingle();
@@ -124,7 +125,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                         const { data: salesData } = await supabase
                             .from('sales_records')
                             .select('receptor_razon_social')
-                            .eq('receptor_rut', formatted)
+                            .eq('receptor_rut', normalizedSearch)
                             .order('created_at', { ascending: false })
                             .limit(1)
                             .maybeSingle();

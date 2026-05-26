@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { normalizeRUT } from '@/lib/utils/rut'
 
 // ────────────────────────────────────────────────
 // PASO 1: Actualizar perfil profesional
@@ -92,7 +93,7 @@ export async function createOrganization(data: {
   // Llamar al RPC (Procedimiento Almacenado) que crea la empresa y el miembro atómicamente
   // Bypasando las restricciones RLS porque es SECURITY DEFINER
   const { data: orgId, error: rpcError } = await supabase.rpc('create_new_company', {
-    p_rut: data.rut,
+    p_rut: normalizeRUT(data.rut),
     p_nombre: data.nombre,
     p_giro: data.giro,
     p_direccion: data.direccion,
@@ -143,7 +144,7 @@ export async function seedPayrollSettings(organizationId: string, repLegalNombre
   const { error } = await supabase.rpc('seed_payroll_settings', {
     p_org_id: organizationId,
     p_rep_nombre: repLegalNombre,
-    p_rep_rut: repLegalRut
+    p_rep_rut: normalizeRUT(repLegalRut)
   })
 
   if (error) {

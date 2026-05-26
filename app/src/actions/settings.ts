@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { recordAuditAction } from "@/actions/audit";
+import { normalizeRUT } from "@/lib/utils/rut";
 
 // ============================================
 // PROFILE ACTIONS
@@ -98,7 +99,7 @@ export async function updateOrganization(orgId: string, formData: any) {
     .from("organizations")
     .update({
       nombre: formData.nombre,
-      rut_empresa: formData.rut_empresa,
+      rut_empresa: normalizeRUT(formData.rut_empresa),
       giro: formData.giro,
       direccion: formData.direccion,
       comuna: formData.comuna,
