@@ -30,7 +30,38 @@ END;
 $$;
 
 
--- ─── 2. ACTUALIZACIÓN MASIVA DE RUTS EXISTENTES ───
+-- ─── 2. RESOLUCIÓN DE DUPLICADOS EN ORGANIZACIONES ───
+-- Si existen organizaciones que al normalizarse tengan el mismo RUT,
+-- mantendremos la más antigua con el RUT normalizado, y a las duplicadas
+-- les añadiremos un sufijo '-DUP-[ID]' para no violar la restricción UNIQUE y preservar integridad referencial.
+DO $$
+DECLARE
+  r RECORD;
+  v_keep_id uuid;
+BEGIN
+  FOR r IN 
+    SELECT public.normalize_rut_db(rut_empresa) AS norm_rut, COUNT(*) as cnt
+    FROM public.organizations
+    GROUP BY norm_rut
+    HAVING COUNT(*) > 1
+  LOOP
+    -- Seleccionar la organización más antigua para conservar
+    SELECT id INTO v_keep_id 
+    FROM public.organizations 
+    WHERE public.normalize_rut_db(rut_empresa) = r.norm_rut
+    ORDER BY created_at ASC, id ASC
+    LIMIT 1;
+
+    -- Actualizar los duplicados con un sufijo único para no violar la restricción UNIQUE
+    UPDATE public.organizations
+    SET rut_empresa = rut_empresa || '-DUP-' || substring(id::text from 1 for 4)
+    WHERE public.normalize_rut_db(rut_empresa) = r.norm_rut
+      AND id != v_keep_id;
+  END LOOP;
+END $$;
+
+
+-- ─── 3. ACTUALIZACIÓN MASIVA DE RUTS EXISTENTES ───
 -- Asegura que todos los registros históricos utilicen el mismo formato normalizado
 
 -- Organizations
@@ -79,8 +110,7 @@ SET company_rut = public.normalize_rut_db(company_rut)
 WHERE company_rut IS NOT NULL AND company_rut != '';
 
 
--- ─── 3. ÍNDICES DE RENDIMIENTO MULTI-TENANT (OPTIMIZACIÓN ACCELERATOR) ───
--- Índices compuestos para búsquedas por RUT y filtrado veloz por organización
+-- ─── 4. ÍNDICES DE RENDIMIENTO MULTI-TENANT (OPTIMIZACIÓN ACCELERATOR) ───
 
 -- Búsqueda de organizaciones por RUT único
 CREATE INDEX IF NOT EXISTS idx_organizations_rut_empresa 
