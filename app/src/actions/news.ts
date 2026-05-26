@@ -303,3 +303,252 @@ export async function syncNewsAction() {
 
   return { success: errores.length === 0, addedCount, errores }
 }
+
+/**
+ * Verifica si el usuario actual está autenticado y tiene privilegios de administrador.
+ */
+export async function checkAdminPermission() {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return { authorized: false, error: 'Usuario no autenticado' }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, role, plan')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return { authorized: false, error: 'Perfil de usuario no encontrado en el sistema' }
+    }
+
+    // Permitir si es rol admin o si el plan es consorcio (con soporte case-insensitive)
+    const userRole = (profile.role || '').toLowerCase()
+    const userPlan = (profile.plan || '').toLowerCase()
+    const isAuthorized = userRole === 'admin' || userPlan === 'consorcio'
+    
+    if (!isAuthorized) {
+      return { authorized: false, error: 'Acceso denegado: requiere plan Consorcio o rol Administrador' }
+    }
+
+    return { authorized: true, user, profile }
+  } catch (err: any) {
+    return { authorized: false, error: `Error de autorización: ${err.message}` }
+  }
+}
+
+/**
+ * Crea una nueva noticia en el portal.
+ */
+export async function createNewsAction(newsData: {
+  title: string
+  category: string
+  content: string
+  summary?: string
+  image_url?: string
+  source_name?: string
+  source_url?: string
+  is_featured?: boolean
+}) {
+  const authCheck = await checkAdminPermission()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  try {
+    const supabaseAdmin = createAdminClient()
+    
+    const titleClean = cleanHTML(newsData.title)
+    const titleNorm = normalizeTitle(titleClean)
+    const itemSlug = slugify(titleClean)
+    
+    // Verificar duplicado local antes de insertar
+    const { data: existing } = await supabaseAdmin
+      .from('regional_news')
+      .select('id')
+      .or(`title.eq."${titleClean}",slug.eq."${itemSlug}"`)
+      .maybeSingle()
+
+    if (existing) {
+      return { success: false, error: 'Ya existe una noticia con este título o dirección web (slug).' }
+    }
+
+    const finalImage = newsData.image_url || getFallbackImage(titleClean, newsData.category)
+    const rawDesc = newsData.content || ''
+    const summary = newsData.summary || (rawDesc.length > 300 ? rawDesc.substring(0, 297) + '...' : rawDesc)
+
+    const { data, error } = await supabaseAdmin
+      .from('regional_news')
+      .insert({
+        title: titleClean,
+        slug: itemSlug,
+        category: newsData.category,
+        content: rawDesc,
+        summary: summary,
+        image_url: finalImage,
+        source_name: newsData.source_name || 'ContaPymePuq',
+        source_url: newsData.source_url || `/noticias/${itemSlug}`,
+        normalized_title: titleNorm,
+        is_featured: !!newsData.is_featured,
+        published_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('[createNewsAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al insertar la noticia.' }
+  }
+}
+
+/**
+ * Modifica una noticia existente.
+ */
+export async function updateNewsAction(
+  id: string,
+  newsData: {
+    title: string
+    category: string
+    content: string
+    summary?: string
+    image_url?: string
+    source_name?: string
+    source_url?: string
+    is_featured?: boolean
+  }
+) {
+  const authCheck = await checkAdminPermission()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  try {
+    const supabaseAdmin = createAdminClient()
+    
+    const titleClean = cleanHTML(newsData.title)
+    const titleNorm = normalizeTitle(titleClean)
+    const itemSlug = slugify(titleClean)
+    
+    const rawDesc = newsData.content || ''
+    const summary = newsData.summary || (rawDesc.length > 300 ? rawDesc.substring(0, 297) + '...' : rawDesc)
+    const finalImage = newsData.image_url || getFallbackImage(titleClean, newsData.category)
+
+    const { data, error } = await supabaseAdmin
+      .from('regional_news')
+      .update({
+        title: titleClean,
+        slug: itemSlug,
+        category: newsData.category,
+        content: rawDesc,
+        summary: summary,
+        image_url: finalImage,
+        source_name: newsData.source_name || 'ContaPymePuq',
+        source_url: newsData.source_url || `/noticias/${itemSlug}`,
+        normalized_title: titleNorm,
+        is_featured: !!newsData.is_featured,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('[updateNewsAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al actualizar la noticia.' }
+  }
+}
+
+/**
+ * Elimina de manera inmutable una noticia del portal.
+ */
+export async function deleteNewsAction(id: string) {
+  const authCheck = await checkAdminPermission()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  try {
+    const supabaseAdmin = createAdminClient()
+    
+    const { error } = await supabaseAdmin
+      .from('regional_news')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      throw error
+    }
+
+    revalidatePath('/')
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (err: any) {
+    console.error('[deleteNewsAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al eliminar la noticia.' }
+  }
+}
+
+/**
+ * Server Action para subir una imagen de portada al bucket 'news-images'.
+ */
+export async function uploadNewsImageAction(formData: FormData) {
+  const authCheck = await checkAdminPermission()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  try {
+    const file = formData.get('file') as File
+    if (!file) {
+      return { success: false, error: 'No se ha detectado ningún archivo para subir.' }
+    }
+
+    const fileExt = file.name.split('.').pop() || 'jpg'
+    const fileName = `cover_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+    
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const supabaseAdmin = createAdminClient()
+    
+    const { data, error } = await supabaseAdmin.storage
+      .from('news-images')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: true
+      })
+
+    if (error) {
+      throw error
+    }
+
+    // Obtener la URL pública del archivo
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('news-images')
+      .getPublicUrl(fileName)
+
+    return { success: true, url: publicUrl }
+  } catch (err: any) {
+    console.error('[uploadNewsImageAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al cargar el archivo de imagen.' }
+  }
+}
+
