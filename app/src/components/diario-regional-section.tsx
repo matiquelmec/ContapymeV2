@@ -43,12 +43,15 @@ interface DiarioRegionalSectionProps {
 export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle | null; secondary: NewsArticle[] } {
   if (news.length === 0) return { hero: null, secondary: [] };
 
+  // Estabilizar scoring sin Date.now() para evitar discrepancias de hidratación SSR/cliente.
+  // En su lugar, usamos el orden relativo de published_at para puntuar la frescura.
+  const sortedByDate = [...news].sort((a, b) => 
+    new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+  );
+
   const scoredNews = news.map(article => {
     let score = 0;
     const cat = article.category?.toUpperCase() || "";
-    const now = Date.now();
-    const pubDate = new Date(article.published_at).getTime();
-    const hoursAgo = (now - pubDate) / 3600000;
 
     if (cat.includes("SII") || cat.includes("LEGAL")) score += 100;
     else if (cat.includes("FINANZAS")) score += 90;
@@ -57,8 +60,11 @@ export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle |
     else if (cat.includes("MAGALLANES") || cat.includes("ACTUAL")) score += 40;
     else score += 10;
 
-    if (hoursAgo < 12) score += 40;
-    else if (hoursAgo < 24) score += 20;
+    // Puntuar frescura por posición relativa en vez de Date.now()
+    const recencyIndex = sortedByDate.findIndex(n => n.id === article.id);
+    if (recencyIndex === 0) score += 40;
+    else if (recencyIndex <= 2) score += 30;
+    else if (recencyIndex <= 5) score += 20;
 
     if (article.is_featured) score += 20;
 
@@ -220,7 +226,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                                 >
                                   Analizar <ArrowRight className="h-2.5 w-2.5" />
                                 </button>
-                                <span className="italic uppercase tracking-widest font-mono">
+                                <span className="italic uppercase tracking-widest font-mono" suppressHydrationWarning>
                                   {new Date(news.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'})}
                                 </span>
                              </div>
