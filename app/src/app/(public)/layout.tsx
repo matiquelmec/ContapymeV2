@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PublicNav } from "@/components/public-nav";
 import { MarketTicker } from "@/components/market-ticker";
 import { getLatestIndicators } from "@/actions/indicators";
+import { FacturinChat } from "@/components/facturin-chat";
 
 export default async function PublicLayout({
   children,
@@ -76,6 +77,9 @@ export default async function PublicLayout({
           </div>
         </div>
       </footer>
+
+      {/* ===== CHAT WIDGET INTERACTIVO DE FACTURÍN ===== */}
+      <FacturinChat />
     </div>
   );
 }
