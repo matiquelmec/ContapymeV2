@@ -33,11 +33,13 @@ $$;
 -- ─── 2. RESOLUCIÓN DE DUPLICADOS EN ORGANIZACIONES ───
 -- Si existen organizaciones que al normalizarse tengan el mismo RUT,
 -- mantendremos la más antigua con el RUT normalizado, y a las duplicadas
--- les añadiremos un sufijo '-DUP-[ID]' para no violar la restricción UNIQUE y preservar integridad referencial.
+-- les añadiremos un sufijo único (ej: D1, D2) cuidando no exceder el límite de 12 caracteres.
 DO $$
 DECLARE
   r RECORD;
-  v_keep_id uuid;
+  v_dup_id uuid;
+  v_counter integer;
+  v_suffix text;
 BEGIN
   FOR r IN 
     SELECT public.normalize_rut_db(rut_empresa) AS norm_rut, COUNT(*) as cnt
@@ -45,18 +47,24 @@ BEGIN
     GROUP BY norm_rut
     HAVING COUNT(*) > 1
   LOOP
-    -- Seleccionar la organización más antigua para conservar
-    SELECT id INTO v_keep_id 
-    FROM public.organizations 
-    WHERE public.normalize_rut_db(rut_empresa) = r.norm_rut
-    ORDER BY created_at ASC, id ASC
-    LIMIT 1;
-
-    -- Actualizar los duplicados con un sufijo único para no violar la restricción UNIQUE
-    UPDATE public.organizations
-    SET rut_empresa = rut_empresa || '-DUP-' || substring(id::text from 1 for 4)
-    WHERE public.normalize_rut_db(rut_empresa) = r.norm_rut
-      AND id != v_keep_id;
+    v_counter := 1;
+    -- Iterar sobre todos los duplicados excepto el más antiguo
+    FOR v_dup_id IN 
+      SELECT id 
+      FROM public.organizations 
+      WHERE public.normalize_rut_db(rut_empresa) = r.norm_rut
+      ORDER BY created_at ASC, id ASC
+      OFFSET 1 -- conserva el primero
+    LOOP
+      v_suffix := 'D' || v_counter; -- 'D1', 'D2', etc.
+      
+      -- Asegurarnos de que quepa en 12 caracteres (límite del tipo de dato en la columna)
+      UPDATE public.organizations
+      SET rut_empresa = substring(r.norm_rut from 1 for (12 - length(v_suffix))) || v_suffix
+      WHERE id = v_dup_id;
+      
+      v_counter := v_counter + 1;
+    END LOOP;
   END LOOP;
 END $$;
 
