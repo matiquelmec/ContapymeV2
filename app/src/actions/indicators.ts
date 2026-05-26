@@ -163,11 +163,14 @@ export async function syncIndicatorsAction() {
     errores.push(`mindicador.cl: ${err.message}`)
   }
 
-  // 2. Obtener IPSA y WTI de Yahoo Finance (APIs públicas de mercado)
+  // 2. Obtener activos globales y de mercado de Yahoo Finance (APIs públicas sin API Key)
   const tickersYahoo = {
     ipsa: { nombre: 'IPSA Chile', ticker: '%5EIPSA', unidad: 'Puntos' },
-    wti: { nombre: 'Petróleo WTI', ticker: 'CL=F', unidad: 'Dólares' }
+    wti: { nombre: 'Petróleo WTI', ticker: 'CL=F', unidad: 'US$ / Bl' },
+    sp500: { nombre: 'S&P 500', ticker: '%5EGSPC', unidad: 'Puntos' },
+    oro: { nombre: 'Oro COMEX', ticker: 'GC=F', unidad: 'US$ / Oz' }
   }
+
 
   for (const [codigo, info] of Object.entries(tickersYahoo)) {
     try {

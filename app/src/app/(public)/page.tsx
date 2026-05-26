@@ -31,7 +31,7 @@ export default async function HomePage() {
               <HeroBentoGrid indicators={indicators} news={regionalNews} />
             </div>
             <div>
-              <GlobalMarketPanel />
+              <GlobalMarketPanel indicators={indicators} />
             </div>
             <div>
               <MacroCalendarWidget />

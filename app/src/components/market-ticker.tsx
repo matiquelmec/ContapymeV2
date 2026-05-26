@@ -35,7 +35,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
       setLiveIndicators(prev => 
         prev.map(ind => {
           // UF y UTM son estables por definición diaria/mensual, pero los mercados fluctúan
-          if (['dolar', 'euro', 'libra_cobre', 'wti', 'ipsa'].includes(ind.codigo)) {
+          if (['dolar', 'euro', 'libra_cobre', 'wti', 'ipsa', 'sp500', 'oro'].includes(ind.codigo)) {
             const valNum = Number(ind.valor)
             let delta = 0
             
@@ -43,9 +43,9 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
               delta = (Math.random() - 0.5) * 0.95 // Cambios de hasta 0.95 pesos
             } else if (ind.codigo === 'libra_cobre') {
               delta = (Math.random() - 0.5) * 0.008 // Cambios de centavos de dólar
-            } else if (ind.codigo === 'wti') {
-              delta = (Math.random() - 0.5) * 0.09 // Cambios de centavos de crudo
-            } else if (ind.codigo === 'ipsa') {
+            } else if (ind.codigo === 'wti' || ind.codigo === 'oro') {
+              delta = (Math.random() - 0.5) * 0.15 // Cambios de centavos de crudo / oz de oro
+            } else if (ind.codigo === 'ipsa' || ind.codigo === 'sp500') {
               delta = (Math.random() - 0.5) * 3 // Cambios en puntos de bolsa
             }
 
@@ -54,6 +54,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
             setTimeout(() => {
               setUpdatedCodes(prev => ({ ...prev, [ind.codigo]: false }))
             }, 1200)
+
 
             return {
               ...ind,
@@ -168,17 +169,21 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
     code?: string
   }
 
-  // Indicadores básicos de Chile
-  const chileanItems: TickerItem[] = [
+  // Indicadores y activos del mercado global y nacional
+  const financialItems: TickerItem[] = [
     { label: "UF", value: `$${getVal('uf') || '---'}`, icon: ArrowUp, color: "text-emerald-500", code: 'uf' },
     { label: "DÓLAR", value: `$${getVal('dolar') || '---'}`, icon: ArrowUp, color: "text-emerald-500", code: 'dolar' },
     { label: "EURO", value: `$${getVal('euro') || '---'}`, icon: ArrowDown, color: "text-rose-500", code: 'euro' },
     { label: "UTM", value: `$${getVal('utm', 0) || '---'}`, icon: ArrowUp, color: "text-indigo-500", code: 'utm' },
     { label: "IPSA", value: `${getVal('ipsa', 0) || '---'}`, icon: ArrowUp, color: "text-blue-500", code: 'ipsa' },
+    { label: "S&P 500", value: `${getVal('sp500', 1) || '---'}`, icon: ArrowUp, color: "text-indigo-500", code: 'sp500' },
+    { label: "ORO", value: `US$ ${getVal('oro') || '---'}`, icon: ArrowUp, color: "text-amber-500", code: 'oro' },
     { label: "COBRE", value: `US$ ${getVal('libra_cobre') || '---'}`, icon: ArrowDown, color: "text-emerald-500", code: 'libra_cobre' },
+    { label: "WTI PETRÓLEO", value: `US$ ${getVal('wti') || '---'}`, icon: ArrowUp, color: "text-sky-500", code: 'wti' },
   ]
 
-  const tickerItems = [...chileanItems, ...chileanItems, ...chileanItems]
+  const tickerItems = [...financialItems, ...financialItems, ...financialItems]
+
 
   return (
     <div className="w-full bg-background/60 border-b border-border/50 h-11 flex items-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">

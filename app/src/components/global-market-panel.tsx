@@ -16,6 +16,8 @@ import {
   RefreshCw
 } from 'lucide-react'
 
+import { Indicator } from '@/lib/types/dashboard'
+
 interface MarketAsset {
   symbol: string
   name: string
@@ -25,7 +27,11 @@ interface MarketAsset {
   isCommodity?: boolean
 }
 
-export function GlobalMarketPanel() {
+interface GlobalMarketPanelProps {
+  indicators?: Indicator[]
+}
+
+export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
   const [loading, setLoading] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStep, setAnalysisStep] = useState('')
@@ -42,14 +48,32 @@ export function GlobalMarketPanel() {
   )
   const [source, setSource] = useState<'local' | 'advisor'>('local')
 
+  // Obtener el valor de un indicador de Supabase si existe
+  const getIndValue = (code: string, fallback: number) => {
+    const ind = indicators.find(i => i.codigo === code)
+    return ind ? Number(ind.valor) : fallback
+  }
 
   // Datos simulados de activos financieros
   const [simulatedAssets, setSimulatedAssets] = useState<MarketAsset[]>([
     { symbol: 'USD/CLP', name: 'Dólar Observado', price: 932.45, change: 0.38 },
-    { symbol: 'EUR/CLP', name: 'Euro en Chile', price: 1011.20, change: -0.15 },
+    { symbol: 'S&P 500', name: 'S&P 500 Index', price: 5200.5, change: 0.45 },
     { symbol: 'COBRE', name: 'Cobre COMEX', price: 4.52, change: 1.25, isCommodity: true },
-    { symbol: 'BTC/USD', name: 'Bitcoin / Dólar', price: 88540, change: 3.12, isCrypto: true },
+    { symbol: 'ORO', name: 'Oro COMEX', price: 2350.8, change: 0.85, isCommodity: true },
+    { symbol: 'WTI', name: 'Petróleo WTI', price: 78.4, change: -0.25, isCommodity: true },
   ])
+
+  // Sincronizar con los indicadores reales que vienen de las props al cargar o al actualizarse en DB
+  useEffect(() => {
+    setSimulatedAssets([
+      { symbol: 'USD/CLP', name: 'Dólar Observado', price: getIndValue('dolar', 932.45), change: 0.38 },
+      { symbol: 'S&P 500', name: 'S&P 500 Index', price: getIndValue('sp500', 5200.5), change: 0.45 },
+      { symbol: 'COBRE', name: 'Cobre COMEX', price: getIndValue('libra_cobre', 4.52), change: 1.25, isCommodity: true },
+      { symbol: 'ORO', name: 'Oro COMEX', price: getIndValue('oro', 2350.8), change: 0.85, isCommodity: true },
+      { symbol: 'WTI', name: 'Petróleo WTI', price: getIndValue('wti', 78.4), change: -0.25, isCommodity: true },
+    ])
+  }, [indicators])
+
 
   // Simulación de fluctuación de ticks financieros autónoma
   useEffect(() => {
