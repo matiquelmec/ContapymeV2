@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminNewsClient } from './admin-news-client'
 import Link from 'next/link'
 import { BookOpen, LogOut, ArrowLeft, ShieldAlert, LogIn } from 'lucide-react'
@@ -18,16 +19,18 @@ export default async function AdminPortalPage() {
     return redirect('/login?next=/admin')
   }
 
-  // 2. Obtener perfil de la base de datos
-  const { data: profile, error: profileError } = await supabase
+  // 2. Obtener perfil de la base de datos usando admin client para evitar problemas de RLS
+  const supabaseAdmin = createAdminClient()
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('id, role, plan, full_name')
     .eq('id', user.id)
     .single()
 
-  // Si no se encuentra perfil, asumimos que no tiene acceso
+  // Si no se encuentra perfil, mostrar error informativo en vez de redirigir silenciosamente
   if (profileError || !profile) {
-    return redirect('/')
+    console.error('[Admin] Error al obtener perfil:', profileError?.message, 'User ID:', user.id)
+    return redirect('/?admin_error=perfil_no_encontrado')
   }
 
   // 3. Validar permisos de administración (con soporte case-insensitive)
@@ -100,8 +103,8 @@ export default async function AdminPortalPage() {
     )
   }
 
-  // 4. Si está autorizado, obtener el listado total de noticias
-  const { data: news, error: newsError } = await supabase
+  // 4. Si está autorizado, obtener el listado total de noticias (con admin client para evitar RLS)
+  const { data: news, error: newsError } = await supabaseAdmin
     .from('regional_news')
     .select('*')
     .order('published_at', { ascending: false })

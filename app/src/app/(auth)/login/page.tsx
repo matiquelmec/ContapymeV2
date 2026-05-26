@@ -12,13 +12,14 @@ export const metadata: Metadata = {
 }
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string; success?: string }>
+  searchParams: Promise<{ error?: string; success?: string; next?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   const error = params.error
   const success = params.success
+  const next = params.next
 
   return (
     <div className="w-full max-w-md">
@@ -49,6 +50,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </CardHeader>
         <CardContent className="px-8 pb-10">
           <form action={signInWithEmail} className="space-y-5">
+            {next && <input type="hidden" name="next" value={next} />}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">
                 Correo electrónico

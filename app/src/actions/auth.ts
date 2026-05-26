@@ -8,6 +8,7 @@ export async function signInWithEmail(formData: FormData) {
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const nextPath = formData.get('next') as string | null
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -18,7 +19,8 @@ export async function signInWithEmail(formData: FormData) {
     } else if (error.message) {
       msg = error.message // Podría ser Invalid login credentials etc, pero lo mostramos para saber qué pasa
     }
-    return redirect('/login?error=' + encodeURIComponent(msg))
+    const nextParam = nextPath ? `&next=${encodeURIComponent(nextPath)}` : ''
+    return redirect('/login?error=' + encodeURIComponent(msg) + nextParam)
   }
 
   // Check if user has completed onboarding
@@ -44,6 +46,11 @@ export async function signInWithEmail(formData: FormData) {
       // Auto-corregir el flag para el futuro
       await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
     }
+  }
+
+  // Redirigir al destino original si se proporcionó un parámetro 'next' válido (ruta interna)
+  if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+    return redirect(nextPath)
   }
 
   return redirect('/dashboard')
