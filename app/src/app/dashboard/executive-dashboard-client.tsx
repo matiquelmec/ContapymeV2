@@ -30,11 +30,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useUIStore } from '@/lib/store/ui-store'
 import { dashboardDataSchema } from '@/lib/schemas/dashboard'
 
+const LOADING_STEPS = [
+  { id: 1, text: "Conectando al Motor Financiero Python..." },
+  { id: 2, text: "Sincronizando registros de compras y ventas (RCV)..." },
+  { id: 3, text: "Cruzando transacciones del libro diario..." },
+  { id: 4, text: "Verificando firmas criptográficas en el Ledger..." },
+  { id: 5, text: "Procesando depreciación de activos fijos..." },
+  { id: 6, text: "Calculando salud financiera y ratios..." },
+  { id: 7, text: "Finalizando reporte ejecutivo..." }
+];
+
 export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string }) {
   const { dashboardYear: targetYear, setDashboardYear: setTargetYear } = useUIStore()
   const [selectedNews, setSelectedNews] = useState<RegionalNews | null>(null)
   const [forceRefresh, setForceRefresh] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
 
   useEffect(() => {
     setMounted(true)
@@ -63,6 +74,17 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
     retry: 1,
     staleTime: 1000 * 30, // Reducido a 30 segundos para mayor frescura y dinamismo
   })
+
+  useEffect(() => {
+    if (!isAnalyzing) {
+      setCurrentStep(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setCurrentStep(prev => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev))
+    }, 1800)
+    return () => clearInterval(interval)
+  }, [isAnalyzing])
 
   const data = rawData as DashboardData | null
 
@@ -102,17 +124,81 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
   // ―― ESTADO: Calculando ――
   if (isAnalyzing) {
     return (
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 mt-6">
-        <CardContent className="p-16 flex flex-col items-center justify-center text-center gap-6">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <Brain className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <Card className="bg-card border border-border shadow-2xl rounded-[2.5rem] overflow-hidden relative mt-6">
+        {/* Glow halo de fondo */}
+        <div className="absolute -top-12 -left-12 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        <CardContent className="p-16 flex flex-col items-center justify-center text-center gap-8 relative z-10">
+          <div className="relative flex items-center justify-center w-24 h-24">
+            {/* Anillos pulsantes concéntricos */}
+            <motion.div 
+              className="absolute w-24 h-24 rounded-full bg-primary/10 border border-primary/20"
+              animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            />
+            <motion.div 
+              className="absolute w-20 h-20 rounded-full bg-emerald-500/5 border border-emerald-500/10"
+              animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.1, 0.5] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", delay: 0.5 }}
+            />
+            
+            {/* Círculo central flotante con el Cerebro */}
+            <motion.div 
+              className="relative w-16 h-16 rounded-full bg-card border border-border shadow-lg flex items-center justify-center"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            >
+              <Brain className="w-8 h-8 text-primary animate-pulse" />
+            </motion.div>
           </div>
-          <div className="space-y-2">
-            <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Motor Python Analizando…</h3>
-            <p className="text-muted-foreground font-bold italic text-sm">
-              Cruzando datos de Compras, Ventas, Activos y Libro Diario en tiempo real.
-            </p>
+
+          <div className="space-y-4 max-w-md">
+            <div className="space-y-1">
+              <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Análisis en Progreso</h3>
+              <p className="text-muted-foreground font-bold italic text-sm">
+                El motor financiero Python está cruzando la contabilidad del periodo.
+              </p>
+            </div>
+
+            {/* Stepper dinámico y moderno */}
+            <div className="mt-8 space-y-3 bg-muted/20 border border-border/50 rounded-3xl p-6 text-left">
+              {LOADING_STEPS.map((s, idx) => {
+                const isCompleted = idx < currentStep;
+                const isActive = idx === currentStep;
+                return (
+                  <div 
+                    key={s.id} 
+                    className={`flex items-center gap-3 transition-all duration-500 ${
+                      isCompleted 
+                        ? 'text-emerald-600 font-bold opacity-100' 
+                        : isActive 
+                        ? 'text-primary font-bold opacity-100 scale-[1.02] origin-left' 
+                        : 'text-muted-foreground/30 font-semibold'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center w-5 h-5 shrink-0">
+                      {isCompleted ? (
+                        <motion.div 
+                          initial={{ scale: 0 }} 
+                          animate={{ scale: 1 }} 
+                          className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20"
+                        >
+                          <svg className="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </motion.div>
+                      ) : isActive ? (
+                        <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      ) : (
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
+                      )}
+                    </div>
+                    <span className="text-[10px] sm:text-xs uppercase tracking-wider font-mono">{s.text}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
