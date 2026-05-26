@@ -19,14 +19,26 @@ export default function PreciosPage() {
               name: "Personal Patagonia",
               price: "$19.990",
               limit: "1 Empresa",
-              features: ["Acceso Funcional TOTAL", "Auditoría IA Incluida", "F29 & LRE Automatizado", "Hemeroteca Regional"],
+              features: [
+                "Facturación DTE Estándar",
+                "Conciliación Bancaria Básica",
+                "Soporte Estándar por Ticket",
+                "Hemeroteca Regional",
+                "Excluye Multiusuario y LRE"
+              ],
               label: "Económico"
             },
             {
               name: "Estudio Contable",
               price: "$44.990",
               limit: "Hasta 5 Empresas",
-              features: ["Acceso Funcional TOTAL", "Auditoría IA Incluida", "F29 & LRE Automatizado", "Hemeroteca Regional"],
+              features: [
+                "Todo lo de Personal Patagonia",
+                "Gestión Multiusuario y Colaboración",
+                "Exportación Oficial LRE",
+                "Facturación DTE Avanzada",
+                "Soporte Prioritario"
+              ],
               popular: true,
               label: "Inteligente"
             },
@@ -34,7 +46,13 @@ export default function PreciosPage() {
               name: "Consorcio Fueguino",
               price: "$89.990",
               limit: "Empresas Ilimitadas",
-              features: ["Acceso Funcional TOTAL", "Auditoría IA Incluida", "F29 & LRE Automatizado", "Hemeroteca Regional"],
+              features: [
+                "Todo lo de Estudio Contable",
+                "Auditoría Ledger Blockchain (SHA-256)",
+                "Soporte Dedicado 24/7",
+                "Reportabilidad Consolidada",
+                "Acceso API e Integraciones"
+              ],
               label: "Potencia"
             },
           ].map((plan, i) => (

@@ -31,6 +31,21 @@ export async function generateLREAction(formData: {
   company_rut: string;
 }) {
   try {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.plan === "personal") {
+      throw new Error("El Libro de Remuneraciones Electrónico (LRE) está bloqueado en el plan Personal. Por favor, suba de plan a Estudio Contable o superior.");
+    }
+
     const response = await engineFetch('/api/v1/payroll/lre/generate', {
       method: "POST",
       body: JSON.stringify(formData),
@@ -48,6 +63,21 @@ export async function generateLREAction(formData: {
 
 export async function exportLREAction(bookId: string) {
   try {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.plan === "personal") {
+      throw new Error("La exportación LRE requiere una suscripción Estudio Contable o superior.");
+    }
+
     const response = await engineFetch(`/api/v1/payroll/lre/export/${bookId}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

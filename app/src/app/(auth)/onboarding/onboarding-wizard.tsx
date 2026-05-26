@@ -65,7 +65,14 @@ export default function OnboardingWizard() {
     setError('')
     const res = await createOrganization({ rut, nombre, giro, direccion, comuna, region, regimen })
     setLoading(false)
-    if (!res.success) { setError(res.error || 'Error al crear empresa'); return }
+    if (!res.success) {
+      if (res.error === 'LIMIT_REACHED') {
+        setError(res.message || 'Límite de empresas alcanzado en tu plan actual. Por favor actualiza tu suscripción.')
+      } else {
+        setError(res.error || 'Error al crear empresa')
+      }
+      return
+    }
     setOrgId(res.organizationId!)
     setStep(3)
   }

@@ -54,7 +54,22 @@ export function NewCompanyModal({
       // 1. Crear empresa y miembro dueño
       toast.loading('Iniciando creación en el motor corporativo...', { id: 'new-org' })
       const resOrg = await createOrganization(formData)
-      if (!resOrg.success || !resOrg.organizationId) throw new Error(resOrg.error)
+      if (!resOrg.success || !resOrg.organizationId) {
+        if (resOrg.error === 'LIMIT_REACHED') {
+          toast.error(resOrg.message || 'Límite de empresas alcanzado en tu plan actual.', {
+            id: 'new-org',
+            duration: 6000,
+            action: {
+              label: 'Ver Planes',
+              onClick: () => {
+                window.location.href = '/precios';
+              }
+            }
+          })
+          return
+        }
+        throw new Error(resOrg.error)
+      }
 
       // 2. Sembrar el plan de cuentas inicial (RPC)
       toast.loading('Forjando el Plan de Cuentas estándar (IFRS)...', { id: 'new-org' })

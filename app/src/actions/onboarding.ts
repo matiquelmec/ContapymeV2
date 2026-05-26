@@ -50,6 +50,45 @@ export async function createOrganization(data: {
 
   if (!user) throw new Error('No autenticado')
 
+  // 1. Obtener el plan del perfil del usuario (Fase 2)
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profile) {
+    console.error('Error fetching user profile for plan check:', profileError)
+    return { success: false, error: 'Error al validar el perfil de usuario. Verifique su suscripción.' }
+  }
+
+  const userPlan = profile.plan || 'personal'
+
+  // 2. Si el plan no es 'consorcio', contar las organizaciones creadas por el usuario
+  if (userPlan !== 'consorcio') {
+    const { data: memberships, error: countError } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('role', 'owner')
+
+    if (countError) {
+      console.error('Error counting user organizations:', countError)
+      return { success: false, error: 'Error al validar límite de empresas en el sistema.' }
+    }
+
+    const orgCount = memberships ? memberships.length : 0
+    const limit = userPlan === 'personal' ? 1 : 5
+
+    if (orgCount >= limit) {
+      return { 
+        success: false, 
+        error: 'LIMIT_REACHED', 
+        message: `Límite de empresas alcanzado. Tu plan ${userPlan === 'personal' ? 'Personal' : 'Estudio Contable'} permite un máximo de ${limit} ${limit === 1 ? 'empresa' : 'empresas'}.` 
+      }
+    }
+  }
+
   // Llamar al RPC (Procedimiento Almacenado) que crea la empresa y el miembro atómicamente
   // Bypasando las restricciones RLS porque es SECURITY DEFINER
   const { data: orgId, error: rpcError } = await supabase.rpc('create_new_company', {
