@@ -30,66 +30,65 @@ export function AISandbox() {
 
   const scenarios = [
     {
-      title: "Ley Navarino & Exención IVA",
-      description: "Simula el cálculo tributario de una factura exenta emitida por una empresa acogida a la Ley Navarino en Tierra del Fuego.",
-      prompt: "Simular facturación de $12.500.000 a cliente de Punta Arenas con bonificación del 20% (Ley 18.392)",
+      title: "Facturación Inmutable & DTE",
+      description: "Emisión de facturas electrónicas chilenas firmadas digitalmente y encadenadas criptográficamente al Blockchain Ledger.",
+      prompt: "Emitir Factura Electrónica DTE con Encadenamiento Criptográfico de Inmutabilidad",
       steps: [
-        { text: "🛰️ Conectando con Servicios SII de Magallanes...", delay: 800, status: 'loading' },
-        { text: "🔍 Validando RUT emisor bajo Registro Ley Navarino (18.392)... OK", delay: 900, status: 'success' },
-        { text: "📊 Aplicando exención total de IVA (19%) sobre $12.500.000...", delay: 1000, status: 'info' },
-        { text: "💰 Calculando Bonificación del Estado (D.F.L. 15): $2.500.000 (20% neto)...", delay: 1100, status: 'success' },
-        { text: "🧬 Generando Asiento Contable automático en Libro Diario...", delay: 1000, status: 'loading' },
-        { text: "🔒 Sellando bloque en Ledger Inmutable mediante encadenamiento SHA-256...", delay: 1200, status: 'loading' },
+        { text: "🧾 Generando XML de Factura Electrónica (DTE Tipo 33)...", delay: 800, status: 'loading' },
+        { text: "🖋️ Aplicando Firma Digital SII (C14N canonicalization & PKCS#1 v1.5)... OK", delay: 900, status: 'success' },
+        { text: "🔗 Recuperando Hash del DTE anterior desde base de datos... OK", delay: 800, status: 'info' },
+        { text: "🔒 Computando encadenamiento SHA-256: Hash(n) = SHA256(Record(n) + Hash(n-1))...", delay: 1100, status: 'loading' },
+        { text: "📡 Persistiendo sello inmutable en dte_issued.integrity_hash...", delay: 1000, status: 'success' },
+        { text: "💾 Sincronizando asiento contable de ventas en el Libro Diario...", delay: 900, status: 'success' },
       ],
       result: {
-        title: "DTE Exento Generado",
-        summary: "Facturación Ley Navarino procesada con éxito sin fricción fiscal.",
+        title: "DTE Emitido & Ledger Encadenado",
+        summary: "Factura emitida y firmada con éxito. Bloque criptográfico encadenado para prevenir alteración de registros.",
         ledger: [
-          { acc: "1.1.01.01 - Caja/Banco", debe: "$15.000.000", haber: "$0" },
-          { acc: "4.1.01.02 - Ventas Exentas Navarino", debe: "$0", haber: "$12.500.000" },
-          { acc: "4.2.01.05 - Bonificación Ley 18.392", debe: "$0", haber: "$2.500.000" }
+          { acc: "1.1.02.01 - Clientes por Cobrar", debe: "$11.900.000", haber: "$0" },
+          { acc: "4.1.01.01 - Ingresos por Ventas Navarino", debe: "$0", haber: "$10.000.000" },
+          { acc: "2.1.03.01 - IVA Débito Fiscal (Exento 18.392)", debe: "$0", haber: "$1.900.000" }
         ],
         hash: "a4f89d873e211bb746a9e14a1a361bc917aef92a8369de14bca837e21a4f00b1"
       }
     },
     {
-      title: "Auditoría de Inconsistencia F29",
-      description: "Analiza incongruencias en tiempo real entre tus Libros Contables Físicos y el Registro de Compras y Ventas (RCV) del SII.",
-      prompt: "Ejecutar cruce preventivo mensual RCV vs Libro de Ventas - Período Tributario Actual",
+      title: "Conciliación Bancaria V2 (Sovereign AI)",
+      description: "Cruce automático de cartolas y clasificación de glosas bancarias usando Naive Bayes local en CPU a coste $0.",
+      prompt: "Ejecutar cruce inteligente de cartola usando Sovereign AI (Clasificador Local)",
       steps: [
-        { text: "📂 Cargando registros de Compras y Ventas del SII (API Integración)...", delay: 900, status: 'loading' },
-        { text: "📂 Extrayendo Libro de Ventas en tiempo real desde Supabase...", delay: 800, status: 'loading' },
-        { text: "⚖️ Comparando folios emitidos y montos netos...", delay: 1100, status: 'info' },
-        { text: "⚠️ Inconsistencia detectada en Folio N° 10842 (Factura de Venta)...", delay: 1000, status: 'alert' },
-        { text: "❗ Detalle: IVA Débito declarado en SII ($380.000) difiere de Contabilidad ($320.000)...", delay: 1200, status: 'alert' },
-        { text: "🛠️ Sugiriendo Asiento de Ajuste correctivo en Libro Diario...", delay: 1000, status: 'success' },
+        { text: "📂 Cargando movimientos de cartola bancaria de la organización...", delay: 800, status: 'loading' },
+        { text: "🧠 Cargando The Sovereign AI Memory (clf_f8758d56.pkl)... OK", delay: 900, status: 'success' },
+        { text: "🔍 Analizando glosa bancaria: 'PAGO MENSUAL TRANSBANK CORP'...", delay: 1000, status: 'info' },
+        { text: "🔮 Inferencia activa en CPU: confianza del 94.2% (>70% umbral de seguridad)...", delay: 1100, status: 'success' },
+        { text: "🛠️ Sugiriendo imputación automática a cuenta predefinida...", delay: 900, status: 'success' },
+        { text: "⚖️ Generando asiento de ajuste y conciliación atómica del estado...", delay: 1000, status: 'success' },
       ],
       result: {
-        title: "Reporte de Inconsistencia F29",
-        summary: "Diferencia de $60.000 en IVA Débito detectada a tiempo. Multa potencial evitada: 10% UTM.",
+        title: "Conciliación & Ajuste con IA",
+        summary: "Glosa clasificada automáticamente por Naive Bayes local con alta certidumbre y conciliada en el Libro Diario.",
         ledger: [
-          { acc: "Asiento de Ajuste Sugerido:", debe: "", haber: "" },
-          { acc: "4.1.01.01 - Ingresos por Ventas", debe: "$60.000", haber: "$0" },
-          { acc: "2.1.03.01 - IVA Débito Fiscal", debe: "$0", haber: "$60.000" }
+          { acc: "5.1.05.001 - Gastos y Comisiones Bancarias", debe: "$45.000", haber: "$0" },
+          { acc: "1.1.01.01 - Banco Santander (Corriente)", debe: "$0", haber: "$45.000" }
         ],
         hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     },
     {
-      title: "Remuneración Zona Extrema",
-      description: "Calcula liquidaciones de sueldo aplicando los topes e incrementos por asignación de zona correspondientes a Magallanes.",
-      prompt: "Liquidar Sueldo de Operario Industrial en Punta Arenas con 25% Asignación de Zona Extrema",
+      title: "Remuneración Zona Extrema & LRE",
+      description: "Cálculo de liquidaciones aplicando topes previsionales de Chile (2026), 42 horas y asignaciones regionales de Magallanes.",
+      prompt: "Procesar liquidación de sueldo con asignación de zona extrema y exportar a LRE",
       steps: [
-        { text: "📋 Cargando datos de contrato y previsión (AFP Cuprum + Fonasa)...", delay: 700, status: 'loading' },
-        { text: "🏞️ Calculando Asignación de Zona Extrema (25% Sueldo Base): $200.000...", delay: 950, status: 'success' },
-        { text: "⚖️ Verificando topes imponibles del mes actual...", delay: 800, status: 'info' },
-        { text: "📉 Calculando leyes sociales y cotizaciones obligatorias...", delay: 1000, status: 'info' },
-        { text: "📁 Generando archivo plano LRE (Dirección del Trabajo)...", delay: 1100, status: 'success' },
+        { text: "📋 Cargando datos de contrato del empleado (AFP Cuprum + Salud Fonasa)...", delay: 700, status: 'loading' },
+        { text: "🏞️ Aplicando 25% Asignación de Zona Extrema (D.L. 889 / Ley Regional): $200.000...", delay: 950, status: 'success' },
+        { text: "⚖️ Verificando topes previsionales chilenos (Límites 2026: 84.3 UF)... OK", delay: 800, status: 'info' },
+        { text: "📉 Calculando leyes sociales y retenciones de impuesto de segunda categoría...", delay: 1000, status: 'info' },
+        { text: "📁 Exportando estructura de campos compatible con LRE (Dirección del Trabajo)...", delay: 1100, status: 'success' },
         { text: "🔒 Firmando digitalmente liquidación con hash de inmutabilidad...", delay: 900, status: 'loading' },
       ],
       result: {
-        title: "Liquidación & LRE Lista",
-        summary: "Liquidación calculada con bono de zona extrema. Archivo LRE sincronizado contablemente.",
+        title: "Nómina Procesada & LRE Listo",
+        summary: "Liquidación calculada con bono de zona extrema. Archivo plano LRE exportado para fiscalización.",
         ledger: [
           { acc: "5.1.01.01 - Sueldos y Salarios (Base)", debe: "$800.000", haber: "$0" },
           { acc: "5.1.01.04 - Asignación Zona Extrema", debe: "$200.000", haber: "$0" },
@@ -181,7 +180,7 @@ export function AISandbox() {
                     : 'bg-neutral-100 text-neutral-450'
                 }`}>
                   {idx === 0 && <ShieldCheck className="h-5 w-5" />}
-                  {idx === 1 && <AlertTriangle className="h-5 w-5" />}
+                  {idx === 1 && <Sparkles className="h-5 w-5" />}
                   {idx === 2 && <DollarSign className="h-5 w-5" />}
                 </div>
                 <div className="space-y-1">
