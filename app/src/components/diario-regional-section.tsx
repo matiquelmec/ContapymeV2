@@ -109,11 +109,11 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                  <span className="w-10 h-[1px] bg-primary/50" />
                  <Landmark className="h-3 w-3 animate-pulse" /> Portal de Noticias Institucional Contapymepuq
                </div>
-               <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.9] italic text-foreground text-shadow-sm">
+               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground text-shadow-sm">
                  Diario <span className="text-primary italic font-serif">Punta Arenas</span> <br />
                  <span className="text-muted-foreground/30">& Financiero Regional.</span>
                </h2>
-               <p className="text-muted-foreground font-medium italic text-lg leading-relaxed max-w-lg">
+               <p className="text-muted-foreground font-medium italic text-sm sm:text-lg leading-relaxed max-w-lg">
                  Información estratégica para el contador chileno, con el balance perfecto entre economía regional y global.
                </p>
             </div>
@@ -137,35 +137,35 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
               {heroNews ? (
                 <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
                   {/** ... render de noticia real ... */}
-                  <div key={heroNews.id} className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl shadow-primary/10 hover:border-primary/40 transition-all duration-700">
+                  <div key={heroNews.id} className="relative aspect-[16/9] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl shadow-primary/10 hover:border-primary/40 transition-all duration-700">
                      <Image 
                         src={heroNews.image_url || "/news-placeholder.png"} 
                         alt={heroNews.title} 
                         fill 
                         className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                     />
-                     <div className="absolute inset-x-0 top-0 p-8 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      />
+                     <div className="absolute inset-x-0 top-0 p-4 sm:p-8 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="bg-white/90 backdrop-blur-xl px-4 py-2 rounded-full border border-primary/20 shadow-lg flex items-center gap-2">
                            <BadgeCheck className="h-4 w-4 text-primary" />
                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Contenido Verificado</span>
                         </div>
                      </div>
                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                     <div className="absolute bottom-10 left-10 p-2 space-y-4 max-w-xl">
-                        <span className="text-[10px] font-black tracking-widest text-primary-foreground italic px-4 py-1.5 border border-primary/50 rounded-lg bg-primary/90 backdrop-blur-xl shadow-lg shadow-primary/20 uppercase">{heroNews.category}</span>
-                        <h3 className="text-3xl md:text-5xl font-black leading-none italic drop-shadow-2xl text-white tracking-tighter uppercase">
-                          {heroNews.title}
+                     <div className="absolute bottom-4 left-4 sm:bottom-10 sm:left-10 p-2 space-y-3 sm:space-y-4 max-w-[90%] sm:max-w-xl">
+                        <span className="text-[8px] sm:text-[10px] font-black tracking-widest text-primary-foreground italic px-3 sm:px-4 py-1 sm:py-1.5 border border-primary/50 rounded-lg bg-primary/90 backdrop-blur-xl shadow-lg shadow-primary/20 uppercase">{heroNews.category}</span>
+                        <h3 className="text-xl sm:text-3xl md:text-5xl font-black leading-tight sm:leading-none italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-3 sm:line-clamp-none">
+                           {heroNews.title}
                         </h3>
-                        <div className="flex items-center gap-4 text-[10px] font-black text-white/70 uppercase tracking-widest italic" suppressHydrationWarning>
-                          <span className="flex items-center gap-2" suppressHydrationWarning><span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Diario Punta Arenas</span>
-                          <span className="w-1 h-1 rounded-full bg-white/20" />
-                          <span suppressHydrationWarning>{new Date(heroNews.published_at).toLocaleDateString('es-CL')}</span>
+                        <div className="flex items-center gap-3 sm:gap-4 text-[8px] sm:text-[10px] font-black text-white/70 uppercase tracking-widest italic" suppressHydrationWarning>
+                           <span className="flex items-center gap-1.5 sm:gap-2" suppressHydrationWarning><span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary animate-pulse" /> Diario Punta Arenas</span>
+                           <span className="w-1 h-1 rounded-full bg-white/20" />
+                           <span suppressHydrationWarning>{new Date(heroNews.published_at).toLocaleDateString('es-CL')}</span>
                         </div>
                      </div>
                   </div>
                 </Link>
               ) : (
-                <div className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl bg-muted/10 backdrop-blur-sm flex flex-col items-center justify-center space-y-4 p-12 text-center border-dashed">
+                <div className="relative aspect-[16/9] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl bg-muted/10 backdrop-blur-sm flex flex-col items-center justify-center space-y-4 p-6 sm:p-12 text-center border-dashed">
                    <div className="h-16 w-16 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
                       <Globe className="h-8 w-8 text-primary/20" />
                    </div>
@@ -227,7 +227,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             {/* 🏛️ ESPACIOS PUBLICITARIOS Y ALIANZAS (Premium Ad Slots) */}
             <div className="lg:col-span-4 space-y-10">
                {/* 📣 ESPACIO PUBLICITARIO DESTACADO */}
-               <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
+               <div className="p-5 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
                   {/* Orbe de luz difuminado */}
                   <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700 animate-pulse" />
                   
@@ -263,7 +263,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   </div>
                </div>
 
-               <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
+               <div className="p-5 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-6 relative overflow-hidden group shadow-xl transition-all duration-500 hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.08)]">
                   {/* Orbe de luz difuminado */}
                   <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all duration-700 animate-pulse" />
                   

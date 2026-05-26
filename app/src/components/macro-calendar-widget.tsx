@@ -105,7 +105,7 @@ export function MacroCalendarWidget() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col justify-between p-6 sm:p-8 rounded-[2.5rem] bg-white border border-border/65 hover:border-primary/20 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] transition-all duration-500 min-h-[460px] relative overflow-hidden group">
+    <div className="w-full h-full flex flex-col justify-between p-5 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] bg-white border border-border/65 hover:border-primary/20 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] transition-all duration-500 min-h-[460px] relative overflow-hidden group">
       {/* Luz decorativa */}
       <div className="absolute -top-20 -right-20 w-44 h-44 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all duration-500" />
       
@@ -167,7 +167,7 @@ export function MacroCalendarWidget() {
                   </div>
                   
                   <div className="min-w-0 leading-tight">
-                    <h4 className="text-[10px] font-black uppercase text-foreground truncate tracking-tight">
+                    <h4 className="text-[10px] font-black uppercase text-foreground tracking-tight whitespace-normal break-words">
                       {event.title}
                     </h4>
                     <div className="flex items-center gap-1.5 mt-0.5 text-[7.5px] font-bold text-muted-foreground/60 uppercase tracking-wider">
@@ -219,11 +219,11 @@ export function MacroCalendarWidget() {
       </div>
 
       {/* Pie de Firma */}
-      <div className="border-t border-zinc-150 pt-4 flex items-center justify-between shrink-0 relative z-10">
+      <div className="border-t border-zinc-150 pt-4 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between shrink-0 relative z-10">
         <span className="text-[7.5px] font-black text-muted-foreground/40 uppercase tracking-widest">
           Sincronización del Calendario Macro
         </span>
-        <span className="text-[8px] font-black text-primary/70 uppercase tracking-wider font-sans">
+        <span className="text-[8px] font-black text-primary/70 uppercase tracking-wider font-sans self-end sm:self-auto">
           ContaPyme PUQ
         </span>
       </div>
