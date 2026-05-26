@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Globe, Calendar, MessageCircle, Share2, Instagram, Download, Loader2, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
@@ -305,6 +306,25 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
               </p>
             )
           })}
+        </div>
+
+        {/* CTA Contextual */}
+        <div className="p-8 rounded-[2rem] bg-primary/5 border border-primary/10 space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+            Herramienta Relacionada
+          </p>
+          <h4 className="text-xl font-black italic tracking-tighter uppercase">
+            ¿Te afecta esta normativa? Simula tu ahorro.
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Usa nuestra calculadora tributaria para comparar tu beneficio 
+            fiscal en Zona Franca vs Régimen General.
+          </p>
+          <Link href="/software#demos">
+            <Button className="rounded-xl font-black uppercase tracking-widest text-[10px] bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all">
+              Ir a la Calculadora Tributaria →
+            </Button>
+          </Link>
         </div>
 
         {/* Barra de Interacción y Compartir */}

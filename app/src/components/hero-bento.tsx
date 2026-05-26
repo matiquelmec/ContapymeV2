@@ -13,10 +13,13 @@ import {
   Compass, 
   ArrowUpRight, 
   Radio, 
-  Activity 
+  Activity,
+  RefreshCw 
 } from 'lucide-react'
 import { Indicator } from '@/lib/types/dashboard'
 import { createClient } from '@/lib/supabase/client'
+import { syncAllDataAction } from '@/actions/indicators'
+import { toast } from 'sonner'
 
 interface HeroBentoGridProps {
   indicators: Indicator[]
@@ -33,6 +36,27 @@ interface WeatherData {
 }
 
 export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps) {
+  const [syncing, setSyncing] = useState(false)
+
+  const handleManualSync = async () => {
+    if (syncing) return
+    setSyncing(true)
+    const toastId = toast.loading('Sincronizando indicadores y diario regional...')
+    
+    try {
+      const res = await syncAllDataAction()
+      if (res.success) {
+        toast.success('Datos actualizados en tiempo real', { id: toastId })
+      } else {
+        toast.error('Actualización parcial. Se encontraron algunos errores.', { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error(`Error al sincronizar: ${err.message}`, { id: toastId })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   // Estado para el clima
   const [weather, setWeather] = useState<WeatherData>({
     temp: 8.7,
@@ -237,7 +261,14 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
         <div>
           <div className="flex items-center justify-between">
             <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Indicadores</span>
-            <TrendingUp className="h-3.5 w-3.5 text-primary opacity-60 group-hover:opacity-100 transition-opacity" />
+            <button
+              onClick={handleManualSync}
+              disabled={syncing}
+              className="text-primary hover:bg-primary/10 rounded-full p-1.5 transition-all disabled:opacity-50 shrink-0"
+              title="Actualizar datos en vivo"
+            >
+              <RefreshCw className={`h-3 w-3 ${syncing ? 'animate-spin' : 'opacity-65 hover:opacity-100'}`} />
+            </button>
           </div>
           
           <div className="mt-4 space-y-3.5">

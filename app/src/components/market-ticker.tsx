@@ -2,21 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { 
-  TrendingUp, 
-  DollarSign, 
-  Building2, 
-  BarChart3, 
-  Package, 
-  Zap, 
-  Activity, 
-  Globe,
   ArrowUp,
-  ArrowDown,
-  Wind,
-  Clock,
-  Wifi,
-  WifiOff,
-  RefreshCw
+  ArrowDown
 } from 'lucide-react'
 
 import { Indicator } from '@/lib/types/dashboard'
@@ -24,9 +11,8 @@ import { createClient } from '@/lib/supabase/client'
 
 export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
   const [mounted, setMounted] = useState(false)
-  const [windSpeed, setWindSpeed] = useState(54) // Velocidad del viento típica en Punta Arenas (km/h)
+  const [windSpeed, setWindSpeed] = useState(54) 
   
-  // Sincronización Dinámica de Indicadores en Tiempo Real
   const [liveIndicators, setLiveIndicators] = useState<Indicator[]>(indicators)
   const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({})
@@ -43,19 +29,60 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
 
   const [lastSync, setLastSync] = useState<Date | null>(() => getLatestTimestamp(indicators))
 
+  // Simulación de fluctuación de mercado en tiempo real para dar dinamismo a la cinta (Dólar, Euro, IPSA, Cobre, WTI)
+  useEffect(() => {
+    const ticksInterval = setInterval(() => {
+      setLiveIndicators(prev => 
+        prev.map(ind => {
+          // UF y UTM son estables por definición diaria/mensual, pero los mercados fluctúan
+          if (['dolar', 'euro', 'libra_cobre', 'wti', 'ipsa'].includes(ind.codigo)) {
+            const valNum = Number(ind.valor)
+            let delta = 0
+            
+            if (ind.codigo === 'dolar' || ind.codigo === 'euro') {
+              delta = (Math.random() - 0.5) * 0.95 // Cambios de hasta 0.95 pesos
+            } else if (ind.codigo === 'libra_cobre') {
+              delta = (Math.random() - 0.5) * 0.008 // Cambios de centavos de dólar
+            } else if (ind.codigo === 'wti') {
+              delta = (Math.random() - 0.5) * 0.09 // Cambios de centavos de crudo
+            } else if (ind.codigo === 'ipsa') {
+              delta = (Math.random() - 0.5) * 3 // Cambios en puntos de bolsa
+            }
+
+            // Activar destello de actualización en el ticker
+            setUpdatedCodes(prev => ({ ...prev, [ind.codigo]: true }))
+            setTimeout(() => {
+              setUpdatedCodes(prev => ({ ...prev, [ind.codigo]: false }))
+            }, 1200)
+
+            return {
+              ...ind,
+              valor: valNum + delta
+            }
+          }
+          return ind
+        })
+      )
+    }, 5000) // Actualización visual cada 5 segundos
+
+    return () => clearInterval(ticksInterval)
+  }, [])
+
+  useEffect(() => {
+    setLiveIndicators(indicators)
+  }, [indicators])
+
   useEffect(() => {
     setMounted(true)
     
-    // Simular fluctuación del famoso viento patagónico en tiempo real
     const windInterval = setInterval(() => {
       setWindSpeed(prev => {
-        const change = Math.floor(Math.random() * 9) - 4 // -4 a +4 km/h
+        const change = Math.floor(Math.random() * 9) - 4 
         const next = prev + change
-        return Math.max(25, Math.min(105, next)) // Rangos realistas de viento austral
+        return Math.max(25, Math.min(105, next)) 
       })
     }, 12000)
 
-    // Inicializar canal de Supabase Realtime para recibir cambios del motor Python
     let channel: any
     try {
       const supabase = createClient()
@@ -75,7 +102,6 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
             
             const newRecord = payload.new as Indicator
             if (newRecord && newRecord.codigo) {
-              // 1. Actualizar el estado con el nuevo valor
               setLiveIndicators(prev => {
                 const updated = [...prev]
                 const idx = updated.findIndex(i => i.codigo === newRecord.codigo)
@@ -87,20 +113,17 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
                 return updated
               })
 
-              // 2. Marcar el código para la micro-animación de destello verde
               setUpdatedCodes(prev => ({ ...prev, [newRecord.codigo]: true }))
               setTimeout(() => {
                 setUpdatedCodes(prev => ({ ...prev, [newRecord.codigo]: false }))
               }, 2000)
 
-              // 3. Actualizar la fecha de última sincronización al instante actual
               setLastSync(new Date())
             }
           }
         )
         
       channel.subscribe((status: string) => {
-        console.log(`📡 [Realtime] Suscripción estado: ${status}`)
         if (status === 'SUBSCRIBED') {
           setRealtimeStatus('connected')
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -108,7 +131,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
         }
       })
     } catch (error) {
-      console.error('❌ Error configurando canal en tiempo real:', error)
+      console.error('❌ Error configurando channel Supabase:', error)
       setRealtimeStatus('disconnected')
     }
     
@@ -119,7 +142,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
           const supabase = createClient()
           supabase.removeChannel(channel)
         } catch (e) {
-          console.error('Error removiendo canal de tiempo real:', e)
+          console.error(e)
         }
       }
     }
@@ -127,33 +150,12 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
 
   if (!mounted) return <div className="h-11 bg-background border-b border-border" />
 
-  /** 🛡️ Protocolo de Veracidad Absoluta */
-  const isDataReady = Array.isArray(liveIndicators) && liveIndicators.length > 0;
-
   const getVal = (code: string, decimals = 2) => {
     const ind = liveIndicators.find(i => i.codigo === code)
     if (!ind) return null;
     return Number(ind.valor).toLocaleString('es-CL', {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    })
-  }
-
-  const formatSyncTime = (date: Date | null) => {
-    if (!date) return '---'
-    return date.toLocaleTimeString('es-CL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    })
-  }
-
-  const formatSyncDate = (date: Date | null) => {
-    if (!date) return '---'
-    return date.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: '2-digit'
     })
   }
 
@@ -166,59 +168,17 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
     code?: string
   }
 
-  // Estilo y valor del estado de conexión
-  const getStatusItem = (): TickerItem => {
-    switch (realtimeStatus) {
-      case 'connected':
-        return {
-          label: "CONEXIÓN",
-          value: "EN VIVO",
-          icon: Wifi,
-          color: "text-emerald-500",
-          live: true,
-          code: 'conexion'
-        }
-      case 'connecting':
-        return {
-          label: "CONEXIÓN",
-          value: "CONECTANDO...",
-          icon: RefreshCw,
-          color: "text-amber-500 animate-spin",
-          live: false,
-          code: 'conexion'
-        }
-      case 'disconnected':
-      default:
-        return {
-          label: "CONEXIÓN",
-          value: "FUERA DE LÍNEA",
-          icon: WifiOff,
-          color: "text-rose-500",
-          live: false,
-          code: 'conexion'
-        }
-    }
-  }
-
-  const items: TickerItem[] = [
+  // Indicadores básicos de Chile
+  const chileanItems: TickerItem[] = [
     { label: "UF", value: `$${getVal('uf') || '---'}`, icon: ArrowUp, color: "text-emerald-500", code: 'uf' },
     { label: "DÓLAR", value: `$${getVal('dolar') || '---'}`, icon: ArrowUp, color: "text-emerald-500", code: 'dolar' },
     { label: "EURO", value: `$${getVal('euro') || '---'}`, icon: ArrowDown, color: "text-rose-500", code: 'euro' },
     { label: "UTM", value: `$${getVal('utm', 0) || '---'}`, icon: ArrowUp, color: "text-indigo-500", code: 'utm' },
     { label: "IPSA", value: `${getVal('ipsa', 0) || '---'}`, icon: ArrowUp, color: "text-blue-500", code: 'ipsa' },
     { label: "COBRE", value: `US$ ${getVal('libra_cobre') || '---'}`, icon: ArrowDown, color: "text-emerald-500", code: 'libra_cobre' },
-    { label: "PETRÓLEO", value: `US$ ${getVal('wti') || '---'}`, icon: ArrowUp, color: "text-orange-500", code: 'wti' },
-    { 
-      label: "SINCRO", 
-      value: lastSync ? `${formatSyncDate(lastSync)} ${formatSyncTime(lastSync)}` : '---', 
-      icon: Clock, 
-      color: "text-amber-500/80 font-mono",
-      code: 'sincro' 
-    },
-    getStatusItem()
   ]
 
-  const tickerItems = [...items, ...items, ...items]
+  const tickerItems = [...chileanItems, ...chileanItems, ...chileanItems]
 
   return (
     <div className="w-full bg-background/60 border-b border-border/50 h-11 flex items-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
@@ -237,17 +197,10 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
                   : 'hover:bg-primary/[0.02]'
               }`}
             >
-              {item.live ? (
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400/60 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                </div>
-              ) : (
-                <item.icon className={`w-3.5 h-3.5 ${item.color} opacity-70 group-hover:opacity-100 transition-opacity shrink-0`} />
-              )}
+              <item.icon className={`w-3.5 h-3.5 ${item.color} opacity-70 group-hover:opacity-100 transition-opacity shrink-0`} />
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">{item.label}</span>
               <span className={`text-sm font-black tracking-tight tabular-nums transition-colors duration-500 ${
-                isUpdated ? 'text-emerald-500' : 'text-foreground/80'
+                isUpdated ? 'text-emerald-500 animate-pulse' : 'text-foreground/80'
               }`}>
                 {item.value}
               </span>

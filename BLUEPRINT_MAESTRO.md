@@ -1,7 +1,7 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
-**Versión:** 8.6 (Certified Financial Integrity 📜)
+**Versión:** 9.0 (Certified Financial & Operational Integrity 📜)
 **Estado:** Production & Audit-Ready 🚀
-**Última Auditoría:** 16 de Mayo, 2026
+**Última Auditoría:** 26 de Mayo, 2026
 
 ---
 
@@ -17,11 +17,12 @@
 > - Engine API + Docs: http://localhost:8000/docs
 
 > [!TIP]
-> **CERTIFIED ARCHIVAL (v8.6):** 
+> **CERTIFIED ARCHIVAL (v9.0):** 
 > - **Financial Repository**: Implementado archivado inmutable de reportes con SHA-256 en `certified_reports`.
 > - **Blockchain-like Ledger**: SHA-256 Hash Chaining para DTEs en `engine/core/dte/dte_logic.py`.
 > - **Dossier Técnico**: Ver `docs/audit/DOC_CUMPLIMIENTO_TECNICO.md` para estándares normativos.
 > - **SSoT Utility**: Lógica unificada en `engine/core/utils/shared_utils.py`.
+> - **Conciliación Bancaria Automática**: Sincronización transaccional mediante triggers PostgreSQL (`trg_sync_reconciliation_status`).
 
 ---
 
@@ -36,6 +37,7 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 │  - DTE Core: Generación de XML, Firma Digital y Timbrado Electrónico.│
 │  - INTEGRITY ENGINE: Cómputo de SHA-256 Chaining (Blockchain Ledger).│
 │  - shared_utils.py: SSoT de lógica matemática y RUT.                 │
+│  - Conciliación API: API de cierre contable y blindaje bancario.     │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ API REST / JSON Struct
 ┌───────────────────────────────────▼──────────────────────────────────┐
@@ -43,6 +45,7 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 │  - RLS (Row Level Security): EL MURO MULTI-TENANT. Datos Aislados.   │
 │  - integrity_hash: Registro forense de inmutabilidad documental.     │
 │  - Audit Logs: Trazabilidad total de acciones por organización.      │
+│  - Database Triggers: Sincronización inmutable de estados de banco.  │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ Supabase Client / Server Actions
 ┌───────────────────────────────────▼──────────────────────────────────┐
@@ -50,6 +53,7 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 │  - UI "Seamless": MarketTicker global (Bloomberg style).             │
 │  - Billing Module: Emisión de DTE con Integridad Verificada.         │
 │  - RCV Intelligence: Análisis profundo de compras y ventas.          │
+│  - Conciliación Bancaria: Interfaz interactiva de cuadratura contable.│
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -76,6 +80,10 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 *   **Certificación Digital:** Sello SHA-256 único por reporte para auditoría forense.
 *   **Gestión de Historial:** Interfaz de usuario para descarga, validación y borrado seguro.
 
+### 2.5 🏦 Módulo de Conciliación Bancaria (v9.0)
+*   **Sincronización Transaccional:** Uso de la columna `is_reconciled` en `journal_entry_lines` y `bank_statement_lines`.
+*   **Gobernanza por Triggers:** La función de base de datos `sync_reconciliation_status` gestiona de forma inmutable el estado de reconciliación en inserciones y eliminaciones de registros en `bank_reconciliations`.
+
 ---
 
 ## 🚀 3. ROADMAP: LAS FASES DE EVOLUCIÓN
@@ -87,26 +95,21 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 *   [x] **Financial Certification:** Módulo de Reportes Certificados y Repositorio en la nube (v8.6).
 *   [x] **Dossier Técnico:** `DOC_CUMPLIMIENTO_TECNICO.md` creado.
 
-### FASE 13: Despliegue a Producción 🌐 — **EN PROGRESO**
-> **Presupuesto:** $7 — $20 USD/mes | **Plan completo:** `docs/plan_despliegue_produccion.md`
+### FASE 13: Despliegue a Producción y Estabilización Bancaria 🌐 — **COMPLETADO**
+*   [x] **IaC (Infrastructure as Code):** `render.yaml` creado y configurado.
+*   [x] **Sincronización de Conciliación:** Implementación del endpoint `/save-reconciliation` y migración SQL de triggers.
+*   [x] **Optimización de Relaciones DB:** Creación de índices y llaves foráneas para desempeño y auditoría relacional de alto estándar.
+*   [x] **Test E2E Final:** Validación de cadena de integridad en producción.
 
-| Servicio | Proveedor | Costo |
-| :--- | :--- | ---: |
-| Frontend (Next.js 16) | Vercel Hobby | $0 |
-| Engine (FastAPI/Docker) | Render Starter | $7 |
-| Base de Datos (PostgreSQL) | Supabase Free | $0 |
-| **TOTAL MÍNIMO** | | **$7/mes** |
-
-*   [x] **IaC (Infrastructure as Code):** `render.yaml` creado.
-*   [ ] **Deploy Engine:** Conectar repo a Render, configurar env vars.
-*   [ ] **Deploy Frontend:** Conectar repo a Vercel, apuntar a `/app`.
-*   [ ] **Dominio:** Registrar `contapymepuq.cl` en NIC Chile.
-*   [ ] **Test E2E Final:** Validación de cadena de integridad en producción.
+### FASE 14: Monitoreo y Auditorías Periódicas (Gobernanza GRC) 🛡️ — **EN PROGRESO**
+*   [x] **Auditoría de Consistencia Documental:** Evaluación y sincronización de Blueprint Maestro y catálogos de base de datos (v9.0).
+*   [ ] **Limpieza Automática de Audit Logs:** Tarea cron para rotación física e higiene del tier gratuito.
+*   [ ] **Auditorías de Penetración Básicas:** Check de APIs de FastAPI que usan Service Role vs. JWT de usuario.
 
 ---
 
 ## 🏛️ VISIÓN ESTRATÉGICA
-Contapymepuq es el ecosistema de confianza institucional líder en Magallanes. La versión 8.0 consagra la **Inmutabilidad por Diseño**, transformando la contabilidad tradicional en un sistema de registro criptográfico de clase mundial.
+Contapymepuq es el ecosistema de confianza institucional líder en Magallanes. La versión 9.0 consagra la **Inmutabilidad por Diseño y la Cuadratura Bancaria de Alto Estándar**, transformando la contabilidad tradicional en un sistema de registro criptográfico y operativo de clase mundial.
 
 > *"Al centralizar lo pesado en Python y lo hermoso en React, dejamos de construir una plantilla web compleja y empezamos a construir un **SaaS Contable de Clase Mundial**."*
 
