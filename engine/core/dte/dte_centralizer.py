@@ -150,6 +150,23 @@ async def centralize_dte_accounting(dte_id: str, organization_id: str) -> Dict[s
             "tipo_comprobante": tipo_comprobante
         }).eq("id", journal_id).execute()
 
+        # 8. Sincronizar el ID del asiento en la tabla sales_records para evitar duplicaciones manuales
+        try:
+            sales_res = db.table("sales_records") \
+                .select("id") \
+                .eq("organization_id", organization_id) \
+                .eq("folio", dte["folio"]) \
+                .eq("rut_receptor", dte["receptor_rut"]) \
+                .eq("tipo_documento", str(tipo_dte)) \
+                .execute()
+            if sales_res.data:
+                db.table("sales_records") \
+                    .update({"journal_entry_id": journal_id}) \
+                    .eq("id", sales_res.data[0]["id"]) \
+                    .execute()
+        except Exception as sync_err:
+            logger.warning(f"No se pudo enlazar el asiento contable con sales_records: {sync_err}")
+
         logger.info(f"Centralización exitosa para DTE {dte_id}. Asiento contable ID: {journal_id}")
         return {"status": "centralized", "journal_entry_id": journal_id}
 
