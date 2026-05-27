@@ -143,7 +143,13 @@ export async function exportDTEToCSV(organizationId: string) {
       d.folio,
       d.receptor_rut,
       d.receptor_razon_social,
-      new Date(d.fecha_emision).toLocaleDateString('es-CL'),
+      (() => {
+        const parts = (d.fecha_emision || '').split('T')[0].split('-');
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return d.fecha_emision || '';
+      })(),
       d.monto_neto,
       d.monto_iva,
       d.monto_total

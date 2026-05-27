@@ -271,7 +271,13 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-xs font-bold text-muted-foreground">
-                                        {dte.fecha_emision ? new Date(dte.fecha_emision).toLocaleDateString('es-CL') : '—'}
+                                        {dte.fecha_emision ? (() => {
+                                            const parts = dte.fecha_emision.split('T')[0].split('-');
+                                            if (parts.length === 3) {
+                                                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                            }
+                                            return dte.fecha_emision;
+                                        })() : '—'}
                                     </TableCell>
                                     <TableCell className="font-black text-sm tracking-tighter">
                                         {formatCurrency(dte.monto_total)}
