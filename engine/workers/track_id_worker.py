@@ -90,6 +90,14 @@ async def process_pending_dtes():
                 update_data["status"] = "rejected"
                 
             supabase.table("dte_issued").update(update_data).eq("id", dte_id).execute()
+            
+            # Centralización automática e inteligente si es aceptado
+            if update_data.get("status") == "accepted":
+                try:
+                    from core.dte.dte_centralizer import centralize_dte_accounting
+                    await centralize_dte_accounting(dte_id, dte["organization_id"])
+                except Exception as cent_err:
+                    logger.error(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el worker de Track ID: {cent_err}")
             logger.info(f"DTE {dte_id} actualizado a estado SII: {estado_sii} - {glosa}")
             
         except Exception as query_e:

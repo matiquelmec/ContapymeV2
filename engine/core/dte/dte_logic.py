@@ -317,6 +317,12 @@ class DTELogic:
                     "status": "sent",
                     "error_log": None
                 }).eq("id", dte_id).execute()
+                
+                try:
+                    from .dte_centralizer import centralize_dte_accounting
+                    await centralize_dte_accounting(dte_id, self.organization_id)
+                except Exception as cent_err:
+                    print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id}: {cent_err}")
         except Exception as sii_e:
             sii_error_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
             print(sii_error_msg)
@@ -466,6 +472,12 @@ class DTELogic:
                 "status": "sent",
                 "error_log": None
             }).eq("id", dte_id).execute()
+            
+            try:
+                from .dte_centralizer import centralize_dte_accounting
+                await centralize_dte_accounting(dte_id, self.organization_id)
+            except Exception as cent_err:
+                print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el reintento: {cent_err}")
             
             return {"status": "sent", "track_id": sii_res.get("track_id"), "message": f"DTE Folio {dte['folio']} enviado exitosamente al SII."}
         
