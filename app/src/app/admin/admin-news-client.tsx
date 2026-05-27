@@ -147,30 +147,38 @@ export function AdminNewsClient({ initialNews }: AdminNewsClientProps) {
           </div>
 
           {/* Selector de categoría */}
-          <div className="flex gap-1.5 p-1 bg-muted/50 rounded-lg">
+          <div className="flex gap-1.5 p-1 bg-muted/50 rounded-lg flex-wrap">
             <Button
               variant={categoryFilter === 'ALL' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setCategoryFilter('ALL')}
-              className="h-7 text-xs font-semibold px-3"
+              className="h-7 text-[11px] font-bold px-3 rounded-md transition-all"
             >
               Todos
             </Button>
             <Button
-              variant={categoryFilter === 'REGIONAL' ? 'default' : 'ghost'}
+              variant={categoryFilter === 'MAGALLANES ACTUAL' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setCategoryFilter('REGIONAL')}
-              className="h-7 text-xs font-semibold px-3"
+              onClick={() => setCategoryFilter('MAGALLANES ACTUAL')}
+              className="h-7 text-[11px] font-bold px-3 rounded-md transition-all"
             >
-              Regional
+              Magallanes Actual
             </Button>
             <Button
-              variant={categoryFilter === 'FINANZAS' ? 'default' : 'ghost'}
+              variant={categoryFilter === 'ECONOMÍA' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setCategoryFilter('FINANZAS')}
-              className="h-7 text-xs font-semibold px-3"
+              onClick={() => setCategoryFilter('ECONOMÍA')}
+              className="h-7 text-[11px] font-bold px-3 rounded-md transition-all"
             >
-              Finanzas
+              Economía
+            </Button>
+            <Button
+              variant={categoryFilter === 'SII / LEGAL' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCategoryFilter('SII / LEGAL')}
+              className="h-7 text-[11px] font-bold px-3 rounded-md transition-all"
+            >
+              SII / Legal
             </Button>
           </div>
         </div>

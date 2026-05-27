@@ -45,7 +45,7 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
 
   const [formData, setFormData] = useState({
     title: newsItem?.title || '',
-    category: newsItem?.category || 'REGIONAL',
+    category: newsItem?.category || 'MAGALLANES ACTUAL',
     content: newsItem?.content || '',
     summary: newsItem?.summary || '',
     image_url: newsItem?.image_url || '',
@@ -198,8 +198,9 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
                 onChange={handleChange}
                 className="flex h-9 w-full rounded-lg border border-input bg-muted/30 px-3 py-1 text-sm shadow-2xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 focus:bg-background font-semibold"
               >
-                <option value="REGIONAL">Regional (Punta Arenas / Magallanes)</option>
-                <option value="FINANZAS">Finanzas y Economía Nacional</option>
+                <option value="MAGALLANES ACTUAL">Magallanes Actual (Regional)</option>
+                <option value="ECONOMÍA">Economía y Finanzas</option>
+                <option value="SII / LEGAL">SII y Legal</option>
               </select>
             </div>
 
