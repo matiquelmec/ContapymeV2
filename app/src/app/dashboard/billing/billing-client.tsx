@@ -227,41 +227,12 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                 </div>
             </div>
 
-            {/* ===== TABS DE ESTADO (DISEÑO PREMIUM) ===== */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/40 pb-2">
-                <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-2xl border border-border/30 backdrop-blur-sm">
-                    <button 
-                        onClick={() => setStatusFilter('official')}
-                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
-                            statusFilter === 'official' 
-                                ? 'bg-white text-primary shadow-sm' 
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        Emitidos (Oficiales)
-                    </button>
-                    <button 
-                        onClick={() => setStatusFilter('draft')}
-                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
-                            statusFilter === 'draft' 
-                                ? 'bg-white text-primary shadow-sm' 
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        Borradores / Errores
-                    </button>
-                    <button 
-                        onClick={() => setStatusFilter('all')}
-                        className={`px-4 py-2 text-xs font-black uppercase tracking-tight rounded-xl transition-all ${
-                            statusFilter === 'all' 
-                                ? 'bg-white text-primary shadow-sm' 
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        Todos
-                    </button>
-                </div>
-                <div className="text-xs text-muted-foreground font-black uppercase tracking-tight pl-2">
+            {/* ===== CONTEO DE DOCUMENTOS ===== */}
+            <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="text-xs text-foreground font-black uppercase tracking-wider pl-2">
+                    Historial de Emisiones SII
+                </span>
+                <div className="text-xs text-muted-foreground font-black uppercase tracking-tight pr-2">
                     Mostrando {filteredData.length} documento(s)
                 </div>
             </div>

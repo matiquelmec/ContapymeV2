@@ -139,11 +139,65 @@ class DTELogic:
         data_string = "|".join(fields)
         return hashlib.sha256(data_string.encode('utf-8')).hexdigest()
 
+    def validate_dte_date(self, tipo_dte: int, fecha_emision_str: str):
+        """
+        Valida que la fecha de emisión del DTE sea válida de acuerdo a las políticas del SII:
+        - No puede ser una fecha futura.
+        - Para Boletas (39, 41): Desfase máximo de 3 días hacia atrás.
+        - Para Facturas (33, 34) y otros: Desfase máximo de 30 días o si el mes anterior ya está cerrado (después del día 20 del mes actual).
+        """
+        try:
+            fecha_emision = datetime.date.fromisoformat(fecha_emision_str)
+        except ValueError:
+            raise ValueError(f"Formato de fecha inválido: '{fecha_emision_str}'. Debe ser YYYY-MM-DD.")
+
+        hoy = datetime.date.today()
+
+        # 1. Bloquear fechas futuras
+        if fecha_emision > hoy:
+            raise ValueError(
+                f"La fecha de emisión del documento ({fecha_emision_str}) no puede ser posterior a la fecha actual ({hoy.isoformat()}). "
+                "El SII rechaza de inmediato documentos con fechas futuras."
+            )
+
+        # 2. Validar según tipo de DTE
+        tipo_str = str(tipo_dte)
+        desfase_dias = (hoy - fecha_emision).days
+
+        if tipo_str in ['39', '41']: # Boletas
+            if desfase_dias > 3:
+                raise ValueError(
+                    f"Desfase de fecha excedido para Boleta Electrónica: La fecha ({fecha_emision_str}) tiene un retraso de {desfase_dias} días. "
+                    "El SII exige que las boletas se declaren y envíen diariamente (máximo 3 días de desfase). "
+                    "Por favor, emita la boleta con la fecha del día de hoy para evitar que sea rechazada."
+                )
+        else: # Facturas, Notas de Crédito, Notas de Débito, etc.
+            # Limitar a máximo 30 días de desfase
+            if desfase_dias > 30:
+                raise ValueError(
+                    f"Desfase de fecha excedido: La fecha de emisión ({fecha_emision_str}) tiene más de 30 días de desfase. "
+                    "El SII no acepta documentos con fecha de emisión tan antigua con respecto a la fecha actual de transmisión. "
+                    "Por favor, emita el documento con una fecha más reciente o del mes en curso."
+                )
+            
+            # Si es del mes anterior, verificar si ya se cerró el periodo (vence el día 20 del mes actual)
+            if fecha_emision.month != hoy.month or fecha_emision.year != hoy.year:
+                if hoy.day > 20:
+                    raise ValueError(
+                        f"Periodo Tributario Cerrado: La fecha de emisión ({fecha_emision_str}) pertenece al mes anterior. "
+                        f"Dado que hoy es {hoy.isoformat()} (pasado el día 20 del mes), la declaración de IVA (F29) del mes anterior ya venció y el periodo está cerrado. "
+                        "No puede emitir documentos con fecha del mes anterior en este momento. Por favor, use la fecha del periodo actual."
+                    )
+
     async def create_and_sign_invoice(self, invoice_data: Dict[str, Any], items: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Crea un DTE, genera el XML, lo timbra y lo guarda.
         """
         tipo_dte = invoice_data.get("tipo_dte", 33)
+        fecha_emision_str = invoice_data.get("fecha_emision") or datetime.date.today().isoformat()
+        
+        # Validar la fecha de emisión de forma inteligente antes de continuar
+        self.validate_dte_date(tipo_dte, fecha_emision_str)
         
         # 1. Obtener Folio Real y su CAF
         folio, current_caf = self._get_next_folio_with_caf(tipo_dte)

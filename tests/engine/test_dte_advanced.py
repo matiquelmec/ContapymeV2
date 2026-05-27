@@ -222,3 +222,37 @@ BTsq+zw8K8N0z7ZDvkcxr5BKPjAwryAuJRXiO6nhFQ==
     assert pem_str is not None
     assert "-----BEGIN RSA PRIVATE KEY-----" in pem_str
     assert "MIIBOwIBAAJBANA01" in pem_str
+
+
+def test_dte_date_validation():
+    """Valida el comportamiento de validate_dte_date en DTELogic con reglas estrictas de fecha del SII."""
+    # Instanciar DTELogic sin cargar datos reales de la empresa usando mocks
+    logic = DTELogic.__new__(DTELogic)
+    logic.organization_id = "test-org"
+    
+    # 1. Fechas futuras (Debe fallar)
+    futura = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+    with pytest.raises(ValueError) as excinfo:
+        logic.validate_dte_date(33, futura)
+    assert "no puede ser posterior a la fecha actual" in str(excinfo.value)
+    
+    # 2. Boletas con desfase mayor a 3 días (Debe fallar)
+    boleta_vieja = (datetime.date.today() - datetime.timedelta(days=4)).isoformat()
+    with pytest.raises(ValueError) as excinfo:
+        logic.validate_dte_date(39, boleta_vieja)
+    assert "Desfase de fecha excedido para Boleta Electrónica" in str(excinfo.value)
+
+    # 3. Facturas con desfase mayor a 30 días (Debe fallar)
+    factura_muy_vieja = (datetime.date.today() - datetime.timedelta(days=31)).isoformat()
+    with pytest.raises(ValueError) as excinfo:
+        logic.validate_dte_date(33, factura_muy_vieja)
+    assert "tiene más de 30 días de desfase" in str(excinfo.value)
+
+    # 4. Fechas válidas (Debe pasar sin levantar excepciones)
+    hoy = datetime.date.today().isoformat()
+    logic.validate_dte_date(33, hoy) # Factura hoy
+    logic.validate_dte_date(39, hoy) # Boleta hoy
+    
+    boleta_valida = (datetime.date.today() - datetime.timedelta(days=2)).isoformat()
+    logic.validate_dte_date(39, boleta_valida) # Boleta de hace 2 días (máx 3)
+
