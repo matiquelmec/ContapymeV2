@@ -319,11 +319,10 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
           <>
             {/* Imagen de fondo premium de la noticia */}
             <div className="absolute inset-0 z-0">
-              <Image 
+              <img 
                 src={latestNews.image_url} 
                 alt={latestNews.title} 
-                fill 
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                className="object-cover transition-transform duration-700 group-hover:scale-105 w-full h-full absolute inset-0"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-zinc-950/40" />
             </div>

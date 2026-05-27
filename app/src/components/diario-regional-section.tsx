@@ -200,11 +200,10 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                        <Link href={`/noticias/${news.slug}`} scroll={false}>
                          <div className="space-y-3">
                            <div className="relative aspect-video rounded-2xl overflow-hidden border border-border/50 shadow-md">
-                             <Image 
+                             <img 
                                 src={news.image_url || "/news-placeholder.png"} 
                                 alt={news.title} 
-                                fill 
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full absolute inset-0"
                              />
                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                              <div className="absolute bottom-2 left-2">
@@ -245,11 +244,10 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                     <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
                       <div className="group cursor-pointer space-y-4">
                         <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl hover:border-primary/40 transition-all duration-700">
-                           <Image 
+                           <img 
                               src={heroNews.image_url || "/news-placeholder.png"} 
                               alt={heroNews.title} 
-                              fill 
-                              className="object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
+                              className="object-cover transition-transform duration-1000 group-hover:scale-[1.03] w-full h-full absolute inset-0"
                             />
                            <div className="absolute inset-x-0 top-0 p-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="bg-white/90 backdrop-blur-xl px-4 py-2 rounded-full border border-primary/20 shadow-lg flex items-center gap-2">

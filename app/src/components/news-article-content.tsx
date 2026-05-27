@@ -200,12 +200,10 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         "relative w-full overflow-hidden border border-border/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.1)] group",
         isModal ? "aspect-video rounded-t-[2.5rem]" : "aspect-[21/9] rounded-[3rem]"
       )}>
-        <Image
+        <img
           src={news.image_url || "/news-placeholder.png"}
           alt={news.title}
-          fill
-          className="object-cover transition-transform duration-1000 group-hover:scale-102"
-          priority
+          className="object-cover transition-transform duration-1000 group-hover:scale-102 w-full h-full absolute inset-0"
         />
         {/* Degradado inmersivo */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent opacity-90" />

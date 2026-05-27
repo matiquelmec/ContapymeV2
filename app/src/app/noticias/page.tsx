@@ -54,11 +54,10 @@ export default async function NewsArchivePage() {
                 <Card className="h-full rounded-[2rem] border-border bg-white shadow-none hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all overflow-hidden flex flex-col">
                   <div className="relative h-56 overflow-hidden">
                     <div className="absolute inset-0 bg-zinc-900 group-hover:scale-105 transition-transform duration-700">
-                       <Image 
+                       <img 
                           src={item.image_url || "/news-placeholder.jpg"} 
                           alt={item.title} 
-                          fill 
-                          className="object-cover opacity-80"
+                          className="object-cover opacity-80 w-full h-full absolute inset-0"
                        />
                     </div>
                     <div className="absolute top-6 left-6 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">
