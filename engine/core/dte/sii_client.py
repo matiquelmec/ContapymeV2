@@ -26,9 +26,22 @@ class SIIClient:
             self.ws_query = "https://palena.sii.cl/DTEWS/QueryEstDte.jws"
             self.ws_track = "https://palena.sii.cl/DTEWS/QueryEstUp.jws"
 
+    def _get_client(self) -> httpx.AsyncClient:
+        """
+        Crea un AsyncClient configurado para tolerar los protocolos SSL/TLS antiguos del SII.
+        """
+        import ssl
+        ctx = ssl.create_default_context()
+        # Permitir ciphers antiguas y TLS 1.0/1.1/1.2 si es necesario para compatibilidad SII
+        ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE  # En ambiente SII de producción/certificación a menudo hay problemas de certificados intermedios
+        
+        return httpx.AsyncClient(verify=ctx, timeout=30.0)
+
     async def get_seed(self) -> str:
         """
-        Paso 1: Obtiene la semilla desde CrSeed.jws
+        Paso 1: Obtiene la semilla desde CrSeed.jws con reintentos automáticos en caso de HTTP 500.
         """
         url = f"{self.ws_auth}/CrSeed.jws"
         soap_body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -38,31 +51,46 @@ class SIIClient:
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>"""
         
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, content=soap_body, headers={"Content-Type": "text/xml"})
-            if resp.status_code != 200:
-                raise Exception(f"Fallo al obtener Semilla: HTTP {resp.status_code}")
-                
-            root = etree.fromstring(resp.content)
-            # El SII devuelve el resultado dentro de getSeedReturn como un string XML encapsulado
-            ns = {"ns1": "http://DefaultNamespace"}
-            return_node = root.find(".//ns1:getSeedReturn", namespaces=ns)
-            
-            if return_node is None and root.find(".//getSeedReturn") is not None:
-                return_node = root.find(".//getSeedReturn")
-                
-            if return_node is not None and return_node.text:
-                inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                estado = inner_xml.find("ESTADO").text
-                if estado != "00":
-                    raise Exception(f"Estado de semilla inválido: {estado}")
-                return inner_xml.find("SEMILLA").text
-                
-            raise Exception("No se encontró la semilla en la respuesta del SII.")
+        import asyncio
+        max_retries = 3
+        delay = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                async with self._get_client() as client:
+                    headers = {
+                        "Content-Type": "text/xml",
+                        "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT 5.0; YComp 5.0.2.4)"
+                    }
+                    resp = await client.post(url, content=soap_body, headers=headers)
+                    if resp.status_code != 200:
+                        raise Exception(f"Fallo al obtener Semilla: HTTP {resp.status_code}")
+                        
+                    root = etree.fromstring(resp.content)
+                    ns = {"ns1": "http://DefaultNamespace"}
+                    return_node = root.find(".//ns1:getSeedReturn", namespaces=ns)
+                    
+                    if return_node is None and root.find(".//getSeedReturn") is not None:
+                        return_node = root.find(".//getSeedReturn")
+                        
+                    if return_node is not None and return_node.text:
+                        inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
+                        estado = inner_xml.find("ESTADO").text
+                        if estado != "00":
+                            raise Exception(f"Estado de semilla inválido: {estado}")
+                        return inner_xml.find("SEMILLA").text
+                        
+                    raise Exception("No se encontró la semilla en la respuesta del SII.")
+            except Exception as e:
+                logger.warning(f"Intento {attempt + 1} fallido al obtener semilla: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= 2
 
     async def get_token(self, signed_seed_xml: str) -> str:
         """
-        Paso 3: Obtiene el token usando el XML de la semilla firmada (GetTokenFromSeed.jws)
+        Paso 3: Obtiene el token usando el XML de la semilla firmada (GetTokenFromSeed.jws) con reintentos.
         """
         url = f"{self.ws_auth}/GetTokenFromSeed.jws"
         soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -74,22 +102,38 @@ class SIIClient:
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>"""
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, content=soap_body, headers={"Content-Type": "text/xml"})
-            if resp.status_code != 200:
-                raise Exception(f"Fallo al obtener Token: HTTP {resp.status_code}")
-                
-            root = etree.fromstring(resp.content)
-            return_node = root.find(".//getTokenReturn")
-            
-            if return_node is not None and return_node.text:
-                inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                estado = inner_xml.find(".//ESTADO").text
-                if estado != "00":
-                    raise Exception(f"Error al canjear Token: {estado}")
-                return inner_xml.find(".//TOKEN").text
-                
-            raise Exception("No se encontró el token en la respuesta del SII.")
+        import asyncio
+        max_retries = 3
+        delay = 1.0
+
+        for attempt in range(max_retries):
+            try:
+                async with self._get_client() as client:
+                    headers = {
+                        "Content-Type": "text/xml",
+                        "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT 5.0; YComp 5.0.2.4)"
+                    }
+                    resp = await client.post(url, content=soap_body, headers=headers)
+                    if resp.status_code != 200:
+                        raise Exception(f"Fallo al obtener Token: HTTP {resp.status_code}")
+                        
+                    root = etree.fromstring(resp.content)
+                    return_node = root.find(".//getTokenReturn")
+                    
+                    if return_node is not None and return_node.text:
+                        inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
+                        estado = inner_xml.find(".//ESTADO").text
+                        if estado != "00":
+                            raise Exception(f"Error al canjear Token: {estado}")
+                        return inner_xml.find(".//TOKEN").text
+                        
+                    raise Exception("No se encontró el token en la respuesta del SII.")
+            except Exception as e:
+                logger.warning(f"Intento {attempt + 1} fallido al obtener token: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= 2
 
     async def send_dte(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
         """

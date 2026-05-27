@@ -299,10 +299,19 @@ class DTELogic:
                     
                     if sii_res.get("success"):
                         dte_record["track_id"] = sii_res.get("track_id")
-                        self.supabase.table("dte_issued").update({"track_id": dte_record["track_id"]}).eq("id", dte_id).execute()
+                        self.supabase.table("dte_issued").update({
+                            "track_id": dte_record["track_id"],
+                            "status": "sent",
+                            "error_log": None
+                        }).eq("id", dte_id).execute()
                 except Exception as sii_e:
-                    print(f"Error comunicando con el SII: {str(sii_e)}")
-                    pass
+                    err_msg = f"Error comunicando con el SII: {str(sii_e)}"
+                    print(err_msg)
+                    self.supabase.table("dte_issued").update({
+                        "status": "failed",
+                        "error_log": err_msg
+                    }).eq("id", dte_id).execute()
+                    raise Exception(err_msg)
                 
             finally:
                 if os.path.exists(tmp_pfx_path):
@@ -338,12 +347,13 @@ class DTELogic:
         self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo").execute()
 
         # 8. Actualizar en DB
+        final_status = "sent" if dte_record.get("track_id") else "signed"
         self.supabase.table("dte_issued")\
-            .update({"xml_content": xml_signed, "status": "signed"})\
+            .update({"xml_content": xml_signed, "status": final_status})\
             .eq("id", dte_id)\
             .execute()
             
-        return {"id": dte_id, "folio": folio, "status": "signed", "xml": xml_signed}
+        return {"id": dte_id, "folio": folio, "status": final_status, "xml": xml_signed}
             
     async def list_dtes(self, organization_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Lista los documentos emitidos para una organización."""
