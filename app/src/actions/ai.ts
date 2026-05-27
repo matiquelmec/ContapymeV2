@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { checkAdminPermission } from './news'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_API_KEY = process.env.GROQ_API_KEY || ''
 const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
 
 interface AssistInput {
@@ -29,6 +28,8 @@ interface AssistResult {
  * y estructurar un borrador de noticia ingresado por el usuario.
  */
 export async function assistNewsWritingAction(input: AssistInput): Promise<AssistResult> {
+  const apiKey = process.env.GROQ_API_KEY || ''
+
   try {
     // 1. Validar que el usuario sea administrador
     const authCheck = await checkAdminPermission()
@@ -36,9 +37,12 @@ export async function assistNewsWritingAction(input: AssistInput): Promise<Assis
       return { success: false, error: 'No autorizado: requiere privilegios editoriales' }
     }
 
-    if (!GROQ_API_KEY) {
+    if (!apiKey) {
       console.error('[AI Assist] GROQ_API_KEY no configurado en el servidor Next.js')
-      return { success: false, error: 'El servicio de asistencia por IA no está disponible temporalmente' }
+      return { 
+        success: false, 
+        error: 'El servicio de asistencia por IA no está disponible temporalmente (Motivo: GROQ_API_KEY vacía o no detectada)' 
+      }
     }
 
     if (!input.draftContent || input.draftContent.trim().length < 10) {
@@ -89,7 +93,7 @@ export async function assistNewsWritingAction(input: AssistInput): Promise<Assis
     const response = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -106,7 +110,10 @@ export async function assistNewsWritingAction(input: AssistInput): Promise<Assis
     if (!response.ok) {
       const errText = await response.text()
       console.error(`[AI Assist] Error de API de Groq (${response.status}):`, errText)
-      return { success: false, error: 'Hubo un error de conexión con el motor de IA de Groq Cloud' }
+      return { 
+        success: false, 
+        error: `Error de API de Groq (Status: ${response.status}): ${errText.substring(0, 150)}` 
+      }
     }
 
     const result = await response.json()
@@ -125,6 +132,6 @@ export async function assistNewsWritingAction(input: AssistInput): Promise<Assis
 
   } catch (err: any) {
     console.error('[AI Assist] Error crítico en Server Action:', err.message)
-    return { success: false, error: `Error en la asistencia por IA: ${err.message}` }
+    return { success: false, error: `Error crítico en la asistencia por IA (Diagnóstico: ${err.message})` }
   }
 }
