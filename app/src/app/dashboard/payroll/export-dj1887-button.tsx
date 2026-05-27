@@ -134,7 +134,7 @@ export function ExportDJ1887Button() {
             </div>
           </div>
 
-          <DialogFooter className="p-8 bg-muted/5 border-t border-border flex flex-col sm:flex-row gap-3">
+          <DialogFooter className="p-6 md:p-8 bg-muted/5 border-t border-border flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
               disabled={loading !== null}
