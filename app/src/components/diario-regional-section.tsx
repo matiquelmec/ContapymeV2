@@ -166,7 +166,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                </p>
             </div>
              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/#contacto" className="w-full sm:w-auto">
+                <Link href="/contacto" className="w-full sm:w-auto">
                   <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
                     Anuncia con Nosotros
                   </Button>
@@ -346,7 +346,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                            <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
                               El polo comercial libre de impuestos más grande de la Patagonia. Encuentra tecnología y retail.
                            </p>
-                           <Link href="/#contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-primary pt-2 hover:underline">
+                           <Link href="/contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-primary pt-2 hover:underline">
                               <span>Ver Catálogo</span>
                               <ArrowUpRight className="h-3 w-3" />
                            </Link>
@@ -369,7 +369,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                            <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
                               Elaborada con las aguas más puras del fin del mundo desde 1896.
                            </p>
-                           <Link href="/#contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-emerald-600 pt-2 hover:underline">
+                           <Link href="/contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-emerald-600 pt-2 hover:underline">
                               <span>Conocer Más</span>
                               <ArrowUpRight className="h-3 w-3" />
                            </Link>
@@ -392,7 +392,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                            <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed italic">
                               "Optimizamos la gestión patrimonial y tributaria en Magallanes."
                            </p>
-                           <Link href="/#contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
+                           <Link href="/contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
                               <span>Consultar</span>
                               <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
                            </Link>

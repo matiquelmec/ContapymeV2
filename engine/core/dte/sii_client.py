@@ -2,6 +2,7 @@ import httpx
 from lxml import etree
 import logging
 from typing import Dict, Any, Optional
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +18,16 @@ class SIIClient:
         # Endpoints según ambiente
         if environment == "certification":
             self.ws_auth = "https://maullin.sii.cl/DTEWS"
-            self.ws_send = "https://maullin.sii.cl/cgi_dte/UPL/conectar.cgi"
+            self.ws_send = "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
             self.ws_query = "https://maullin.sii.cl/DTEWS/QueryEstDte.jws"
             self.ws_track = "https://maullin.sii.cl/DTEWS/QueryEstUp.jws"
         else:
             self.ws_auth = "https://palena.sii.cl/DTEWS"
-            self.ws_send = "https://palena.sii.cl/cgi_dte/UPL/conectar.cgi"
+            self.ws_send = "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
             self.ws_query = "https://palena.sii.cl/DTEWS/QueryEstDte.jws"
             self.ws_track = "https://palena.sii.cl/DTEWS/QueryEstUp.jws"
 
-    def _get_client(self) -> httpx.AsyncClient:
+    def _get_client(self, timeout: float = 60.0) -> httpx.AsyncClient:
         """
         Crea un AsyncClient configurado para tolerar los protocolos SSL/TLS antiguos del SII.
         """
@@ -37,7 +38,7 @@ class SIIClient:
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # En ambiente SII de producción/certificación a menudo hay problemas de certificados intermedios
         
-        return httpx.AsyncClient(verify=ctx, timeout=30.0)
+        return httpx.AsyncClient(verify=ctx, timeout=timeout, follow_redirects=True)
 
     async def get_seed(self) -> str:
         """
@@ -60,6 +61,7 @@ class SIIClient:
                 async with self._get_client() as client:
                     headers = {
                         "Content-Type": "text/xml",
+                        "SOAPAction": "",
                         "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT 5.0; YComp 5.0.2.4)"
                     }
                     resp = await client.post(url, content=soap_body, headers=headers)
@@ -75,10 +77,20 @@ class SIIClient:
                         
                     if return_node is not None and return_node.text:
                         inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                        estado = inner_xml.find("ESTADO").text
+                        # Usar xpath con local-name para buscar ignorando namespaces
+                        estado_nodes = inner_xml.xpath("//*[local-name()='ESTADO']")
+                        if not estado_nodes:
+                            raise Exception("No se encontró el nodo ESTADO en la respuesta de semilla.")
+                        estado = estado_nodes[0].text
+                        
                         if estado != "00":
                             raise Exception(f"Estado de semilla inválido: {estado}")
-                        return inner_xml.find("SEMILLA").text
+                            
+                        semilla_nodes = inner_xml.xpath("//*[local-name()='SEMILLA']")
+                        if not semilla_nodes or not semilla_nodes[0].text:
+                            raise Exception("No se encontró el nodo SEMILLA en la respuesta de semilla.")
+                            
+                        return semilla_nodes[0].text
                         
                     raise Exception("No se encontró la semilla en la respuesta del SII.")
             except Exception as e:
@@ -92,12 +104,15 @@ class SIIClient:
         """
         Paso 3: Obtiene el token usando el XML de la semilla firmada (GetTokenFromSeed.jws) con reintentos.
         """
+        from xml.sax.saxutils import escape
+        escaped_seed_xml = escape(signed_seed_xml)
+        
         url = f"{self.ws_auth}/GetTokenFromSeed.jws"
         soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
     <SOAP-ENV:Body>
         <ns1:getToken xmlns:ns1="http://DefaultNamespace">
-            <pszXml>{signed_seed_xml}</pszXml>
+            <pszXml>{escaped_seed_xml}</pszXml>
         </ns1:getToken>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>"""
@@ -111,6 +126,7 @@ class SIIClient:
                 async with self._get_client() as client:
                     headers = {
                         "Content-Type": "text/xml",
+                        "SOAPAction": "",
                         "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT 5.0; YComp 5.0.2.4)"
                     }
                     resp = await client.post(url, content=soap_body, headers=headers)
@@ -118,16 +134,25 @@ class SIIClient:
                         raise Exception(f"Fallo al obtener Token: HTTP {resp.status_code}")
                         
                     root = etree.fromstring(resp.content)
-                    return_node = root.find(".//getTokenReturn")
-                    
-                    if return_node is not None and return_node.text:
-                        inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                        estado = inner_xml.find(".//ESTADO").text
-                        if estado != "00":
-                            raise Exception(f"Error al canjear Token: {estado}")
-                        return inner_xml.find(".//TOKEN").text
+                    return_nodes = root.xpath("//*[local-name()='getTokenReturn']")
+                    if not return_nodes or not return_nodes[0].text:
+                        raise Exception("No se encontró el nodo getTokenReturn en la respuesta del SII.")
                         
-                    raise Exception("No se encontró el token en la respuesta del SII.")
+                    return_node = return_nodes[0]
+                    inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
+                    
+                    estado_nodes = inner_xml.xpath("//*[local-name()='ESTADO']")
+                    if not estado_nodes or not estado_nodes[0].text:
+                        raise Exception("No se encontró el nodo ESTADO en la respuesta del token.")
+                    estado = estado_nodes[0].text
+                    
+                    if estado != "00":
+                        raise Exception(f"Error al canjear Token: {estado}")
+                        
+                    token_nodes = inner_xml.xpath("//*[local-name()='TOKEN']")
+                    if not token_nodes or not token_nodes[0].text:
+                        raise Exception("No se encontró el nodo TOKEN en la respuesta del token.")
+                    return token_nodes[0].text
             except Exception as e:
                 logger.warning(f"Intento {attempt + 1} fallido al obtener token: {str(e)}")
                 if attempt == max_retries - 1:
@@ -165,11 +190,11 @@ class SIIClient:
             "archivo": ("envio.xml", dte_xml.encode('iso-8859-1'), "text/xml")
         }
 
-        max_retries = 3
-        delay = 2
+        max_retries = 5
+        delay = 3
         for attempt in range(max_retries):
             try:
-                async with self._get_client() as client:
+                async with self._get_client(timeout=90.0) as client:
                     resp = await client.post(self.ws_send, files=files, headers=headers)
                     
                     if resp.status_code != 200:
@@ -220,7 +245,11 @@ class SIIClient:
         for attempt in range(max_retries):
             try:
                 async with self._get_client() as client:
-                    resp = await client.post(self.ws_track, content=soap_body, headers={"Content-Type": "text/xml"})
+                    headers = {
+                        "Content-Type": "text/xml",
+                        "SOAPAction": ""
+                    }
+                    resp = await client.post(self.ws_track, content=soap_body, headers=headers)
                     if resp.status_code != 200:
                         raise Exception(f"Fallo al consultar Track ID: HTTP {resp.status_code}")
                         
