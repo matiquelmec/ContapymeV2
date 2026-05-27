@@ -281,7 +281,7 @@ class DTELogic:
                 
             try:
                 self.signer.load_certificate(tmp_pfx_path, cert_password)
-                xml_signed = self.signer.sign_xml(xml_unsigned, f"DTE_{folio}")
+                xml_signed = self.signer.sign_xml(xml_unsigned, f"DTE_{tipo_dte}_{folio}")
                 
                 # 6.1 Crear EnvioDTE y firmarlo
                 envio_xml = self.xml_builder.build_envio_dte(xml_signed, dte_record)
@@ -444,7 +444,7 @@ class DTELogic:
                 os.remove(tmp_pfx_path)
         
         # 4. Determinar ambiente desde el CAF
-        caf_records = self.supabase.table("caf_records")\
+        caf_records = self.supabase.table("dte_caf_folios")\
             .select("*")\
             .eq("organization_id", self.organization_id)\
             .eq("tipo_dte", dte["tipo_dte"])\
