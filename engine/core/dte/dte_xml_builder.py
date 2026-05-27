@@ -9,6 +9,29 @@ class DTEXMLBuilder:
     
     def __init__(self, company_data: Dict[str, Any]):
         self.company = company_data
+
+    @staticmethod
+    def clean_xml_text(val: Any) -> str:
+        """
+        Limpia el texto reemplazando acentos, eñes y caracteres especiales,
+        dejando únicamente caracteres ASCII compatibles para evitar el error CHR-00001 del SII.
+        """
+        if val is None:
+            return ""
+        text = str(val)
+        replacements = {
+            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U',
+            'ñ': 'n', 'Ñ': 'N', 'ü': 'u', 'Ü': 'U',
+            '´': '', '`': '', '’': "'", '‘': "'",
+            'í': 'i', 'ó': 'o' # Caso de reemplazo directo de caracteres latinos
+        }
+        for orig, rep in replacements.items():
+            text = text.replace(orig, rep)
+        # Filtrar caracteres que no sean ASCII básicos imprimibles
+        text = "".join(c if ord(c) < 128 else " " for c in text)
+        # Reemplazar múltiples espacios y limpiar extremos
+        return " ".join(text.split())
         
     def build_dte_xml(self, dte_data: Dict[str, Any], items: List[Dict[str, Any]], ted_xml: str = "", referencias: List[Dict[str, Any]] = None) -> str:
         """
@@ -23,7 +46,7 @@ class DTEXMLBuilder:
         if referencias:
             for i, ref in enumerate(referencias, 1):
                 razon = ref.get("razon", "Corrige Documento")
-                razon_recortada = razon[:90]
+                razon_recortada = self.clean_xml_text(razon)[:90]
                 referencias_xml += f"""
         <Referencia>
             <NroLinRef>{i}</NroLinRef>
@@ -45,20 +68,20 @@ class DTEXMLBuilder:
             </IdDoc>
             <Emisor>
                 <RUTEmisor>{self.company['rut']}</RUTEmisor>
-                <RznSoc>{self.company['razon_social']}</RznSoc>
-                <GiroEmis>{self.company['giro']}</GiroEmis>
+                <RznSoc>{self.clean_xml_text(self.company['razon_social'])}</RznSoc>
+                <GiroEmis>{self.clean_xml_text(self.company['giro'])}</GiroEmis>
                 <Acteco>{self.company['acteco']}</Acteco>
-                <DirOrigen>{self.company['direccion']}</DirOrigen>
-                <CmnaOrigen>{self.company['comuna']}</CmnaOrigen>
-                <CiudadOrigen>{self.company['ciudad']}</CiudadOrigen>
+                <DirOrigen>{self.clean_xml_text(self.company['direccion'])}</DirOrigen>
+                <CmnaOrigen>{self.clean_xml_text(self.company['comuna'])}</CmnaOrigen>
+                <CiudadOrigen>{self.clean_xml_text(self.company['ciudad'])}</CiudadOrigen>
             </Emisor>
             <Receptor>
                 <RUTRecep>{dte_data['receptor_rut']}</RUTRecep>
-                <RznSocRecep>{dte_data['receptor_razon_social']}</RznSocRecep>
-                <GiroRecep>{dte_data.get('receptor_giro', 'PARTICULAR')}</GiroRecep>
-                <DirRecep>{dte_data.get('receptor_direccion', 'CIUDAD')}</DirRecep>
-                <CmnaRecep>{dte_data.get('receptor_comuna', 'CIUDAD')}</CmnaRecep>
-                <CiudadRecep>{dte_data.get('receptor_ciudad', 'CIUDAD')}</CiudadRecep>
+                <RznSocRecep>{self.clean_xml_text(dte_data['receptor_razon_social'])}</RznSocRecep>
+                <GiroRecep>{self.clean_xml_text(dte_data.get('receptor_giro', 'PARTICULAR'))}</GiroRecep>
+                <DirRecep>{self.clean_xml_text(dte_data.get('receptor_direccion', 'CIUDAD'))}</DirRecep>
+                <CmnaRecep>{self.clean_xml_text(dte_data.get('receptor_comuna', 'CIUDAD'))}</CmnaRecep>
+                <CiudadRecep>{self.clean_xml_text(dte_data.get('receptor_ciudad', 'CIUDAD'))}</CiudadRecep>
             </Receptor>
             <Totales>
                 <MntNeto>{dte_data['monto_neto']}</MntNeto>
@@ -84,9 +107,9 @@ class DTEXMLBuilder:
         folio = dte_data['folio']
         fecha_emision = dte_data['fecha_emision']
         rut_receptor = dte_data['receptor_rut']
-        razon_social_receptor = dte_data['receptor_razon_social'][:40]
+        razon_social_receptor = self.clean_xml_text(dte_data['receptor_razon_social'])[:40]
         monto_total = dte_data['monto_total']
-        item_name_40 = item_name[:40]
+        item_name_40 = self.clean_xml_text(item_name)[:40]
         
         # Limpiar el XML del CAF (quitar declaraciones XML si existen)
         caf_xml_clean = caf_xml.strip()
@@ -158,7 +181,7 @@ class DTEXMLBuilder:
             items_xml += f"""
         <Detalle>
             <NroLinDet>{i}</NroLinDet>
-            <NmbItem>{item['product_name']}</NmbItem>
+            <NmbItem>{self.clean_xml_text(item['product_name'])}</NmbItem>
             <QtyItem>{item['quantity']}</QtyItem>
             <PrcItem>{item['unit_price']}</PrcItem>
             <MontoItem>{item['total_amount']}</MontoItem>

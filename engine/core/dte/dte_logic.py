@@ -244,9 +244,9 @@ class DTELogic:
         # Armar bloque <DD> del TED exacto
         rut_emisor = self.company_data['rut']
         rut_receptor = dte_record['receptor_rut']
-        razon_social_receptor = dte_record['receptor_razon_social'][:40]
+        razon_social_receptor = DTEXMLBuilder.clean_xml_text(dte_record['receptor_razon_social'])[:40]
         monto_total = dte_record['monto_total']
-        item_name_40 = item1_name[:40]
+        item_name_40 = DTEXMLBuilder.clean_xml_text(item1_name)[:40]
         
         caf_xml_clean = current_caf["caf_xml"].strip()
         if caf_xml_clean.startswith("<?xml"):
