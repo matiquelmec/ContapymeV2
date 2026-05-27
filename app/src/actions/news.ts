@@ -515,6 +515,19 @@ export async function uploadNewsImageAction(formData: FormData) {
     return { success: false, error: authCheck.error }
   }
 
+  // Auditar rol de la clave secreta
+  const srvKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  let keyRole = 'no-definida'
+  try {
+    const parts = srvKey.split('.')
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'))
+      keyRole = payload.role || 'unknown'
+    }
+  } catch (e) {
+    keyRole = 'error-al-decodificar'
+  }
+
   try {
     const file = formData.get('file') as File
     if (!file) {
@@ -548,7 +561,7 @@ export async function uploadNewsImageAction(formData: FormData) {
     return { success: true, url: publicUrl }
   } catch (err: any) {
     console.error('[uploadNewsImageAction Error]:', err.message)
-    return { success: false, error: err.message || 'Error al cargar el archivo de imagen.' }
+    return { success: false, error: `${err.message} (Diagnóstico: Key Role = ${keyRole})` }
   }
 }
 
