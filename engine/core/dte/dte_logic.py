@@ -287,39 +287,43 @@ class DTELogic:
                 envio_xml = self.xml_builder.build_envio_dte(xml_signed, dte_record)
                 envio_signed = self.signer.sign_envio(envio_xml, f"SetDoc_{folio}")
                 
-                # 6.2 Obtener Token del SII con el ambiente dinámico
-                sii_client = SIIClient(environment=current_caf["environment"])
-                try:
-                    seed = await sii_client.get_seed()
-                    signed_seed = self.signer.sign_seed(seed)
-                    token = await sii_client.get_token(signed_seed)
-                    
-                    # 6.3 Enviar al SII
-                    sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
-                    
-                    if sii_res.get("success"):
-                        dte_record["track_id"] = sii_res.get("track_id")
-                        self.supabase.table("dte_issued").update({
-                            "track_id": dte_record["track_id"],
-                            "status": "sent",
-                            "error_log": None
-                        }).eq("id", dte_id).execute()
-                except Exception as sii_e:
-                    err_msg = f"Error comunicando con el SII: {str(sii_e)}"
-                    print(err_msg)
-                    self.supabase.table("dte_issued").update({
-                        "status": "failed",
-                        "error_log": err_msg
-                    }).eq("id", dte_id).execute()
-                    raise Exception(err_msg)
-                
             finally:
                 if os.path.exists(tmp_pfx_path):
                     os.remove(tmp_pfx_path)
         except Exception as e:
             # Si falla la firma, dejamos el registro en "draft" y burbujeamos el error real
-            raise Exception(f"Error durante la firma o envío del DTE: {str(e)}")
+            raise Exception(f"Error durante la firma del DTE: {str(e)}")
         
+        # ── PASO 6.2: Guardar XML firmado SIEMPRE (independiente del SII) ──
+        self.supabase.table("dte_issued")\
+            .update({"xml_content": xml_signed, "status": "signed"})\
+            .eq("id", dte_id)\
+            .execute()
+
+        # ── PASO 6.3: Intentar enviar al SII (no bloquea la emisión si falla) ──
+        sii_error_msg = None
+        try:
+            sii_client = SIIClient(environment=current_caf["environment"])
+            seed = await sii_client.get_seed()
+            signed_seed = self.signer.sign_seed(seed)
+            token = await sii_client.get_token(signed_seed)
+            
+            sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+            
+            if sii_res.get("success"):
+                dte_record["track_id"] = sii_res.get("track_id")
+                self.supabase.table("dte_issued").update({
+                    "track_id": dte_record["track_id"],
+                    "status": "sent",
+                    "error_log": None
+                }).eq("id", dte_id).execute()
+        except Exception as sii_e:
+            sii_error_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
+            print(sii_error_msg)
+            self.supabase.table("dte_issued").update({
+                "error_log": sii_error_msg
+            }).eq("id", dte_id).execute()
+
         # 7. Sincronizar con RCV (sales_records) para reportes inmediatos
         periodo = dte_record["fecha_emision"][:7] + "-01"
         monto_calculado = dte_record["monto_total"]
@@ -346,14 +350,12 @@ class DTELogic:
         }
         self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo").execute()
 
-        # 8. Actualizar en DB
+        # 8. Retorno final
         final_status = "sent" if dte_record.get("track_id") else "signed"
-        self.supabase.table("dte_issued")\
-            .update({"xml_content": xml_signed, "status": final_status})\
-            .eq("id", dte_id)\
-            .execute()
-            
-        return {"id": dte_id, "folio": folio, "status": final_status, "xml": xml_signed}
+        result = {"id": dte_id, "folio": folio, "status": final_status, "xml": xml_signed}
+        if sii_error_msg:
+            result["sii_warning"] = sii_error_msg
+        return result
             
     async def list_dtes(self, organization_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Lista los documentos emitidos para una organización."""
@@ -402,3 +404,69 @@ class DTELogic:
             "total_documents": len(all_dtes.data),
             "errors": errors
         }
+
+    async def retry_send_to_sii(self, dte_id: str) -> Dict[str, Any]:
+        """
+        Reintenta el envío al SII de un DTE que quedó firmado localmente ('signed').
+        Solo funciona si el DTE tiene xml_content y NO tiene track_id.
+        """
+        # 1. Obtener el DTE
+        dte_resp = self.supabase.table("dte_issued")\
+            .select("*")\
+            .eq("id", dte_id)\
+            .single()\
+            .execute()
+        dte = dte_resp.data
+        
+        if not dte:
+            raise Exception(f"No se encontró DTE con id {dte_id}")
+        
+        if dte.get("track_id"):
+            return {"status": "already_sent", "track_id": dte["track_id"], "message": "Este DTE ya fue enviado al SII."}
+        
+        if not dte.get("xml_content"):
+            raise Exception(f"El DTE {dte_id} no tiene XML firmado. No se puede reenviar.")
+        
+        # 2. Reconstruir el envío
+        envio_xml = self.xml_builder.build_envio_dte(dte["xml_content"], dte)
+        
+        # 3. Firmar el envío
+        pfx_bytes, cert_password = self._get_certificate()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
+            tmp.write(pfx_bytes)
+            tmp_pfx_path = tmp.name
+        
+        try:
+            self.signer.load_certificate(tmp_pfx_path, cert_password)
+            envio_signed = self.signer.sign_envio(envio_xml, f"SetDoc_{dte['folio']}")
+        finally:
+            if os.path.exists(tmp_pfx_path):
+                os.remove(tmp_pfx_path)
+        
+        # 4. Determinar ambiente desde el CAF
+        caf_records = self.supabase.table("caf_records")\
+            .select("*")\
+            .eq("organization_id", self.organization_id)\
+            .eq("tipo_dte", dte["tipo_dte"])\
+            .limit(1)\
+            .execute()
+        env = caf_records.data[0]["environment"] if caf_records.data else "cert"
+        
+        # 5. Enviar al SII
+        sii_client = SIIClient(environment=env)
+        seed = await sii_client.get_seed()
+        signed_seed = self.signer.sign_seed(seed)
+        token = await sii_client.get_token(signed_seed)
+        
+        sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+        
+        if sii_res.get("success"):
+            self.supabase.table("dte_issued").update({
+                "track_id": sii_res.get("track_id"),
+                "status": "sent",
+                "error_log": None
+            }).eq("id", dte_id).execute()
+            
+            return {"status": "sent", "track_id": sii_res.get("track_id"), "message": f"DTE Folio {dte['folio']} enviado exitosamente al SII."}
+        
+        raise Exception(f"El SII no aceptó el envío: {sii_res}")

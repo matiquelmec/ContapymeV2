@@ -138,7 +138,7 @@ class SIIClient:
     async def send_dte(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
         """
         Paso 4: Envía el archivo DTE firmado mediante POST multipart al SII.
-        Retorna el Track ID.
+        Retorna el Track ID. Incluye reintentos con backoff exponencial.
         """
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
         emisor_rut_body = rut_emisor.split('-')[0]
@@ -165,29 +165,40 @@ class SIIClient:
             "archivo": ("envio.xml", dte_xml.encode('iso-8859-1'), "text/xml")
         }
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(self.ws_send, files=files, headers=headers)
-            
-            if resp.status_code != 200:
-                raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")
-                
+        max_retries = 3
+        delay = 2
+        for attempt in range(max_retries):
             try:
-                root = etree.fromstring(resp.content)
-                status = root.find(".//STATUS").text
-                track_id = root.find(".//TRACKID").text
-                
-                if status != "0":
-                    raise Exception(f"SII Rechazó el envío. Status: {status}")
+                async with self._get_client() as client:
+                    resp = await client.post(self.ws_send, files=files, headers=headers)
                     
-                return {"success": True, "track_id": track_id}
+                    if resp.status_code != 200:
+                        raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")
+                        
+                    try:
+                        root = etree.fromstring(resp.content)
+                        status = root.find(".//STATUS").text
+                        track_id = root.find(".//TRACKID").text
+                        
+                        if status != "0":
+                            raise Exception(f"SII Rechazó el envío. Status: {status}")
+                            
+                        return {"success": True, "track_id": track_id}
+                    except Exception as e:
+                        # Fallback si no parsea el XML de respuesta
+                        raise Exception(f"Respuesta no reconocida del SII: {resp.text}")
             except Exception as e:
-                # Fallback si no parsea el XML de respuesta
-                raise Exception(f"Respuesta no reconocida del SII: {resp.text}")
+                logger.warning(f"Intento {attempt + 1} fallido al enviar DTE: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= 2
 
     async def query_track_id(self, token: str, rut_empresa: str, track_id: str) -> Dict[str, Any]:
         """
         Consulta el estado de un envío (Track ID) en el SII.
         Retorna el estado de aceptación (EPR, Aceptado, Rechazado, etc).
+        Incluye reintentos con backoff exponencial.
         """
         rut_body = rut_empresa.split('-')[0]
         dv = rut_empresa.split('-')[1]
@@ -204,27 +215,37 @@ class SIIClient:
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>"""
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(self.ws_track, content=soap_body, headers={"Content-Type": "text/xml"})
-            if resp.status_code != 200:
-                raise Exception(f"Fallo al consultar Track ID: HTTP {resp.status_code}")
-                
-            root = etree.fromstring(resp.content)
-            return_node = root.find(".//getEstUpReturn")
-            
-            if return_node is not None and return_node.text:
-                inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                estado = inner_xml.find(".//ESTADO")
-                glosa = inner_xml.find(".//GLOSA")
-                
-                estado_text = estado.text if estado is not None else "DESC"
-                glosa_text = glosa.text if glosa is not None else ""
-                
-                return {
-                    "success": True,
-                    "estado": estado_text,
-                    "glosa": glosa_text,
-                    "raw_xml": return_node.text
-                }
-                
-            raise Exception("No se encontró respuesta válida al consultar Track ID.")
+        max_retries = 3
+        delay = 2
+        for attempt in range(max_retries):
+            try:
+                async with self._get_client() as client:
+                    resp = await client.post(self.ws_track, content=soap_body, headers={"Content-Type": "text/xml"})
+                    if resp.status_code != 200:
+                        raise Exception(f"Fallo al consultar Track ID: HTTP {resp.status_code}")
+                        
+                    root = etree.fromstring(resp.content)
+                    return_node = root.find(".//getEstUpReturn")
+                    
+                    if return_node is not None and return_node.text:
+                        inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
+                        estado = inner_xml.find(".//ESTADO")
+                        glosa = inner_xml.find(".//GLOSA")
+                        
+                        estado_text = estado.text if estado is not None else "DESC"
+                        glosa_text = glosa.text if glosa is not None else ""
+                        
+                        return {
+                            "success": True,
+                            "estado": estado_text,
+                            "glosa": glosa_text,
+                            "raw_xml": return_node.text
+                        }
+                        
+                    raise Exception("No se encontró respuesta válida al consultar Track ID.")
+            except Exception as e:
+                logger.warning(f"Intento {attempt + 1} fallido al consultar Track ID: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= 2

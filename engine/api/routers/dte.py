@@ -273,3 +273,48 @@ async def upload_pfx(
         print("Error uploading PFX:", str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/retry-sii/{dte_id}")
+async def retry_send_to_sii(
+    dte_id: str,
+    organization_id: str = Body(..., embed=True),
+    auth: dict = Depends(verify_token)
+):
+    """
+    Reintenta el envío al SII de un DTE que fue firmado localmente
+    pero no pudo ser enviado (por ej. caída del SII).
+    """
+    await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
+    
+    try:
+        logic = DTELogic(organization_id)
+        result = await logic.retry_send_to_sii(dte_id)
+        return result
+    except Exception as e:
+        print(f"Error retrying SII send: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/pending-sii/{organization_id}")
+async def list_pending_sii(
+    organization_id: str,
+    auth: dict = Depends(verify_token)
+):
+    """
+    Lista DTEs que fueron firmados localmente pero no pudieron ser 
+    enviados al SII (status = 'signed' sin track_id).
+    """
+    await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
+    
+    from core.database import get_supabase
+    db = get_supabase()
+    
+    try:
+        res = db.table("dte_issued")\
+            .select("id, folio, tipo_dte, receptor_rut, receptor_razon_social, monto_total, fecha_emision, status, error_log")\
+            .eq("organization_id", organization_id)\
+            .eq("status", "signed")\
+            .is_("track_id", "null")\
+            .order("created_at", descending=True)\
+            .execute()
+        return {"pending_count": len(res.data), "dtes": res.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
