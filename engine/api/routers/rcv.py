@@ -339,7 +339,7 @@ async def import_sales(
             raise HTTPException(status_code=422, detail=f"Errores en filas: {errors[:3]}")
 
         if records: 
-            db.table("sales_records").upsert(records, on_conflict="organization_id,folio,rut_receptor,periodo").execute()
+            db.table("sales_records").upsert(records, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
             _clear_rcv_cache(organization_id)
         
         db.table("rcv_imports").update({"total_docs": len(records)}).eq("id", import_id).execute()

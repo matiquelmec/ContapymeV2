@@ -354,7 +354,7 @@ class DTELogic:
             "monto_calculado": monto_calculado,
             "es_suma": es_suma
         }
-        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo").execute()
+        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
 
         # 8. Retorno final
         final_status = "sent" if dte_record.get("track_id") else "signed"
