@@ -25,6 +25,8 @@ import { ProcessPayrollButton } from './process-payroll-button'
 import { CentralizePayrollButton } from './centralize-payroll-button'
 import { GenerateContractButton } from './generate-contract-button'
 import { ExportPreviredButton } from './export-previred-button'
+import { ExportDJ1887Button } from './export-dj1887-button'
+import { ImportPreviredPDFButton } from './import-previred-button'
 import { TerminateEmployeeButton } from './terminate-button'
 import { DeleteEmployeeButton } from './delete-employee-button'
 import { EditEmployeeButton } from './edit-employee-button'
@@ -104,10 +106,12 @@ export default async function PayrollPage({
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
+          <ImportPreviredPDFButton />
           <ExportPreviredButton 
             organizationId={activeOrgId} 
              periodo={selectedPeriod} 
           />
+          <ExportDJ1887Button />
           <CreateEmployeeButton />
           <ProcessPayrollButton />
           <CentralizePayrollButton />

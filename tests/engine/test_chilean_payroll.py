@@ -158,3 +158,33 @@ class TestChileanPayrollEngine:
         assert res.salud_voluntaria == 190_000 - int(1_500_000 * 0.07)
         assert res.salud_total == 190_000
 
+    def test_zona_extrema_magallanes(self, default_settings):
+        """Validar que un empleado en Magallanes tenga la deducción de zona y la rebaja del 98% en impuesto."""
+        # Sueldo imponible alto para que pague impuesto único
+        emp = EmployeeInput(
+            sueldo_base=4_000_000,
+            gratificacion_legal=False,
+            es_zona_extrema=True,
+            zona_extrema="MAGALLANES",
+            mes_proceso="2026-03"
+        )
+        
+        # Primero calcular sin zona extrema para comparar
+        emp_normal = EmployeeInput(
+            sueldo_base=4_000_000,
+            gratificacion_legal=False,
+            es_zona_extrema=False
+        )
+        res_normal = calcular_liquidacion(emp_normal, default_settings, utm_valor=67294.0)
+        
+        res_zona = calcular_liquidacion(emp, default_settings, utm_valor=67294.0)
+        
+        # Debe haber descuento de asignación de zona de la base tributable
+        assert res_zona.asignacion_zona_extrema > 0
+        assert res_zona.base_imponible_impuesto < res_normal.base_imponible_impuesto
+        
+        # El impuesto determinado bruto debe ser menor o igual, y después se rebaja el 98%
+        # Así que el impuesto final debe ser solo el 2% del impuesto bruto determinado
+        assert res_zona.impuesto_unico == res_zona.impuesto_unico_sin_rebaja - res_zona.rebaja_zona_extrema
+        assert res_zona.impuesto_unico < res_normal.impuesto_unico
+

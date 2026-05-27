@@ -186,13 +186,24 @@ async def export_previred(organization_id: str, periodo: str):
                 fields[68] = str(int(liq.get('salud_voluntaria', 0)))    # Campo 69: Cotización Adicional Voluntaria
                 fields[69] = str(int(liq.get('salud_total', 0)))         # Campo 70: Monto Total Paztado (Obl+Vol)
 
-            # 83-93: CCAF (Caja de Compensación)
+            # 83-95: CCAF (Caja de Compensación)
             fields[82] = ccaf_code
-            fields[89] = fields[69] if is_fonasa else "0" # Salud vía CCAF (Solo Fonasa retiene a través de Caja)
+            fields[83] = str(imponible) if ccaf_code != "00" else "0"  # Renta Imponible CCAF
+            fields[89] = fields[69] if (is_fonasa and ccaf_code != "00") else "0" # Salud vía CCAF (Solo Fonasa retiene a través de Caja)
+            
+            # Expectativa de Vida: 0.9% imponible (Campo 94 / index 93)
+            # Solo aplica si cotiza en AFP (no IPS/SIP)
+            es_sip = afp_nom in ["SIP", "IPS", ""]
+            exp_vida = str(int(imponible * 0.009)) if not es_sip else "0"
+            fields[93] = exp_vida
 
-            # 94-96: Mutualidad
-            fields[93] = str(int(imponible * 0.0095)) # Campo 94: Ley de Accidentes (~0.95%)
-            fields[95] = mutual_code # Campo 96
+            # 96-99: Mutualidad
+            # Código de mutualidad (index 95 / Campo 96)
+            fields[95] = mutual_code 
+            # Renta imponible mutual (index 96 / Campo 97)
+            fields[96] = str(imponible) if mutual_code != "0" else "0"
+            # Cotización accidentes (index 97 / Campo 98) - 0.95% tasa básica default
+            fields[97] = str(int(imponible * 0.0095)) if mutual_code != "0" else "0"
 
             # 100-102: Seguro Cesantía (AFC)
             fields[99] = str(imponible) 

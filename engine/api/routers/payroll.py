@@ -58,6 +58,14 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
 
         cfg = cfg_res.data[0] if cfg_res.data else {}
 
+        # Obtener datos de la organización para detectar Zona Extrema
+        org_res = db.table("organizations") \
+            .select("region, comuna") \
+            .eq("id", req.org_id) \
+            .maybe_single() \
+            .execute()
+        org_data = org_res.data or {}
+
         # ── 2. Indicadores económicos Dinámicos (UF y UTM por Periodo) ────────
         # Normalizar periodo: si llega "2026-03-01" lo dejamos, si llega "2026-03" le agregamos "-01"
         periodo_clean = req.periodo[:7]  # Siempre tomar solo YYYY-MM
@@ -199,6 +207,41 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 logger.warning(f"Error al obtener contrato efectivo para {emp.get('id')}: {e}")
                 emp_effective = emp
 
+            # Determinar si aplica Zona Extrema
+            # Priorizar si ya viene en el empleado, si no, buscar por region/comuna
+            es_zona_extrema = False
+            zona_extrema = ""
+            
+            # Intentar primero por campos directos si existen
+            if emp_effective.get("es_zona_extrema"):
+                es_zona_extrema = True
+                zona_extrema = emp_effective.get("zona_extrema", "")
+            else:
+                # Detección dinámica por geografía
+                emp_region = (emp_effective.get("region") or "").upper()
+                emp_city = (emp_effective.get("city") or "").upper()
+                org_region = (org_data.get("region") or "").upper()
+                org_comuna = (org_data.get("comuna") or "").upper()
+                
+                if any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["MAGALLANES", "XII", "PUNTA ARENAS"]):
+                    es_zona_extrema = True
+                    zona_extrema = "MAGALLANES"
+                elif any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["AYSEN", "XI", "COYHAIQUE"]):
+                    es_zona_extrema = True
+                    zona_extrema = "AYSEN"
+                elif any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["ARICA", "XV"]):
+                    es_zona_extrema = True
+                    zona_extrema = "ARICA"
+                elif any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["TARAPACA", "I", "IQUIQUE"]):
+                    es_zona_extrema = True
+                    zona_extrema = "TARAPACA"
+                elif any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["CHILOE", "CASTRO", "ANCUD"]):
+                    es_zona_extrema = True
+                    zona_extrema = "CHILOE"
+                elif any(x in emp_region or x in emp_city or x in org_region or x in org_comuna for x in ["PALENA", "CHAITEN"]):
+                    es_zona_extrema = True
+                    zona_extrema = "PALENA"
+
             emp_input = EmployeeInput(
                 sueldo_base=int(emp_effective.get("sueldo_base", 0)),
                 tipo_contrato=emp_effective.get("tipo_contrato", "indefinido"),
@@ -214,6 +257,9 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 family_allowances=int(emp_effective.get("family_allowances", 0)),
                 afc_active=bool(emp_effective.get("afc_active", True)),
                 horas_semanales=int(emp_effective.get("horas_semanales", 42)),
+                mes_proceso=periodo_clean,
+                es_zona_extrema=es_zona_extrema,
+                zona_extrema=zona_extrema,
             )
 
             result = calcular_liquidacion(emp_input, settings, utm_valor)

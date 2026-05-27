@@ -54,6 +54,63 @@ export function CreateEmployeeButton() {
   const [saludSeleccionada, setSaludSeleccionada] = useState("Fonasa")
   const [planSaludUf, setPlanSaludUf] = useState("0")
 
+  // Estados para validación y máscara del RUT Chileno
+  const [rut, setRut] = useState("")
+  const [rutError, setRutError] = useState<string | null>(null)
+
+  const formatRutString = (value: string) => {
+    const cleaned = value.replace(/[^0-9kK]/g, "");
+    if (cleaned.length <= 1) return cleaned;
+    const body = cleaned.slice(0, -1);
+    const dv = cleaned.slice(-1).toUpperCase();
+    
+    let formattedBody = "";
+    for (let i = body.length - 1, j = 0; i >= 0; i--, j++) {
+      if (j > 0 && j % 3 === 0) {
+        formattedBody = "." + formattedBody;
+      }
+      formattedBody = body[i] + formattedBody;
+    }
+    return `${formattedBody}-${dv}`;
+  };
+
+  const validateRutString = (rutComplete: string): boolean => {
+    const cleaned = rutComplete.replace(/[^0-9kK]/g, "");
+    if (cleaned.length < 2) return false;
+    const body = cleaned.slice(0, -1);
+    const dv = cleaned.slice(-1).toUpperCase();
+    
+    let sum = 0;
+    let multiplier = 2;
+    for (let i = body.length - 1; i >= 0; i--) {
+      sum += parseInt(body[i]) * multiplier;
+      multiplier = multiplier === 7 ? 2 : multiplier + 1;
+    }
+    const expectedDv = 11 - (sum % 11);
+    let calculatedDv = "";
+    if (expectedDv === 11) calculatedDv = "0";
+    else if (expectedDv === 10) calculatedDv = "K";
+    else calculatedDv = String(expectedDv);
+    
+    return dv === calculatedDv;
+  };
+
+  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    const formatted = formatRutString(rawVal);
+    setRut(formatted);
+    
+    if (formatted.length > 3) {
+      if (!validateRutString(formatted)) {
+        setRutError("RUT Inválido");
+      } else {
+        setRutError(null);
+      }
+    } else {
+      setRutError(null);
+    }
+  };
+
   // Motor de cálculo de jornada legal (Chilerised)
   useEffect(() => {
     if (isArt22) {
@@ -153,6 +210,11 @@ export function CreateEmployeeButton() {
   }
 
   async function handleSubmit(formData: FormData) {
+    if (rutError || !validateRutString(rut)) {
+      setError("Debe ingresar un RUT válido antes de proceder.")
+      toast.error("RUT Inválido. Por favor corríjalo.")
+      return
+    }
     setLoading(true)
     setError(null)
     const result = await createEmployee(formData)
@@ -220,8 +282,23 @@ export function CreateEmployeeButton() {
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
-                    <Label htmlFor="rut" className="text-[10px] font-bold text-muted-foreground">RUT FISCAL</Label>
-                    <Input id="rut" name="rut" placeholder="11.111.111-1" required className="bg-white border-border rounded-xl h-12 font-black font-mono tracking-tighter text-xs pt-1 focus:ring-primary shadow-sm" />
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="rut" className="text-[10px] font-bold text-muted-foreground">RUT FISCAL</Label>
+                      {rutError && (
+                        <span className="text-[9px] font-black text-rose-600 uppercase flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 animate-pulse" /> {rutError}
+                        </span>
+                      )}
+                    </div>
+                    <Input 
+                      id="rut" 
+                      name="rut" 
+                      placeholder="11.111.111-1" 
+                      required 
+                      value={rut}
+                      onChange={handleRutChange}
+                      className={`bg-white border-border rounded-xl h-12 font-black font-mono tracking-tighter text-xs pt-1 focus:ring-primary shadow-sm ${rutError ? 'border-rose-500 ring-rose-500 text-rose-600' : ''}`} 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cargo" className="text-[10px] font-bold text-muted-foreground">CARGO / POSICIÓN</Label>

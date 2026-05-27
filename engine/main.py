@@ -15,7 +15,7 @@ from api.routers import (
     documents, previred, terminations,
     rcv, accounting, dashboard_metrics,
     payroll_settings, lre, bank_reconciliation,
-    audit, ml_classifier, dte
+    audit, ml_classifier, dte, dj1887, previred_importer
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
@@ -86,6 +86,8 @@ app.include_router(bank_reconciliation.router, prefix="/api/v1/bank",        tag
 app.include_router(audit.router,               prefix="/api/v1/audit",       tags=["Auditoría y Trazabilidad"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(ml_classifier.router,       prefix="/api/v1/ai",          tags=["Inteligencia Financiera (Local ML)"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(dte.router,                 prefix="/api/v1/dte",         tags=["Facturación Electrónica DTE"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(dj1887.router,              prefix="/api/v1/dj1887",      tags=["Declaración Jurada 1887"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(previred_importer.router,   prefix="/api/v1/previred-importer", tags=["Importador Previred"], dependencies=GLOBAL_DEPENDENCIES)
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────

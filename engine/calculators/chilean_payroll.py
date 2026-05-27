@@ -73,6 +73,8 @@ class EmployeeInput:
     family_allowances: int = 0                   # Número de cargas familiares
     afc_active: bool = True                      # Si aplica seguro de cesantía
     mes_proceso: Optional[str] = None            # "YYYY-MM"
+    es_zona_extrema: bool = False                # Para rebajas DL 889
+    zona_extrema: str = ""                       # "MAGALLANES", "AYSEN", "ARICA", etc.
 
 
 @dataclass
@@ -113,6 +115,10 @@ class LiquidacionResult:
     tipo_contrato: str = "indefinido"
     uf_valor_usado: float = 0.0
     advertencias: list = field(default_factory=list)
+    # ── Desglose Zona Extrema (DL 889) ────────────────────────────────────────
+    asignacion_zona_extrema: int = 0             # Deducción de base tributable
+    impuesto_unico_sin_rebaja: int = 0           # Impuesto determinado bruto
+    rebaja_zona_extrema: int = 0                 # Descuento del impuesto (ej: 98%)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -225,6 +231,38 @@ def calcular_tope_salud(base_bruta: int, uf_tope: float, uf_valor: float) -> int
     """Aplica el tope imponible de salud."""
     tope_pesos = int(uf_tope * uf_valor)
     return min(base_bruta, tope_pesos)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONSTANTES Y BENEFICIOS DE ZONA EXTREMA (DL 889 / Ley 19.853)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ZONAS_EXTREMAS = {
+    # rebaja_impuesto: fracción a descontar del impuesto bruto determinado
+    # porcentaje_asig_zona: % del sueldo escala Grado 1A a deducir de base tributable
+    "ARICA":      {"rebaja_impuesto": 0.50, "porcentaje_asig_zona": 0.0},
+    "TARAPACA":   {"rebaja_impuesto": 0.50, "porcentaje_asig_zona": 0.0},
+    "AYSEN":      {"rebaja_impuesto": 0.98, "porcentaje_asig_zona": 0.0},
+    "MAGALLANES": {"rebaja_impuesto": 0.98, "porcentaje_asig_zona": 0.875},
+    "CHILOE":     {"rebaja_impuesto": 0.98, "porcentaje_asig_zona": 0.0},
+    "PALENA":     {"rebaja_impuesto": 0.98, "porcentaje_asig_zona": 0.0},
+}
+
+
+def obtener_grado_1a(mes_proceso: Optional[str]) -> int:
+    """Retorna el valor base de sueldo escala Grado 1A (EUS) según el año."""
+    if not mes_proceso:
+        return 535000
+    try:
+        anio = mes_proceso[:4]
+        if anio == "2024":
+            return 485584
+        elif anio == "2025":
+            return 510000
+        else:
+            return 535000
+    except Exception:
+        return 535000
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -349,11 +387,34 @@ def calcular_liquidacion(
     # Base imponible para impuesto = bruto - AFP - Salud Legal (7%) - AFC
     # NOTA LEGAL (SII): La cotización voluntaria de Isapre (adicional al 7%) NO rebaja la base tributable
     base_impuesto = base_bruta_imponible - descuento_afp - descuento_afp_comision - descuento_salud_legal - descuento_afc_trab
+    
+    asignacion_zona = 0
+    impuesto_bruto = 0
+    rebaja_monto = 0
+
+    if emp.es_zona_extrema and emp.zona_extrema:
+        zona_upper = emp.zona_extrema.upper()
+        if zona_upper in ZONAS_EXTREMAS:
+            porcentaje_asig_zona = ZONAS_EXTREMAS[zona_upper]["porcentaje_asig_zona"]
+            if porcentaje_asig_zona > 0:
+                grado_1a = obtener_grado_1a(emp.mes_proceso)
+                asignacion_zona = int(round(grado_1a * porcentaje_asig_zona))
+                base_impuesto = max(0, base_impuesto - asignacion_zona)
+
     base_impuesto = max(0, base_impuesto)
     res.base_imponible_impuesto = base_impuesto
 
     # Impuesto Único Segunda Categoría
-    impuesto = calcular_impuesto_unico(base_impuesto, utm_valor)
+    impuesto_bruto = calcular_impuesto_unico(base_impuesto, utm_valor)
+    impuesto = impuesto_bruto
+
+    if emp.es_zona_extrema and emp.zona_extrema:
+        zona_upper = emp.zona_extrema.upper()
+        if zona_upper in ZONAS_EXTREMAS:
+            rebaja_pct = ZONAS_EXTREMAS[zona_upper]["rebaja_impuesto"]
+            if rebaja_pct > 0 and impuesto_bruto > 0:
+                rebaja_monto = int(round(impuesto_bruto * rebaja_pct))
+                impuesto = impuesto_bruto - rebaja_monto
 
     res.afp = descuento_afp
     res.afp_comision = descuento_afp_comision
@@ -362,6 +423,12 @@ def calcular_liquidacion(
     res.salud_total = descuento_salud
     res.afc_trabajador = descuento_afc_trab
     res.impuesto_unico = impuesto
+    
+    # Rellenar desglose de Zona Extrema
+    res.asignacion_zona_extrema = asignacion_zona
+    res.impuesto_unico_sin_rebaja = impuesto_bruto
+    res.rebaja_zona_extrema = rebaja_monto
+
     res.total_descuentos_legales = (
         descuento_afp + descuento_afp_comision +
         descuento_salud + descuento_afc_trab + impuesto
@@ -446,7 +513,11 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "calculation_snapshot": {
             "uf": res.uf_valor_usado,
             "tipo_contrato": res.tipo_contrato,
-            "afp_code": res.afp_code
+            "afp_code": res.afp_code,
+            "es_zona_extrema": res.asignacion_zona_extrema > 0 or res.rebaja_zona_extrema > 0,
+            "asignacion_zona_extrema": res.asignacion_zona_extrema,
+            "impuesto_unico_sin_rebaja": res.impuesto_unico_sin_rebaja,
+            "rebaja_zona_extrema": res.rebaja_zona_extrema
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }
