@@ -14,9 +14,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, AlertCircle } from 'lucide-react'
+import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, AlertCircle, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { createNewsAction, updateNewsAction, uploadNewsImageAction } from '@/actions/news'
+import { assistNewsWritingAction } from '@/actions/ai'
 
 interface NewsItem {
   id: string
@@ -56,8 +57,45 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
 
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isAILoading, setIsAILoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [, startTransition] = useTransition()
+
+  // Asistencia por Inteligencia Artificial
+  const handleAIAssist = async () => {
+    if (!formData.content.trim()) return
+
+    setIsAILoading(true)
+    const toastId = toast.loading('Puliendo y estructurando tu noticia de forma profesional con IA...')
+
+    try {
+      const res = await assistNewsWritingAction({
+        draftTitle: formData.title,
+        draftContent: formData.content,
+        draftCategory: formData.category
+      })
+
+      if (res.success && res.data) {
+        setFormData({
+          title: res.data.title,
+          category: res.data.category,
+          content: res.data.content,
+          summary: res.data.summary,
+          image_url: formData.image_url, // Mantener imagen actual
+          source_name: formData.source_name,
+          source_url: formData.source_url,
+          is_featured: formData.is_featured
+        })
+        toast.success('¡Artículo optimizado con éxito por la IA editorial! ⚓', { id: toastId })
+      } else {
+        toast.error(res.error || 'No se pudo optimizar el artículo.', { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error('Error de conexión con el asistente: ' + err.message, { id: toastId })
+    } finally {
+      setIsAILoading(false)
+    }
+  }
 
   // Manejar cambios de texto
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -341,9 +379,29 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
 
           {/* Contenido Completo */}
           <div className="space-y-1">
-            <Label htmlFor="content" className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
-              Contenido Completo de la Noticia *
-            </Label>
+            <div className="flex justify-between items-center mb-1.5">
+              <Label htmlFor="content" className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                Contenido Completo de la Noticia *
+              </Label>
+              <button
+                type="button"
+                onClick={handleAIAssist}
+                disabled={isAILoading || !formData.content.trim()}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200/50 rounded-lg shadow-2xs hover:shadow-xs transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isAILoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-500" />
+                    <span>Optimizando redacción...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-violet-500 animate-pulse" />
+                    <span>Mejorar con IA / Redactar Profesional</span>
+                  </>
+                )}
+              </button>
+            </div>
             <Textarea
               id="content"
               name="content"
