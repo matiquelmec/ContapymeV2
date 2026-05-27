@@ -193,3 +193,32 @@ def test_xml_builder_references():
     assert "<TpoDocRef>33</TpoDocRef>" in xml_str
     assert "<FolioRef>5</FolioRef>" in xml_str
     assert "<Razon>Corrige folio</Razon>" in xml_str
+
+def test_caf_real_pem_flat_extraction():
+    """Valida la extracción de la llave privada directamente en formato PEM plano (estándar real del SII)."""
+    caf_xml = """<AUTORIZACION>
+    <CAF version="1.0">
+        <DA>
+            <RE>77411206-5</RE>
+            <RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>
+            <TD>33</TD>
+            <RNG><D>1</D><H>5</H></RNG>
+            <FA>2026-03-16</FA>
+        </DA>
+    </CAF>
+    <RSASK>-----BEGIN RSA PRIVATE KEY-----
+MIIBOwIBAAJBANA01/QjIG2V34yt8oVFbhHUKz3ELeupAcodK9eVpY6mE6XxY7ug
+1lSkJAW2ZfCGCLHD/aZrRxPfjPUHgZbVZjECAQMCQQCKzeVNbMBJDpUIc/cDg562
+jXIpLXPycKvcE3KPuRkJwtlFUSKThzOnQH0uEW+Jq3LucwWHp4vz4RKgSNSVWzZL
+AiEA56N3h7ITmTnahKif7vllppIeggx25JY3L203b4GPbS0CIQDmGoAoLEJvn+jj
+l/xPqJ81ufjzTnkQj9bBl2LTNT0nlQIhAJps+lp2t7t75wMbFUn7mRm2vwFdpJhk
+JMpIz5+rtPNzAiEAmWcAGsgsSmqbQmVS38W/eSal94mmCwqPK7pB4iN+GmMCIQDd
+BTsq+zw8K8N0z7ZDvkcxr5BKPjAwryAuJRXiO6nhFQ==
+-----END RSA PRIVATE KEY-----
+</RSASK>
+</AUTORIZACION>"""
+
+    pem_str = CAFManager.get_private_key_from_caf(caf_xml)
+    assert pem_str is not None
+    assert "-----BEGIN RSA PRIVATE KEY-----" in pem_str
+    assert "MIIBOwIBAAJBANA01" in pem_str

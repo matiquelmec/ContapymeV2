@@ -34,6 +34,7 @@ class CAFManager:
     def get_private_key_from_caf(xml_content: str) -> Optional[str]:
         """
         Extrae la llave privada (RSASK) del CAF y la reconstruye en formato PEM.
+        Soporta tanto PEM plano (estándar oficial del SII) como formato de subnodos de pruebas.
         """
         import base64
         from cryptography.hazmat.primitives.asymmetric import rsa
@@ -44,14 +45,20 @@ class CAFManager:
             xml_content = xml_content.strip()
             tree = ET.fromstring(xml_content.encode('utf-8'))
             
-            # Buscar el nodo RSASK (llave privada) y RSAPK (llave pública para el módulo M y exp E)
+            # Buscar el nodo RSASK (llave privada)
             rsask_node = tree.find(".//RSASK")
-            rsapk_node = tree.find(".//RSAPK")
-            
-            if rsask_node is None or rsapk_node is None:
+            if rsask_node is None:
                 return None
                 
-            # Extraer valores Base64
+            # Caso 1: El nodo contiene directamente el bloque PEM plano (estándar del SII y de SistemaOC)
+            if rsask_node.text and "-----BEGIN RSA PRIVATE KEY-----" in rsask_node.text:
+                return rsask_node.text.strip()
+                
+            # Caso 2: El nodo contiene subnodos <S>, <p>, <q> (ambiente de desarrollo / mocks antiguos)
+            rsapk_node = tree.find(".//RSAPK")
+            if rsapk_node is None:
+                return None
+                
             s_val = rsask_node.find("S").text.strip() if rsask_node.find("S") is not None else None
             p_val = rsask_node.find("p").text.strip() if rsask_node.find("p") is not None else None
             q_val = rsask_node.find("q").text.strip() if rsask_node.find("q") is not None else None
@@ -92,7 +99,7 @@ class CAFManager:
                 iqmp=iqmp,
                 public_numbers=public_numbers
             )
-            private_key = private_numbers.private_key()
+            private_key = private_key = private_numbers.private_key()
             
             # Exportar a formato PEM
             pem_bytes = private_key.private_bytes(
