@@ -507,7 +507,7 @@ export async function deleteNewsAction(id: string) {
 }
 
 /**
- * Server Action para subir una imagen de portada al bucket 'news-images'.
+ * Server Action para subir una imagen de portada al bucket 'news_images'.
  */
 export async function uploadNewsImageAction(formData: FormData) {
   const authCheck = await checkAdminPermission()
@@ -530,7 +530,7 @@ export async function uploadNewsImageAction(formData: FormData) {
     const supabaseAdmin = createAdminClient()
     
     const { data, error } = await supabaseAdmin.storage
-      .from('news-images')
+      .from('news_images')
       .upload(fileName, buffer, {
         contentType: file.type,
         upsert: true
@@ -542,7 +542,7 @@ export async function uploadNewsImageAction(formData: FormData) {
 
     // Obtener la URL pública del archivo
     const { data: { publicUrl } } = supabaseAdmin.storage
-      .from('news-images')
+      .from('news_images')
       .getPublicUrl(fileName)
 
     return { success: true, url: publicUrl }
