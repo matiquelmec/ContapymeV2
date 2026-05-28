@@ -14,9 +14,33 @@ async def process_pending_dtes():
     """
     Worker que busca DTEs con Track ID pero sin estado final en el SII,
     consulta su estado y actualiza la base de datos.
+    También busca DTEs que quedaron firmados ('signed') localmente pero no enviados y reintenta.
     """
     supabase = get_supabase()
     
+    # ── 1. Reintentar envío de DTEs que quedaron firmados localmente sin track_id ──
+    try:
+        signed_response = supabase.table("dte_issued")\
+            .select("id, organization_id, folio, tipo_dte")\
+            .eq("status", "signed")\
+            .is_("track_id", "null")\
+            .execute()
+            
+        signed_dtes = signed_response.data or []
+        if signed_dtes:
+            logger.info(f"Encontrados {len(signed_dtes)} DTEs en estado 'signed' para reintentar envío al SII.")
+            from core.dte.dte_logic import DTELogic
+            for sdte in signed_dtes:
+                try:
+                    logger.info(f"Reintentando envío de DTE Tipo {sdte['tipo_dte']} Folio {sdte['folio']}...")
+                    logic = DTELogic(sdte["organization_id"])
+                    await logic.retry_send_to_sii(sdte["id"])
+                    logger.info(f"DTE Tipo {sdte['tipo_dte']} Folio {sdte['folio']} reenviado con éxito.")
+                except Exception as rex:
+                    logger.error(f"Fallo reintento para DTE {sdte['id']}: {rex}")
+    except Exception as e_signed:
+        logger.error(f"Error al buscar DTEs 'signed' para reintento: {e_signed}")
+
     # Buscar DTEs que tienen track_id pero su estado en SII no es el final
     # EPR = Envio Procesado (Aceptado)
     # RCH / RPR = Rechazado
