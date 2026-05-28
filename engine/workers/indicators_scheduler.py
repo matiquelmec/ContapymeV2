@@ -84,7 +84,7 @@ async def _fetch_and_store_indicators() -> dict:
                             "fuente": "mindicador.cl",
                             "updated_at": datetime.utcnow().isoformat(),
                         },
-                        on_conflict="codigo",
+                        on_conflict="codigo,fecha",
                     ).execute()
 
                     actualizados.append({"codigo": codigo, "valor": valor, "fecha": fecha_valor})
@@ -128,7 +128,7 @@ async def _fetch_and_store_indicators() -> dict:
                             "fecha": hoy,
                             "fuente": "Yahoo Finance (Global)",
                             "updated_at": datetime.utcnow().isoformat(),
-                        }, on_conflict="codigo").execute()
+                        }, on_conflict="codigo,fecha").execute()
                         
                         actualizados.append({"codigo": codigo, "valor": valor})
                         logger.info(f"[Scheduler] ✅ {codigo.upper()} (Market Pulse) = {valor:,.2f} ({variacion:+.2f}%)")

@@ -70,7 +70,7 @@ async def update_indicators(current_user: dict = Depends(verify_token)):
                             "fecha": fecha_valor, 
                             "fuente": "mindicador.cl", 
                             "updated_at": datetime.utcnow().isoformat()
-                        }, on_conflict="codigo").execute()
+                        }, on_conflict="codigo,fecha").execute()
 
                         actualizados.append(codigo)
             except Exception as e:
@@ -94,7 +94,7 @@ async def update_indicators(current_user: dict = Depends(verify_token)):
                         "fecha": hoy,
                         "fuente": "Yahoo Finance", 
                         "updated_at": datetime.utcnow().isoformat()
-                    }, on_conflict="codigo").execute()
+                    }, on_conflict="codigo,fecha").execute()
 
                     actualizados.append(codigo)
             except Exception as e:
