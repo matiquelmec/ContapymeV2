@@ -184,11 +184,15 @@ async def calculate_termination(req: TerminationRequest):
             "viaticos": req.viaticos,
             "prestamo_ccaf": req.prestamo_ccaf,
             "anticipo_sueldo": req.anticipo_sueldo,
-            "banco_transferencia": req.banco_transferencia,
-            "tipo_cuenta": req.tipo_cuenta,
-            "cuenta_transferencia": req.cuenta_transferencia,
             "updated_at": datetime.now().isoformat()
         }
+
+        # Actualizar datos bancarios directamente en la ficha del empleado (Employees) para normalización
+        db.table("employees").update({
+            "banco_transferencia": req.banco_transferencia,
+            "tipo_cuenta": req.tipo_cuenta,
+            "cuenta_transferencia": req.cuenta_transferencia
+        }).eq("id", req.employee_id).execute()
 
         exist = db.table("employee_terminations").select("id").eq("employee_id", req.employee_id).execute()
         
@@ -311,8 +315,12 @@ async def generate_document_text(termination_id: str, doc_type: str):
             }
         elif doc_type == "finiquito":
             transfer_text = ""
-            if term.get("cuenta_transferencia"):
-                transfer_text = f"\n\nEl pago se realiza mediante transferencia electrónica a la cuenta {term.get('tipo_cuenta', 'corriente')} N° {term.get('cuenta_transferencia')} del {term.get('banco_transferencia', 'Banco Estado')}."
+            banco = emp.get("banco_transferencia") or term.get("banco_transferencia")
+            tipo_cta = emp.get("tipo_cuenta") or term.get("tipo_cuenta")
+            nro_cta = emp.get("cuenta_transferencia") or term.get("cuenta_transferencia")
+            
+            if nro_cta:
+                transfer_text = f"\n\nEl pago se realiza mediante transferencia electrónica a la cuenta {tipo_cta or 'corriente'} N° {nro_cta} del {banco or 'Banco Estado'}."
             
             return {
                 "success": True,

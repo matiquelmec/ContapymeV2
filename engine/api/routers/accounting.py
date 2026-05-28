@@ -87,35 +87,25 @@ class AccountMappingRuleRequest(BaseModel):
 
 def get_accounting_config(db, org_id: str, module: str, tx_type: str):
     """
-    Busca la configuración de cuentas para un módulo y tipo.
+    Busca la configuración de cuentas para un módulo y tipo desde la nueva tabla normalizada account_config_entries.
     Si no existe, devuelve valores por defecto.
     """
-    res = db.table("centralized_account_config").select("*") \
-        .eq("organization_id", org_id) \
-        .eq("module_name", module) \
-        .eq("transaction_type", tx_type) \
-        .eq("is_active", True) \
-        .execute()
-    
-    if res.data and len(res.data) > 0:
-        return res.data[0]
-    
-    # Valores por defecto (compatibilidad hacia atrás)
+    # Definir valores por defecto (compatibilidad hacia atrás)
+    default_config = None
     if module == 'rcv' and tx_type == 'purchases':
-        return {
+        default_config = {
             "tax_account_code": "1.1.03.001", "tax_account_name": "IVA Crédito Fiscal",
             "revenue_account_code": "5.1.01.001", "revenue_account_name": "Costo de Ventas",
             "asset_account_code": "2.1.01.001", "asset_account_name": "Proveedores Nacionales"
         }
     elif module == 'rcv' and tx_type == 'sales':
-        return {
+        default_config = {
             "tax_account_code": "2.1.02.001", "tax_account_name": "IVA Débito Fiscal",
             "revenue_account_code": "4.1.01.001", "revenue_account_name": "Ventas de Mercaderías",
             "asset_account_code": "1.1.02.001", "asset_account_name": "Clientes Nacionales"
         }
     elif module == 'payroll':
-        # Default accounts for Payroll (Remuneraciones)
-        return {
+        default_config = {
             "expense_salary_code": "5.1.02.001", "expense_salary_name": "Sueldos y Salarios",
             "expense_social_code": "5.1.02.002", "expense_social_name": "Leyes Sociales Empresa",
             "liability_afp_code": "2.1.04.004", "liability_afp_name": "AFP por Pagar",
@@ -124,7 +114,64 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
             "liability_tax_code": "2.1.03.001", "liability_tax_name": "Impuesto Único Retenido por Pagar",
             "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar"
         }
-    return None
+    elif module == 'assets':
+        default_config = {
+            "asset_depreciation_expense_code": "5.1.03.001", "asset_depreciation_expense_name": "Depreciación del Ejercicio",
+            "asset_accumulated_depreciation_code": "1.1.05.001", "asset_accumulated_depreciation_name": "Depreciación Acumulada Activos Fijos"
+        }
+    elif module in ('f29', 'tax'):
+        default_config = {
+            "tax_iva_debito_code": "2.1.02.001", "tax_iva_debito_name": "IVA Débito Fiscal",
+            "tax_iva_credito_code": "1.1.03.001", "tax_iva_credito_name": "IVA Crédito Fiscal",
+            "tax_ppm_code": "1.1.03.002", "tax_ppm_name": "PPM por Recuperar",
+            "tax_retentions_code": "2.1.03.002", "tax_retentions_name": "Retenciones por Pagar",
+            "tax_f29_payable_code": "2.1.03.003", "tax_f29_payable_name": "F29 por Pagar",
+            "tax_iva_remanente_code": "1.1.03.003", "tax_iva_remanente_name": "Remanente de Crédito Fiscal"
+        }
+
+    # Consultar base de datos
+    res = db.table("account_config_entries").select("entry_key, chart_of_accounts(codigo, nombre)") \
+        .eq("organization_id", org_id) \
+        .eq("module_name", 'tax' if module == 'f29' else module) \
+        .eq("is_active", True) \
+        .execute()
+        
+    db_config = {}
+    if res.data:
+        for entry in res.data:
+            key = entry.get("entry_key")
+            coa = entry.get("chart_of_accounts")
+            if coa:
+                code = coa.get("codigo")
+                name = coa.get("nombre")
+                if module == 'rcv':
+                    if tx_type == 'purchases' and key.startswith('purchases_'):
+                        base_key = key.replace('purchases_', '')
+                        db_config[f"{base_key}_code"] = code
+                        db_config[f"{base_key}_name"] = name
+                    elif tx_type == 'sales' and key.startswith('sales_'):
+                        base_key = key.replace('sales_', '')
+                        db_config[f"{base_key}_code"] = code
+                        db_config[f"{base_key}_name"] = name
+                elif module == 'payroll':
+                    db_config[f"{key}_code"] = code
+                    db_config[f"{key}_name"] = name
+                elif module == 'assets':
+                    db_config[f"asset_{key}_code"] = code
+                    db_config[f"asset_{key}_name"] = name
+                elif module in ('f29', 'tax'):
+                    db_config[f"{key}_code"] = code
+                    db_config[f"{key}_name"] = name
+                    
+    if db_config:
+        # Mezclar con valores por defecto para cualquier campo faltante
+        if default_config:
+            merged = default_config.copy()
+            merged.update(db_config)
+            return merged
+        return db_config
+        
+    return default_config
 
 def get_all_mapping_rules(db, org_id: str) -> Dict[str, Dict[str, str]]:
     """Busca todas las reglas de mapeo para una organización y las devuelve en un mapa."""
@@ -562,6 +609,7 @@ async def create_account(req: CreateAccountRequest):
     db = get_supabase()
     try:
         data = req.dict()
+        data.pop("parent_codigo", None)
         res = db.table("chart_of_accounts").insert(data).execute()
         if not res.data:
             raise HTTPException(status_code=400, detail="Error al crear cuenta")
@@ -980,18 +1028,117 @@ async def get_financial_reports(
         print(f"ERROR get_financial_reports: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/config")
 async def get_accounting_config_endpoint(
     organization_id: str,
     current_user: dict = Depends(verify_token)
 ):
-    """Retorna todas las configuraciones contables activas."""
     await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
-        res = db.table("centralized_account_config").select("*").eq("organization_id", organization_id).execute()
-        return res.data or []
+        # Obtener todas las entradas de configuración normalizadas
+        res = db.table("account_config_entries") \
+            .select("module_name, entry_key, chart_of_accounts(codigo, nombre)") \
+            .eq("organization_id", organization_id) \
+            .eq("is_active", True) \
+            .execute()
+            
+        # Agrupar las entradas normalizadas por módulo/tipo
+        # Definir los 5 grupos de configuración estándar
+        groups = {
+            ("rcv", "purchases"): {
+                "id": f"rcv_purchases_{organization_id}",
+                "organization_id": organization_id,
+                "module_name": "rcv",
+                "transaction_type": "purchases",
+                "display_name": "Configuración Compras (RCV)",
+                "tax_account_code": "", "tax_account_name": "",
+                "revenue_account_code": "", "revenue_account_name": "",
+                "asset_account_code": "", "asset_account_name": ""
+            },
+            ("rcv", "sales"): {
+                "id": f"rcv_sales_{organization_id}",
+                "organization_id": organization_id,
+                "module_name": "rcv",
+                "transaction_type": "sales",
+                "display_name": "Configuración Ventas (RCV)",
+                "tax_account_code": "", "tax_account_name": "",
+                "revenue_account_code": "", "revenue_account_name": "",
+                "asset_account_code": "", "asset_account_name": ""
+            },
+            ("payroll", "monthly"): {
+                "id": f"payroll_monthly_{organization_id}",
+                "organization_id": organization_id,
+                "module_name": "payroll",
+                "transaction_type": "monthly",
+                "display_name": "Configuración Remuneraciones",
+                "expense_salary_code": "", "expense_salary_name": "",
+                "expense_social_code": "", "expense_social_name": "",
+                "liability_afp_code": "", "liability_afp_name": "",
+                "liability_salud_code": "", "liability_salud_name": "",
+                "liability_afc_code": "", "liability_afc_name": "",
+                "liability_tax_code": "", "liability_tax_name": "",
+                "liability_net_code": "", "liability_net_name": "",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            },
+            ("f29", "generic"): {
+                "id": f"f29_generic_{organization_id}",
+                "organization_id": organization_id,
+                "module_name": "f29",
+                "transaction_type": "generic",
+                "display_name": "Configuración Formulario 29",
+                "tax_iva_debito_code": "", "tax_iva_debito_name": "",
+                "tax_iva_credito_code": "", "tax_iva_credito_name": "",
+                "tax_ppm_code": "", "tax_ppm_name": "",
+                "tax_retentions_code": "", "tax_retentions_name": "",
+                "tax_f29_payable_code": "", "tax_f29_payable_name": "",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            },
+            ("assets", "generic"): {
+                "id": f"assets_generic_{organization_id}",
+                "organization_id": organization_id,
+                "module_name": "assets",
+                "transaction_type": "generic",
+                "display_name": "Configuración Activos Fijos",
+                "asset_depreciation_expense_code": "", "asset_depreciation_expense_name": "",
+                "asset_accumulated_depreciation_code": "", "asset_accumulated_depreciation_name": "",
+                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
+            }
+        }
+        
+        # Poblar con datos de la DB
+        if res.data:
+            for entry in res.data:
+                module = entry.get("module_name")
+                key = entry.get("entry_key")
+                coa = entry.get("chart_of_accounts")
+                if not coa: continue
+                code = coa.get("codigo", "")
+                name = coa.get("nombre", "")
+                
+                # Normalizar tax a f29 para la UI
+                if module == 'tax': module = 'f29'
+                
+                if module == 'rcv':
+                    if key.startswith('purchases_'):
+                        base = key.replace('purchases_', '')
+                        groups[("rcv", "purchases")][f"{base}_code"] = code
+                        groups[("rcv", "purchases")][f"{base}_name"] = name
+                    elif key.startswith('sales_'):
+                        base = key.replace('sales_', '')
+                        groups[("rcv", "sales")][f"{base}_code"] = code
+                        groups[("rcv", "sales")][f"{base}_name"] = name
+                elif module == 'payroll':
+                    groups[("payroll", "monthly")][f"{key}_code"] = code
+                    groups[("payroll", "monthly")][f"{key}_name"] = name
+                elif module == 'assets':
+                    groups[("assets", "generic")][f"asset_{key}_code"] = code
+                    groups[("assets", "generic")][f"asset_{key}_name"] = name
+                elif module == 'f29':
+                    groups[("f29", "generic")][f"{key}_code"] = code
+                    groups[("f29", "generic")][f"{key}_name"] = name
+                    
+        return list(groups.values())
     except Exception as e:
         print(f"ERROR get_accounting_config_endpoint: {str(e)}")
         import traceback
@@ -1003,59 +1150,36 @@ async def initialize_accounting_config(organization_id: str):
     """Inicializa la tabla de configuraciones con valores por defecto si está vacía."""
     db = get_supabase()
     try:
-        # 1. Verificar si ya existen
-        check = db.table("centralized_account_config").select("id").eq("organization_id", organization_id).limit(1).execute()
-        if check.data:
-            return {"success": True, "message": "Configuración ya existe."}
+        # Inicializar llamando upsert_config_entry
+        # 1. RCV Purchases
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "purchases_tax_account", "p_code": "1.1.03.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "purchases_revenue_account", "p_code": "5.1.01.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "purchases_asset_account", "p_code": "2.1.01.001"}).execute()
         
-        # 2. Filas por defecto
-        default_rows = [
-            {
-                "organization_id": organization_id,
-                "module_name": "rcv", "transaction_type": "purchases", "display_name": "Configuración Compras (RCV)",
-                "tax_account_code": "1.1.03.001", "tax_account_name": "IVA Crédito Fiscal",
-                "revenue_account_code": "5.1.01.001", "revenue_account_name": "Costo de Ventas",
-                "asset_account_code": "2.1.01.001", "asset_account_name": "Proveedores Nacionales"
-            },
-            {
-                "organization_id": organization_id,
-                "module_name": "rcv", "transaction_type": "sales", "display_name": "Configuración Ventas (RCV)",
-                "tax_account_code": "2.1.02.001", "tax_account_name": "IVA Débito Fiscal",
-                "revenue_account_code": "4.1.01.001", "revenue_account_name": "Ventas de Mercaderías",
-                "asset_account_code": "1.1.02.001", "asset_account_name": "Clientes Nacionales"
-            },
-            {
-                "organization_id": organization_id,
-                "module_name": "payroll", "transaction_type": "monthly", "display_name": "Configuración Remuneraciones",
-                "expense_salary_code": "5.1.02.001", "expense_salary_name": "Sueldos y Salarios",
-                "expense_social_code": "5.1.02.002", "expense_social_name": "Leyes Sociales Empresa",
-                "liability_afp_code": "2.1.04.004", "liability_afp_name": "AFP por Pagar",
-                "liability_salud_code": "2.1.04.005", "liability_salud_name": "Salud por Pagar",
-                "liability_afc_code": "2.1.04.006", "liability_afc_name": "AFC por Pagar",
-                "liability_tax_code": "2.1.03.001", "liability_tax_name": "Impuesto Único Retenido por Pagar",
-                "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar",
-                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
-            },
-            {
-                "organization_id": organization_id,
-                "module_name": "f29", "transaction_type": "generic", "display_name": "Configuración Formulario 29",
-                "tax_iva_debito_code": "2.1.02.001", "tax_iva_debito_name": "IVA Débito Fiscal",
-                "tax_iva_credito_code": "1.1.03.001", "tax_iva_credito_name": "IVA Crédito Fiscal",
-                "tax_ppm_code": "1.1.03.003", "tax_ppm_name": "PPM por Recuperar",
-                "tax_retentions_code": "2.1.03.002", "tax_retentions_name": "Retenciones 2da Categoría",
-                "tax_f29_payable_code": "2.1.03.003", "tax_f29_payable_name": "F29 por Pagar",
-                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
-            },
-            {
-                "organization_id": organization_id,
-                "module_name": "assets", "transaction_type": "generic", "display_name": "Configuración Activos Fijos",
-                "asset_depreciation_expense_code": "5.1.03.001", "asset_depreciation_expense_name": "Depreciación del Ejercicio",
-                "asset_accumulated_depreciation_code": "1.2.01.001", "asset_accumulated_depreciation_name": "Depreciación Acumulada",
-                "tax_account_code": "0.0.0", "tax_account_name": "N/A", "revenue_account_code": "0.0.0", "revenue_account_name": "N/A", "asset_account_code": "0.0.0", "asset_account_name": "N/A"
-            }
-        ]
+        # 2. RCV Sales
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "sales_tax_account", "p_code": "2.1.02.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "sales_revenue_account", "p_code": "4.1.01.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "rcv", "p_key": "sales_asset_account", "p_code": "1.1.02.001"}).execute()
         
-        db.table("centralized_account_config").insert(default_rows).execute()
+        # 3. Payroll
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "expense_salary", "p_code": "5.1.02.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "expense_social", "p_code": "5.1.02.002"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "liability_afp", "p_code": "2.1.04.004"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "liability_salud", "p_code": "2.1.04.005"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "liability_afc", "p_code": "2.1.04.006"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "liability_tax", "p_code": "2.1.03.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "payroll", "p_key": "liability_net", "p_code": "2.1.04.001"}).execute()
+        
+        # 4. F29 / Tax
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "tax", "p_key": "tax_iva_debito", "p_code": "2.1.02.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "tax", "p_key": "tax_iva_credito", "p_code": "1.1.03.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "tax", "p_key": "tax_ppm", "p_code": "1.1.03.003"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "tax", "p_key": "tax_retentions", "p_code": "2.1.03.002"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "tax", "p_key": "tax_f29_payable", "p_code": "2.1.03.003"}).execute()
+        
+        # 5. Assets
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "assets", "p_key": "depreciation_expense", "p_code": "5.1.03.001"}).execute()
+        db.rpc("upsert_config_entry", {"p_org_id": organization_id, "p_module": "assets", "p_key": "accumulated_depreciation", "p_code": "1.2.01.001"}).execute()
         
         return {"success": True, "message": "Configuración inicializada correctamente."}
     except Exception as e:
@@ -1064,14 +1188,72 @@ async def initialize_accounting_config(organization_id: str):
 
 @router.put("/config/{config_id}")
 async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountingConfigRequest):
-    """Actualiza un mapeo de cuentas específico."""
+    """Actualiza un mapeo de cuentas específico en la tabla normalizada account_config_entries."""
     db = get_supabase()
     try:
+        module = None
+        org_id = None
+        
+        if config_id.startswith("rcv_purchases_"):
+            module = "rcv"
+            org_id = config_id.replace("rcv_purchases_", "")
+        elif config_id.startswith("rcv_sales_"):
+            module = "rcv"
+            org_id = config_id.replace("rcv_sales_", "")
+        elif config_id.startswith("payroll_monthly_"):
+            module = "payroll"
+            org_id = config_id.replace("payroll_monthly_", "")
+        elif config_id.startswith("f29_generic_"):
+            module = "tax"
+            org_id = config_id.replace("f29_generic_", "")
+        elif config_id.startswith("assets_generic_"):
+            module = "assets"
+            org_id = config_id.replace("assets_generic_", "")
+            
+        if not module or not org_id:
+            raise HTTPException(status_code=400, detail="Identificador de configuración inválido")
+            
         data = req.model_dump(exclude_unset=True)
-        res = db.table("centralized_account_config").update(data).eq("id", config_id).execute()
-        if not res.data:
-            raise HTTPException(status_code=400, detail="Error al actualizar configuración")
-        return res.data[0]
+        
+        def upsert_entry(p_key: str, p_code: str):
+            db.rpc("upsert_config_entry", {
+                "p_org_id": org_id,
+                "p_module": module,
+                "p_key": p_key,
+                "p_code": p_code
+            }).execute()
+            
+        if module == 'rcv':
+            prefix = "purchases_" if config_id.startswith("rcv_purchases_") else "sales_"
+            if "tax_account_code" in data:
+                upsert_entry(f"{prefix}tax_account", data["tax_account_code"])
+            if "revenue_account_code" in data:
+                upsert_entry(f"{prefix}revenue_account", data["revenue_account_code"])
+            if "asset_account_code" in data:
+                upsert_entry(f"{prefix}asset_account", data["asset_account_code"])
+        elif module == 'payroll':
+            for field in ["expense_salary", "expense_social", "liability_afp", "liability_salud", "liability_afc", "liability_tax", "liability_net"]:
+                code_field = f"{field}_code"
+                if code_field in data:
+                    upsert_entry(field, data[code_field])
+        elif module == 'assets':
+            if "asset_depreciation_expense_code" in data:
+                upsert_entry("depreciation_expense", data["asset_depreciation_expense_code"])
+            if "asset_accumulated_depreciation_code" in data:
+                upsert_entry("accumulated_depreciation", data["asset_accumulated_depreciation_code"])
+        elif module == 'tax':
+            for field in ["tax_iva_debito", "tax_iva_credito", "tax_ppm", "tax_retentions", "tax_f29_payable", "tax_iva_remanente"]:
+                code_field = f"{field}_code"
+                if code_field in data:
+                    upsert_entry(field, data[code_field])
+                    
+        # Retornar la fila reconstruida
+        updated_res = await get_accounting_config_endpoint(organization_id=org_id)
+        for row in updated_res:
+            if row["id"] == config_id:
+                return row
+                
+        return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

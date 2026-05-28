@@ -10,6 +10,7 @@ from parsers.f29_plumber import parse_f29_pdf
 from core.database import get_supabase
 from core.auth import verify_token
 from core.logger import log_activity, log_system_error
+from api.routers.accounting import get_accounting_config
 
 router = APIRouter(tags=["Formulario 29"])
 
@@ -179,14 +180,7 @@ async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends
             raise Exception("No se encontró el formulario para este periodo.")
 
         # Obtener Configuración Dinámica (Fase 3 Auditoría: Des-hardcoding)
-        cfg_res = db.table("centralized_account_config") \
-            .select("*") \
-            .eq("organization_id", req.org_id) \
-            .eq("module_name", "f29") \
-            .eq("is_active", True) \
-            .execute()
-        
-        config = cfg_res.data[0] if (cfg_res.data and len(cfg_res.data) > 0) else {}
+        config = get_accounting_config(db, req.org_id, "f29", "generic") or {}
 
         debito = int(f29.get("debito_fiscal") or 0)
         credito = int(f29.get("credito_fiscal") or 0)

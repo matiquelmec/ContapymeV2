@@ -22,26 +22,35 @@ class DepreciateRequest(BaseModel):
 
 def get_asset_accounting_config(db, org_id: str):
     """
-    Busca la configuración de cuentas para el módulo de activos.
+    Busca la configuración de cuentas para el módulo de activos desde account_config_entries.
     Si no existe, devuelve valores por defecto estándar.
     """
     try:
-        res = db.table("centralized_account_config").select("*") \
+        res = db.table("account_config_entries").select("entry_key, chart_of_accounts(codigo, nombre)") \
             .eq("organization_id", org_id) \
             .eq("module_name", "assets") \
-            .eq("transaction_type", "depreciation") \
             .eq("is_active", True) \
             .execute()
-        
-        if res.data and len(res.data) > 0:
-            return res.data[0]
+            
+        db_config = {}
+        if res.data:
+            for entry in res.data:
+                key = entry.get("entry_key")
+                coa = entry.get("chart_of_accounts")
+                if coa:
+                    code = coa.get("codigo")
+                    name = coa.get("nombre")
+                    db_config[f"asset_{key}_code"] = code
+                    db_config[f"asset_{key}_name"] = name
+        if db_config:
+            return db_config
     except Exception as e:
         print(f"[WARN] No se pudo obtener config contable de activos: {e}")
     
     # Fallback predeterminado
     return {
-        "tax_account_code": "5.1.03.001", "tax_account_name": "Gasto Depreciación del Ejercicio",
-        "revenue_account_code": "1.1.05.001", "revenue_account_name": "Depreciación Acumulada"
+        "asset_depreciation_expense_code": "5.1.03.001", "asset_depreciation_expense_name": "Gasto Depreciación del Ejercicio",
+        "asset_accumulated_depreciation_code": "1.1.05.001", "asset_accumulated_depreciation_name": "Depreciación Acumulada Activos Fijos"
     }
 
 

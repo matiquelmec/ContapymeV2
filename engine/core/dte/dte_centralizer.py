@@ -6,18 +6,30 @@ logger = logging.getLogger(__name__)
 
 def get_accounting_config(db, org_id: str, module: str, tx_type: str) -> Dict[str, Any]:
     """
-    Busca la configuración de cuentas para un módulo y tipo.
+    Busca la configuración de cuentas para un módulo y tipo desde account_config_entries.
     Si no existe, devuelve valores por defecto.
     """
-    res = db.table("centralized_account_config").select("*") \
+    res = db.table("account_config_entries").select("entry_key, chart_of_accounts(codigo, nombre)") \
         .eq("organization_id", org_id) \
         .eq("module_name", module) \
-        .eq("transaction_type", tx_type) \
         .eq("is_active", True) \
         .execute()
-    
-    if res.data and len(res.data) > 0:
-        return res.data[0]
+        
+    db_config = {}
+    if res.data:
+        for entry in res.data:
+            key = entry.get("entry_key")
+            coa = entry.get("chart_of_accounts")
+            if coa:
+                code = coa.get("codigo")
+                name = coa.get("nombre")
+                if key.startswith(f"{tx_type}_"):
+                    base_key = key.replace(f"{tx_type}_", "")
+                    db_config[f"{base_key}_code"] = code
+                    db_config[f"{base_key}_name"] = name
+
+    if db_config:
+        return db_config
     
     # Valores por defecto de compatibilidad
     if module == 'rcv' and tx_type == 'sales':
