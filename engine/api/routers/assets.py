@@ -151,8 +151,16 @@ async def depreciate_assets(req: DepreciateRequest, current_user: dict = Depends
 
             journal_id = rpc_res.data
             if journal_id:
-                # Vincular el asiento al activo para trazabilidad
-                db.table("journal_entries").update({"fixed_asset_id": asset_id}).eq("id", journal_id).execute()
+                # Vincular el asiento mediante el módulo centralizado de eventos contables (accounting_events)
+                from core.accounting_events import get_or_create_accounting_event
+                event_id = get_or_create_accounting_event(
+                    db=db,
+                    organization_id=req.org_id,
+                    event_type="asset_depreciation",
+                    source_id=f"{asset_id}_{periodo_mes}",
+                    notes=f"Depreciación de {nombre_activo} en el período {periodo_mes}"
+                )
+                db.table("journal_entries").update({"event_id": event_id}).eq("id", journal_id).execute()
                 entries_created += 1
 
             # Actualizar Estado del Activo
