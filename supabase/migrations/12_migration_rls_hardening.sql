@@ -1,75 +1,178 @@
 -- ============================================================
--- 🏛️ MIGRACIÓN 12: Hardening RLS - Aislamiento Multi-tenant Definitivo
--- Objetivo: Dotar de políticas de acceso seguras a las 9 tablas huerfanas de políticas
+-- 🏛️ MIGRACIÓN 12: Hardening RLS Definitivo - JWT Aislamiento
+-- Objetivo: Establecer políticas basadas en auth.current_organization_id() en 31 tablas transaccionales
 -- ============================================================
 
--- A. TABLAS TRANSACCIONALES CON organization_id (Aislamiento por check_org_access)
+-- 1. FUNCIÓN AUXILIAR DE JWT
+CREATE OR REPLACE FUNCTION public.current_organization_id()
+RETURNS uuid
+LANGUAGE sql STABLE
+AS $$
+  SELECT COALESCE(
+    (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid,
+    '00000000-0000-0000-0000-000000000000'::uuid
+  );
+$$;
 
--- 1. account_config_entries
-ALTER TABLE public.account_config_entries ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.account_config_entries;
-CREATE POLICY org_isolation ON public.account_config_entries 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 2. bank_mapping_rules
-ALTER TABLE public.bank_mapping_rules ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.bank_mapping_rules;
-CREATE POLICY org_isolation ON public.bank_mapping_rules 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 3. bank_statements
-ALTER TABLE public.bank_statements ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.bank_statements;
-CREATE POLICY org_isolation ON public.bank_statements 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 4. dte_items
-ALTER TABLE public.dte_items ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.dte_items;
-CREATE POLICY org_isolation ON public.dte_items 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 5. employee_documents
-ALTER TABLE public.employee_documents ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.employee_documents;
-CREATE POLICY org_isolation ON public.employee_documents 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 6. f29_box_details
-ALTER TABLE public.f29_box_details ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.f29_box_details;
-CREATE POLICY org_isolation ON public.f29_box_details 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
-
--- 7. journal_entry_sequences
+-- 2. HABILITAR RLS EN LAS TABLAS CONTABLES, BANCOS, TRIBUTARIO, RRHH Y ACTIVOS
+ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.journal_entry_lines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journal_entry_sequences ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS org_isolation ON public.journal_entry_sequences;
-CREATE POLICY org_isolation ON public.journal_entry_sequences 
-  FOR ALL TO authenticated USING (public.check_org_access(organization_id));
+ALTER TABLE public.accounting_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chart_of_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_config_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_mapping_rules ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bank_statements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bank_statement_lines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bank_reconciliations ENABLE ROW LEVEL SECURITY;
 
--- B. TABLAS PARÁMETRO GLOBALES (Lectura pública / Escritura restringida al rol de servicio)
+ALTER TABLE public.dte_companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dte_issued ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dte_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dte_caf_folios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.f29_forms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.f29_box_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.purchase_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sales_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rcv_imports ENABLE ROW LEVEL SECURITY;
 
--- 1. national_payroll_params
+ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employee_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employee_terminations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.employment_contracts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contract_modifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.liquidations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payroll_books ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.fixed_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certified_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.organization_payroll_settings ENABLE ROW LEVEL SECURITY;
+
+-- 3. MACRO PARA GENERACIÓN DE POLÍTICAS BÁSICAS (SELECT/INSERT/UPDATE/DELETE)
+DO $$
+DECLARE
+  t text;
+  tables text[] := ARRAY[
+    'journal_entries','journal_entry_lines','journal_entry_sequences',
+    'accounting_events','chart_of_accounts','account_config_entries',
+    'account_mapping_rules','bank_accounts','bank_statements',
+    'bank_statement_lines','bank_reconciliations',
+    'dte_companies','dte_issued','dte_items','dte_caf_folios',
+    'f29_forms','f29_box_details','purchase_records','sales_records',
+    'rcv_imports','employees','employee_documents','employee_terminations',
+    'employment_contracts','contract_modifications','liquidations',
+    'payroll_books','fixed_assets','certified_reports',
+    'organization_payroll_settings'
+  ];
+BEGIN
+  FOREACH t IN ARRAY tables LOOP
+    -- Limpiar políticas anteriores para evitar colisiones
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_select', t);
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_insert', t);
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_update', t);
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_delete', t);
+    EXECUTE format('DROP POLICY IF EXISTS org_isolation ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "strict_org_isolation" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "strict_management_of_contracts" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Strict select contracts by organization" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Strict management of contracts" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Journal entries isolation" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Sales records isolation" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Purchase records isolation" ON public.%I', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Employees isolation" ON public.%I', t);
+
+    -- Inyectar nuevas políticas JWT
+    EXECUTE format(
+      'CREATE POLICY %I ON public.%I FOR SELECT
+         USING (organization_id = public.current_organization_id())',
+      t || '_select', t
+    );
+    EXECUTE format(
+      'CREATE POLICY %I ON public.%I FOR INSERT
+         WITH CHECK (organization_id = public.current_organization_id())',
+      t || '_insert', t
+    );
+    EXECUTE format(
+      'CREATE POLICY %I ON public.%I FOR UPDATE
+         USING (organization_id = public.current_organization_id())
+         WITH CHECK (organization_id = public.current_organization_id())',
+      t || '_update', t
+    );
+    EXECUTE format(
+      'CREATE POLICY %I ON public.%I FOR DELETE
+         USING (organization_id = public.current_organization_id())',
+      t || '_delete', t
+    );
+  END LOOP;
+END $$;
+
+-- 4. payroll_book_details: AISLAMIENTO ANIDADO
+ALTER TABLE public.payroll_book_details ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS payroll_book_details_select ON public.payroll_book_details;
+DROP POLICY IF EXISTS payroll_book_details_insert ON public.payroll_book_details;
+DROP POLICY IF EXISTS payroll_book_details_update ON public.payroll_book_details;
+DROP POLICY IF EXISTS payroll_book_details_delete ON public.payroll_book_details;
+DROP POLICY IF EXISTS org_isolation ON public.payroll_book_details;
+
+CREATE POLICY payroll_book_details_select ON public.payroll_book_details FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.payroll_books pb
+      WHERE pb.id = payroll_book_id
+        AND pb.organization_id = public.current_organization_id()
+    )
+  );
+
+CREATE POLICY payroll_book_details_insert ON public.payroll_book_details FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.payroll_books pb
+      WHERE pb.id = payroll_book_id
+        AND pb.organization_id = public.current_organization_id()
+    )
+  );
+
+CREATE POLICY payroll_book_details_update ON public.payroll_book_details FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.payroll_books pb
+      WHERE pb.id = payroll_book_id
+        AND pb.organization_id = public.current_organization_id()
+    )
+  );
+
+CREATE POLICY payroll_book_details_delete ON public.payroll_book_details FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.payroll_books pb
+      WHERE pb.id = payroll_book_id
+        AND pb.organization_id = public.current_organization_id()
+    )
+  );
+
+-- 5. organization_members: AISLAMIENTO INDIVIDUAL
+ALTER TABLE public.organization_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS organization_members_select ON public.organization_members;
+CREATE POLICY organization_members_select ON public.organization_members FOR SELECT
+  USING (
+    organization_id = public.current_organization_id()
+    AND user_id = auth.uid()
+  );
+
+-- 6. TABLAS PARAMÉTRICAS GLOBALES (Lectura pública)
 ALTER TABLE public.national_payroll_params ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read" ON public.national_payroll_params;
-CREATE POLICY "Allow public read" ON public.national_payroll_params
-  FOR SELECT TO public USING (true);
-
 DROP POLICY IF EXISTS "Allow service role write" ON public.national_payroll_params;
-CREATE POLICY "Allow service role write" ON public.national_payroll_params
-  FOR ALL TO service_role USING (true);
+CREATE POLICY "Allow public read" ON public.national_payroll_params FOR SELECT TO public USING (true);
+CREATE POLICY "Allow service role write" ON public.national_payroll_params FOR ALL TO service_role USING (true);
 
--- 2. termination_causes
 ALTER TABLE public.termination_causes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read" ON public.termination_causes;
-CREATE POLICY "Allow public read" ON public.termination_causes
-  FOR SELECT TO public USING (true);
-
 DROP POLICY IF EXISTS "Allow service role write" ON public.termination_causes;
-CREATE POLICY "Allow service role write" ON public.termination_causes
-  FOR ALL TO service_role USING (true);
+CREATE POLICY "Allow public read" ON public.termination_causes FOR SELECT TO public USING (true);
+CREATE POLICY "Allow service role write" ON public.termination_causes FOR ALL TO service_role USING (true);
 
-
--- C. NOTIFICAR RECARGA DE ESQUEMAS
+-- Notificar recarga de esquemas
 NOTIFY pgrst, 'reload schema';
