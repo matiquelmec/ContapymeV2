@@ -61,16 +61,32 @@ def test_accounting_events_lifecycle():
     assert rev_res["success"] is True
     assert len(rev_res["reversal_entries_created"]) == 1
     
-    # 7. Verificar que el estado del evento ahora sea 'reversed'
-    event_check = db.table("accounting_events").select("status").eq("id", event_id).execute()
+    # 7. Verificar que el estado del evento original ahora sea 'reversed' y tenga reversed_by_event_id
+    event_check = db.table("accounting_events").select("*").eq("id", event_id).execute()
     assert event_check.data[0]["status"] == "reversed"
+    assert event_check.data[0]["reversed_by_event_id"] is not None
+    
+    reversal_event_id = event_check.data[0]["reversed_by_event_id"]
+    
+    # Verificar que el evento de reversión tenga status 'reversed'
+    rev_event_check = db.table("accounting_events").select("*").eq("id", reversal_event_id).execute()
+    assert rev_event_check.data[0]["status"] == "reversed"
+    assert rev_event_check.data[0]["event_type"] == event_type
+    
+    # Verificar que el contrasiento esté asociado al evento de reversión
+    reversal_entry_id = rev_res["reversal_entries_created"][0]
+    entry_check = db.table("journal_entries").select("event_id").eq("id", reversal_entry_id).execute()
+    assert entry_check.data[0]["event_id"] == reversal_event_id
     
     # 8. Limpiar datos de la prueba
-    # Obtener el contrasiento creado para borrar sus líneas
-    reversal_entry_id = rev_res["reversal_entries_created"][0]
+    # Borrar líneas del contrasiento
     db.table("journal_entry_lines").delete().eq("entry_id", reversal_entry_id).execute()
     db.table("journal_entries").delete().eq("id", reversal_entry_id).execute()
     
+    # Borrar líneas del asiento original
     db.table("journal_entry_lines").delete().eq("entry_id", entry_id).execute()
     db.table("journal_entries").delete().eq("id", entry_id).execute()
+    
+    # Borrar eventos
     db.table("accounting_events").delete().eq("id", event_id).execute()
+    db.table("accounting_events").delete().eq("id", reversal_event_id).execute()

@@ -56,6 +56,20 @@ def reverse_accounting_event(
     if event["status"] == "reversed":
         return {"success": True, "message": "El evento ya se encontraba revertido"}
     
+    # Crear un nuevo evento de reversión formal en la DB
+    reversal_event_data = {
+        "organization_id": event["organization_id"],
+        "event_type": event["event_type"],
+        "source_id": f"{event['source_id']}_reversal",
+        "status": "reversed",
+        "notes": f"Evento de reversión que anula a {event_id}. " + (notes or "")
+    }
+    reversal_event_res = db.table("accounting_events").insert(reversal_event_data).execute()
+    if not reversal_event_res.data:
+        return {"success": False, "error": "No se pudo crear el evento contable de reversión"}
+    
+    reversal_event_id = reversal_event_res.data[0]["id"]
+    
     # 2. Buscar asientos asociados
     entries_res = db.table("journal_entries") \
         .select("*, lines:journal_entry_lines(*)") \
@@ -95,16 +109,17 @@ def reverse_accounting_event(
         if reversal_entry_id:
             # Asociar también el contrasiento al evento de reversión
             db.table("journal_entries") \
-                .update({"event_id": event_id}) \
+                .update({"event_id": reversal_event_id}) \
                 .eq("id", reversal_entry_id) \
                 .execute()
             reversal_entries_created.append(reversal_entry_id)
 
-    # 3. Actualizar el estado del evento
+    # 3. Actualizar el estado del evento original y apuntar al evento de reversión
     db.table("accounting_events") \
         .update({
             "status": "reversed",
             "reversed_at": datetime.now(timezone.utc).isoformat(),
+            "reversed_by_event_id": reversal_event_id,
             "notes": f"Revertido. Contrasientos creados: {len(reversal_entries_created)}. " + (notes or "")
         }) \
         .eq("id", event_id) \
