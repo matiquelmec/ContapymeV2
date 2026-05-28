@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { FileText, Users, Briefcase, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog } from 'lucide-react'
+import { FileText, Users, Briefcase, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon } from 'lucide-react'
 
 export const navigationGroups = [
   {
@@ -25,6 +25,7 @@ export const navigationGroups = [
       { name: 'Libro Diario', href: '/dashboard/accounting/journal', icon: BookOpen },
       { name: 'Libro Mayor', href: '/dashboard/accounting/ledger', icon: Layers },
       { name: 'Balance de Comprobación', href: '/dashboard/accounting/trial-balance', icon: Scale },
+      { name: 'Cierre de Periodos', href: '/dashboard/accounting/periods', icon: CalendarIcon },
       { name: 'Conciliación Bancaria', href: '/dashboard/reconciliation', icon: Landmark },
       { name: 'Reportes Financieros', href: '/dashboard/accounting/reports', icon: BarChart3 },
       { name: 'Config. de Cuentas', href: '/dashboard/accounting/config', icon: Settings },
@@ -34,6 +35,7 @@ export const navigationGroups = [
     title: "Recursos Humanos (RRHH)",
     items: [
       { name: 'Remuneraciones', href: '/dashboard/payroll', icon: Users },
+      { name: 'Gestión de Vacaciones', href: '/dashboard/payroll/vacations', icon: CalendarIcon },
       { name: 'Contratos', href: '/dashboard/payroll/contracts', icon: ClipboardList },
       { name: 'Finiquitos', href: '/dashboard/payroll/terminations', icon: FileText },
       { name: 'Libro LRE', href: '/dashboard/payroll/lre', icon: FileSpreadsheet },

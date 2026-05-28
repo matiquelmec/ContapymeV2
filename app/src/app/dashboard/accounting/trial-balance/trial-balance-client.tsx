@@ -31,6 +31,8 @@ import {
   Loader2
 } from "lucide-react";
 import { getTrialBalance, archiveCertifiedReport, getCertifiedReports, deleteCertifiedReport } from "@/actions/accounting";
+import { refreshAccountBalances, getBalancesFromMaterializedView } from "@/actions/accounting-balances";
+
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { fCurrency } from "@/lib/utils";
@@ -89,7 +91,41 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     }
   };
 
+  const handleSync = async () => {
+    setLoading(true);
+    try {
+      const syncRes = await refreshAccountBalances();
+      if (!syncRes.success) {
+        toast.error("Error al refrescar la vista materializada: " + syncRes.error);
+      }
+
+      const result = await getBalancesFromMaterializedView(organizationId);
+      setData(result);
+
+      // Fetch organization details for the PDF
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', organizationId)
+        .single();
+      setOrganization(org);
+
+      // Load certification history
+      const certs = await getCertifiedReports(organizationId, 'trial_balance');
+      setHistory(certs);
+
+      toast.success("Balance sincronizado desde vista materializada");
+    } catch (error) {
+      toast.error("Error crítico al sincronizar balances");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePrint = () => {
+
     window.print();
   };
 
@@ -413,13 +449,24 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
           </div>
           <Button 
               onClick={fetchData} 
-              className="gap-3 font-black uppercase text-[10px] tracking-widest rounded-full shadow-xl shadow-primary/20 h-14 px-8 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shrink-0"
+              variant="outline"
+              className="gap-3 font-black uppercase text-[10px] tracking-widest rounded-full border-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 h-14 px-6 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shrink-0"
               disabled={loading}
           >
-            {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Filter className="h-5 w-5" />}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Filter className="h-5 w-5" />}
+            Filtrar Fechas
+          </Button>
+          <Button 
+              onClick={handleSync} 
+              className="gap-3 font-black uppercase text-[10px] tracking-widest rounded-full shadow-xl shadow-primary/20 h-14 px-8 hover:scale-105 active:scale-95 transition-all w-full sm:w-auto shrink-0 bg-primary text-primary-foreground"
+              disabled={loading}
+          >
+            {loading ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <RefreshCcw className="h-5 w-5" />}
             Sincronizar Inteligencia
           </Button>
         </div>
+
+
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
             <Button 
