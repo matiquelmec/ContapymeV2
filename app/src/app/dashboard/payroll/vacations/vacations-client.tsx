@@ -28,7 +28,8 @@ import {
   updateVacationStatus, 
   getEmployeeVacationSummary, 
   getEmployeeVacationLedger,
-  VacationLedgerEntry 
+  VacationLedgerEntry,
+  VacationSummary
 } from '@/actions/vacations'
 
 interface EmployeeOption {
@@ -36,6 +37,8 @@ interface EmployeeOption {
   nombres: string
   apellido_paterno: string
   apellido_materno: string
+  fecha_ingreso?: string
+  region?: string
 }
 
 interface VacationsClientProps {
@@ -53,7 +56,12 @@ export function VacationsClient({
 }: VacationsClientProps) {
   const [requests, setRequests] = useState<VacationRequest[]>(initialRequests)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
-  const [selectedEmployeeSummary, setSelectedEmployeeSummary] = useState({ acumulados: 0, tomados: 0, saldo: 0 })
+  const [selectedEmployeeSummary, setSelectedEmployeeSummary] = useState<VacationSummary>({
+    acumulados: 0,
+    tomados: 0,
+    saldo: 0,
+    dias_legales_anuales: 20
+  })
   const [selectedEmployeeLedger, setSelectedEmployeeLedger] = useState<VacationLedgerEntry[]>([])
   
   // Formulario de nueva solicitud
@@ -72,7 +80,7 @@ export function VacationsClient({
   // Cargar estadísticas y ledger cuando se selecciona un empleado
   useEffect(() => {
     if (!selectedEmployeeId) {
-      setSelectedEmployeeSummary({ acumulados: 0, tomados: 0, saldo: 0 })
+      setSelectedEmployeeSummary({ acumulados: 0, tomados: 0, saldo: 0, dias_legales_anuales: 20 })
       setSelectedEmployeeLedger([])
       return
     }
@@ -257,16 +265,24 @@ export function VacationsClient({
           </div>
 
           {selectedEmployeeId && (
-            <div className="grid grid-cols-3 gap-4 bg-muted/20 border border-border p-4 rounded-3xl w-full md:w-auto md:min-w-[450px]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-muted/20 border border-border p-4 rounded-3xl w-full md:w-auto md:min-w-[560px]">
               <div className="text-center">
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Acumulados Ley</span>
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Base Legal</span>
+                {loadingSummary ? (
+                  <Loader2 className="w-5 h-5 text-primary animate-spin mx-auto mt-2" />
+                ) : (
+                  <span className="text-xl font-black text-indigo-600 font-mono">{selectedEmployeeSummary.dias_legales_anuales}</span>
+                )}
+              </div>
+              <div className="text-center">
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Devengados</span>
                 {loadingSummary ? (
                   <Loader2 className="w-5 h-5 text-primary animate-spin mx-auto mt-2" />
                 ) : (
                   <span className="text-xl font-black text-emerald-600 font-mono">+{selectedEmployeeSummary.acumulados.toFixed(1)}</span>
                 )}
               </div>
-              <div className="text-center border-x border-border/80 px-2">
+              <div className="text-center sm:border-x border-border/80 px-2">
                 <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Días Tomados</span>
                 {loadingSummary ? (
                   <Loader2 className="w-5 h-5 text-primary animate-spin mx-auto mt-2" />
@@ -344,6 +360,9 @@ export function VacationsClient({
                       <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                       <div className="text-[10px] font-bold uppercase leading-relaxed">
                         Cupo insuficiente: Posee {selectedEmployeeSummary.saldo} días hábiles disponibles.
+                        <span className="block mt-1 normal-case text-rose-700/80">
+                          Cálculo legal Magallanes: {selectedEmployeeSummary.dias_legales_anuales} días hábiles anuales proporcionales desde la fecha de ingreso.
+                        </span>
                       </div>
                     </div>
                   )}
@@ -473,7 +492,7 @@ export function VacationsClient({
                   <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
                     <History className="w-5 h-5 text-primary" /> Cartola de Cuenta Corriente
                   </CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider">Detalle del Ledger de Vacaciones</CardDescription>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-wider">Usos y ajustes sobre el saldo legal proporcional</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="p-0">

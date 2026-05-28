@@ -28,7 +28,7 @@ export default async function VacationsPage() {
   // Cargar todos los empleados activos de la organización para el formulario
   const { data: employees } = await supabase
     .from('employees')
-    .select('id, nombres, apellido_paterno, apellido_materno, activo')
+    .select('id, nombres, apellido_paterno, apellido_materno, fecha_ingreso, region, activo')
     .eq('organization_id', activeOrgId)
     .eq('activo', true)
     .order('apellido_paterno', { ascending: true })

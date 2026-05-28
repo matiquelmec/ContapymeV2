@@ -31,6 +31,29 @@ export interface VacationLedgerEntry {
   created_at: string
 }
 
+export interface VacationSummary {
+  acumulados: number
+  tomados: number
+  saldo: number
+  dias_legales_anuales: number
+  fecha_ingreso?: string
+}
+
+const MAGALLANES_ANNUAL_VACATION_DAYS = 20
+
+function calculateLegalVacationDays(fechaIngreso?: string | null) {
+  if (!fechaIngreso) return 0
+
+  const start = new Date(`${fechaIngreso}T12:00:00`)
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+
+  if (Number.isNaN(start.getTime()) || start > today) return 0
+
+  const elapsedDays = Math.floor((today.getTime() - start.getTime()) / 86_400_000)
+  return Number(((elapsedDays * MAGALLANES_ANNUAL_VACATION_DAYS) / 365.25).toFixed(2))
+}
+
 export async function getVacationRequests(orgId: string) {
   const supabase = await createClient()
 
@@ -73,10 +96,23 @@ export async function getEmployeeVacationLedger(orgId: string, employeeId: strin
   return data as VacationLedgerEntry[]
 }
 
-export async function getEmployeeVacationSummary(employeeId: string) {
+export async function getEmployeeVacationSummary(employeeId: string): Promise<VacationSummary> {
   const supabase = await createClient()
 
-  // Calcular totales sumando directamente el ledger en la base de datos
+  const { data: employee, error: employeeError } = await supabase
+    .from('employees')
+    .select('fecha_ingreso')
+    .eq('id', employeeId)
+    .single()
+
+  if (employeeError) {
+    console.error('Error al obtener fecha de ingreso del empleado:', employeeError)
+    return { acumulados: 0, tomados: 0, saldo: 0, dias_legales_anuales: MAGALLANES_ANNUAL_VACATION_DAYS }
+  }
+
+  const legalAccrued = calculateLegalVacationDays(employee?.fecha_ingreso)
+
+  // La base legal se calcula por fecha de ingreso. El ledger registra consumos y ajustes.
   const { data, error } = await supabase
     .from('vacation_ledger')
     .select('tipo, dias')
@@ -84,30 +120,36 @@ export async function getEmployeeVacationSummary(employeeId: string) {
 
   if (error) {
     console.error('Error al obtener balance de vacaciones:', error)
-    return { acumulados: 0, tomados: 0, saldo: 0 }
-  }
-
-  let acumulados = 0
-  let tomados = 0
-
-  for (const entry of data || []) {
-    if (entry.tipo === 'accrual') {
-      acumulados += Number(entry.dias)
-    } else if (entry.tipo === 'usage') {
-      tomados += Math.abs(Number(entry.dias))
-    } else if (entry.tipo === 'adjustment') {
-      if (Number(entry.dias) > 0) {
-        acumulados += Number(entry.dias)
-      } else {
-        tomados += Math.abs(Number(entry.dias))
-      }
+    return {
+      acumulados: legalAccrued,
+      tomados: 0,
+      saldo: legalAccrued,
+      dias_legales_anuales: MAGALLANES_ANNUAL_VACATION_DAYS,
+      fecha_ingreso: employee?.fecha_ingreso
     }
   }
 
+  let ajustes = 0
+  let tomados = 0
+
+  for (const entry of data || []) {
+    if (entry.tipo === 'usage') {
+      tomados += Math.abs(Number(entry.dias))
+    } else if (entry.tipo === 'adjustment') {
+      ajustes += Number(entry.dias)
+    }
+  }
+
+  const acumulados = Number((legalAccrued + Math.max(ajustes, 0)).toFixed(2))
+  const totalTomados = Number((tomados + Math.abs(Math.min(ajustes, 0))).toFixed(2))
+  const saldo = Number((acumulados - totalTomados).toFixed(2))
+
   return {
     acumulados,
-    tomados,
-    saldo: acumulados - tomados
+    tomados: totalTomados,
+    saldo,
+    dias_legales_anuales: MAGALLANES_ANNUAL_VACATION_DAYS,
+    fecha_ingreso: employee?.fecha_ingreso
   }
 }
 
