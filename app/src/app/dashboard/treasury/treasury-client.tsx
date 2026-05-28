@@ -297,7 +297,7 @@ export function TreasuryClient({
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Medio de pago</Label>
-              <Select value={paymentMethodId} onValueChange={setPaymentMethodId} disabled={!hasPaymentMethods}>
+              <Select value={paymentMethodId} onValueChange={(value) => setPaymentMethodId(value || "")} disabled={!hasPaymentMethods}>
                 <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold">
                   <SelectValue placeholder="Seleccione medio" />
                 </SelectTrigger>

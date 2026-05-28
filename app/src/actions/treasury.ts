@@ -66,6 +66,18 @@ type MonthPaymentRow = {
   monto: number | string | null;
 };
 
+type RecentPaymentRow = {
+  id: string;
+  tipo: "pago_proveedor" | "cobro_cliente";
+  monto: number | string | null;
+  fecha_pago: string;
+  referencia: string | null;
+  notas: string | null;
+  journal_entry_id: string | null;
+  created_at: string;
+  payment_methods: { nombre: string; tipo: string } | { nombre: string; tipo: string }[] | null;
+};
+
 export type TreasuryDashboardData = {
   paymentMethods: PaymentMethod[];
   pendingPurchases: TreasuryDocument[];
@@ -208,11 +220,25 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
       .reduce((sum, row) => sum + toNumber(row.monto), 0),
   };
 
+  const recentPayments = ((recentRes.data || []) as RecentPaymentRow[]).map((row) => ({
+    id: row.id,
+    tipo: row.tipo,
+    monto: toNumber(row.monto),
+    fecha_pago: row.fecha_pago,
+    referencia: row.referencia,
+    notas: row.notas,
+    journal_entry_id: row.journal_entry_id,
+    created_at: row.created_at,
+    payment_methods: Array.isArray(row.payment_methods)
+      ? row.payment_methods[0] || null
+      : row.payment_methods,
+  }));
+
   return {
     paymentMethods: (methodsRes.data || []) as PaymentMethod[],
     pendingPurchases,
     pendingSales,
-    recentPayments: (recentRes.data || []) as TreasuryPayment[],
+    recentPayments,
     totals,
   };
 }
