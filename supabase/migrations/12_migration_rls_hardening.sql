@@ -1,20 +1,16 @@
 -- ============================================================
--- 🏛️ MIGRACIÓN 12: Hardening RLS Definitivo - JWT Aislamiento
--- Objetivo: Establecer políticas basadas en auth.current_organization_id() en 31 tablas transaccionales
+-- 🏛️ MIGRACIÓN 12: Hardening RLS Definitivo - Membresía Multi-Org
+-- Objetivo: Establecer políticas basadas en organization_members para soporte multi-org
 -- ============================================================
 
--- 1. FUNCIÓN AUXILIAR DE JWT
-CREATE OR REPLACE FUNCTION public.current_organization_id()
-RETURNS uuid
-LANGUAGE sql STABLE
-AS $$
-  SELECT COALESCE(
-    (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid,
-    '00000000-0000-0000-0000-000000000000'::uuid
-  );
-$$;
+-- 1. LIMPIAR LOGICA OBSOLETA DE JWT SI EXISTIERA
+DROP FUNCTION IF EXISTS public.current_organization_id() CASCADE;
 
--- 2. HABILITAR RLS EN LAS TABLAS CONTABLES, BANCOS, TRIBUTARIO, RRHH Y ACTIVOS
+-- 2. ÍNDICE COMPUESTO ESTRATÉGICO PARA OPTIMIZAR RLS
+CREATE INDEX IF NOT EXISTS idx_org_members_user_org 
+  ON public.organization_members(user_id, organization_id);
+
+-- 3. HABILITAR RLS EN LAS TABLAS CONTABLES, BANCOS, TRIBUTARIO, RRHH Y ACTIVOS
 ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journal_entry_lines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.journal_entry_sequences ENABLE ROW LEVEL SECURITY;
@@ -50,7 +46,7 @@ ALTER TABLE public.fixed_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.certified_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.organization_payroll_settings ENABLE ROW LEVEL SECURITY;
 
--- 3. MACRO PARA GENERACIÓN DE POLÍTICAS BÁSICAS (SELECT/INSERT/UPDATE/DELETE)
+-- 4. MACRO PARA GENERACIÓN DE POLÍTICAS BÁSICAS (SELECT/INSERT/UPDATE/DELETE)
 DO $$
 DECLARE
   t text;
@@ -68,7 +64,7 @@ DECLARE
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP
-    -- Limpiar políticas anteriores para evitar colisiones
+    -- Limpiar políticas anteriores (incluyendo las de JWT creadas anteriormente)
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_select', t);
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_insert', t);
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_update', t);
@@ -83,32 +79,55 @@ BEGIN
     EXECUTE format('DROP POLICY IF EXISTS "Purchase records isolation" ON public.%I', t);
     EXECUTE format('DROP POLICY IF EXISTS "Employees isolation" ON public.%I', t);
 
-    -- Inyectar nuevas políticas JWT
+    -- Inyectar nuevas políticas basadas en la tabla organization_members
     EXECUTE format(
-      'CREATE POLICY %I ON public.%I FOR SELECT
-         USING (organization_id = public.current_organization_id())',
-      t || '_select', t
+      'CREATE POLICY %I ON public.%I FOR SELECT USING (
+         EXISTS (
+           SELECT 1 FROM public.organization_members om
+           WHERE om.organization_id = %I.organization_id AND om.user_id = auth.uid()
+         )
+       )',
+      t || '_select', t, t
     );
+    
     EXECUTE format(
-      'CREATE POLICY %I ON public.%I FOR INSERT
-         WITH CHECK (organization_id = public.current_organization_id())',
-      t || '_insert', t
+      'CREATE POLICY %I ON public.%I FOR INSERT WITH CHECK (
+         EXISTS (
+           SELECT 1 FROM public.organization_members om
+           WHERE om.organization_id = %I.organization_id AND om.user_id = auth.uid()
+         )
+       )',
+      t || '_insert', t, t
     );
+
     EXECUTE format(
-      'CREATE POLICY %I ON public.%I FOR UPDATE
-         USING (organization_id = public.current_organization_id())
-         WITH CHECK (organization_id = public.current_organization_id())',
-      t || '_update', t
+      'CREATE POLICY %I ON public.%I FOR UPDATE USING (
+         EXISTS (
+           SELECT 1 FROM public.organization_members om
+           WHERE om.organization_id = %I.organization_id AND om.user_id = auth.uid()
+         )
+       ) WITH CHECK (
+         EXISTS (
+           SELECT 1 FROM public.organization_members om
+           WHERE om.organization_id = %I.organization_id AND om.user_id = auth.uid()
+         )
+       )',
+      t || '_update', t, t, t
     );
+
     EXECUTE format(
-      'CREATE POLICY %I ON public.%I FOR DELETE
-         USING (organization_id = public.current_organization_id())',
-      t || '_delete', t
+      'CREATE POLICY %I ON public.%I FOR DELETE USING (
+         EXISTS (
+           SELECT 1 FROM public.organization_members om
+           WHERE om.organization_id = %I.organization_id AND om.user_id = auth.uid()
+         )
+       )',
+      t || '_delete', t, t
     );
   END LOOP;
 END $$;
 
--- 4. payroll_book_details: AISLAMIENTO ANIDADO
+-- 5. payroll_book_details: AISLAMIENTO ANIDADO
 ALTER TABLE public.payroll_book_details ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS payroll_book_details_select ON public.payroll_book_details;
 DROP POLICY IF EXISTS payroll_book_details_insert ON public.payroll_book_details;
@@ -120,8 +139,9 @@ CREATE POLICY payroll_book_details_select ON public.payroll_book_details FOR SEL
   USING (
     EXISTS (
       SELECT 1 FROM public.payroll_books pb
+      JOIN public.organization_members om ON om.organization_id = pb.organization_id
       WHERE pb.id = payroll_book_id
-        AND pb.organization_id = public.current_organization_id()
+        AND om.user_id = auth.uid()
     )
   );
 
@@ -129,8 +149,9 @@ CREATE POLICY payroll_book_details_insert ON public.payroll_book_details FOR INS
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.payroll_books pb
+      JOIN public.organization_members om ON om.organization_id = pb.organization_id
       WHERE pb.id = payroll_book_id
-        AND pb.organization_id = public.current_organization_id()
+        AND om.user_id = auth.uid()
     )
   );
 
@@ -138,8 +159,16 @@ CREATE POLICY payroll_book_details_update ON public.payroll_book_details FOR UPD
   USING (
     EXISTS (
       SELECT 1 FROM public.payroll_books pb
+      JOIN public.organization_members om ON om.organization_id = pb.organization_id
       WHERE pb.id = payroll_book_id
-        AND pb.organization_id = public.current_organization_id()
+        AND om.user_id = auth.uid()
+    )
+  ) WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.payroll_books pb
+      JOIN public.organization_members om ON om.organization_id = pb.organization_id
+      WHERE pb.id = payroll_book_id
+        AND om.user_id = auth.uid()
     )
   );
 
@@ -147,21 +176,21 @@ CREATE POLICY payroll_book_details_delete ON public.payroll_book_details FOR DEL
   USING (
     EXISTS (
       SELECT 1 FROM public.payroll_books pb
+      JOIN public.organization_members om ON om.organization_id = pb.organization_id
       WHERE pb.id = payroll_book_id
-        AND pb.organization_id = public.current_organization_id()
+        AND om.user_id = auth.uid()
     )
   );
 
--- 5. organization_members: AISLAMIENTO INDIVIDUAL
+-- 6. organization_members: AISLAMIENTO INDIVIDUAL
 ALTER TABLE public.organization_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS organization_members_select ON public.organization_members;
 CREATE POLICY organization_members_select ON public.organization_members FOR SELECT
   USING (
-    organization_id = public.current_organization_id()
-    AND user_id = auth.uid()
+    user_id = auth.uid()
   );
 
--- 6. TABLAS PARAMÉTRICAS GLOBALES (Lectura pública)
+-- 7. TABLAS PARAMÉTRICAS GLOBALES (Lectura pública)
 ALTER TABLE public.national_payroll_params ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read" ON public.national_payroll_params;
 DROP POLICY IF EXISTS "Allow service role write" ON public.national_payroll_params;
