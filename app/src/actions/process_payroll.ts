@@ -40,7 +40,14 @@ export async function processPayroll(period?: string) {
 
     // 4. El Motor Python ya guardó y generó los datos. Ordenamos refrescar la UI.
     revalidatePath('/dashboard/payroll')
-    return { success: true, count: payrollData.processed_count }
+    return { 
+      success: true, 
+      count: payrollData.processed_count,
+      indicadores_estimados: payrollData.indicadores_estimados || false,
+      uf_usada: payrollData.uf_usada,
+      utm_usada: payrollData.utm_usada,
+      advertencias: payrollData.advertencias || [],
+    }
 
   } catch (err: any) {
     console.error("Server Action Payroll Exception:", err)

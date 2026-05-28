@@ -26,6 +26,14 @@ class TerminationRequest(BaseModel):
     dias_vacaciones_tomados: float = 0
     pending_overtime_amount: int = 0
     other_bonuses: int = 0
+    asignacion_colacion: int = 0
+    asignacion_movilizacion: int = 0
+    viaticos: int = 0
+    prestamo_ccaf: int = 0
+    anticipo_sueldo: int = 0
+    banco_transferencia: Optional[str] = ""
+    tipo_cuenta: Optional[str] = ""
+    cuenta_transferencia: Optional[str] = ""
 
 def calculate_years_of_service(start_date: date, end_date: date):
     delta = end_date - start_date
@@ -130,7 +138,24 @@ async def calculate_termination(req: TerminationRequest):
             base_aviso = min(base_calculo, tope_90_uf_aviso)
             monto_mes_aviso = base_aviso
 
-        total_compensations = pending_salary_amount + monto_vacaciones + monto_anos_servicio + monto_mes_aviso + req.pending_overtime_amount + req.other_bonuses
+        # Total bruto de compensaciones (haberes de finiquito)
+        total_haberes_finiquito = (
+            pending_salary_amount + 
+            monto_vacaciones + 
+            monto_anos_servicio + 
+            monto_mes_aviso + 
+            req.pending_overtime_amount + 
+            req.other_bonuses +
+            req.asignacion_colacion +
+            req.asignacion_movilizacion +
+            req.viaticos
+        )
+        
+        # Descuentos de finiquito
+        total_descuentos_finiquito = req.prestamo_ccaf + req.anticipo_sueldo
+        
+        # Total líquido final de finiquito
+        total_liquido_finiquito = total_haberes_finiquito - total_descuentos_finiquito
         
         termination_data = {
             "organization_id": req.organization_id,
@@ -142,7 +167,7 @@ async def calculate_termination(req: TerminationRequest):
             "monto_vacaciones": int(monto_vacaciones),
             "monto_indemnizacion_anos": int(monto_anos_servicio),
             "monto_mes_aviso": int(monto_mes_aviso),
-            "total_finiquito": int(total_compensations),
+            "total_finiquito": int(total_liquido_finiquito),
             "status": "borrador",
             "worked_days_last_month": worked_days_last_month,
             "pending_salary_amount": pending_salary_amount,
@@ -154,6 +179,14 @@ async def calculate_termination(req: TerminationRequest):
             "notice_indemnification_amount": int(monto_mes_aviso),
             "pending_overtime_amount": req.pending_overtime_amount,
             "other_bonuses_amount": req.other_bonuses,
+            "asignacion_colacion": req.asignacion_colacion,
+            "asignacion_movilizacion": req.asignacion_movilizacion,
+            "viaticos": req.viaticos,
+            "prestamo_ccaf": req.prestamo_ccaf,
+            "anticipo_sueldo": req.anticipo_sueldo,
+            "banco_transferencia": req.banco_transferencia,
+            "tipo_cuenta": req.tipo_cuenta,
+            "cuenta_transferencia": req.cuenta_transferencia,
             "updated_at": datetime.now().isoformat()
         }
 
@@ -277,6 +310,10 @@ async def generate_document_text(termination_id: str, doc_type: str):
                 }
             }
         elif doc_type == "finiquito":
+            transfer_text = ""
+            if term.get("cuenta_transferencia"):
+                transfer_text = f"\n\nEl pago se realiza mediante transferencia electrónica a la cuenta {term.get('tipo_cuenta', 'corriente')} N° {term.get('cuenta_transferencia')} del {term.get('banco_transferencia', 'Banco Estado')}."
+            
             return {
                 "success": True,
                 "data": {
@@ -289,12 +326,19 @@ async def generate_document_text(termination_id: str, doc_type: str):
                         f"PRIMERO: El trabajador prestó servicios desde el {fecha_inicio} hasta el {fecha_term}, "
                         f"fecha en que el contrato ha terminado por la causal: {term.get('causal_despido', '---')}.\n\n"
                         f"SEGUNDO: Por medio de este acto, el empleador paga al trabajador las siguientes sumas:\n"
+                        f"HABERES:\n"
                         f"- Haberes pendientes y días trabajados: ${term.get('pending_salary_amount', 0):,}\n"
                         f"- Vacaciones proporcionales / pendientes: ${term.get('monto_vacaciones', 0):,}\n"
                         f"- Indemnización años de servicio: ${term.get('monto_indemnizacion_anos', 0):,}\n"
                         f"- Mes de aviso / Sustitutiva: ${term.get('monto_mes_aviso', 0):,}\n"
-                        f"- Otros bonos y horas extras: ${term.get('pending_overtime_amount', 0) + term.get('other_bonuses_amount', 0):,}\n\n"
-                        f"TOTAL BRUTO A PAGAR: ${term.get('total_finiquito', 0):,}\n\n"
+                        f"- Otros bonos y horas extras: ${term.get('pending_overtime_amount', 0) + term.get('other_bonuses_amount', 0):,}\n"
+                        f"- Asignación de Colación: ${term.get('asignacion_colacion', 0):,}\n"
+                        f"- Asignación de Movilización: ${term.get('asignacion_movilizacion', 0):,}\n"
+                        f"- Viáticos / Otros asignaciones: ${term.get('viaticos', 0):,}\n"
+                        f"DESCUENTOS:\n"
+                        f"- Préstamo / Crédito CCAF: ${term.get('prestamo_ccaf', 0):,}\n"
+                        f"- Anticipos de Sueldo: ${term.get('anticipo_sueldo', 0):,}\n\n"
+                        f"TOTAL LÍQUIDO A PAGAR: ${term.get('total_finiquito', 0):,}{transfer_text}\n\n"
                         f"TERCERO: El trabajador declara recibir en este acto, a su entera satisfacción, la suma total indicada, "
                         f"no teniendo reclamo alguno que formular en contra de su empleador derivado de la relación laboral que los unió.\n\n"
                         f"CUARTO: Las partes otorgan el más amplio, completo y recíproco finiquito.\n\n"
@@ -544,4 +588,158 @@ async def download_docx(termination_id: str, doc_type: str):
         
     except Exception as e:
         print(f"[DOCX ERROR] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{termination_id}/export-dt-csv")
+async def export_dt_csv(termination_id: str):
+    """
+    Genera el CSV de carga masiva de Finiquito Electrónico de la Dirección del Trabajo (48 columnas).
+    Basado en el instructivo oficial DT versión 3.0.
+    """
+    db = get_supabase()
+    try:
+        term_res = db.table("employee_terminations").select("*, employees(*)").eq("id", termination_id).single().execute()
+        term = term_res.data
+        if not term:
+            raise HTTPException(status_code=404, detail="Finiquito no encontrado")
+        
+        emp = term.get("employees", {})
+        org_id = term["organization_id"]
+
+        org_res = db.table("organizations").select("*").eq("id", org_id).single().execute()
+        org = org_res.data or {}
+
+        # Mapeos de códigos oficiales de la Dirección del Trabajo
+        CAUSALES_DT = {
+            "Art. 159 N°1": 3, "MUTUO ACUERDO": 3,
+            "Art. 159 N°2": 4, "RENUNCIA": 4,
+            "Art. 159 N°4": 6, "VENCIMIENTO DEL PLAZO": 6,
+            "Art. 159 N°5": 7, "CONCLUSION DE OBRA": 7,
+            "Art. 161 N°1": 18, "NECESIDADES DE LA EMPRESA": 18
+        }
+        
+        causal_raw = (term.get("causal_despido") or "").upper()
+        causal_id = 18 # Fallback: Necesidades de la empresa
+        for k, v in CAUSALES_DT.items():
+            if k in causal_raw:
+                causal_id = v
+                break
+
+        # Regiones y Comunas
+        # Mapeo simple de código de región para la DT
+        region_str = (org.get("region") or "XII").upper()
+        region_id = 12 # Magallanes default
+        if "METROPOLITANA" in region_str or "RM" in region_str: region_id = 13
+        elif "AYSEN" in region_str: region_id = 11
+
+        comuna_id = 12101 # Punta Arenas default
+
+        # 48 Columnas requeridas por la DT
+        headers = [
+            "RutEmpresa", "RutTrabajador", "FechaInicioContrato", "FechaTerminoContrato",
+            "DeclaraNotificacionRetencionAlimento", "CausalFiniquitoId", "Funciones",
+            "RegionTrabajoId", "ComunaId", "LugarPrestacionServiciosDireccion",
+            "CantidadDiasVacaciones", "IndemnizacionFeriado", "IndemnizacionAvisoPrevio",
+            "IndemnizacionServicio", "IndemnizacionOtras", "IndemnizacionArticulo163",
+            "remuneracionPendiente", "Gratificaciones", "Bonos", "HorasExtraordinarias",
+            "Aguinaldo", "SemanaCorrida", "ComisionOParticipacion", "Movilizacion",
+            "Colacion", "PerdidaCaja", "DesgasteHerramientas", "Viaticos",
+            "AsignacionesFamiliares", "DescuentoSeguridadSocial", "DescuentoImpuestos",
+            "DescuentoAfc", "DescuentoAnticipado", "DescuentoIndemnizacion",
+            "DescuentoPension", "DescuentoCajaCompensacion", "PrestamoAdeudado",
+            "AnticipoSueldo", "VacacionesAnticipadas", "Email", "CodigoComunaPersonal",
+            "CallePersonal", "NumeroPersonal", "DepartamentoBlockPersonal", "Telefono",
+            "CuentaTransferencia", "BancoId", "TipoCuentaId"
+        ]
+
+        def fmt_rut(r: str) -> str:
+            # Formato sin puntos pero con guión
+            limpio = r.replace(".", "").upper()
+            if "-" not in limpio and len(limpio) > 1:
+                return f"{limpio[:-1]}-{limpio[-1]}"
+            return limpio
+
+        def fmt_date(d_str: str) -> str:
+            if not d_str: return ""
+            # YYYY-MM-DD -> DD-MM-YYYY
+            parts = d_str.split("T")[0].split("-")
+            if len(parts) == 3:
+                return f"{parts[2]}-{parts[1]}-{parts[0]}"
+            return d_str
+
+        # Poblar valores
+        data = {
+            "RutEmpresa": fmt_rut(org.get("rut_empresa", "")),
+            "RutTrabajador": fmt_rut(emp.get("rut", "")),
+            "FechaInicioContrato": fmt_date(term.get("fecha_inicio")),
+            "FechaTerminoContrato": fmt_date(term.get("fecha_termino")),
+            "DeclaraNotificacionRetencionAlimento": "No",
+            "CausalFiniquitoId": str(causal_id),
+            "Funciones": (emp.get("cargo") or "OPERARIO")[:100],
+            "RegionTrabajoId": str(region_id),
+            "ComunaId": str(comuna_id),
+            "LugarPrestacionServiciosDireccion": (org.get("direccion") or "Punta Arenas")[:100],
+            "CantidadDiasVacaciones": str(int(term.get("vacaciones_pendientes_dias", 0))),
+            "IndemnizacionFeriado": str(term.get("monto_vacaciones", 0)),
+            "IndemnizacionAvisoPrevio": str(term.get("monto_mes_aviso", 0)),
+            "IndemnizacionServicio": str(term.get("monto_indemnizacion_anos", 0)),
+            "IndemnizacionOtras": "0",
+            "IndemnizacionArticulo163": "0",
+            "remuneracionPendiente": str(term.get("pending_salary_amount", 0)),
+            "Gratificaciones": "0",
+            "Bonos": str(term.get("other_bonuses_amount", 0)),
+            "HorasExtraordinarias": str(term.get("pending_overtime_amount", 0)),
+            "Aguinaldo": "0",
+            "SemanaCorrida": "0",
+            "ComisionOParticipacion": "0",
+            "Movilizacion": str(term.get("asignacion_movilizacion", 0)),
+            "Colacion": str(term.get("asignacion_colacion", 0)),
+            "PerdidaCaja": "0",
+            "DesgasteHerramientas": "0",
+            "Viaticos": str(term.get("viaticos", 0)),
+            "AsignacionesFamiliares": "0",
+            "DescuentoSeguridadSocial": "0",
+            "DescuentoImpuestos": "0",
+            "DescuentoAfc": "0",
+            "DescuentoAnticipado": "0",
+            "DescuentoIndemnizacion": "0",
+            "DescuentoPension": "0",
+            "DescuentoCajaCompensacion": str(term.get("prestamo_ccaf", 0)),
+            "PrestamoAdeudado": "0",
+            "AnticipoSueldo": str(term.get("anticipo_sueldo", 0)),
+            "VacacionesAnticipadas": "0",
+            "Email": (emp.get("email") or "")[:100],
+            "CodigoComunaPersonal": str(comuna_id),
+            "CallePersonal": (emp.get("address") or "Calle Principal")[:50],
+            "NumeroPersonal": "100",
+            "DepartamentoBlockPersonal": "",
+            "Telefono": (emp.get("phone") or "999999999")[-9:],
+            "CuentaTransferencia": emp.get("cuenta_banco", "") or term.get("cuenta_transferencia", ""),
+            "BancoId": "3",  # Estado default
+            "TipoCuentaId": "4"  # Rut default
+        }
+
+        # Generar CSV en memoria
+        output = io.StringIO()
+        import csv
+        writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(headers)
+        writer.writerow([data.get(h, "") for h in headers])
+        
+        content = output.getvalue()
+        output.close()
+
+        # Retornar descarga con UTF-8-sig para que Excel abra correctamente con acentos
+        filename = f"FINIQUITO_DT_{emp.get('apellido_paterno', 'TRAB')}.csv"
+        
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            iter([content.encode("utf-8-sig")]), 
+            media_type="text/csv", 
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

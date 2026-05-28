@@ -60,7 +60,15 @@ export function TerminationDialog({
     aviso_previo: true,
     dias_vacaciones_tomados: 0,
     pending_overtime_amount: 0,
-    other_bonuses: 0
+    other_bonuses: 0,
+    asignacion_colacion: 0,
+    asignacion_movilizacion: 0,
+    viaticos: 0,
+    prestamo_ccaf: 0,
+    anticipo_sueldo: 0,
+    banco_transferencia: "",
+    tipo_cuenta: "vista",
+    cuenta_transferencia: ""
   });
 
   useEffect(() => {
@@ -125,7 +133,7 @@ export function TerminationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[650px] bg-card border-border shadow-[0_0_60px_-15px_rgba(0,0,0,0.3)] rounded-[3rem] p-0 ring-1 ring-black/5 animate-in slide-in-from-bottom-4 duration-500">
+      <DialogContent className="sm:max-w-[850px] bg-card border-border shadow-[0_0_60px_-15px_rgba(0,0,0,0.3)] rounded-[3rem] p-0 ring-1 ring-black/5 animate-in slide-in-from-bottom-4 duration-500">
         {/* STRIPE SUPERIOR */}
         <div className="h-4 w-full bg-gradient-to-r from-rose-600 via-rose-300 to-transparent rounded-t-[3rem]" />
         
@@ -149,8 +157,8 @@ export function TerminationDialog({
             </div>
           </DialogHeader>
 
-          <div className="p-10 space-y-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
-            <div className="space-y-8">
+          <div className="p-10 space-y-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
+            <div className="space-y-6">
               {/* EMPLEADO SELECTOR PREMIUM */}
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
@@ -177,7 +185,7 @@ export function TerminationDialog({
               </div>
 
               {/* GRIDS DE DATOS */}
-              <div className="grid grid-cols-2 gap-8 pt-2">
+              <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
                       <CalendarIcon className="w-3.5 h-3.5 text-rose-500/40" /> Fecha de Egreso
@@ -214,69 +222,155 @@ export function TerminationDialog({
                 </div>
               </div>
 
-              {/* AVISO PREVIO PREMIUM */}
-              {selectedCause?.requires_notice && (
-                <div className="flex items-center justify-between rounded-[1.8rem] border border-rose-100 p-8 bg-gradient-to-r from-rose-50/80 to-transparent transition-all animate-in fade-in slide-in-from-top-4 duration-500 hover:shadow-md hover:border-rose-200 group">
-                  <div className="space-y-1.5 flex-1 pr-10">
-                    <Label className="text-sm font-black text-rose-900 uppercase tracking-tight flex items-center gap-2">
-                        <ShieldAlert className="w-4 h-4 text-rose-600" /> Aviso Previo (30 días)
-                    </Label>
-                    <p className="text-[11px] text-rose-700/60 font-bold italic leading-relaxed">
-                      El no cumplimiento de la carta de aviso obliga al pago de la indemnización sustitutiva (1 sueldo base).
-                    </p>
+              {/* ESTRUCTURA DOBLE COLUMNA: HABERES Y DESCUENTOS DEL COSTADO */}
+              <div className="grid grid-cols-2 gap-8 border-t border-border/40 pt-6">
+                
+                {/* COLUMNA IZQUIERDA: HABERES Y PROPORCIONALES */}
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-emerald-700 border-b border-emerald-100 pb-2">Haberes y Proporcionales</h4>
+                  
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Vacaciones Tomadas (Días)</Label>
+                    <Input 
+                      type="number" 
+                      step="0.5"
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.dias_vacaciones_tomados}
+                      onChange={(e) => setFormData({...formData, dias_vacaciones_tomados: parseFloat(e.target.value) || 0})}
+                    />
                   </div>
-                  <Switch 
-                    checked={formData.aviso_previo}
-                    onCheckedChange={(c: boolean) => setFormData({...formData, aviso_previo: c})}
-                    className="data-[state=checked]:bg-rose-600 scale-125 mr-2"
-                  />
-                </div>
-              )}
 
-              {/* CONCEPTOS ADICIONALES GRID */}
-              <div className="space-y-4 pt-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
-                    <Briefcase className="w-3.5 h-3.5 text-rose-500/40" /> Haberes y Proporcionales
-                </Label>
-                <div className="grid grid-cols-3 gap-6">
                   <div className="space-y-3">
-                    <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest text-center">Vacaciones</p>
-                    <div className="relative group">
-                        <Input 
-                            type="number" 
-                            step="0.5"
-                            className="h-14 bg-muted/10 border-border/40 rounded-2xl font-black text-sm text-center focus:ring-rose-500 focus:bg-white transition-all shadow-sm"
-                            value={formData.dias_vacaciones_tomados}
-                            onChange={(e) => setFormData({...formData, dias_vacaciones_tomados: parseFloat(e.target.value) || 0})}
-                        />
-                        <span className="absolute inset-0 rounded-2xl border border-rose-500/0 group-hover:border-rose-500/10 pointer-events-none" />
-                    </div>
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Horas Extras ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.pending_overtime_amount}
+                      onChange={(e) => setFormData({...formData, pending_overtime_amount: parseInt(e.target.value) || 0})}
+                    />
                   </div>
+
                   <div className="space-y-3">
-                    <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest text-center">H. Extras ($)</p>
-                    <div className="relative group">
-                        <Input 
-                            type="number" 
-                            className="h-14 bg-muted/10 border-border/40 rounded-2xl font-black text-sm text-center focus:ring-rose-500 focus:bg-white transition-all shadow-sm"
-                            value={formData.pending_overtime_amount}
-                            onChange={(e) => setFormData({...formData, pending_overtime_amount: parseInt(e.target.value) || 0})}
-                        />
-                        <span className="absolute inset-0 rounded-2xl border border-rose-500/0 group-hover:border-rose-500/10 pointer-events-none" />
-                    </div>
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Otros Bonos Finiquito ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.other_bonuses}
+                      onChange={(e) => setFormData({...formData, other_bonuses: parseInt(e.target.value) || 0})}
+                    />
                   </div>
+
                   <div className="space-y-3">
-                    <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest text-center">Bonos ($)</p>
-                    <div className="relative group">
-                        <Input 
-                            type="number" 
-                            className="h-14 bg-muted/10 border-border/40 rounded-2xl font-black text-sm text-center focus:ring-rose-500 focus:bg-white transition-all shadow-sm"
-                            value={formData.other_bonuses}
-                            onChange={(e) => setFormData({...formData, other_bonuses: parseInt(e.target.value) || 0})}
-                        />
-                        <span className="absolute inset-0 rounded-2xl border border-rose-500/0 group-hover:border-rose-500/10 pointer-events-none" />
-                    </div>
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Asignación de Colación ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.asignacion_colacion}
+                      onChange={(e) => setFormData({...formData, asignacion_colacion: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Asignación de Movilización ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.asignacion_movilizacion}
+                      onChange={(e) => setFormData({...formData, asignacion_movilizacion: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Viáticos / Otras Asig. ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.viaticos}
+                      onChange={(e) => setFormData({...formData, viaticos: parseInt(e.target.value) || 0})}
+                    />
                   </div>
                 </div>
+
+                {/* COLUMNA DERECHA: DESCUENTOS Y FORMA DE PAGO */}
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-rose-700 border-b border-rose-100 pb-2">Descuentos y Forma de Pago</h4>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Préstamo CCAF ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.prestamo_ccaf}
+                      onChange={(e) => setFormData({...formData, prestamo_ccaf: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Anticipos de Sueldo ($)</Label>
+                    <Input 
+                      type="number" 
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.anticipo_sueldo}
+                      onChange={(e) => setFormData({...formData, anticipo_sueldo: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Banco Destinatario</Label>
+                    <Input 
+                      type="text" 
+                      placeholder="Ej: Banco Estado"
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.banco_transferencia}
+                      onChange={(e) => setFormData({...formData, banco_transferencia: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Tipo de Cuenta</Label>
+                    <Select 
+                      onValueChange={(v) => setFormData({...formData, tipo_cuenta: v || ''})}
+                      value={formData.tipo_cuenta}
+                    >
+                      <SelectTrigger className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs uppercase">
+                        <SelectValue placeholder="Seleccione..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-border rounded-xl">
+                        <SelectItem value="corriente" className="font-bold text-xs">Cuenta Corriente</SelectItem>
+                        <SelectItem value="vista" className="font-bold text-xs">Cuenta Vista</SelectItem>
+                        <SelectItem value="rut" className="font-bold text-xs">Cuenta RUT</SelectItem>
+                        <SelectItem value="ahorro" className="font-bold text-xs">Cuenta de Ahorro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Número de Cuenta</Label>
+                    <Input 
+                      type="text" 
+                      placeholder="Ej: 12345678"
+                      className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
+                      value={formData.cuenta_transferencia}
+                      onChange={(e) => setFormData({...formData, cuenta_transferencia: e.target.value})}
+                    />
+                  </div>
+
+                  {/* AVISO PREVIO SWITCH */}
+                  {selectedCause?.requires_notice && (
+                    <div className="flex items-center justify-between rounded-xl border border-rose-100 p-4 bg-rose-50/20">
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] font-black text-rose-950 uppercase tracking-tight">Aviso Previo (30 días)</Label>
+                        <p className="text-[9px] text-rose-700/60 font-bold italic leading-none">Pago sustitutivo si se omite</p>
+                      </div>
+                      <Switch 
+                        checked={formData.aviso_previo}
+                        onCheckedChange={(c: boolean) => setFormData({...formData, aviso_previo: c})}
+                        className="data-[state=checked]:bg-rose-600 scale-110"
+                      />
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* CLÁUSULA LEGAL GLASS PANEL */}
@@ -285,8 +379,8 @@ export function TerminationDialog({
                     <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
                 </div>
                 <p className="text-[10px] text-blue-950/70 font-bold uppercase tracking-tight italic leading-relaxed pr-2">
-                  <span className="text-blue-600 font-black mr-2 tracking-widest">Normativa Art. 163:</span>
-                  El motor aplicará automáticamente el valor de la UF y el tope legal de 90 UF (con el límite de 11 años de servicio).
+                  <span className="text-blue-600 font-black mr-2 tracking-widest">Normativa Art. 172/163:</span>
+                  El motor calculará el finiquito de forma precisa, descontando de forma atómica los préstamos y anticipos sobre la sumatoria de haberes imponibles y no imponibles.
                 </p>
               </div>
             </div>

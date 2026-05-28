@@ -70,6 +70,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
         # Normalizar periodo: si llega "2026-03-01" lo dejamos, si llega "2026-03" le agregamos "-01"
         periodo_clean = req.periodo[:7]  # Siempre tomar solo YYYY-MM
         target_period_start = f"{periodo_clean}-01"
+        indicadores_estimados = False
         uf_valor = 38000.0  # Fallback de emergencia
         utm_valor = 67294.0 # Fallback de emergencia
 
@@ -82,14 +83,19 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 .limit(2) \
                 .execute()
 
-            for ind in (ind_res.data or []):
-                if ind["codigo"] == "uf":
-                    uf_valor = float(ind["valor"])
-                elif ind["codigo"] == "utm":
-                    utm_valor = float(ind["valor"])
+            if not ind_res.data:
+                indicadores_estimados = True
+                logger.warning(f"⚠️ Sin indicadores en DB para {req.periodo}. Usando fallbacks de emergencia.")
+            else:
+                for ind in ind_res.data:
+                    if ind["codigo"] == "uf":
+                        uf_valor = float(ind["valor"])
+                    elif ind["codigo"] == "utm":
+                        utm_valor = float(ind["valor"])
             
             logger.info(f"📊 Indicadores aplicados para {req.periodo}: UF=${uf_valor}, UTM=${utm_valor}")
         except Exception as e:
+            indicadores_estimados = True
             logger.warning(f"⚠️ Usando indicadores de emergencia por fallo en DB: {e}")
 
         # ── 3. Obtener Parámetros Nacionales Legales del Periodo (Desacoplamiento Dinámico) ──
@@ -254,9 +260,12 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 asignacion_movilizacion=int(emp_effective.get("asignacion_movilizacion", 0)),
                 asignacion_colacion=int(emp_effective.get("asignacion_colacion", 0)),
                 horas_extra=int(emp_effective.get("horas_extra_pendientes", 0)),
+                bono_extra=int(emp_effective.get("bono_extra", 0)),
+                dias_trabajados=int(emp_effective.get("dias_trabajados", 30)),
                 family_allowances=int(emp_effective.get("family_allowances", 0)),
                 afc_active=bool(emp_effective.get("afc_active", True)),
                 horas_semanales=int(emp_effective.get("horas_semanales", 42)),
+                bono_fijo=int(emp_effective.get("bono_fijo", 0)), # Pasar bono_fijo del Kardex
                 mes_proceso=periodo_clean,
                 es_zona_extrema=es_zona_extrema,
                 zona_extrema=zona_extrema,
@@ -384,6 +393,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
             "processed_count": processed_count,
             "uf_usada": uf_valor,
             "utm_usada": utm_valor,
+            "indicadores_estimados": indicadores_estimados,
             "message": f"✅ Nómina {req.periodo} procesada: {processed_count} empleados.",
             "advertencias": advertencias_totales,
         }

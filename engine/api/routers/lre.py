@@ -12,7 +12,7 @@ Arquitectura:
   3. list_lre    → Lista los libros generados (sin caché, para evitar IDs obsoletos).
 """
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from typing import Any
 import io
@@ -21,6 +21,9 @@ import logging
 from core.database import get_supabase
 from core.utils.shared_utils import clean_rut_simple as clean_rut
 from core.auth import verify_token
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
 
 logger = logging.getLogger("lre_engine")
 router = APIRouter()
@@ -403,3 +406,252 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
     except Exception as e:
         logger.error(f"Error exportando LRE: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error de sistema al exportar LRE: {str(e)}")
+
+@router.get("/export-excel/{book_id}")
+async def export_lre_excel(book_id: str, current_user: dict = Depends(verify_token)):
+    """Genera el Excel de control y resumen detallado del Libro de Remuneraciones."""
+    db = get_supabase()
+
+    try:
+        # 1. Recuperar libro
+        book_res = db.table("payroll_books").select("*").eq("id", book_id).execute()
+        if not book_res.data:
+            raise HTTPException(
+                status_code=404, 
+                detail="El libro solicitado no existe."
+            )
+        book = book_res.data[0]
+        
+        # 2. Recuperar detalles por trabajador
+        details = db.table("payroll_book_details") \
+            .select("*") \
+            .eq("payroll_book_id", book_id) \
+            .execute().data or []
+        
+        # 3. Crear Libro Excel
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Libro Remuneraciones"
+        ws.freeze_panes = "G7" # Congelar columnas de identificación
+
+        # Estilos Premium
+        fnt_title = Font(name="Arial", size=14, bold=True, color="FFFFFF")
+        fnt_section = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+        fnt_header = Font(name="Arial", size=9, bold=True, color="1F4E79")
+        fnt_data = Font(name="Arial", size=9)
+        fnt_total = Font(name="Arial", size=9, bold=True)
+        
+        fill_title = PatternFill("solid", fgColor="1F4E79")
+        fill_sec_id = PatternFill("solid", fgColor="2F75B6")
+        fill_sec_hab = PatternFill("solid", fgColor="375623")
+        fill_sec_desc = PatternFill("solid", fgColor="843C0C")
+        fill_sec_liq = PatternFill("solid", fgColor="7B3F00")
+        
+        fill_hdr_id = PatternFill("solid", fgColor="D9E1F2")
+        fill_hdr_hab = PatternFill("solid", fgColor="E2EFDA")
+        fill_hdr_desc = PatternFill("solid", fgColor="FCE4D6")
+        fill_hdr_liq = PatternFill("solid", fgColor="FFF2CC")
+        fill_tot = PatternFill("solid", fgColor="BDD7EE")
+        
+        aln_c = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        aln_l = Alignment(horizontal="left", vertical="center")
+        aln_r = Alignment(horizontal="right", vertical="center")
+        
+        thin = Side(style="thin", color="D3D3D3")
+        brd = Border(left=thin, right=thin, top=thin, bottom=thin)
+        FMT_MONEY = '$#,##0'
+        
+        # Título Principal (Fila 1)
+        ws.merge_cells("A1:U1")
+        t = ws["A1"]
+        t.value = f"LIBRO DE REMUNERACIONES — {book.get('company_name', '').upper()}"
+        t.font = fnt_title
+        t.fill = fill_title
+        t.alignment = aln_c
+        ws.row_dimensions[1].height = 30
+        
+        # Datos de Empresa (Fila 2)
+        ws.cell(row=2, column=1, value="RUT Empresa:").font = fnt_header
+        ws.cell(row=2, column=2, value=book.get('company_rut', ''))
+        ws.cell(row=2, column=4, value="Período:").font = fnt_header
+        ws.cell(row=2, column=5, value=book.get('periodo', ''))
+        ws.cell(row=2, column=7, value="Total Empleados:").font = fnt_header
+        ws.cell(row=2, column=8, value=len(details))
+
+        # Encabezados de Sección (Fila 4)
+        ws.merge_cells("A4:F4")
+        sec_id = ws["A4"]
+        sec_id.value = "IDENTIFICACIÓN"
+        sec_id.font = fnt_section
+        sec_id.fill = fill_sec_id
+        sec_id.alignment = aln_c
+        
+        ws.merge_cells("G4:N4")
+        sec_hab = ws["G4"]
+        sec_hab.value = "HABERES"
+        sec_hab.font = fnt_section
+        sec_hab.fill = fill_sec_hab
+        sec_hab.alignment = aln_c
+        
+        ws.merge_cells("O4:T4")
+        sec_desc = ws["O4"]
+        sec_desc.value = "DESCUENTOS"
+        sec_desc.font = fnt_section
+        sec_desc.fill = fill_sec_desc
+        sec_desc.alignment = aln_c
+        
+        ws.cell(row=4, column=21, value="LÍQUIDO").font = fnt_section
+        ws.cell(row=4, column=21).fill = fill_sec_liq
+        ws.cell(row=4, column=21).alignment = aln_c
+        ws.row_dimensions[4].height = 20
+
+        # Encabezados de Columna (Fila 5)
+        HEADERS = [
+            ("N°", fill_hdr_id),
+            ("RUT Trabajador", fill_hdr_id),
+            ("Nombre Completo", fill_hdr_id),
+            ("Cargo", fill_hdr_id),
+            ("Área / CC", fill_hdr_id),
+            ("Días", fill_hdr_id),
+            # Haberes
+            ("Sueldo Base", fill_hdr_hab),
+            ("Horas Extras", fill_hdr_hab),
+            ("Gratificación", fill_hdr_hab),
+            ("Bono Extra", fill_hdr_hab),
+            ("Colación", fill_hdr_hab),
+            ("Movilización", fill_hdr_hab),
+            ("Asig. Familiar", fill_hdr_hab),
+            ("Total Haberes", fill_hdr_hab),
+            # Descuentos
+            ("Cotiz. AFP", fill_hdr_desc),
+            ("Cotiz. Salud", fill_hdr_desc),
+            ("Salud Adic.", fill_hdr_desc),
+            ("Seguro Cesantía", fill_hdr_desc),
+            ("Impuesto Único", fill_hdr_desc),
+            ("Total Descuentos", fill_hdr_desc),
+            # Líquido
+            ("Líquido a Pagar", fill_hdr_liq)
+        ]
+
+        for col, (h, fill) in enumerate(HEADERS, 1):
+            cell = ws.cell(row=5, column=col, value=h)
+            cell.font = fnt_header
+            cell.fill = fill
+            cell.alignment = aln_c
+            cell.border = brd
+        ws.row_dimensions[5].height = 25
+
+        # Escribir Filas de Datos (Filas 6+)
+        start_row = 6
+        for i, d in enumerate(details, 1):
+            row = start_row + i - 1
+            ws.row_dimensions[row].height = 20
+            
+            fullname = f"{d.get('apellido_paterno', '')} {d.get('apellido_materno', '')} {d.get('nombres', '')}".strip()
+            
+            ws.cell(row=row, column=1, value=i).alignment = aln_c
+            ws.cell(row=row, column=2, value=d.get('employee_rut', '')).alignment = aln_c
+            ws.cell(row=row, column=3, value=fullname).alignment = aln_l
+            ws.cell(row=row, column=4, value=d.get('cargo', '')).alignment = aln_l
+            ws.cell(row=row, column=5, value=d.get('area', '')).alignment = aln_l
+            ws.cell(row=row, column=6, value=safe_int(d.get('dias_trabajados', 30))).alignment = aln_c
+            
+            # Haberes
+            ws.cell(row=row, column=7, value=safe_int(d.get('sueldo_base', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=8, value=safe_int(d.get('sobresueldo', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=9, value=safe_int(d.get('gratificacion_legal', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=10, value=safe_int(d.get('bono_extra', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=11, value=safe_int(d.get('colacion', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=12, value=safe_int(d.get('movilizacion', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=13, value=safe_int(d.get('asig_familiar', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=14, value=safe_int(d.get('total_haberes_brutos', 0))).number_format = FMT_MONEY
+            
+            # Descuentos
+            ws.cell(row=row, column=15, value=safe_int(d.get('descuento_afp_total', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=16, value=safe_int(d.get('descuento_salud', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=17, value=safe_int(d.get('salud_voluntaria', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=18, value=safe_int(d.get('afc_trab', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=19, value=safe_int(d.get('impuesto_unico', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=20, value=safe_int(d.get('total_descuentos', 0))).number_format = FMT_MONEY
+            
+            # Líquido
+            ws.cell(row=row, column=21, value=safe_int(d.get('sueldo_liquido', 0))).number_format = FMT_MONEY
+            ws.cell(row=row, column=21).fill = fill_hdr_liq
+            ws.cell(row=row, column=21).font = fnt_total
+            
+            # Formato de celdas
+            for col in range(1, 22):
+                c = ws.cell(row=row, column=col)
+                if col not in [3, 4, 5]:
+                    c.alignment = aln_r if col >= 7 else aln_c
+                if col != 21:
+                    c.font = fnt_data
+                c.border = brd
+
+        # Fila de Totales
+        tot_row = start_row + len(details)
+        ws.row_dimensions[tot_row].height = 22
+        
+        ws.merge_cells(start_row=tot_row, start_column=1, end_row=tot_row, end_column=5)
+        lbl_tot = ws.cell(row=tot_row, column=1, value="TOTALES GENERALES")
+        lbl_tot.font = fnt_total
+        lbl_tot.alignment = aln_c
+        lbl_tot.fill = fill_tot
+        lbl_tot.border = brd
+        
+        # Bordes para celdas combinadas de totales
+        for col in range(2, 6):
+            ws.cell(row=tot_row, column=col).border = brd
+            ws.cell(row=tot_row, column=col).fill = fill_tot
+
+        # Días totales
+        c_dias = ws.cell(row=tot_row, column=6, value=f"=SUM(F{start_row}:F{tot_row-1})")
+        c_dias.font = fnt_total
+        c_dias.alignment = aln_c
+        c_dias.fill = fill_tot
+        c_dias.border = brd
+        
+        # Fórmulas de Suma para valores monetarios
+        for col in range(7, 22):
+            col_let = get_column_letter(col)
+            c = ws.cell(row=tot_row, column=col, value=f"=SUM({col_let}{start_row}:{col_let}{tot_row-1})")
+            c.font = fnt_total
+            c.alignment = aln_r
+            c.number_format = FMT_MONEY
+            c.fill = fill_tot
+            c.border = brd
+
+        # Ajuste Automático de Anchos de Columna
+        for col in range(1, 22):
+            col_letter = get_column_letter(col)
+            max_len = 0
+            # Examinar fila 5 (header) y filas de datos
+            for r in range(5, tot_row + 1):
+                val = ws.cell(row=r, column=col).value
+                if val:
+                    val_str = str(val)
+                    if len(val_str) > max_len:
+                        max_len = len(val_str)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        # Guardar en memoria y retornar
+        file_stream = io.BytesIO()
+        wb.save(file_stream)
+        file_stream.seek(0)
+
+        filename = f"LibroRemuneraciones_{book.get('company_name', 'Control')}_{book.get('periodo', 'unknown')}.xlsx"
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generando Excel LRE: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
+

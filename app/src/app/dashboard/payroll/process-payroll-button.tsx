@@ -54,6 +54,27 @@ export function ProcessPayrollButton() {
                 description: "Los registros han sido inyectados en la base de datos central.",
                 icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
             })
+
+            // Alerta de indicadores estimados (fallback de emergencia)
+            if (result.indicadores_estimados) {
+                setTimeout(() => {
+                    toast.warning('Indicadores UF/UTM Estimados', {
+                        description: `Se utilizaron valores de emergencia: UF $${result.uf_usada?.toLocaleString('es-CL')} / UTM $${result.utm_usada?.toLocaleString('es-CL')}. Verifique que estos valores estén actualizados en la base de datos.`,
+                        duration: 12000,
+                        icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
+                    })
+                }, 800)
+            }
+
+            // Mostrar advertencias del motor (si las hay)
+            if (result.advertencias && result.advertencias.length > 0) {
+                setTimeout(() => {
+                    result.advertencias.forEach((adv: string) => {
+                        toast.warning(adv, { duration: 10000 })
+                    })
+                }, 1500)
+            }
+
             setOpen(false)
         }
     } catch (err) {

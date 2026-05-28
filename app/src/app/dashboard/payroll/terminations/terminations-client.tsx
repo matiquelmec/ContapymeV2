@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { SignaturePad } from '@/components/ui/signature-pad'
 import Link from 'next/link'
-import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction, downloadTerminationDocAction } from '@/actions/terminations'
+import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction, downloadTerminationDocAction, exportTerminationCsvAction } from '@/actions/terminations'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { TerminationDialog } from './termination-dialog'
@@ -174,6 +174,30 @@ export default function TerminationsClient({
       setDownloadingId(null)
     }
   }
+
+  const handleDownloadCsv = async (id: string) => {
+    setDownloadingId(`${id}-csv`)
+    try {
+      const res = await exportTerminationCsvAction(id)
+      if (res.success && res.content) {
+        const blob = new Blob([res.content], { type: 'text/csv;charset=utf-8-sig;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = res.filename || 'finiquito_dt.csv'
+        link.click()
+        URL.revokeObjectURL(url)
+        toast.success('Archivo CSV de carga masiva DT generado con éxito.')
+      } else {
+        toast.error(res.error || 'No se pudo generar el archivo CSV.')
+      }
+    } catch (err) {
+      toast.error('Error al generar la descarga del CSV.')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
 
   const borradosPendientes = terminations.filter(t => t.status === 'borrador').length;
 
@@ -422,6 +446,20 @@ export default function TerminationsClient({
                             title="Ver Borrador Finiquito"
                         >
                             <Gavel className="h-5 w-5" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-xl transition-all"
+                            onClick={() => handleDownloadCsv(t.id)}
+                            disabled={downloadingId === `${t.id}-csv`}
+                            title="Descargar CSV Carga Masiva DT"
+                        >
+                          {downloadingId === `${t.id}-csv` ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <FileDown className="h-5 w-5" />
+                          )}
                         </Button>
                         <Button 
                             variant="ghost" 

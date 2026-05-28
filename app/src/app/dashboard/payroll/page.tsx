@@ -112,6 +112,24 @@ export default async function PayrollPage({
              periodo={selectedPeriod} 
           />
           <ExportDJ1887Button />
+          <Link href="/dashboard/payroll/lre">
+            <Button
+              variant="outline"
+              className="border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/30 font-black uppercase text-xs tracking-widest rounded-[1.5rem] h-11 px-6 shadow-lg shadow-primary/5 transition-all"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Libro LRE
+            </Button>
+          </Link>
+          <Link href="/dashboard/payroll/novedades">
+            <Button
+              variant="outline"
+              className="border-emerald-200 bg-emerald-50/30 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-black uppercase text-xs tracking-widest rounded-[1.5rem] h-11 px-6 shadow-lg shadow-emerald-500/5 transition-all"
+            >
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Novedades Masivas
+            </Button>
+          </Link>
           <CreateEmployeeButton />
           <ProcessPayrollButton />
           <CentralizePayrollButton />

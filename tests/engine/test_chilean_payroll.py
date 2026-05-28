@@ -188,3 +188,28 @@ class TestChileanPayrollEngine:
         assert res_zona.impuesto_unico == res_zona.impuesto_unico_sin_rebaja - res_zona.rebaja_zona_extrema
         assert res_zona.impuesto_unico < res_normal.impuesto_unico
 
+    def test_bono_fijo_calculo(self, default_settings):
+        """Validar que el bono_fijo de la ficha de empleado se suma proporcionalmente a haberes imponibles."""
+        emp = EmployeeInput(
+            sueldo_base=1000000,
+            bono_fijo=200000,
+            dias_trabajados=30,
+            gratificacion_legal=False
+        )
+        res = calcular_liquidacion(emp, default_settings)
+        # Bono completo porque trabajó 30 días
+        assert res.bono_fijo == 200000
+        assert res.total_haberes_brutos == 1200000
+
+        # Caso proporcional 15 días
+        emp_prop = EmployeeInput(
+            sueldo_base=1000000,
+            bono_fijo=200000,
+            dias_trabajados=15,
+            gratificacion_legal=False
+        )
+        res_prop = calcular_liquidacion(emp_prop, default_settings)
+        assert res_prop.sueldo_base == 500000
+        assert res_prop.bono_fijo == 100000
+        assert res_prop.total_haberes_brutos == 600000
+

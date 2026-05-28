@@ -13,7 +13,15 @@ export async function calculateTerminationAction(data: {
   aviso_previo: boolean,
   dias_vacaciones_tomados: number,
   pending_overtime_amount: number,
-  other_bonuses: number
+  other_bonuses: number,
+  asignacion_colacion?: number,
+  asignacion_movilizacion?: number,
+  viaticos?: number,
+  prestamo_ccaf?: number,
+  anticipo_sueldo?: number,
+  banco_transferencia?: string,
+  tipo_cuenta?: string,
+  cuenta_transferencia?: string
 }) {
   try {
     const response = await engineFetch('/api/v1/terminations/calculate', {
@@ -159,3 +167,28 @@ export async function downloadTerminationDocAction(terminationId: string, docTyp
     return { success: false, error: `Error de red: ${err.message}` };
   }
 }
+
+export async function exportTerminationCsvAction(terminationId: string) {
+  try {
+    const response = await engineFetch(`/api/v1/terminations/${terminationId}/export-dt-csv`, {
+      method: 'GET',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Error en el Motor Python' }));
+      return { success: false, error: parseError(err.detail || 'Error en el Motor Python') };
+    }
+
+    const text = await response.text();
+    return { 
+      success: true, 
+      content: text,
+      filename: `FINIQUITO_DT_${terminationId.substring(0,8)}.csv` 
+    };
+
+  } catch (err: any) {
+    return { success: false, error: `Error de red: ${err.message}` };
+  }
+}
+

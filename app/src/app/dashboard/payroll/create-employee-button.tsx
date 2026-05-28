@@ -592,9 +592,22 @@ export function CreateEmployeeButton() {
                          <SelectValue placeholder="Seleccione" />
                        </SelectTrigger>
                        <SelectContent className="bg-white border-border rounded-xl shadow-2xl">
-                         {['Modelo', 'Habitat', 'Capital', 'Provida', 'Cuprum', 'PlanVital', 'Uno'].map(afp => (
-                           <SelectItem key={afp} value={afp} className="font-black text-[10px] uppercase">{afp}</SelectItem>
-                         ))}
+                          {[
+                            { value: 'Modelo', label: 'AFP Modelo', code: '33' },
+                            { value: 'Habitat', label: 'AFP Habitat', code: '05' },
+                            { value: 'Capital', label: 'AFP Capital', code: '08' },
+                            { value: 'Provida', label: 'AFP Provida', code: '07' },
+                            { value: 'Cuprum', label: 'AFP Cuprum', code: '02' },
+                            { value: 'PlanVital', label: 'AFP PlanVital', code: '29' },
+                            { value: 'Uno', label: 'AFP Uno', code: '34' },
+                          ].map(afp => (
+                            <SelectItem key={afp.value} value={afp.value} className="font-black text-[10px] uppercase">
+                              <span className="flex items-center justify-between w-full gap-3">
+                                <span>{afp.label}</span>
+                                <span className="text-[8px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-mono">Cód. {afp.code}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
                        </SelectContent>
                      </Select>
                     </div>
@@ -606,13 +619,23 @@ export function CreateEmployeeButton() {
                          <SelectValue placeholder="Seleccione" />
                        </SelectTrigger>
                        <SelectContent className="bg-white border-border rounded-xl shadow-2xl">
-                         <SelectItem value="Fonasa" className="font-black text-[10px] uppercase">Fonasa (7%)</SelectItem>
-                         <SelectItem value="Consalud" className="font-black text-[10px] uppercase">Isapre Consalud</SelectItem>
-                         <SelectItem value="Colmena" className="font-black text-[10px] uppercase">Isapre Colmena</SelectItem>
-                         <SelectItem value="CruzBlanca" className="font-black text-[10px] uppercase">Isapre Cruz Blanca</SelectItem>
-                         <SelectItem value="Banmedica" className="font-black text-[10px] uppercase">Isapre Banmédica</SelectItem>
-                         <SelectItem value="VidaTres" className="font-black text-[10px] uppercase">Isapre Vida Tres</SelectItem>
-                         <SelectItem value="NuevaMasvida" className="font-black text-[10px] uppercase">Isapre Nueva Masvida</SelectItem>
+                          {[
+                            { value: 'Fonasa', label: 'Fonasa (7% Legal)', code: '07' },
+                            { value: 'Consalud', label: 'Isapre Consalud', code: '71' },
+                            { value: 'Colmena', label: 'Isapre Colmena', code: '67' },
+                            { value: 'CruzBlanca', label: 'Isapre Cruz Blanca', code: '78' },
+                            { value: 'Banmedica', label: 'Isapre Banmédica', code: '99' },
+                            { value: 'VidaTres', label: 'Isapre Vida Tres', code: '81' },
+                            { value: 'NuevaMasvida', label: 'Isapre Nueva Masvida', code: '88' },
+                            { value: 'Esencial', label: 'Isapre Esencial', code: '108' },
+                          ].map(isapre => (
+                            <SelectItem key={isapre.value} value={isapre.value} className="font-black text-[10px] uppercase">
+                              <span className="flex items-center justify-between w-full gap-3">
+                                <span>{isapre.label}</span>
+                                <span className="text-[8px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-mono">Cód. {isapre.code}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
                        </SelectContent>
                      </Select>
                     </div>

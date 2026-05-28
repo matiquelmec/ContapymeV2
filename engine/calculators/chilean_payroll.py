@@ -67,6 +67,7 @@ class EmployeeInput:
     asignacion_colacion: int = 0
     horas_extra: int = 0                         # Horas extra trabajadas
     bono_extra: int = 0                          # Bonos no habituales
+    bono_fijo: int = 0                           # Bonos fijos (recurrentes) de la ficha de empleado
     # Control
     dias_trabajados: int = 30                    # Para cálculo proporcional
     horas_semanales: int = 42                    # Jornada semanal (Chile 2026: 42h)
@@ -87,6 +88,7 @@ class LiquidacionResult:
     asignacion_colacion: int = 0
     horas_extra_monto: int = 0
     bono_extra: int = 0
+    bono_fijo: int = 0
     total_haberes_brutos: int = 0
     # ── Base imponible ─────────────────────────────────────────────────────────
     base_imponible_afp: int = 0
@@ -321,9 +323,12 @@ def calcular_liquidacion(
     # Colación y movilización: NO son imponibles (Art. 41 CT), se suman al final
     colacion = emp.asignacion_colacion
     movilizacion = emp.asignacion_movilizacion
+    
+    # Bono fijo recurrente (proporcional a los días trabajados)
+    bono_fijo_monto = int(emp.bono_fijo * factor_dias)
 
     # Base bruta imponible (sin ingresos NO imponibles)
-    base_bruta_imponible = sueldo_base + gratificacion + horas_extra_monto + emp.bono_extra
+    base_bruta_imponible = sueldo_base + gratificacion + horas_extra_monto + emp.bono_extra + bono_fijo_monto
 
     # Asignación familiar (No imponible)
     # Se calcula sobre la renta del mes ANTERIOR legalmente, pero aquí usamos la actual
@@ -337,6 +342,7 @@ def calcular_liquidacion(
     res.asignacion_movilizacion = movilizacion
     res.asignacion_familiar = asig_familiar
     res.bono_extra = emp.bono_extra
+    res.bono_fijo = bono_fijo_monto
     res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + asig_familiar
 
     # ── 2. BASES IMPONIBLES ────────────────────────────────────────────────────
@@ -488,7 +494,8 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "bono_movilizacion": res.asignacion_movilizacion, # Redundancia por compatibilidad
         "asignacion_familiar": res.asignacion_familiar,
         "horas_extra_monto": res.horas_extra_monto,
-        "bono_extra": res.bono_extra,
+        "bono_extra": res.bono_extra + res.bono_fijo, # Sumar bono fijo a bono extra para almacenamiento en DB sin alterar el esquema
+        "bono_fijo": res.bono_fijo,                  # Mapear bono fijo directamente
         "total_haberes_brutos": res.total_haberes_brutos,
         "base_imponible_afp": res.base_imponible_afp,
         "base_imponible_salud": res.base_imponible_salud,
