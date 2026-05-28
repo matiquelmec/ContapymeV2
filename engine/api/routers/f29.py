@@ -87,13 +87,17 @@ async def delete_f29_record(organization_id: str, f29_id: str, current_user: dic
     if not res.data:
         raise HTTPException(status_code=404, detail="Registro de F29 no encontrado.")
 
-    # 3. Purgar Asiento Contable Diario y Mayor (Cascada Lógica Inmediata)
+    # 3. Purgar Asiento Contable Diario y Mayor (Cascada Lógica Inmediata usando accounting_events)
     if periodo_info:
         periodo = periodo_info["periodo"]
-        old_entries = db.table("journal_entries").select("id").eq("organization_id", organization_id).eq("source_type", "F29").eq("source_id", periodo).execute()
-        for e in (old_entries.data or []):
-            db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
-            db.table("journal_entries").delete().eq("id", e["id"]).execute()
+        event_res = db.table("accounting_events").select("id").eq("organization_id", organization_id).eq("event_type", "F29").eq("source_id", periodo).eq("status", "active").execute()
+        if event_res.data:
+            event_id = event_res.data[0]["id"]
+            old_entries = db.table("journal_entries").select("id").eq("organization_id", organization_id).eq("event_id", event_id).execute()
+            for e in (old_entries.data or []):
+                db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
+                db.table("journal_entries").delete().eq("id", e["id"]).execute()
+            db.table("accounting_events").delete().eq("id", event_id).execute()
 
     return {"success": True, "message": "F29 y su reversión del Asiento Diario/Mayor eliminados sincronizadamente."}
 
@@ -250,24 +254,30 @@ async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends
         fecha_asiento = f"{req.periodo}-{last_day}"
         glosa = f"Centralización e Impuestos F29 Periodo {req.periodo}"
 
-        # 3. IDEMPOTENCIA: Purgar el asiento anterior si existía (mismo origin)
-        old_entries = db.table("journal_entries").select("id").eq("organization_id", req.org_id).eq("source_type", "F29").eq("source_id", req.periodo).execute()
+        # 3. IDEMPOTENCIA: Obtener o crear el evento de negocio y purgar el asiento anterior
+        from core.accounting_events import get_or_create_accounting_event
+        event_id = get_or_create_accounting_event(db, req.org_id, "F29", req.periodo, notes="Provisión e Impuestos F29")
+
+        old_entries = db.table("journal_entries").select("id").eq("organization_id", req.org_id).eq("event_id", event_id).execute()
         for e in (old_entries.data or []):
             db.table("journal_entry_lines").delete().eq("entry_id", e["id"]).execute()
             db.table("journal_entries").delete().eq("id", e["id"]).execute()
 
         # 4. Inyectar nuevo Asiento
-        db.rpc("create_journal_entry_with_lines", {
+        rpc_res = db.rpc("create_journal_entry_with_lines", {
             "p_organization_id": req.org_id,
             "p_fecha": fecha_asiento,
             "p_glosa": glosa,
             "p_lines": journal_lines
         }).execute()
 
-        # 5. Marcar DNA del Asiento para blindar índice SQL
-        db.table("journal_entries").update({"source_type": "F29", "source_id": req.periodo}) \
-            .eq("organization_id", req.org_id).eq("fecha", fecha_asiento).eq("glosa", glosa) \
-            .is_("source_type", "null").execute()
+        # 5. Marcar DNA del Asiento vinculando el event_id
+        journal_entry_id = rpc_res.data
+        if journal_entry_id:
+            db.table("journal_entries") \
+                .update({"event_id": event_id}) \
+                .eq("id", journal_entry_id) \
+                .execute()
 
         return {"success": True, "message": "Provisión F29 centralizada exitosamente en el Libro Mayor."}
 

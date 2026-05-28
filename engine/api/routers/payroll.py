@@ -335,11 +335,15 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 last_day_contable = calendar.monthrange(year_part, month_part)[1]
                 fecha_asiento = f"{periodo_clean}-{last_day_contable}"
 
-                # a) Buscar asientos antiguos usando su Meta-Referencia (Garantía Arquitectónica) o Glosa
+                # a) Obtener o crear el evento de negocio
+                from core.accounting_events import get_or_create_accounting_event
+                event_id = get_or_create_accounting_event(db, req.org_id, "NOMINA", periodo_clean, notes="Centralización de Nómina")
+
+                # Buscar asientos antiguos usando su Meta-Referencia (Garantía Arquitectónica) o Glosa
                 existing_entries = db.table("journal_entries") \
                     .select("id") \
                     .eq("organization_id", req.org_id) \
-                    .or_(f"and(source_type.eq.NOMINA,source_id.eq.{periodo_clean}),glosa.eq.\"{glosa_centralizacion}\",glosa.eq.\"{legacy_glosa}\"") \
+                    .or_(f"event_id.eq.{event_id},glosa.eq.\"{glosa_centralizacion}\",glosa.eq.\"{legacy_glosa}\"") \
                     .execute()
 
                 # b) Eliminar primero sus líneas y luego el asiento
@@ -357,10 +361,10 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 
                 journal_entry_id = res_rpc.data
 
-                # d) Marcar el asiento recién creado con su ADN exacto para el índice único usando el UUID directo
+                # d) Marcar el asiento recién creado vinculando el event_id
                 if journal_entry_id:
                     db.table("journal_entries") \
-                        .update({"source_type": "NOMINA", "source_id": periodo_clean}) \
+                        .update({"event_id": event_id}) \
                         .eq("id", journal_entry_id) \
                         .execute()
 

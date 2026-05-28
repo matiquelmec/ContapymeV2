@@ -57,17 +57,25 @@ async def centralize_dte_accounting(dte_id: str, organization_id: str) -> Dict[s
         logger.info(f"DTE {dte_id} en estado '{dte.get('status')}'. No elegible para centralización contable.")
         return {"status": "skipped", "reason": f"DTE state is {dte.get('status')}"}
 
-    # 2. Evitar duplicidad (Idempotencia)
-    existing_res = db.table("journal_entries") \
+    # 2. Evitar duplicidad (Idempotencia usando accounting_events)
+    event_res = db.table("accounting_events") \
         .select("id") \
         .eq("organization_id", organization_id) \
-        .eq("source_type", "dte_issued") \
+        .eq("event_type", "dte_issued") \
         .eq("source_id", dte_id) \
+        .eq("status", "active") \
         .execute()
         
-    if existing_res.data and len(existing_res.data) > 0:
-        logger.info(f"DTE {dte_id} ya se encuentra centralizado contablemente (Asiento: {existing_res.data[0]['id']})")
-        return {"status": "already_centralized", "journal_entry_id": existing_res.data[0]["id"]}
+    if event_res.data:
+        event_id = event_res.data[0]["id"]
+        existing_res = db.table("journal_entries") \
+            .select("id") \
+            .eq("event_id", event_id) \
+            .execute()
+            
+        if existing_res.data and len(existing_res.data) > 0:
+            logger.info(f"DTE {dte_id} ya se encuentra centralizado contablemente (Asiento: {existing_res.data[0]['id']})")
+            return {"status": "already_centralized", "journal_entry_id": existing_res.data[0]["id"]}
 
     # 3. Obtener configuración de cuentas de venta
     config = get_accounting_config(db, organization_id, 'rcv', 'sales')
@@ -154,11 +162,13 @@ async def centralize_dte_accounting(dte_id: str, organization_id: str) -> Dict[s
         if not journal_id:
             raise Exception("La RPC 'create_journal_entry_with_lines' retornó un valor nulo.")
 
-        # 7. Registrar metadatos contables adicionales (source_type, source_id, tipo_comprobante)
+        # 7. Registrar metadatos contables adicionales (accounting_events, tipo_comprobante)
+        from core.accounting_events import get_or_create_accounting_event
+        event_id = get_or_create_accounting_event(db, organization_id, "dte_issued", dte_id, notes=f"Centralización DTE Folio {dte.get('folio')}")
+        
         tipo_comprobante = "I" if es_suma else "T"
         db.table("journal_entries").update({
-            "source_type": "dte_issued",
-            "source_id": dte_id,
+            "event_id": event_id,
             "tipo_comprobante": tipo_comprobante
         }).eq("id", journal_id).execute()
 

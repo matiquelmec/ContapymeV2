@@ -538,10 +538,13 @@ async def generate_from_payroll(
         glosa = f"Centralización Remuneraciones Periodo {base_period}"
         legacy_glosa = f"Centralización de Remuneraciones {base_period}"
         
-        # ELIMINAR centralización previa de este mes (Idempotencia robusta unificada)
+        # ELIMINAR centralización previa de este mes (Idempotencia robusta unificada usando accounting_events)
+        from core.accounting_events import get_or_create_accounting_event
+        event_id = get_or_create_accounting_event(db, req.organization_id, "NOMINA", base_period, notes="Centralización de Remuneraciones")
+
         existing_res = db.table("journal_entries").select("id") \
             .eq("organization_id", req.organization_id) \
-            .or_(f"and(source_type.eq.NOMINA,source_id.eq.{base_period}),glosa.eq.\"{glosa}\",glosa.eq.\"{legacy_glosa}\"") \
+            .or_(f"event_id.eq.{event_id},glosa.eq.\"{glosa}\",glosa.eq.\"{legacy_glosa}\"") \
             .execute()
         
         for e in (existing_res.data or []):
@@ -564,9 +567,9 @@ async def generate_from_payroll(
         
         journal_entry_id = rpc_res.data
         if journal_entry_id:
-            # Sincronizar metadata para mantener idempotencia con modulo nomina
+            # Vincular el asiento al evento de negocio
             db.table("journal_entries") \
-                .update({"source_type": "NOMINA", "source_id": base_period}) \
+                .update({"event_id": event_id}) \
                 .eq("id", journal_entry_id) \
                 .execute()
             
@@ -586,6 +589,41 @@ async def generate_from_payroll(
         import traceback
         print(f"[ERROR generate_from_payroll] {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/events/{event_id}/reverse")
+async def reverse_event(
+    event_id: str,
+    notes: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
+    db = get_supabase()
+    # Verificar acceso a la organización del evento
+    event_res = db.table("accounting_events").select("organization_id").eq("id", event_id).execute()
+    if not event_res.data:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    org_id = event_res.data[0]["organization_id"]
+    await verify_org_role(org_id, auth=current_user)
+    
+    from core.accounting_events import reverse_accounting_event
+    res = reverse_accounting_event(db, event_id, notes=notes)
+    if not res["success"]:
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res
+
+@router.get("/events")
+async def list_events(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
+    db = get_supabase()
+    res = db.table("accounting_events") \
+        .select("*") \
+        .eq("organization_id", organization_id) \
+        .order("created_at", desc=True) \
+        .execute()
+    return res.data or []
 
 
 @router.get("/chart-of-accounts")
@@ -845,7 +883,7 @@ async def get_ledger(
 
         # 3. Obtener movimientos del periodo actual
         query = db.table("journal_entry_lines") \
-            .select("*, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, glosa, organization_id, source_type)") \
+            .select("*, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, glosa, organization_id, event_id, accounting_events(event_type))") \
             .eq("chart_of_accounts.codigo", account_code) \
             .eq("journal_entries.organization_id", organization_id)
         
@@ -882,11 +920,16 @@ async def get_ledger(
             else:
                 saldo_acumulado += (haber - debe)
                 
+            ae = je.get("accounting_events")
+            if isinstance(ae, list) and ae:
+                ae = ae[0]
+            event_type = ae.get("event_type") if ae else None
+
             movements.append({
                 "fecha": je.get("fecha"),
                 "glosa": je.get("glosa", "S/G"),
                 "numero_asiento": str(m.get("entry_id") or m.get("journal_entry_id") or "")[:8].upper() if (m.get("entry_id") or m.get("journal_entry_id")) else "S/N",
-                "source_type": je.get("source_type"),
+                "source_type": event_type,
                 "debe": debe,
                 "haber": haber,
                 "saldo": saldo_acumulado
