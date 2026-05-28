@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { FileText, Users, Briefcase, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon } from 'lucide-react'
+import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards } from 'lucide-react'
 
 export const navigationGroups = [
   {
@@ -26,6 +26,7 @@ export const navigationGroups = [
       { name: 'Libro Mayor', href: '/dashboard/accounting/ledger', icon: Layers },
       { name: 'Balance de Comprobación', href: '/dashboard/accounting/trial-balance', icon: Scale },
       { name: 'Cierre de Periodos', href: '/dashboard/accounting/periods', icon: CalendarIcon },
+      { name: 'Tesorería', href: '/dashboard/treasury', icon: WalletCards },
       { name: 'Conciliación Bancaria', href: '/dashboard/reconciliation', icon: Landmark },
       { name: 'Reportes Financieros', href: '/dashboard/accounting/reports', icon: BarChart3 },
       { name: 'Config. de Cuentas', href: '/dashboard/accounting/config', icon: Settings },
