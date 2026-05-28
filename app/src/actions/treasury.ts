@@ -25,6 +25,20 @@ export type PaymentMethod = {
   bank_account_id: string | null;
 };
 
+export type TreasuryAccountOption = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+};
+
+export type TreasuryBankAccountOption = {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  chart_account_id: string | null;
+};
+
 export type TreasuryPayment = {
   id: string;
   tipo: "pago_proveedor" | "cobro_cliente";
@@ -80,6 +94,8 @@ type RecentPaymentRow = {
 
 export type TreasuryDashboardData = {
   paymentMethods: PaymentMethod[];
+  chartAccounts: TreasuryAccountOption[];
+  bankAccounts: TreasuryBankAccountOption[];
   pendingPurchases: TreasuryDocument[];
   pendingSales: TreasuryDocument[];
   recentPayments: TreasuryPayment[];
@@ -107,6 +123,8 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
   if (!organizationId) {
     return {
       paymentMethods: [],
+      chartAccounts: [],
+      bankAccounts: [],
       pendingPurchases: [],
       pendingSales: [],
       recentPayments: [],
@@ -127,6 +145,8 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
 
   const [
     methodsRes,
+    chartAccountsRes,
+    bankAccountsRes,
     purchasesRes,
     salesRes,
     recentRes,
@@ -138,6 +158,18 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
       .eq("organization_id", organizationId)
       .eq("is_active", true)
       .order("nombre", { ascending: true }),
+    supabase
+      .from("chart_of_accounts")
+      .select("id, codigo, nombre, tipo")
+      .eq("organization_id", organizationId)
+      .eq("activo", true)
+      .eq("acepta_movimiento", true)
+      .order("codigo", { ascending: true }),
+    supabase
+      .from("bank_accounts")
+      .select("id, bank_name, account_number, chart_account_id")
+      .eq("organization_id", organizationId)
+      .order("bank_name", { ascending: true }),
     supabase
       .from("v_cuentas_por_pagar")
       .select("id, folio, rut_emisor, razon_social_emisor, fecha_docto, monto_total, monto_pagado, monto_pendiente, payment_status")
@@ -164,6 +196,8 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
   ]);
 
   if (methodsRes.error) console.error("payment_methods:", methodsRes.error);
+  if (chartAccountsRes.error) console.error("chart_of_accounts:", chartAccountsRes.error);
+  if (bankAccountsRes.error) console.error("bank_accounts:", bankAccountsRes.error);
   if (purchasesRes.error) console.error("v_cuentas_por_pagar:", purchasesRes.error);
   if (salesRes.error) console.error("v_cuentas_por_cobrar:", salesRes.error);
   if (recentRes.error) console.error("treasury_payments:", recentRes.error);
@@ -236,11 +270,44 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
 
   return {
     paymentMethods: (methodsRes.data || []) as PaymentMethod[],
+    chartAccounts: (chartAccountsRes.data || []) as TreasuryAccountOption[],
+    bankAccounts: (bankAccountsRes.data || []) as TreasuryBankAccountOption[],
     pendingPurchases,
     pendingSales,
     recentPayments,
     totals,
   };
+}
+
+export async function createPaymentMethod(data: {
+  organizationId: string;
+  nombre: string;
+  tipo: "transferencia" | "cheque" | "efectivo" | "tarjeta" | "compensacion";
+  chartAccountId: string;
+  bankAccountId?: string | null;
+}) {
+  try {
+    if (!data.organizationId || !data.nombre || !data.tipo || !data.chartAccountId) {
+      throw new Error("Complete nombre, tipo y cuenta contable del medio de pago.");
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.from("payment_methods").insert({
+      organization_id: data.organizationId,
+      nombre: data.nombre.trim(),
+      tipo: data.tipo,
+      chart_account_id: data.chartAccountId,
+      bank_account_id: data.bankAccountId || null,
+      is_active: true,
+    });
+
+    if (error) throw error;
+
+    revalidatePath("/dashboard/treasury");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: parseError(error) };
+  }
 }
 
 export async function registerTreasuryPayment(data: {

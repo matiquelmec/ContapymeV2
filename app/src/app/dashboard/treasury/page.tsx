@@ -4,7 +4,7 @@ import { getTreasuryDashboardData } from "@/actions/treasury";
 import { TreasuryClient } from "./treasury-client";
 
 export const metadata = {
-  title: "Tesoreria - Contapymepuq",
+  title: "Gestion de Tesoreria - Contapymepuq",
 };
 
 export default async function TreasuryPage() {
@@ -37,11 +37,11 @@ export default async function TreasuryPage() {
               <Landmark className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
             <span className="leading-tight">
-              Tesoreria <span className="text-primary italic block sm:inline">Operativa</span>
+              Gestion de <span className="text-primary italic block sm:inline">Tesoreria</span>
             </span>
           </h1>
           <p className="text-muted-foreground font-bold italic tracking-wide text-xs sm:text-sm leading-relaxed max-w-2xl">
-            Registra pagos y cobros, aplica documentos RCV y dispara el asiento contable automatico.
+            Carga RCV, controla documentos pagados y configura medios de pago para contabilizacion automatica.
           </p>
         </div>
       </div>
