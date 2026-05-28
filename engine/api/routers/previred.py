@@ -9,30 +9,27 @@ from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
-# Códigos AFP según Tabla N°10 oficial Previred (Actualizados 2026)
+# Códigos AFP según Tabla N°10 oficial Previred (sin cero líder)
 AFP_CODES = {
     'CAPITAL': '33',
-    'CUPRUM': '03',
-    'HABITAT': '05',
+    'CUPRUM': '3',
+    'HABITAT': '5',
     'MODELO': '34',
     'PLANVITAL': '29',
-    'PROVIDA': '08',
+    'PROVIDA': '8',
     'UNO': '35'
 }
 
-# Códigos Vigentes de Instituciones de Salud (Isapres Previred)
+# Códigos Vigentes de Instituciones de Salud (Isapres Previred - Tabla 16 sin cero líder)
 ISAPRE_CODES = {
-    'BANMEDICA': '99',
-    'CHUQUICAMATA': '63',
-    'COLMENA': '67',
-    'CONSALUD': '71',
-    'CRUZBLANCA': '78',
-    'FUSAT': '80',
-    'MASVIDA': '88',
-    'NUEVA MASVIDA': '88',
-    'VIDATRES': '81',
-    'ESENCIAL': '108',
-    'FUNDACION': '62'
+    'BANMEDICA': '1',
+    'CONSALUD': '2',
+    'VIDATRES': '3',
+    'COLMENA': '4',
+    'CRUZBLANCA': '5',
+    'MASVIDA': '10',
+    'NUEVA MASVIDA': '10',
+    'FONASA': '7'
 }
 
 def clean_text(text: str) -> str:
@@ -171,7 +168,7 @@ async def export_previred(organization_id: str, periodo: str):
                 fields[69] = str(int(liq.get('salud', 0))) 
             else:
                 # Isapre Map Oficial Previred
-                isapre_code = ISAPRE_CODES.get(salud_nom, "99") # Default Banmedica
+                isapre_code = ISAPRE_CODES.get(salud_nom, "1") # Default Banmedica
                 plan_uf = float(emp.get('plan_salud_uf', 0) or liq.get('calculo_snapshot', {}).get('plan_salud_uf', 0))
                 
                 fields[62] = isapre_code                  # Campo 63: Código Institución Salud
