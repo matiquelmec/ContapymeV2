@@ -35,7 +35,7 @@ class FinancialClassifier:
         # 1. Alimentación (Inferencia de Historial PyME)
         # Solo necesitamos leer qué escribieron en la glosa VS en qué cuenta terminaron guardándolo.
         res = db.table("journal_entry_lines").select(
-            "account_id, cuenta_codigo, cuenta_nombre, journal_entries!inner(glosa, organization_id)"
+            "account_id, chart_of_accounts(codigo, nombre), journal_entries!inner(glosa, organization_id)"
         ).eq("journal_entries.organization_id", self.organization_id).execute()
         
         data = res.data or []
@@ -50,7 +50,8 @@ class FinancialClassifier:
         for item in data:
             glosa = item["journal_entries"]["glosa"]
             acc_id = item["account_id"]
-            tipo_mov = item.get("cuenta_codigo", "")
+            coa = item.get("chart_of_accounts", {})
+            tipo_mov = coa.get("codigo", "") if coa else ""
             
             # Filtramos cuentas transitorias o de apertura que ensucian el Text Mining
             if glosa and acc_id and not glosa.startswith("S/G") and "apertura" not in str(glosa).lower():

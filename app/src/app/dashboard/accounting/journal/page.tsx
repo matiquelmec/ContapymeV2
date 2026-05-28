@@ -23,7 +23,7 @@ export default async function JournalPage() {
       fecha,
       glosa,
       monto_total,
-      lines:journal_entry_lines(*)
+      lines:journal_entry_lines(id, tipo, monto, account_id, chart_of_accounts(codigo, nombre))
     `)
     .eq('organization_id', activeOrgId)
     .order('fecha', { ascending: false })

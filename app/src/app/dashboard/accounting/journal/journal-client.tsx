@@ -20,8 +20,8 @@ interface JournalEntry {
   monto_total?: number
   lines: {
     id: string
-    cuenta_codigo: string
-    cuenta_nombre: string
+    account_id: string
+    chart_of_accounts?: any
     tipo: 'debe' | 'haber'
     monto: number
   }[]
@@ -112,35 +112,38 @@ export function JournalClient({ entries }: { entries: JournalEntry[] }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-border/30" suppressHydrationWarning>
-                  {entry.lines.map((line) => (
-                    <TableRow key={line.id} className="hover:bg-primary/[0.02] transition-colors" suppressHydrationWarning>
-                      <TableCell className="font-mono text-[11px] font-black text-muted-foreground/60 px-4 sm:px-6 md:px-10 py-4 sm:py-5">
-                         <span className="bg-white border border-border px-3 py-1.5 rounded-lg shadow-sm group-hover:border-primary/20 transition-colors">
-                           {line.cuenta_codigo}
-                         </span>
-                      </TableCell>
-                      <TableCell className="px-4 sm:px-6 md:px-10 py-4 sm:py-5" suppressHydrationWarning={true}>
-                          {line.tipo === 'haber' ? (
-                              <div className="flex items-center gap-4 pl-10 relative" suppressHydrationWarning={true}>
-                                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-6 bg-primary/20 rounded-full" suppressHydrationWarning={true} />
-                                  <ArrowRight className="w-5 h-5 text-primary" suppressHydrationWarning={true} />
-                                  <span className="text-foreground font-black uppercase text-sm tracking-tight" suppressHydrationWarning={true}>{line.cuenta_nombre}</span>
-                              </div>
-                          ) : (
-                              <div className="flex items-center gap-3" suppressHydrationWarning={true}>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ring-4 ring-emerald-500/10 shrink-0" suppressHydrationWarning={true} />
-                                  <span className="text-foreground font-black uppercase text-sm tracking-tight" suppressHydrationWarning={true}>{line.cuenta_nombre}</span>
-                              </div>
-                          )}
-                      </TableCell>
-                      <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'debe' ? 'text-emerald-700 bg-emerald-50/30 font-mono text-sm' : ''}`} suppressHydrationWarning>
-                        {line.tipo === 'debe' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
-                      </TableCell>
-                      <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'haber' ? 'text-primary bg-primary/5 font-mono text-sm' : ''}`} suppressHydrationWarning>
-                        {line.tipo === 'haber' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {entry.lines.map((line) => {
+                    const coa = Array.isArray(line.chart_of_accounts) ? line.chart_of_accounts[0] : line.chart_of_accounts;
+                    return (
+                      <TableRow key={line.id} className="hover:bg-primary/[0.02] transition-colors" suppressHydrationWarning>
+                        <TableCell className="font-mono text-[11px] font-black text-muted-foreground/60 px-4 sm:px-6 md:px-10 py-4 sm:py-5">
+                           <span className="bg-white border border-border px-3 py-1.5 rounded-lg shadow-sm group-hover:border-primary/20 transition-colors">
+                             {coa?.codigo || 'N/A'}
+                           </span>
+                        </TableCell>
+                        <TableCell className="px-4 sm:px-6 md:px-10 py-4 sm:py-5" suppressHydrationWarning={true}>
+                            {line.tipo === 'haber' ? (
+                                <div className="flex items-center gap-4 pl-10 relative" suppressHydrationWarning={true}>
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-6 bg-primary/20 rounded-full" suppressHydrationWarning={true} />
+                                    <ArrowRight className="w-5 h-5 text-primary" suppressHydrationWarning={true} />
+                                    <span className="text-foreground font-black uppercase text-sm tracking-tight" suppressHydrationWarning={true}>{coa?.nombre || 'Cuenta Desconocida'}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3" suppressHydrationWarning={true}>
+                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ring-4 ring-emerald-500/10 shrink-0" suppressHydrationWarning={true} />
+                                    <span className="text-foreground font-black uppercase text-sm tracking-tight" suppressHydrationWarning={true}>{coa?.nombre || 'Cuenta Desconocida'}</span>
+                                </div>
+                            )}
+                        </TableCell>
+                        <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'debe' ? 'text-emerald-700 bg-emerald-50/30 font-mono text-sm' : ''}`} suppressHydrationWarning>
+                          {line.tipo === 'debe' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
+                        </TableCell>
+                        <TableCell className={`text-right font-black px-4 sm:px-6 md:px-10 py-4 sm:py-5 ${line.tipo === 'haber' ? 'text-primary bg-primary/5 font-mono text-sm' : ''}`} suppressHydrationWarning>
+                          {line.tipo === 'haber' ? formatCurrency(line.monto) : <span className="text-muted-foreground/20">—</span>}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>

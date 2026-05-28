@@ -629,7 +629,7 @@ async def delete_account(account_id: str, organization_id: str):
         codigo = acc_res.data[0]["codigo"]
 
         # 2. Verificar si tiene movimientos (seguridad financiera)
-        moves = db.table("journal_entry_lines").select("id").eq("cuenta_codigo", codigo).limit(1).execute()
+        moves = db.table("journal_entry_lines").select("id").eq("account_id", account_id).limit(1).execute()
         if moves.data:
             raise HTTPException(status_code=400, detail="No se puede borrar una cuenta que ya tiene movimientos contables.")
 
@@ -729,13 +729,15 @@ async def get_trial_balance(
 
         # 2. CÁLCULO DE SALDO ANTERIOR (Optimizado: Omitimos organization_id en select de relación)
         prev_res = db.table("journal_entry_lines") \
-            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha)") \
+            .select("chart_of_accounts(codigo), monto, tipo, journal_entries!inner(fecha)") \
             .eq("journal_entries.organization_id", organization_id) \
             .lt("journal_entries.fecha", start_date) \
             .execute()
         
         for m in (prev_res.data or []):
-            code = m["cuenta_codigo"]
+            coa = m.get("chart_of_accounts")
+            if not coa: continue
+            code = coa.get("codigo")
             if code not in accounts_data: continue
             
             monto = int(m["monto"])
@@ -748,14 +750,16 @@ async def get_trial_balance(
 
         # 3. MOVIMIENTOS DEL PERIODO (Optimizado: Omitimos organization_id en select de relación)
         period_res = db.table("journal_entry_lines") \
-            .select("cuenta_codigo, monto, tipo, journal_entries!inner(fecha)") \
+            .select("chart_of_accounts(codigo), monto, tipo, journal_entries!inner(fecha)") \
             .eq("journal_entries.organization_id", organization_id) \
             .gte("journal_entries.fecha", start_date) \
             .lte("journal_entries.fecha", end_date) \
             .execute()
         
         for m in (period_res.data or []):
-            code = m["cuenta_codigo"]
+            coa = m.get("chart_of_accounts")
+            if not coa: continue
+            code = coa.get("codigo")
             if code not in accounts_data: continue
             
             monto = int(m["monto"])
@@ -827,8 +831,8 @@ async def get_ledger(
         saldo_inicial = 0
         if start_date and start_date.strip():
             prev_query = db.table("journal_entry_lines") \
-                .select("monto, tipo, journal_entries!inner(fecha, organization_id)") \
-                .eq("cuenta_codigo", account_code) \
+                .select("monto, tipo, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, organization_id)") \
+                .eq("chart_of_accounts.codigo", account_code) \
                 .eq("journal_entries.organization_id", organization_id) \
                 .lt("journal_entries.fecha", start_date) \
                 .execute()
@@ -841,8 +845,8 @@ async def get_ledger(
 
         # 3. Obtener movimientos del periodo actual
         query = db.table("journal_entry_lines") \
-            .select("*, journal_entries!inner(fecha, glosa, organization_id, source_type)") \
-            .eq("cuenta_codigo", account_code) \
+            .select("*, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, glosa, organization_id, source_type)") \
+            .eq("chart_of_accounts.codigo", account_code) \
             .eq("journal_entries.organization_id", organization_id)
         
         if start_date and start_date.strip():

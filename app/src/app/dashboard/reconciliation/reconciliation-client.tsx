@@ -592,7 +592,7 @@ export function ReconciliationClient({
                                             <TableCell className="px-4 sm:px-10 py-4 sm:py-6">
                                                 {m.status === 'matched' ? (
                                                     <div className="flex flex-col">
-                                                        <span className="text-foreground font-black uppercase text-[10px]">{m.accountingEntry.account_name}</span>
+                                                        <span className="text-foreground font-black uppercase text-[10px]">{m.accountingEntry.chart_of_accounts?.nombre || m.accountingEntry.account_name}</span>
                                                         <span className="text-muted-foreground text-[9px] font-bold uppercase opacity-60">Asiento: {m.accountingEntry.journal_entries.numero_asiento || 'N/A'}</span>
                                                     </div>
                                                 ) : (

@@ -165,9 +165,12 @@ def seed_world_class():
         ]).execute()
 
     # Líneas de diario ahora que tenemos cuentas
+    caja_acc = db.table("chart_of_accounts").select("id").eq("organization_id", org_b_id).eq("codigo", "1.1.01").execute().data[0]["id"]
+    ventas_acc = db.table("chart_of_accounts").select("id").eq("organization_id", org_b_id).eq("codigo", "4.1.01").execute().data[0]["id"]
+
     db.table("journal_entry_lines").insert([
-        {"entry_id": journal_id, "cuenta_codigo": "1.1.01", "cuenta_nombre": "Caja", "tipo": "debe", "monto": 5000000},
-        {"entry_id": journal_id, "cuenta_codigo": "4.1.01", "cuenta_nombre": "Capital Social / Ventas", "tipo": "haber", "monto": 5000000}
+        {"entry_id": journal_id, "organization_id": org_b_id, "account_id": caja_acc, "tipo": "debe", "monto": 5000000},
+        {"entry_id": journal_id, "organization_id": org_b_id, "account_id": ventas_acc, "tipo": "haber", "monto": 5000000}
     ]).execute()
 
     print("\n🚀 INYECCIÓN REALIZADA CON ÉXITO!")

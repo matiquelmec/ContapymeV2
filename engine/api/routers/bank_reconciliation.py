@@ -182,11 +182,9 @@ async def suggest_matches(organization_id: str, bank_account_id: str, current_us
     
     acc_res = db.table("bank_accounts").select("chart_account_id").eq("id", bank_account_id).single().execute()
     chart_id = acc_res.data.get("chart_account_id")
-    coa_res = db.table("chart_of_accounts").select("codigo").eq("id", chart_id).single().execute()
-    coa_code = coa_res.data.get("codigo")
 
     journal_lines = db.table("journal_entry_lines").select("*, journal_entries(fecha, glosa)") \
-        .eq("organization_id", organization_id).eq("cuenta_codigo", coa_code).eq("is_reconciled", False).execute().data or []
+        .eq("organization_id", organization_id).eq("account_id", chart_id).eq("is_reconciled", False).execute().data or []
 
     suggestions = []
     for b in bank_lines:
@@ -248,7 +246,7 @@ async def reconcile_with_adjustment(req: Dict[str, Any], current_user: dict = De
             "p_organization_id": org_id, "p_fecha": line["fecha"], "p_glosa": f"Ajuste Bancario: {line['descripcion']}", "p_lines": journal_lines
         }).execute().data
 
-        j_line_id = db.table("journal_entry_lines").select("id").eq("entry_id", journal_id).eq("cuenta_codigo", bank_coa["codigo"]).single().execute().data["id"]
+        j_line_id = db.table("journal_entry_lines").select("id").eq("entry_id", journal_id).eq("account_id", bank_chart_id).single().execute().data["id"]
 
         db.table("bank_reconciliations").insert({
             "bank_line_id": bank_line_id, "journal_entry_line_id": j_line_id, "organization_id": org_id,

@@ -35,8 +35,8 @@ export default async function ReconciliationPage() {
       .from('journal_entry_lines')
       .select(`
         id, 
-        cuenta_codigo, 
-        cuenta_nombre, 
+        account_id,
+        chart_of_accounts(codigo, nombre),
         tipo, 
         monto, 
         created_at,
