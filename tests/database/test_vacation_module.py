@@ -80,6 +80,38 @@ def test_vacation_module_lifecycle():
         .execute()
     assert len(ledger_usage_cancelled.data) == 0
     
-    # 8. Limpieza final de la prueba
+    # 8. Verificar restricción CHECK (vacation_ledger_dias_check)
+    # 8.1. Intentar accrual con días negativos
+    with pytest.raises(APIError) as exc_info:
+        db.table("vacation_ledger").insert({
+            "organization_id": org_id,
+            "employee_id": emp_id,
+            "tipo": "accrual",
+            "dias": -5.0
+        }).execute()
+    assert "new row for relation" in str(exc_info.value) or "violates check constraint" in str(exc_info.value)
+
+    # 8.2. Intentar usage con días positivos
+    with pytest.raises(APIError) as exc_info:
+        db.table("vacation_ledger").insert({
+            "organization_id": org_id,
+            "employee_id": emp_id,
+            "tipo": "usage",
+            "dias": 5.0
+        }).execute()
+    assert "new row for relation" in str(exc_info.value) or "violates check constraint" in str(exc_info.value)
+
+    # 8.3. Intentar adjustment con 0 días
+    with pytest.raises(APIError) as exc_info:
+        db.table("vacation_ledger").insert({
+            "organization_id": org_id,
+            "employee_id": emp_id,
+            "tipo": "adjustment",
+            "dias": 0.0
+        }).execute()
+    assert "new row for relation" in str(exc_info.value) or "violates check constraint" in str(exc_info.value)
+
+    # 9. Limpieza final de la prueba
     db.table("vacation_ledger").delete().eq("employee_id", emp_id).execute()
     db.table("vacation_requests").delete().eq("employee_id", emp_id).execute()
+
