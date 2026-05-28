@@ -57,6 +57,20 @@ def migrate_employees():
         fecha_ingreso = w["fecha_ingreso"]
         if fecha_ingreso and len(fecha_ingreso) > 10:
             fecha_ingreso = fecha_ingreso[:10]
+
+        birth_date = w["fecha_nacimiento"]
+        if birth_date and len(birth_date) > 10:
+            birth_date = birth_date[:10]
+
+        # Formatear dirección personal
+        address_parts = []
+        if w["direccion_personal"]:
+            address_parts.append(w["direccion_personal"])
+        if w["numero_personal"]:
+            address_parts.append(w["numero_personal"])
+        if w["depto_personal"]:
+            address_parts.append(f"Depto {w['depto_personal']}")
+        address = ", ".join(address_parts) if address_parts else None
         
         # Mapear a esquema Postgres Supabase
         employee_record = {
@@ -66,6 +80,8 @@ def migrate_employees():
             "apellido_paterno": w["apellido_paterno"] or "",
             "apellido_materno": w["apellido_materno"] or "",
             "fecha_ingreso": fecha_ingreso or "2025-01-01",
+            "birth_date": birth_date,
+            "address": address,
             "cargo": (w["cargo"] or "OPERARIO").upper(),
             "tipo_contrato": tipo_contrato,
             "sueldo_base": int(w["sueldo_base"] or 0),
@@ -86,6 +102,7 @@ def migrate_employees():
             "asignacion_movilizacion": 0,
             "bono_fijo": 0
         }
+
 
         try:
             # Upsert idempotente por RUT y Organizacion
