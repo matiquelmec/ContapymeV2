@@ -495,7 +495,6 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "asignacion_familiar": res.asignacion_familiar,
         "horas_extra_monto": res.horas_extra_monto,
         "bono_extra": res.bono_extra + res.bono_fijo, # Sumar bono fijo a bono extra para almacenamiento en DB sin alterar el esquema
-        "bono_fijo": res.bono_fijo,                  # Mapear bono fijo directamente
         "total_haberes_brutos": res.total_haberes_brutos,
         "base_imponible_afp": res.base_imponible_afp,
         "base_imponible_salud": res.base_imponible_salud,
