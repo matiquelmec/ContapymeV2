@@ -93,6 +93,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
     const [emailInput, setEmailInput] = useState('')
     const [sendingEmail, setSendingEmail] = useState(false)
     const [generatingPDF, setGeneratingPDF] = useState(false)
+    const [retryingSII, setRetryingSII] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -262,7 +263,6 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
         toast.success(`DTE (PDF + XML) enviado con éxito al correo: ${emailInput}`)
     }
 
-    const [retryingSII, setRetryingSII] = useState(false)
     const handleRetrySendSII = async () => {
         if (!dte.id || !dte.organization_id) return
         setRetryingSII(true)
