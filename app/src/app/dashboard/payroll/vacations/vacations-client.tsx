@@ -10,8 +10,8 @@ import { toast } from 'sonner'
 import { 
   Calendar as CalendarIcon, 
   User, 
-  FileText, 
   Send, 
+  SlidersHorizontal,
   CheckCircle, 
   XCircle, 
   Clock, 
@@ -25,6 +25,7 @@ import {
 import { 
   VacationRequest, 
   createVacationRequest, 
+  createVacationAdjustment,
   updateVacationStatus, 
   getEmployeeVacationSummary, 
   getEmployeeVacationLedger,
@@ -71,10 +72,17 @@ export function VacationsClient({
     dias_solicitados: 0,
     comentarios: ''
   })
+  const [adjustment, setAdjustment] = useState({
+    fecha: new Date().toISOString().slice(0, 10),
+    dias: '',
+    motivo: 'Saldo inicial por migración',
+    comentarios: ''
+  })
 
   const [isPending, startTransition] = useTransition()
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [adjusting, setAdjusting] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   // Cargar estadísticas y ledger cuando se selecciona un empleado
@@ -202,12 +210,73 @@ export function VacationsClient({
         } else {
           toast.error(`Error al procesar: ${res.error}`)
         }
-      } catch (err: any) {
-        toast.error('Fallo de integridad: ' + (err.message || 'Error desconocido'))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido'
+        toast.error('Fallo de integridad: ' + message)
       } finally {
         setUpdatingId(null)
       }
     })
+  }
+
+  const refreshEmployeeData = async () => {
+    if (!selectedEmployeeId) return
+
+    const [summary, ledger] = await Promise.all([
+      getEmployeeVacationSummary(selectedEmployeeId),
+      getEmployeeVacationLedger(activeOrgId, selectedEmployeeId)
+    ])
+    setSelectedEmployeeSummary(summary)
+    setSelectedEmployeeLedger(ledger)
+  }
+
+  const handleAdjustmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedEmployeeId) {
+      toast.error('Seleccione un colaborador antes de ajustar saldo')
+      return
+    }
+
+    const dias = Number(adjustment.dias)
+    if (!Number.isFinite(dias) || dias === 0) {
+      toast.error('El ajuste debe ser distinto de cero')
+      return
+    }
+
+    if (!adjustment.comentarios.trim() || adjustment.comentarios.trim().length < 8) {
+      toast.error('Ingrese un comentario de respaldo de al menos 8 caracteres')
+      return
+    }
+
+    setAdjusting(true)
+    try {
+      const res = await createVacationAdjustment({
+        organization_id: activeOrgId,
+        employee_id: selectedEmployeeId,
+        fecha: adjustment.fecha,
+        dias,
+        motivo: adjustment.motivo,
+        comentarios: adjustment.comentarios
+      })
+
+      if (res.success) {
+        toast.success('Ajuste de saldo registrado en la cartola')
+        setAdjustment({
+          fecha: new Date().toISOString().slice(0, 10),
+          dias: '',
+          motivo: 'Saldo inicial por migración',
+          comentarios: ''
+        })
+        await refreshEmployeeData()
+      } else {
+        toast.error(`Error: ${res.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Error al registrar el ajuste')
+    } finally {
+      setAdjusting(false)
+    }
   }
 
   const getStatusBadge = (status: VacationRequest['status']) => {
@@ -385,6 +454,91 @@ export function VacationsClient({
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     Enviar Solicitud
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-indigo-600/20">
+            <CardHeader className="bg-muted/5 border-b border-border p-6">
+              <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-indigo-600" /> Ajustar Saldo
+              </CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+                Movimiento manual auditado para migraciones o regularizaciones
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!selectedEmployeeId ? (
+                <div className="py-10 text-center text-muted-foreground/60 font-bold italic text-xs uppercase tracking-widest">
+                  Seleccione un colaborador para habilitar ajustes.
+                </div>
+              ) : (
+                <form onSubmit={handleAdjustmentSubmit} className="space-y-5">
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 text-indigo-900 rounded-2xl text-[10px] font-bold uppercase leading-relaxed">
+                    Use valores positivos para cargar saldo inicial o abonos. Use valores negativos para regularizar días ya usados antes de migrar.
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Fecha efectiva</label>
+                    <Input
+                      type="date"
+                      required
+                      value={adjustment.fecha}
+                      onChange={(e) => setAdjustment(prev => ({ ...prev, fecha: e.target.value }))}
+                      className="bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 rounded-3xl focus:ring-primary transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Días a ajustar</label>
+                    <Input
+                      type="number"
+                      required
+                      step="0.5"
+                      placeholder="Ej. 12.5 o -3"
+                      value={adjustment.dias}
+                      onChange={(e) => setAdjustment(prev => ({ ...prev, dias: e.target.value }))}
+                      className="bg-muted/10 border-2 border-border text-foreground font-black text-xs uppercase h-14 rounded-3xl focus:ring-primary transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Motivo</label>
+                    <select
+                      value={adjustment.motivo}
+                      onChange={(e) => setAdjustment(prev => ({ ...prev, motivo: e.target.value }))}
+                      className="h-14 w-full rounded-3xl border-2 border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                    >
+                      <option>Saldo inicial por migración</option>
+                      <option>Corrección administrativa</option>
+                      <option>Regularización por vacaciones tomadas</option>
+                      <option>Ajuste por jornada/contrato</option>
+                      <option>Otro</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Comentario obligatorio</label>
+                    <textarea
+                      required
+                      placeholder="Ej. Saldo informado por planilla histórica al migrar..."
+                      value={adjustment.comentarios}
+                      onChange={(e) => setAdjustment(prev => ({ ...prev, comentarios: e.target.value }))}
+                      rows={3}
+                      className="w-full bg-muted/10 border-2 border-border text-foreground p-4 text-xs font-bold uppercase rounded-3xl focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-none"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={adjusting}
+                    variant="outline"
+                    className="w-full h-14 border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-black uppercase text-[10px] tracking-widest rounded-full gap-2"
+                  >
+                    {adjusting ? <Loader2 className="w-4 h-4 animate-spin" /> : <SlidersHorizontal className="w-4 h-4" />}
+                    Registrar Ajuste
                   </Button>
                 </form>
               )}

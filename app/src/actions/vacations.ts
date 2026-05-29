@@ -184,6 +184,78 @@ export async function createVacationRequest(data: {
   return { success: true }
 }
 
+export async function createVacationAdjustment(data: {
+  organization_id: string
+  employee_id: string
+  fecha: string
+  dias: number
+  motivo: string
+  comentarios: string
+}) {
+  const supabase = await createClient()
+  const dias = Number(data.dias)
+  const comentarios = data.comentarios?.trim()
+  const motivo = data.motivo?.trim()
+
+  if (!data.organization_id || !data.employee_id) {
+    return { success: false, error: 'Debe seleccionar una organización y colaborador.' }
+  }
+
+  if (!data.fecha || Number.isNaN(new Date(`${data.fecha}T12:00:00`).getTime())) {
+    return { success: false, error: 'La fecha del ajuste es inválida.' }
+  }
+
+  if (!Number.isFinite(dias) || dias === 0) {
+    return { success: false, error: 'El ajuste debe ser distinto de cero.' }
+  }
+
+  if (!motivo) {
+    return { success: false, error: 'Debe seleccionar un motivo de ajuste.' }
+  }
+
+  if (!comentarios || comentarios.length < 8) {
+    return { success: false, error: 'Debe ingresar un comentario de respaldo de al menos 8 caracteres.' }
+  }
+
+  const { data: employee, error: employeeError } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('id', data.employee_id)
+    .eq('organization_id', data.organization_id)
+    .single()
+
+  if (employeeError || !employee) {
+    return { success: false, error: 'El colaborador no pertenece a la organización activa.' }
+  }
+
+  const summary = await getEmployeeVacationSummary(data.employee_id)
+  if (summary.saldo + dias < 0) {
+    return {
+      success: false,
+      error: `El ajuste dejaría saldo negativo (${(summary.saldo + dias).toFixed(2)} días). Saldo actual: ${summary.saldo.toFixed(2)}.`
+    }
+  }
+
+  const { error } = await supabase
+    .from('vacation_ledger')
+    .insert({
+      organization_id: data.organization_id,
+      employee_id: data.employee_id,
+      fecha: data.fecha,
+      tipo: 'adjustment',
+      dias,
+      comentarios: `${motivo}: ${comentarios}`
+    })
+
+  if (error) {
+    console.error('Error al ajustar saldo de vacaciones:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/dashboard/payroll/vacations')
+  return { success: true }
+}
+
 export async function updateVacationStatus(
   orgId: string,
   requestId: string,
