@@ -365,7 +365,7 @@ class SIIClient:
 
                 # Log completo antes de elevar excepción
                 logger.error(f"Error al canjear Token de Boleta. Estado: {estado} Glosa: {glosa} Body: {resp.text}")
-                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa}")
+                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa} Body: {resp.text}")
 
     async def send_boleta(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
         """
