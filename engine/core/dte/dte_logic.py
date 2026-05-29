@@ -314,11 +314,16 @@ class DTELogic:
         sii_res = {"success": False}
         try:
             sii_client = SIIClient(environment=current_caf["environment"])
-            seed = await sii_client.get_seed()
-            signed_seed = self.signer.sign_seed(seed)
-            token = await sii_client.get_token(signed_seed)
-            
-            sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+            if str(tipo_dte) in ['39', '41']:
+                seed = await sii_client.get_boleta_seed()
+                signed_seed = self.signer.sign_seed(seed)
+                token = await sii_client.get_boleta_token(signed_seed)
+                sii_res = await sii_client.send_boleta(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+            else:
+                seed = await sii_client.get_seed()
+                signed_seed = self.signer.sign_seed(seed)
+                token = await sii_client.get_token(signed_seed)
+                sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
             
             if sii_res.get("success"):
                 dte_record["track_id"] = sii_res.get("track_id")
@@ -541,11 +546,16 @@ class DTELogic:
         
         # 5. Enviar al SII
         sii_client = SIIClient(environment=env)
-        seed = await sii_client.get_seed()
-        signed_seed = self.signer.sign_seed(seed)
-        token = await sii_client.get_token(signed_seed)
-        
-        sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+        if str(dte["tipo_dte"]) in ['39', '41']:
+            seed = await sii_client.get_boleta_seed()
+            signed_seed = self.signer.sign_seed(seed)
+            token = await sii_client.get_boleta_token(signed_seed)
+            sii_res = await sii_client.send_boleta(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
+        else:
+            seed = await sii_client.get_seed()
+            signed_seed = self.signer.sign_seed(seed)
+            token = await sii_client.get_token(signed_seed)
+            sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
         
         if sii_res.get("success"):
             self.supabase.table("dte_issued").update({

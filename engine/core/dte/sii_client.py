@@ -21,11 +21,15 @@ class SIIClient:
             self.ws_send = "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
             self.ws_query = "https://maullin.sii.cl/DTEWS/QueryEstDte.jws"
             self.ws_track = "https://maullin.sii.cl/DTEWS/QueryEstUp.jws"
+            self.boleta_auth = "https://apicert.sii.cl/recursos/v1"
+            self.boleta_send = "https://pangal.sii.cl/recursos/v1/boleta.electronica.envio"
         else:
             self.ws_auth = "https://palena.sii.cl/DTEWS"
             self.ws_send = "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
             self.ws_query = "https://palena.sii.cl/DTEWS/QueryEstDte.jws"
             self.ws_track = "https://palena.sii.cl/DTEWS/QueryEstUp.jws"
+            self.boleta_auth = "https://api.sii.cl/recursos/v1"
+            self.boleta_send = "https://rahue.sii.cl/recursos/v1/boleta.electronica.envio"
 
     def _get_client(self, timeout: float = 60.0) -> httpx.AsyncClient:
         """
@@ -282,6 +286,96 @@ class SIIClient:
                     raise
                 await asyncio.sleep(delay)
                 delay *= 2
+
+    async def get_boleta_seed(self) -> str:
+        """
+        Obtiene semilla para la API REST de boletas electronicas.
+        """
+        url = f"{self.boleta_auth}/boleta.electronica.semilla"
+        async with self._get_client() as client:
+            resp = await client.get(url, headers={"accept": "application/xml"})
+            if resp.status_code != 200:
+                raise Exception(f"Fallo al obtener Semilla de Boleta: HTTP {resp.status_code} {resp.text}")
+
+            root = etree.fromstring(resp.content)
+            estado_nodes = root.xpath("//*[local-name()='ESTADO']")
+            estado = estado_nodes[0].text if estado_nodes else None
+            if estado not in ("0", "00"):
+                raise Exception(f"Estado de semilla de boleta invalido: {estado} {resp.text}")
+
+            semilla_nodes = root.xpath("//*[local-name()='SEMILLA']")
+            if not semilla_nodes or not semilla_nodes[0].text:
+                raise Exception("No se encontro el nodo SEMILLA en la respuesta de boleta.")
+            return semilla_nodes[0].text
+
+    async def get_boleta_token(self, signed_seed_xml: str) -> str:
+        """
+        Canjea semilla firmada por token para la API REST de boletas electronicas.
+        """
+        url = f"{self.boleta_auth}/boleta.electronica.token"
+        headers = {"accept": "application/xml", "Content-Type": "application/xml"}
+        async with self._get_client() as client:
+            resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
+            if resp.status_code != 200:
+                raise Exception(f"Fallo al obtener Token de Boleta: HTTP {resp.status_code} {resp.text}")
+
+            root = etree.fromstring(resp.content)
+            estado_nodes = root.xpath("//*[local-name()='ESTADO']")
+            estado = estado_nodes[0].text if estado_nodes else None
+            if estado != "00":
+                glosa_nodes = root.xpath("//*[local-name()='GLOSA']")
+                glosa = glosa_nodes[0].text if glosa_nodes else resp.text
+                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa}")
+
+            token_nodes = root.xpath("//*[local-name()='TOKEN']")
+            if not token_nodes or not token_nodes[0].text:
+                raise Exception("No se encontro el nodo TOKEN en la respuesta de boleta.")
+            return token_nodes[0].text
+
+    async def send_boleta(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
+        """
+        Envia EnvioBOLETA por la API REST dedicada de boletas electronicas.
+        """
+        emisor_rut_body, emisor_dv = rut_emisor.split('-')
+        empresa_rut_body, empresa_dv = rut_empresa.split('-')
+
+        try:
+            xml_bytes = dte_xml.encode('iso-8859-1')
+        except UnicodeEncodeError:
+            xml_bytes = dte_xml.encode('iso-8859-1', errors='replace')
+            logger.warning("Se reemplazaron caracteres no compatibles con ISO-8859-1 en el XML de Boleta.")
+
+        headers = {
+            "accept": "application/json",
+            "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT)",
+            "Cookie": f"TOKEN={token}",
+            "Expect": "100-continue"
+        }
+        data = {
+            "rutSender": emisor_rut_body,
+            "dvSender": emisor_dv,
+            "rutCompany": empresa_rut_body,
+            "dvCompany": empresa_dv
+        }
+        import time
+        filename = f"envio_boleta_{rut_emisor.replace('-', '')}_{int(time.time())}.xml"
+        files = {"archivo": (filename, xml_bytes, "text/xml")}
+
+        async with self._get_client(timeout=90.0) as client:
+            resp = await client.post(self.boleta_send, data=data, files=files, headers=headers)
+            if resp.status_code >= 400:
+                raise Exception(f"Error al enviar Boleta: HTTP {resp.status_code} {resp.text}")
+
+            try:
+                payload = resp.json()
+            except Exception:
+                raise Exception(f"Respuesta de Boleta no JSON: {resp.text}")
+
+            track_id = payload.get("trackid") or payload.get("track_id") or payload.get("TRACKID")
+            estado = payload.get("estado")
+            if not track_id:
+                raise Exception(f"SII no retorno trackid para Boleta: {payload}")
+            return {"success": True, "track_id": str(track_id), "estado": estado, "response": payload}
 
     async def query_track_id(self, token: str, rut_empresa: str, track_id: str) -> Dict[str, Any]:
         """
