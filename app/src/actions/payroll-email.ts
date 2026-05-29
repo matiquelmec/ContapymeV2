@@ -203,3 +203,103 @@ export async function sendPayrollLiquidationsByEmailAction(params: {
     return failedResult(error?.message || 'No se pudo completar el envio masivo de liquidaciones.')
   }
 }
+
+export async function sendSinglePayrollLiquidationEmailAction(
+  liquidationId: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = await createClient()
+
+    // Obtener la liquidación con los datos del empleado
+    const { data: liquidation, error: liqError } = await supabase
+      .from('liquidations')
+      .select(`
+        *,
+        employees (
+          id,
+          nombres,
+          apellido_paterno,
+          apellido_materno,
+          rut,
+          email,
+          fecha_ingreso,
+          cargo
+        )
+      `)
+      .eq('id', liquidationId)
+      .single()
+
+    if (liqError || !liquidation) {
+      return { success: false, message: liqError?.message || 'No se encontró la liquidación.' }
+    }
+
+    const employee = (liquidation as any).employees
+    const employeeName = formatEmployeeName(employee) || 'Empleado sin nombre'
+    const email = String(employee?.email || '').trim().toLowerCase()
+
+    if (!email) {
+      return { success: false, message: 'El empleado no tiene un correo registrado.' }
+    }
+
+    // Obtener datos de la organización y configuración
+    const [{ data: organization }, { data: settings }] = await Promise.all([
+      supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', liquidation.organization_id)
+        .single(),
+      supabase
+        .from('organization_payroll_settings')
+        .select('*')
+        .eq('organization_id', liquidation.organization_id)
+        .maybeSingle()
+    ])
+
+    const { transporter, from } = getSmtpConfig()
+    const doc = await buildLiquidationPDFDocument({ liquidation, organization, settings })
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+    const period = liquidation.periodo?.slice(0, 7) || 'N/A'
+
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: `Liquidacion de Sueldo ${period} - ${employeeName}`,
+      text: [
+        `Hola ${employee?.nombres || employeeName},`,
+        '',
+        `Adjuntamos tu liquidacion de sueldo correspondiente al periodo ${period}.`,
+        '',
+        'Saludos,',
+        organization?.nombre || 'Contapymepuq'
+      ].join('\n'),
+      attachments: [
+        {
+          filename: getLiquidationPdfFilename(liquidation),
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    })
+
+    try {
+      await recordAuditAction({
+        action: 'PAYROLL_SINGLE_EMAIL_SEND',
+        entity_type: 'payroll',
+        entity_id: liquidationId,
+        details: {
+          period,
+          employee_name: employeeName,
+          email
+        }
+      })
+    } catch (auditError) {
+      console.error('Error recording single payroll email audit:', auditError)
+    }
+
+    return { success: true, message: `Liquidación enviada con éxito a ${email}.` }
+  } catch (error: any) {
+    console.error('Single payroll email action failed:', error)
+    return { success: false, message: error?.message || 'Error al enviar el correo.' }
+  }
+}
+

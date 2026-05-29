@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { updateLiquidationStatus, getLiquidationByFolio } from '@/actions/payroll'
+import { sendSinglePayrollLiquidationEmailAction } from '@/actions/payroll-email'
 import { createClient } from '@/lib/supabase/client'
 import {
   ArrowLeft,
@@ -43,6 +44,7 @@ export default function LiquidationDetailPage() {
   const [liquidation, setLiquidation] = useState<any>(null)
   const [organization, setOrganization] = useState<any>(null)
   const [settings, setSettings] = useState<any>(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -303,12 +305,22 @@ export default function LiquidationDetailPage() {
     toast.success('PDF descargado correctamente')
   }
 
-  const shareEmail = () => {
+  const handleSendEmail = async () => {
     if (!liquidation) return
-    const emp = liquidation.employees
-    const subject = encodeURIComponent(`Liquidación de Sueldo - ${liquidation.periodo} - ${emp.nombres} ${emp.apellido_paterno}`)
-    const body = encodeURIComponent(`Hola ${emp.nombres},\n\nAdjunto tu liquidación de sueldo del periodo ${liquidation.periodo}.\n\nMonto Líquido a Pagar: ${fCurrency(liquidation.sueldo_liquido)}\n\nSaludos,\nDepartamento de Recursos Humanos.`)
-    window.open(`mailto:${emp.email || ''}?subject=${subject}&body=${body}`, '_blank')
+    setSendingEmail(true)
+    const toastId = toast.loading('Generando PDF y enviando correo...')
+    try {
+      const res = await sendSinglePayrollLiquidationEmailAction(liquidation.id)
+      if (res.success) {
+        toast.success(res.message, { id: toastId })
+      } else {
+        toast.error(res.message, { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al enviar el correo', { id: toastId })
+    } finally {
+      setSendingEmail(false)
+    }
   }
 
   // ─── Loading / Not found ─────────────────────────────────────────────────────
@@ -370,8 +382,12 @@ export default function LiquidationDetailPage() {
           <Button variant="outline" className="rounded-2xl border-2 font-black uppercase tracking-widest text-[10px] h-12 px-6" onClick={handleDownload}>
             <Download className="w-4 h-4 mr-2" /> PDF
           </Button>
-          <Button className="rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-[10px] h-12 px-6 shadow-xl shadow-primary/20" onClick={shareEmail}>
-            <Mail className="w-4 h-4 mr-2" /> Enviar por Correo
+          <Button
+            className="rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-[10px] h-12 px-6 shadow-xl shadow-primary/20"
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+          >
+            <Mail className="w-4 h-4 mr-2" /> {sendingEmail ? 'Enviando...' : 'Enviar por Correo'}
           </Button>
           {(liquidation.status === 'borrador' || !liquidation.status) && (
             <Button
