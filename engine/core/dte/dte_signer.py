@@ -107,11 +107,13 @@ class DTESigner:
         
         # Compatibilidad legacy SII boleta token: getCertificado busca <Certificate> sin namespace.
         extra_cert_tag = f"<Certificate xmlns=\"\">{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
+        keyinfo_cert_tag = f"<Certificate xmlns=\"\">{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
 
         signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}
     <SignatureValue></SignatureValue>
     <KeyInfo>
+        {keyinfo_cert_tag}
         <KeyValue>
             <RSAKeyValue>
                 <Modulus>{self._get_modulus_b64()}</Modulus>

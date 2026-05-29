@@ -234,3 +234,4 @@ def test_seed_signature_includes_legacy_certificate_tag(tmp_path):
     signed_seed = signer.sign_seed("123456789")
 
     assert "<Certificate xmlns=\"\">" in signed_seed
+    assert "<KeyInfo>" in signed_seed
