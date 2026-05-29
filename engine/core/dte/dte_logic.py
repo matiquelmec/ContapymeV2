@@ -248,13 +248,22 @@ class DTELogic:
         monto_total = dte_record['monto_total']
         item_name_40 = DTEXMLBuilder.clean_xml_text(item1_name)[:40]
         
+        from lxml import etree
         caf_xml_clean = current_caf["caf_xml"].strip()
-        if caf_xml_clean.startswith("<?xml"):
-            decl_end = caf_xml_clean.find("?>")
-            if decl_end != -1:
-                caf_xml_clean = caf_xml_clean[decl_end + 2:].strip()
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            root = etree.fromstring(current_caf["caf_xml"].encode('utf-8'), parser)
+            caf_node = root.find(".//CAF")
+            if caf_node is not None:
+                caf_xml_clean = etree.tostring(caf_node, encoding='ISO-8859-1', xml_declaration=False).decode('ISO-8859-1')
+        except Exception as parse_err:
+            print(f"Advertencia: No se pudo extraer el nodo CAF con lxml: {parse_err}. Usando fallback.")
+            if caf_xml_clean.startswith("<?xml"):
+                decl_end = caf_xml_clean.find("?>")
+                if decl_end != -1:
+                    caf_xml_clean = caf_xml_clean[decl_end + 2:].strip()
 
-        dd_xml_str = f"<DD><RE>{rut_emisor}</RE><TD>{tipo_dte}</TD><F>{folio}</F><FE>{dte_record['fecha_emision']}</FE><RR>{rut_receptor}</RR><RSR>{razon_social_receptor}</RSR><MNT>{monto_total}</MNT><IT1>{item_name_40}</IT1>{caf_xml_clean}<TSTAMP>{tstamp}</TSTAMP></DD>"
+        dd_xml_str = f"<DD><RE>{rut_emisor}</RE><TD>{tipo_dte}</TD><F>{folio}</F><FE>{dte_record['fecha_emision']}</FE><RR>{rut_receptor}</RR><RSR>{razon_social_receptor}</RSR><MNT>{monto_total}</MNT><IT1>{item_name_40}</IT1>{caf_xml_clean}<TSTED>{tstamp}</TSTED></DD>"
 
         # Generar firma digital del TED
         ted_signature_b64 = self.signer.sign_ted(dd_xml_str, rsask_pem)

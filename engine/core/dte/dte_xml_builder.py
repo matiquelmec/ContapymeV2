@@ -57,6 +57,11 @@ class DTEXMLBuilder:
             <Razon>{razon_recortada}</Razon>
         </Referencia>"""
 
+        tmst_firma_xml = ""
+        if str(tipo_dte) not in ['39', '41']:
+            tmst_firma = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            tmst_firma_xml = f"\n        <TmstFirma>{tmst_firma}</TmstFirma>"
+
         xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <DTE version="1.0" xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte DTE_v10.xsd">
     <Documento ID="DTE_{tipo_dte}_{folio}">
@@ -90,7 +95,7 @@ class DTEXMLBuilder:
                 <MntTotal>{dte_data['monto_total']}</MntTotal>
             </Totales>
         </Encabezado>
-        {self._build_items_xml(items)}{referencias_xml}{ted_xml}
+        {self._build_items_xml(items)}{referencias_xml}{ted_xml}{tmst_firma_xml}
     </Documento>
 </DTE>"""
         return xml
@@ -111,12 +116,21 @@ class DTEXMLBuilder:
         monto_total = dte_data['monto_total']
         item_name_40 = self.clean_xml_text(item_name)[:40]
         
-        # Limpiar el XML del CAF (quitar declaraciones XML si existen)
+        # Limpiar el XML del CAF (extraer únicamente el nodo <CAF> omitiendo envoltorios de llaves privadas)
+        from lxml import etree
         caf_xml_clean = caf_xml.strip()
-        if caf_xml_clean.startswith("<?xml"):
-            decl_end = caf_xml_clean.find("?>")
-            if decl_end != -1:
-                caf_xml_clean = caf_xml_clean[decl_end + 2:].strip()
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            root = etree.fromstring(caf_xml.encode('utf-8'), parser)
+            caf_node = root.find(".//CAF")
+            if caf_node is not None:
+                caf_xml_clean = etree.tostring(caf_node, encoding='ISO-8859-1', xml_declaration=False).decode('ISO-8859-1')
+        except Exception as parse_err:
+            print(f"Advertencia: No se pudo extraer el nodo CAF con lxml: {parse_err}. Usando fallback.")
+            if caf_xml_clean.startswith("<?xml"):
+                decl_end = caf_xml_clean.find("?>")
+                if decl_end != -1:
+                    caf_xml_clean = caf_xml_clean[decl_end + 2:].strip()
 
         # Construir el bloque DD
         # NOTA: La sangría debe ser limpia para evitar que rompa la estructura
@@ -130,7 +144,7 @@ class DTEXMLBuilder:
 <MNT>{monto_total}</MNT>
 <IT1>{item_name_40}</IT1>
 {caf_xml_clean}
-<TSTAMP>{tstamp}</TSTAMP>
+<TSTED>{tstamp}</TSTED>
 </DD>"""
 
         # Retornar el bloque completo TED

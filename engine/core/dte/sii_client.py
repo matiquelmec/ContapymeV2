@@ -197,12 +197,14 @@ class SIIClient:
             xml_bytes = dte_xml.encode('iso-8859-1', errors='replace')
             logger.warning("Se reemplazaron caracteres no compatibles con ISO-8859-1 en el XML del DTE.")
 
+        data = {
+            "rutSender": emisor_rut_body,
+            "dvSender": emisor_dv,
+            "rutCompany": empresa_rut_body,
+            "dvCompany": empresa_dv
+        }
         files = {
-            "rutSender": (None, emisor_rut_body),
-            "dvSender": (None, emisor_dv),
-            "rutCompany": (None, empresa_rut_body),
-            "dvCompany": (None, empresa_dv),
-            "archivo": ("envio.xml", xml_bytes, "text/xml; charset=ISO-8859-1")
+            "archivo": ("envio.xml", xml_bytes, "text/xml")
         }
 
         max_retries = 5
@@ -210,7 +212,7 @@ class SIIClient:
         for attempt in range(max_retries):
             try:
                 async with self._get_client(timeout=90.0) as client:
-                    resp = await client.post(self.ws_send, files=files, headers=headers)
+                    resp = await client.post(self.ws_send, data=data, files=files, headers=headers)
                     
                     if resp.status_code != 200:
                         raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")
