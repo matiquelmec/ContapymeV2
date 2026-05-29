@@ -114,6 +114,12 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
         }
     }, [organizationId])
 
+    const openPreview = (dte: any, tab: 'visual' | 'security' | 'xml') => {
+        setSelectedDTE(dte)
+        setPreviewTab(tab)
+        setIsPreviewOpen(true)
+    }
+
     const downloadXML = (dte: any) => {
         if (!dte.xml_content) {
             toast.error('Este DTE no tiene contenido XML firmado.')
