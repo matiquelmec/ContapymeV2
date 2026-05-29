@@ -671,11 +671,11 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                                     {dte.xml_content || `<?xml version="1.0" encoding="ISO-8859-1"?>
 <DTE version="1.0">
   <!-- XML Firmado no disponible para este documento simulado -->
-  <Documento ID="DTE_T33_F\${dte.folio}">
+  <Documento ID="DTE_T33_F${dte.folio}">
     <Encabezado>
       <IdDoc>
-        <TipoDTE>\${dte.tipo_dte}</TipoDTE>
-        <Folio>\${dte.folio}</Folio>
+        <TipoDTE>${dte.tipo_dte}</TipoDTE>
+        <Folio>${dte.folio}</Folio>
       </IdDoc>
     </Encabezado>
   </Documento>
