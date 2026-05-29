@@ -172,6 +172,13 @@ class SIIClient:
         """
         import re
 
+        # Seleccionar endpoint según si es Boleta (EnvioBOLETA) o Factura estándar (EnvioDTE)
+        is_boleta = "<EnvioBOLETA" in dte_xml
+        if self.environment == "certification":
+            url_send = "https://prepablas.sii.cl/cgi_dte/UPL/DTEUpload" if is_boleta else "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
+        else:
+            url_send = "https://boletasg.sii.cl/cgi_dte/UPL/DTEUpload" if is_boleta else "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
+
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
         emisor_rut_body = rut_emisor.split('-')[0]
         emisor_dv = rut_emisor.split('-')[1]
@@ -212,7 +219,7 @@ class SIIClient:
         for attempt in range(max_retries):
             try:
                 async with self._get_client(timeout=90.0) as client:
-                    resp = await client.post(self.ws_send, data=data, files=files, headers=headers)
+                    resp = await client.post(url_send, data=data, files=files, headers=headers)
                     
                     if resp.status_code != 200:
                         raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")

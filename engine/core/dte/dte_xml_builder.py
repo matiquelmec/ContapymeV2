@@ -157,7 +157,7 @@ class DTEXMLBuilder:
 
     def build_envio_dte(self, signed_dte_xml: str, dte_data: Dict[str, Any]) -> str:
         """
-        Envuelve uno o más DTEs firmados en un EnvioDTE para ser enviado al SII.
+        Envuelve uno o más DTEs firmados en un EnvioDTE o EnvioBOLETA para ser enviado al SII.
         """
         fecha_resolucion = self.company.get('resolucion_fecha') or '2014-08-22'
         nro_resolucion = self.company.get('resolucion_numero') or 0
@@ -169,8 +169,14 @@ class DTEXMLBuilder:
             if decl_end != -1:
                 signed_dte_xml = signed_dte_xml[decl_end + 2:].strip()
                 
+        tipo_dte = int(dte_data.get('tipo_dte', 33))
+        is_boleta = tipo_dte in [39, 41]
+        
+        root_tag = "EnvioBOLETA" if is_boleta else "EnvioDTE"
+        schema_xsd = "EnvioBOLETA_v11.xsd" if is_boleta else "EnvioDTE_v10.xsd"
+        
         envio_xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
-<EnvioDTE xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte EnvioDTE_v10.xsd" version="1.0">
+<{root_tag} xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte {schema_xsd}" version="1.0">
     <SetDTE ID="{envio_id}">
         <Caratula version="1.0">
             <RutEmisor>{self.company['rut']}</RutEmisor>
@@ -180,13 +186,13 @@ class DTEXMLBuilder:
             <NroResol>{nro_resolucion}</NroResol>
             <TmstFirmaEnv>{datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}</TmstFirmaEnv>
             <SubTotDTE>
-                <TpoDTE>{dte_data['tipo_dte']}</TpoDTE>
+                <TpoDTE>{tipo_dte}</TpoDTE>
                 <NroDTE>1</NroDTE>
             </SubTotDTE>
         </Caratula>
         {signed_dte_xml}
     </SetDTE>
-</EnvioDTE>"""
+</{root_tag}>"""
         return envio_xml
 
     def _build_items_xml(self, items: List[Dict[str, Any]]) -> str:
