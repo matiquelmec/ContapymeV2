@@ -119,7 +119,7 @@ class DTESigner:
         signature_elem = etree.fromstring(signature_xml)
         root.append(signature_elem)
         
-        xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True).decode('ISO-8859-1')
+        xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True, pretty_print=True).decode('ISO-8859-1')
         if xml_str.startswith("<?xml version='1.0'"):
             xml_str = xml_str.replace("<?xml version='1.0' encoding='ISO-8859-1'?>", '<?xml version="1.0" encoding="ISO-8859-1"?>', 1)
         return xml_str
