@@ -83,7 +83,7 @@ class DTEXMLBuilder:
             <Receptor>
                 <RUTRecep>{dte_data['receptor_rut']}</RUTRecep>
                 <RznSocRecep>{self.clean_xml_text(dte_data['receptor_razon_social'])}</RznSocRecep>
-                <GiroRecep>{self.clean_xml_text(dte_data.get('receptor_giro', 'PARTICULAR'))}</GiroRecep>
+                {"" if str(tipo_dte) in ['39', '41'] else f"<GiroRecep>{self.clean_xml_text(dte_data.get('receptor_giro', 'PARTICULAR'))}</GiroRecep>"}
                 <DirRecep>{self.clean_xml_text(dte_data.get('receptor_direccion', 'CIUDAD'))}</DirRecep>
                 <CmnaRecep>{self.clean_xml_text(dte_data.get('receptor_comuna', 'CIUDAD'))}</CmnaRecep>
                 <CiudadRecep>{self.clean_xml_text(dte_data.get('receptor_ciudad', 'CIUDAD'))}</CiudadRecep>
