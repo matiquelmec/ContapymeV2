@@ -11,10 +11,10 @@ class SIIClient:
     Cliente SOAP/REST Institucional para el Servicio de Impuestos Internos (SII).
     Maneja la autenticación mediante token (Seed) y el envío de documentos DTE.
     """
-    
+
     def __init__(self, environment: str = "certification"):
         self.environment = environment
-        
+
         # Endpoints según ambiente
         if environment == "certification":
             self.ws_auth = "https://maullin.sii.cl/DTEWS"
@@ -44,7 +44,7 @@ class SIIClient:
         ctx.set_ciphers('DEFAULT:!DH:!aNULL:!eNULL:!LOW:!EXP:!MD5:!3DES:!RC4:!SEED')
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # En ambiente SII de producción/certificación a menudo hay problemas de certificados intermedios
-        
+
         transport = httpx.AsyncHTTPTransport(verify=ctx)
         return httpx.AsyncClient(transport=transport, timeout=timeout, follow_redirects=True)
 
@@ -59,11 +59,11 @@ class SIIClient:
         <ns1:getSeed xmlns:ns1="http://DefaultNamespace"></ns1:getSeed>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>"""
-        
+
         import asyncio
         max_retries = 3
         delay = 1.0
-        
+
         for attempt in range(max_retries):
             try:
                 async with self._get_client() as client:
@@ -75,14 +75,14 @@ class SIIClient:
                     resp = await client.post(url, content=soap_body, headers=headers)
                     if resp.status_code != 200:
                         raise Exception(f"Fallo al obtener Semilla: HTTP {resp.status_code}")
-                        
+
                     root = etree.fromstring(resp.content)
                     ns = {"ns1": "http://DefaultNamespace"}
                     return_node = root.find(".//ns1:getSeedReturn", namespaces=ns)
-                    
+
                     if return_node is None and root.find(".//getSeedReturn") is not None:
                         return_node = root.find(".//getSeedReturn")
-                        
+
                     if return_node is not None and return_node.text:
                         inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
                         # Usar xpath con local-name para buscar ignorando namespaces
@@ -90,16 +90,16 @@ class SIIClient:
                         if not estado_nodes:
                             raise Exception("No se encontró el nodo ESTADO en la respuesta de semilla.")
                         estado = estado_nodes[0].text
-                        
+
                         if estado != "00":
                             raise Exception(f"Estado de semilla inválido: {estado}")
-                            
+
                         semilla_nodes = inner_xml.xpath("//*[local-name()='SEMILLA']")
                         if not semilla_nodes or not semilla_nodes[0].text:
                             raise Exception("No se encontró el nodo SEMILLA en la respuesta de semilla.")
-                            
+
                         return semilla_nodes[0].text
-                        
+
                     raise Exception("No se encontró la semilla en la respuesta del SII.")
             except Exception as e:
                 logger.warning(f"Intento {attempt + 1} fallido al obtener semilla: {str(e)}")
@@ -114,7 +114,7 @@ class SIIClient:
         """
         from xml.sax.saxutils import escape
         escaped_seed_xml = escape(signed_seed_xml)
-        
+
         url = f"{self.ws_auth}/GetTokenFromSeed.jws"
         soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
@@ -140,23 +140,23 @@ class SIIClient:
                     resp = await client.post(url, content=soap_body, headers=headers)
                     if resp.status_code != 200:
                         raise Exception(f"Fallo al obtener Token: HTTP {resp.status_code}")
-                        
+
                     root = etree.fromstring(resp.content)
                     return_nodes = root.xpath("//*[local-name()='getTokenReturn']")
                     if not return_nodes or not return_nodes[0].text:
                         raise Exception("No se encontró el nodo getTokenReturn en la respuesta del SII.")
-                        
+
                     return_node = return_nodes[0]
                     inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                    
+
                     estado_nodes = inner_xml.xpath("//*[local-name()='ESTADO']")
                     if not estado_nodes or not estado_nodes[0].text:
                         raise Exception("No se encontró el nodo ESTADO en la respuesta del token.")
                     estado = estado_nodes[0].text
-                    
+
                     if estado != "00":
                         raise Exception(f"Error al canjear Token: {estado}")
-                        
+
                     token_nodes = inner_xml.xpath("//*[local-name()='TOKEN']")
                     if not token_nodes or not token_nodes[0].text:
                         raise Exception("No se encontró el nodo TOKEN en la respuesta del token.")
@@ -188,7 +188,7 @@ class SIIClient:
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
         emisor_rut_body = rut_emisor.split('-')[0]
         emisor_dv = rut_emisor.split('-')[1]
-        
+
         empresa_rut_body = rut_empresa.split('-')[0]
         empresa_dv = rut_empresa.split('-')[1]
 
@@ -228,7 +228,7 @@ class SIIClient:
             try:
                 async with self._get_client(timeout=90.0) as client:
                     resp = await client.post(url_send, data=data, files=files, headers=headers)
-                    
+
                     if resp.status_code != 200:
                         raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")
 
@@ -331,7 +331,9 @@ class SIIClient:
         for attempt in range(max_retries):
             async with self._get_client() as client:
                 resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
+                # Loguear código y cuerpo de respuesta para facilitar diagnóstico
                 if resp.status_code != 200:
+                    logger.warning(f"HTTP {resp.status_code} al obtener Token de Boleta. Body: {resp.text}")
                     # HTTP 5xx suele ser transitorio en SII; reintentar antes de fallar.
                     if resp.status_code >= 500 and attempt < (max_retries - 1):
                         await asyncio.sleep(delay)
@@ -348,16 +350,21 @@ class SIIClient:
                 if estado == "00":
                     token_nodes = root.xpath("//*[local-name()='TOKEN']")
                     if not token_nodes or not token_nodes[0].text:
+                        logger.warning(f"Respuesta de token OK pero falta TOKEN en body: {resp.text}")
                         raise Exception("No se encontro el nodo TOKEN en la respuesta de boleta.")
                     return token_nodes[0].text
 
                 # Estado 10: error interno SII, normalmente transitorio.
                 if estado == "10" and attempt < (max_retries - 1):
-                    logger.warning(f"Token boleta SII estado 10, reintentando ({attempt + 1}/{max_retries}): {glosa}")
+                    logger.warning(
+                        f"Token boleta SII estado 10, reintentando ({attempt + 1}/{max_retries}): {glosa}. Response body: {resp.text}"
+                    )
                     await asyncio.sleep(delay)
                     delay *= 2
                     continue
 
+                # Log completo antes de elevar excepción
+                logger.error(f"Error al canjear Token de Boleta. Estado: {estado} Glosa: {glosa} Body: {resp.text}")
                 raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa}")
 
     async def send_boleta(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
@@ -463,7 +470,7 @@ class SIIClient:
         """
         rut_body = rut_empresa.split('-')[0]
         dv = rut_empresa.split('-')[1]
-        
+
         soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
     <SOAP-ENV:Body>
@@ -488,26 +495,26 @@ class SIIClient:
                     resp = await client.post(self.ws_track, content=soap_body, headers=headers)
                     if resp.status_code != 200:
                         raise Exception(f"Fallo al consultar Track ID: HTTP {resp.status_code}")
-                        
+
                     root = etree.fromstring(resp.content)
                     return_nodes = root.xpath("//*[local-name()='getEstUpReturn']")
                     return_node = return_nodes[0] if return_nodes else None
-                    
+
                     if return_node is not None and return_node.text:
                         inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
                         estado_nodes = inner_xml.xpath("//*[local-name()='ESTADO']")
                         glosa_nodes = inner_xml.xpath("//*[local-name()='GLOSA']")
-                        
+
                         estado_text = estado_nodes[0].text if estado_nodes else "DESC"
                         glosa_text = glosa_nodes[0].text if glosa_nodes else ""
-                        
+
                         return {
                             "success": True,
                             "estado": estado_text,
                             "glosa": glosa_text,
                             "raw_xml": return_node.text
                         }
-                        
+
                     raise Exception("No se encontró respuesta válida al consultar Track ID.")
             except Exception as e:
                 logger.warning(f"Intento {attempt + 1} fallido al consultar Track ID: {str(e)}")
