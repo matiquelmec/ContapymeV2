@@ -45,11 +45,18 @@ class DTESigner:
         return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id, pretty_print=False)
         
     def sign_seed(self, seed: str) -> str:
-        """Firma la semilla (getToken)"""
+        """Firma la semilla (getToken) para token SOAP/REST del SII."""
         xml_string = f"<getToken><item><Semilla>{seed}</Semilla></item></getToken>"
         parser = etree.XMLParser(remove_blank_text=True)
-        root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".", "", pretty_print=False)
+        root = etree.fromstring(xml_string.encode("utf-8"), parser)
+        return self._sign_node(
+            root,
+            ".",
+            "",
+            pretty_print=False,
+            output_encoding="utf-8",
+            include_legacy_certificate_tag=True,
+        )
         
     def sign_envio(self, envio_xml: str, set_dte_id: str) -> str:
         """Firma el EnvioDTE (SetDTE)"""
@@ -57,7 +64,15 @@ class DTESigner:
         root = etree.fromstring(envio_xml.encode('ISO-8859-1'), parser)
         return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id, pretty_print=False)
 
-    def _sign_node(self, root: etree._Element, node_xpath: str, reference_id: str, pretty_print: bool = False) -> str:
+    def _sign_node(
+        self,
+        root: etree._Element,
+        node_xpath: str,
+        reference_id: str,
+        pretty_print: bool = False,
+        output_encoding: str = "ISO-8859-1",
+        include_legacy_certificate_tag: bool = False,
+    ) -> str:
         if not self.private_key or not self.certificate:
             raise Exception("Certificado no cargado.")
             
@@ -90,6 +105,8 @@ class DTESigner:
             self.certificate.public_bytes(serialization.Encoding.DER)
         ).decode()
         
+        extra_cert_tag = f"<Certificate>{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
+
         signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}
     <SignatureValue></SignatureValue>
@@ -102,6 +119,7 @@ class DTESigner:
         </KeyValue>
         <X509Data>
             <X509Certificate>{cert_b64}</X509Certificate>
+            {extra_cert_tag}
         </X509Data>
     </KeyInfo>
 </Signature>"""
@@ -120,9 +138,16 @@ class DTESigner:
         )
         signature_value_elem.text = base64.b64encode(signature).decode()
         
-        xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True, pretty_print=pretty_print).decode('ISO-8859-1')
+        xml_str = etree.tostring(
+            root,
+            encoding=output_encoding,
+            xml_declaration=True,
+            pretty_print=pretty_print,
+        ).decode(output_encoding)
         if xml_str.startswith("<?xml version='1.0'"):
-            xml_str = xml_str.replace("<?xml version='1.0' encoding='ISO-8859-1'?>", '<?xml version="1.0" encoding="ISO-8859-1"?>', 1)
+            decl_old = f"<?xml version='1.0' encoding='{output_encoding}'?>"
+            decl_new = f'<?xml version="1.0" encoding="{output_encoding}"?>'
+            xml_str = xml_str.replace(decl_old, decl_new, 1)
         return xml_str
 
     def _get_modulus_b64(self) -> str:
