@@ -35,6 +35,7 @@ import { ApproveLiquidationButton } from './approve-liquidation-button'
 import { PayrollPeriodSelector } from './payroll-period-selector'
 import { BulkLiquidationsButton } from './bulk-liquidations-button'
 import { BulkEmailLiquidationsButton } from './bulk-email-liquidations-button'
+import { BulkApproveLiquidationsButton } from './bulk-approve-liquidations-button'
 import { getActiveOrganizationId } from '@/actions/organizations'
 
 // ==========================================
@@ -338,10 +339,12 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
   const totalDescuentos = liquidations.reduce((acc, l) => acc + Number(l.total_descuentos), 0)
   const totalCosto = liquidations.reduce((acc, l) => acc + Number(l.total_haberes_brutos), 0)
   const approvedLiquidationsCount = liquidations.filter((liq) => liq.status === 'aprobada').length
+  const draftLiquidationsCount = liquidations.filter((liq) => liq.status === 'borrador').length
 
   return (
     <div className="space-y-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-6 md:px-10 py-5 border-b border-border bg-muted/10">
+        <BulkApproveLiquidationsButton organizationId={orgId} year={year} month={month} count={draftLiquidationsCount} />
         <BulkLiquidationsButton organizationId={orgId} year={year} month={month} count={liquidations.length} />
         <BulkEmailLiquidationsButton organizationId={orgId} year={year} month={month} count={approvedLiquidationsCount} />
       </div>
@@ -426,7 +429,9 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
                         <FileText className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <DeleteLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
+                    {liq.status === 'borrador' && (
+                      <DeleteLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

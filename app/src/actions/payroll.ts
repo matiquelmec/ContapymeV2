@@ -148,6 +148,18 @@ export async function deleteEmployee(employeeId: string) {
   // Nota: Esto permite borrar registros ingresados por error incluso si ya se generaron borradores.
   
   try {
+    const { data: approvedLiquidations } = await supabase
+      .from('liquidations')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('organization_id', activeOrgId)
+      .eq('status', 'aprobada')
+      .limit(1)
+
+    if (approvedLiquidations && approvedLiquidations.length > 0) {
+      return { success: false, error: 'No se puede eliminar un empleado con liquidaciones aprobadas.' }
+    }
+
     // A. Eliminar Liquidaciones
     await supabase.from('liquidations').delete().eq('employee_id', employeeId).eq('organization_id', activeOrgId)
     
@@ -185,6 +197,18 @@ export async function deleteEmployee(employeeId: string) {
 export async function deleteLiquidation(liquidationId: string) {
   const supabase = await createClient()
 
+  const { data: liquidation, error: fetchError } = await supabase
+    .from('liquidations')
+    .select('status')
+    .eq('id', liquidationId)
+    .single()
+
+  if (fetchError) return { success: false, error: fetchError.message }
+
+  if (liquidation?.status === 'aprobada') {
+    return { success: false, error: 'Una liquidacion aprobada no puede eliminarse. Debe quedar como registro cerrado.' }
+  }
+
   const { error } = await supabase
     .from('liquidations')
     .delete()
@@ -198,6 +222,22 @@ export async function deleteLiquidation(liquidationId: string) {
 
 export async function updateLiquidationStatus(liquidationId: string, newStatus: string, signature_base64?: string) {
   const supabase = await createClient()
+
+  if (newStatus !== 'aprobada') {
+    return { success: false, error: 'No se permite revertir una liquidacion aprobada a borrador.' }
+  }
+
+  const { data: liquidation, error: fetchError } = await supabase
+    .from('liquidations')
+    .select('status')
+    .eq('id', liquidationId)
+    .single()
+
+  if (fetchError) return { success: false, error: fetchError.message }
+
+  if (liquidation?.status === 'aprobada') {
+    return { success: false, error: 'La liquidacion ya se encuentra aprobada.' }
+  }
 
   const { error } = await supabase
     .from('liquidations')
@@ -213,6 +253,61 @@ export async function updateLiquidationStatus(liquidationId: string, newStatus: 
   revalidatePath(`/dashboard/payroll/liquidations/${liquidationId}`)
   
   return { success: true }
+}
+
+export async function bulkApproveLiquidations(params: {
+  organizationId: string
+  year: string
+  month: string
+  signature_base64: string
+}) {
+  const supabase = await createClient()
+
+  const { getActiveOrganizationId } = await import('./organizations')
+  const activeOrgId = await getActiveOrganizationId()
+
+  if (!activeOrgId || activeOrgId !== params.organizationId) {
+    return { success: false, error: 'Organizacion activa invalida.' }
+  }
+
+  if (!params.signature_base64) {
+    return { success: false, error: 'Debe registrar una firma para aprobar en masa.' }
+  }
+
+  const paddedMonth = params.month.padStart(2, '0')
+  const dateStart = `${params.year}-${paddedMonth}-01`
+  const lastDay = new Date(Number(params.year), Number(paddedMonth), 0).getDate()
+  const dateEnd = `${params.year}-${paddedMonth}-${lastDay}`
+
+  const { data, error } = await supabase
+    .from('liquidations')
+    .update({
+      status: 'aprobada',
+      signature_base64: params.signature_base64
+    })
+    .eq('organization_id', params.organizationId)
+    .eq('status', 'borrador')
+    .gte('periodo', dateStart)
+    .lte('periodo', dateEnd)
+    .select('id')
+
+  if (error) return { success: false, error: error.message }
+
+  const approvedCount = data?.length || 0
+
+  const { recordAuditAction } = await import('./audit')
+  await recordAuditAction({
+    action: 'PAYROLL_BULK_APPROVE',
+    entity_type: 'payroll',
+    entity_id: `${params.organizationId}:${params.year}-${paddedMonth}`,
+    details: {
+      period: `${params.year}-${paddedMonth}`,
+      approved_count: approvedCount
+    }
+  })
+
+  revalidatePath('/dashboard/payroll')
+  return { success: true, approvedCount }
 }
 
 /**
