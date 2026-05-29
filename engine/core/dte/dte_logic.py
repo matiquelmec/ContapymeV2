@@ -442,8 +442,8 @@ class DTELogic:
         is_boleta = tipo_dte in [39, 41]
         xml_content = dte.get("xml_content")
         
-        if is_boleta and "RznSocEmisor" not in xml_content:
-            print(f"Regenerando XML obsoleto para Boleta Folio {dte['folio']} con el nuevo esquema...")
+        if is_boleta and ("RznSocEmisor" not in xml_content or "Acteco" in xml_content):
+            print(f"Regenerando XML obsoleto/inválido para Boleta Folio {dte['folio']} con el nuevo esquema...")
             # Cargar items
             items_resp = self.supabase.table("dte_items").select("*").eq("dte_id", dte_id).execute()
             items = items_resp.data
