@@ -89,9 +89,9 @@ class DTEXMLBuilder:
                 <CiudadRecep>{self.clean_xml_text(dte_data.get('receptor_ciudad', 'CIUDAD'))}</CiudadRecep>
             </Receptor>
             <Totales>
-                <MntNeto>{dte_data['monto_neto']}</MntNeto>
-                <TasaIVA>{dte_data['tasa_iva']}</TasaIVA>
-                <IVA>{dte_data['monto_iva']}</IVA>
+                {"" if str(tipo_dte) in ['39', '41'] else f"<MntNeto>{dte_data['monto_neto']}</MntNeto>"}
+                {"" if str(tipo_dte) in ['39', '41'] else f"<TasaIVA>{dte_data['tasa_iva']}</TasaIVA>"}
+                {"" if str(tipo_dte) in ['39', '41'] else f"<IVA>{dte_data['monto_iva']}</IVA>"}
                 <MntTotal>{dte_data['monto_total']}</MntTotal>
             </Totales>
         </Encabezado>
