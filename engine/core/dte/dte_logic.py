@@ -311,6 +311,7 @@ class DTELogic:
 
         # ── PASO 6.3: Intentar enviar al SII (no bloquea la emisión si falla) ──
         sii_error_msg = None
+        sii_res = {"success": False}
         try:
             sii_client = SIIClient(environment=current_caf["environment"])
             seed = await sii_client.get_seed()
