@@ -326,7 +326,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                 <div className="bg-[#1e293b] px-6 py-2 flex gap-1 border-t border-slate-800 shrink-0">
                     <button
                         onClick={() => setActiveTab('visual')}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 \${
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                             activeTab === 'visual' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                         }`}
                     >
@@ -335,7 +335,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                     </button>
                     <button
                         onClick={() => setActiveTab('security')}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 \${
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                             activeTab === 'security' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                         }`}
                     >
@@ -344,7 +344,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                     </button>
                     <button
                         onClick={() => setActiveTab('xml')}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 \${
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
                             activeTab === 'xml' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                         }`}
                     >
