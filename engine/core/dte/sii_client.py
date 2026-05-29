@@ -155,14 +155,19 @@ class SIIClient:
                     estado = estado_nodes[0].text
 
                     if estado != "00":
-                        raise Exception(f"Error al canjear Token: {estado}")
+                        logger.error(f"Error al canjear Token. Estado: {estado}. Body: {resp.text}")
+                        raise Exception(f"Error al canjear Token: {estado} Body: {resp.text}")
 
                     token_nodes = inner_xml.xpath("//*[local-name()='TOKEN']")
                     if not token_nodes or not token_nodes[0].text:
                         raise Exception("No se encontró el nodo TOKEN en la respuesta del token.")
                     return token_nodes[0].text
             except Exception as e:
-                logger.warning(f"Intento {attempt + 1} fallido al obtener token: {str(e)}")
+                # Registrar excepción completa (stacktrace + contexto)
+                resp_text = None
+                if 'resp' in locals() and getattr(locals().get('resp'), 'text', None):
+                    resp_text = locals().get('resp').text
+                logger.exception(f"Intento {attempt + 1} fallido al obtener token: {str(e)} RespBody: {resp_text}")
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(delay)
@@ -325,12 +330,13 @@ class SIIClient:
         """
         url = f"{self.boleta_auth}/boleta.electronica.token"
         headers = {"accept": "application/xml", "Content-Type": "application/xml"}
-        max_retries = 3
+        max_retries = 5
         delay = 1.0
 
         for attempt in range(max_retries):
-            async with self._get_client() as client:
-                resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
+            try:
+                async with self._get_client() as client:
+                    resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
                 # Loguear código y cuerpo de respuesta para facilitar diagnóstico
                 if resp.status_code != 200:
                     logger.warning(f"HTTP {resp.status_code} al obtener Token de Boleta. Body: {resp.text}")
@@ -366,6 +372,15 @@ class SIIClient:
                 # Log completo antes de elevar excepción
                 logger.error(f"Error al canjear Token de Boleta. Estado: {estado} Glosa: {glosa} Body: {resp.text}")
                 raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa} Body: {resp.text}")
+            except Exception as e:
+                resp_text = None
+                if 'resp' in locals() and getattr(locals().get('resp'), 'text', None):
+                    resp_text = locals().get('resp').text
+                logger.exception(f"Intento {attempt + 1} fallido al obtener token: {str(e)} RespBody: {resp_text}")
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(delay)
+                delay *= 2
 
     async def send_boleta(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
         """
