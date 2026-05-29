@@ -174,7 +174,7 @@ class DTEXMLBuilder:
         schema_xsd = "EnvioBOLETA_v11.xsd" if is_boleta else "EnvioDTE_v10.xsd"
         
         envio_xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
-<{root_tag} xmlns="http://www.sii.cl/SiiDte" version="1.0">
+<{root_tag} xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte {schema_xsd}" version="1.0">
     <SetDTE ID="{envio_id}">
         <Caratula version="1.0">
             <RutEmisor>{self.company['rut']}</RutEmisor>

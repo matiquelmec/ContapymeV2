@@ -263,7 +263,7 @@ class SIIClient:
                     if status == "7":
                         error_node = root.find(".//ERROR")
                         error_text = error_node.text if error_node is not None else "Invalid Character Set"
-                        raise Exception(f"SII Error de Encoding (STATUS 7): {error_text}")
+                        raise Exception(f"SII Error de Schema/Encoding (STATUS 7): {error_text}")
 
                     # Cualquier otro STATUS: error del SII
                     error_node = root.find(".//ERROR")
