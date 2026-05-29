@@ -175,8 +175,10 @@ class SIIClient:
         # Seleccionar endpoint según si es Boleta (EnvioBOLETA) o Factura estándar (EnvioDTE)
         is_boleta = "<EnvioBOLETA" in dte_xml
         if self.environment == "certification":
-            url_send = "https://prepablas.sii.cl/cgi_dte/UPL/DTEUpload" if is_boleta else "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
+            # En certificación el SII usa el mismo servidor maullin para todo
+            url_send = "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
         else:
+            # En producción sí están separados
             url_send = "https://boletasg.sii.cl/cgi_dte/UPL/DTEUpload" if is_boleta else "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
 
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
