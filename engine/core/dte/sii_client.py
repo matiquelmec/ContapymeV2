@@ -325,23 +325,40 @@ class SIIClient:
         """
         url = f"{self.boleta_auth}/boleta.electronica.token"
         headers = {"accept": "application/xml", "Content-Type": "application/xml"}
-        async with self._get_client() as client:
-            resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
-            if resp.status_code != 200:
-                raise Exception(f"Fallo al obtener Token de Boleta: HTTP {resp.status_code} {resp.text}")
+        max_retries = 3
+        delay = 1.0
 
-            root = etree.fromstring(resp.content)
-            estado_nodes = root.xpath("//*[local-name()='ESTADO']")
-            estado = estado_nodes[0].text if estado_nodes else None
-            if estado != "00":
+        for attempt in range(max_retries):
+            async with self._get_client() as client:
+                resp = await client.post(url, content=signed_seed_xml.encode("utf-8"), headers=headers)
+                if resp.status_code != 200:
+                    # HTTP 5xx suele ser transitorio en SII; reintentar antes de fallar.
+                    if resp.status_code >= 500 and attempt < (max_retries - 1):
+                        await asyncio.sleep(delay)
+                        delay *= 2
+                        continue
+                    raise Exception(f"Fallo al obtener Token de Boleta: HTTP {resp.status_code} {resp.text}")
+
+                root = etree.fromstring(resp.content)
+                estado_nodes = root.xpath("//*[local-name()='ESTADO']")
+                estado = estado_nodes[0].text if estado_nodes else None
                 glosa_nodes = root.xpath("//*[local-name()='GLOSA']")
                 glosa = glosa_nodes[0].text if glosa_nodes else resp.text
-                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa}")
 
-            token_nodes = root.xpath("//*[local-name()='TOKEN']")
-            if not token_nodes or not token_nodes[0].text:
-                raise Exception("No se encontro el nodo TOKEN en la respuesta de boleta.")
-            return token_nodes[0].text
+                if estado == "00":
+                    token_nodes = root.xpath("//*[local-name()='TOKEN']")
+                    if not token_nodes or not token_nodes[0].text:
+                        raise Exception("No se encontro el nodo TOKEN en la respuesta de boleta.")
+                    return token_nodes[0].text
+
+                # Estado 10: error interno SII, normalmente transitorio.
+                if estado == "10" and attempt < (max_retries - 1):
+                    logger.warning(f"Token boleta SII estado 10, reintentando ({attempt + 1}/{max_retries}): {glosa}")
+                    await asyncio.sleep(delay)
+                    delay *= 2
+                    continue
+
+                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa}")
 
     async def send_boleta(self, token: str, dte_xml: str, rut_emisor: str, rut_empresa: str) -> Dict[str, Any]:
         """
