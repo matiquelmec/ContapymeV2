@@ -437,6 +437,83 @@ class DTELogic:
         if not dte.get("xml_content"):
             raise Exception(f"El DTE {dte_id} no tiene XML firmado. No se puede reenviar.")
         
+        # 1.1 Si es Boleta (39/41) y no tiene RznSocEmisor, regeneramos y re-firmamos
+        tipo_dte = int(dte.get("tipo_dte", 33))
+        is_boleta = tipo_dte in [39, 41]
+        xml_content = dte.get("xml_content")
+        
+        if is_boleta and "RznSocEmisor" not in xml_content:
+            print(f"Regenerando XML obsoleto para Boleta Folio {dte['folio']} con el nuevo esquema...")
+            # Cargar items
+            items_resp = self.supabase.table("dte_items").select("*").eq("dte_id", dte_id).execute()
+            items = items_resp.data
+            
+            # Cargar CAF
+            caf_records = self.supabase.table("dte_caf_folios")\
+                .select("*")\
+                .eq("organization_id", self.organization_id)\
+                .eq("tipo_dte", tipo_dte)\
+                .eq("is_active", True)\
+                .execute()
+            
+            if not caf_records.data:
+                raise Exception(f"No hay CAF activo para DTE tipo {tipo_dte} al regenerar XML.")
+            
+            current_caf = caf_records.data[0]
+            
+            # Firmar Timbre Electrónico
+            rsask_pem = CAFManager.get_private_key_from_caf(current_caf["caf_xml"])
+            item1_name = items[0]["product_name"] if items else "SERVICIO"
+            tstamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            
+            rut_emisor = self.company_data['rut']
+            rut_receptor = dte['receptor_rut']
+            razon_social_receptor = DTEXMLBuilder.clean_xml_text(dte['receptor_razon_social'])[:40]
+            monto_total = dte['monto_total']
+            item_name_40 = DTEXMLBuilder.clean_xml_text(item1_name)[:40]
+            
+            from lxml import etree
+            caf_xml_clean = current_caf["caf_xml"].strip()
+            try:
+                parser = etree.XMLParser(remove_blank_text=True)
+                root_el = etree.fromstring(current_caf["caf_xml"].encode('utf-8'), parser)
+                caf_node = root_el.find(".//CAF")
+                if caf_node is not None:
+                    caf_xml_clean = etree.tostring(caf_node, encoding='ISO-8859-1', xml_declaration=False).decode('ISO-8859-1')
+            except Exception:
+                pass
+                
+            dd_xml_str = f"<DD><RE>{rut_emisor}</RE><TD>{tipo_dte}</TD><F>{dte['folio']}</F><FE>{dte['fecha_emision']}</FE><RR>{rut_receptor}</RR><RSR>{razon_social_receptor}</RSR><MNT>{monto_total}</MNT><IT1>{item_name_40}</IT1>{caf_xml_clean}<TSTED>{tstamp}</TSTED></DD>"
+            ted_signature_b64 = self.signer.sign_ted(dd_xml_str, rsask_pem)
+            ted_xml = self.xml_builder.build_ted_xml(dte, item1_name, current_caf["caf_xml"], ted_signature_b64, tstamp)
+            
+            xml_unsigned = self.xml_builder.build_dte_xml(
+                dte, 
+                items, 
+                ted_xml=ted_xml, 
+                referencias=dte.get("referencias")
+            )
+            
+            pfx_bytes, cert_password = self._get_certificate()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
+                tmp.write(pfx_bytes)
+                tmp_pfx_path = tmp.name
+                
+            try:
+                self.signer.load_certificate(tmp_pfx_path, cert_password)
+                xml_content = self.signer.sign_xml(xml_unsigned, f"DTE_{tipo_dte}_{dte['folio']}")
+            finally:
+                if os.path.exists(tmp_pfx_path):
+                    os.remove(tmp_pfx_path)
+            
+            # Guardar el XML regenerado y firmado en base de datos
+            self.supabase.table("dte_issued")\
+                .update({"xml_content": xml_content})\
+                .eq("id", dte_id)\
+                .execute()
+                
+            dte["xml_content"] = xml_content
+
         # 2. Reconstruir el envío
         envio_xml = self.xml_builder.build_envio_dte(dte["xml_content"], dte)
         

@@ -73,8 +73,8 @@ class DTEXMLBuilder:
             </IdDoc>
             <Emisor>
                 <RUTEmisor>{self.company['rut']}</RUTEmisor>
-                <RznSoc>{self.clean_xml_text(self.company['razon_social'])}</RznSoc>
-                <GiroEmis>{self.clean_xml_text(self.company['giro'])}</GiroEmis>
+                {f"<RznSocEmisor>{self.clean_xml_text(self.company['razon_social'])}</RznSocEmisor>" if str(tipo_dte) in ['39', '41'] else f"<RznSoc>{self.clean_xml_text(self.company['razon_social'])}</RznSoc>"}
+                {f"<GiroEmisor>{self.clean_xml_text(self.company['giro'])}</GiroEmisor>" if str(tipo_dte) in ['39', '41'] else f"<GiroEmis>{self.clean_xml_text(self.company['giro'])}</GiroEmis>"}
                 <Acteco>{self.company['acteco']}</Acteco>
                 <DirOrigen>{self.clean_xml_text(self.company['direccion'])}</DirOrigen>
                 <CmnaOrigen>{self.clean_xml_text(self.company['comuna'])}</CmnaOrigen>
