@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { fCurrency, cn } from '@/lib/utils'
 import { formatRUT } from '@/lib/utils/rut'
 import jsPDF from 'jspdf'
+import { getLiquidationPdfFilename } from '@/lib/payroll/liquidation-pdf'
 import { toast } from 'sonner'
 
 function formatName(name: string) {
@@ -298,7 +299,7 @@ export default function LiquidationDetailPage() {
   const handleDownload = async () => {
     if (!liquidation) return
     const doc = await buildPDFDocument()
-    doc.save(`Liquidacion_${liquidation.employees?.rut}_${liquidation.periodo}.pdf`)
+    doc.save(getLiquidationPdfFilename(liquidation))
     toast.success('PDF descargado correctamente')
   }
 

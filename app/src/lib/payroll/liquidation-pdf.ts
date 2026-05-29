@@ -33,9 +33,35 @@ async function fetchQRBase64(data: string): Promise<string | null> {
 }
 
 export function getLiquidationPdfFilename(liquidation: any) {
-  const rut = liquidation?.employees?.rut || liquidation?.employee_rut || 'sin_rut'
+  const rut = String(liquidation?.employees?.rut || liquidation?.employee_rut || 'sin_rut')
   const period = String(liquidation?.periodo || 'sin_periodo').slice(0, 7)
-  return `Liquidacion_${rut}_${period}.pdf`.replace(/[\\/:*?"<>|]/g, '_')
+  const rawName = [
+    'Liquidacion',
+    period,
+    rut,
+    liquidation?.employees?.apellido_paterno || liquidation?.apellido_paterno || '',
+    liquidation?.employees?.nombres || liquidation?.nombres || ''
+  ]
+    .map(part => String(part).trim())
+    .filter(Boolean)
+    .join('_')
+
+  return normalizeFilename(`${rawName}.pdf`)
+}
+
+export function getLiquidationsZipFilename(year: string, month: string, organizationName?: string) {
+  const org = organizationName ? normalizeFilename(organizationName) : 'Contapymepuq'
+  return normalizeFilename(`Liquidaciones_${year}-${month}_${org}.zip`)
+}
+
+function normalizeFilename(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
 }
 
 export async function buildLiquidationPDFDocument({ liquidation, organization, settings }: PdfContext): Promise<jsPDF> {

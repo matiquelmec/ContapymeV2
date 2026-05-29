@@ -6,7 +6,7 @@ import { Download, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { buildLiquidationPDFDocument, getLiquidationPdfFilename } from '@/lib/payroll/liquidation-pdf'
+import { buildLiquidationPDFDocument, getLiquidationPdfFilename, getLiquidationsZipFilename } from '@/lib/payroll/liquidation-pdf'
 
 interface BulkLiquidationsButtonProps {
   organizationId: string
@@ -69,7 +69,7 @@ export function BulkLiquidationsButton({ organizationId, year, month, count }: B
       const url = URL.createObjectURL(zipBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `Liquidaciones_${year}-${paddedMonth}.zip`
+      link.download = getLiquidationsZipFilename(year, paddedMonth, organization?.nombre)
       document.body.appendChild(link)
       link.click()
       link.remove()
