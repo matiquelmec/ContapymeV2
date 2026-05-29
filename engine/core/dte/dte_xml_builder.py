@@ -69,7 +69,7 @@ class DTEXMLBuilder:
             <IdDoc>
                 <TipoDTE>{tipo_dte}</TipoDTE>
                 <Folio>{folio}</Folio>
-                <FchEmis>{fecha}</FchEmis>
+                <FchEmis>{fecha}</FchEmis>{f"\n                <IndServicio>3</IndServicio>" if str(tipo_dte) in ['39', '41'] else ""}
             </IdDoc>
             <Emisor>
                 <RUTEmisor>{self.company['rut']}</RUTEmisor>
