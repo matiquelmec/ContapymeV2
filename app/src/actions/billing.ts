@@ -320,3 +320,26 @@ export async function uploadPFX(organizationId: string, base64Content: string, c
     return { success: false, error: parseError(err) }
   }
 }
+
+export async function retrySendToSII(organizationId: string, dteId: string) {
+  try {
+    const response = await engineFetch(`/api/v1/dte/retry-sii/${dteId}`, {
+      method: 'POST',
+      body: { organization_id: organizationId }
+    })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      return { success: false, error: parseError(errData.detail || 'El SII no aceptó el reintento de envío.') }
+    }
+
+    const data = await response.json()
+    revalidatePath('/dashboard/billing')
+    revalidatePath('/dashboard/accounting/journal')
+    revalidatePath('/dashboard')
+    
+    return { success: true, data }
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}

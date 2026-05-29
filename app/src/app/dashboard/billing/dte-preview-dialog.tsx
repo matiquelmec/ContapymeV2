@@ -262,6 +262,27 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
         toast.success(`DTE (PDF + XML) enviado con éxito al correo: ${emailInput}`)
     }
 
+    const [retryingSII, setRetryingSII] = useState(false)
+    const handleRetrySendSII = async () => {
+        if (!dte.id || !dte.organization_id) return
+        setRetryingSII(true)
+        const toastId = toast.loading('Reintentando envío de DTE al SII...')
+        try {
+            const { retrySendToSII } = await import('@/actions/billing')
+            const result = await retrySendToSII(dte.organization_id, dte.id)
+            if (result.success) {
+                toast.success('DTE enviado con éxito al SII. Se obtuvo Track ID: ' + (result.data?.track_id || 'Generado'), { id: toastId })
+                onOpenChange(false) // Cerrar modal para refrescar
+            } else {
+                toast.error(result.error || 'No se pudo enviar el documento al SII.', { id: toastId })
+            }
+        } catch (err: any) {
+            toast.error('Error de red al conectar con el servidor: ' + err.message, { id: toastId })
+        } finally {
+            setRetryingSII(false)
+        }
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl w-full p-0 border-none rounded-[2rem] md:rounded-[2.5rem] bg-white shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] flex flex-col max-h-[90dvh] overflow-hidden">
@@ -284,7 +305,18 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                             </DialogTitle>
                             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1">{dteTypeLabel}</p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-3 shrink-0">
+                            {dte.status === 'signed' && !dte.track_id && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleRetrySendSII}
+                                    disabled={retryingSII}
+                                    className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-wider h-9 px-3 flex items-center gap-1.5 border-none shadow-md animate-pulse hover:animate-none"
+                                >
+                                    {retryingSII ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                                    {retryingSII ? 'Enviando...' : 'Reintentar SII'}
+                                </Button>
+                            )}
                             {getStatusBadge(dte.status)}
                         </div>
                     </div>

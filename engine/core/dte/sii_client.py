@@ -32,9 +32,10 @@ class SIIClient:
         Crea un AsyncClient configurado para tolerar los protocolos SSL/TLS antiguos del SII.
         """
         import ssl
-        ctx = ssl.create_default_context()
-        # Permitir ciphers antiguas y TLS 1.0/1.1/1.2 si es necesario para compatibilidad SII
-        ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+        # Forzar protocolo TLSv1.2 estricto para asegurar compatibilidad de negociación con el SII
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        # Ciphers compatibles que el proxy del SII acepta sin desconectar el socket
+        ctx.set_ciphers('DEFAULT:!DH:!aNULL:!eNULL:!LOW:!EXP:!MD5:!3DES:!RC4:!SEED')
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # En ambiente SII de producción/certificación a menudo hay problemas de certificados intermedios
         
