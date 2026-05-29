@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import {
   AlertCircle,
   ArrowDownLeft,
@@ -15,7 +16,7 @@ import {
   UploadCloud,
   WalletCards,
 } from "lucide-react";
-import { createPaymentMethod, registerTreasuryPayment, type TreasuryDashboardData, type TreasuryDocument } from "@/actions/treasury";
+import { createPaymentMethod, registerTreasuryPayment, type TreasuryDashboardData, type TreasuryDocument, type TreasuryPayment, type PaymentMethod } from "@/actions/treasury";
 import { RCVUploadDynamic } from "../accounting/rcv/rcv-upload-dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -163,15 +164,179 @@ export function TreasuryClient({
   const [isPending, startTransition] = useTransition();
   const [isCreatingMethod, startCreatingMethod] = useTransition();
 
-  const hasPaymentMethods = initialData.paymentMethods.length > 0;
+  // --- Reactive state for real-time updates ---
+  const [pendingPurchases, setPendingPurchases] = useState(initialData.pendingPurchases);
+  const [pendingSales, setPendingSales] = useState(initialData.pendingSales);
+  const [recentPayments, setRecentPayments] = useState(initialData.recentPayments);
+  const [paymentMethods, setPaymentMethods] = useState(initialData.paymentMethods);
+  const [totals, setTotals] = useState(initialData.totals);
+
+  const hasPaymentMethods = paymentMethods.length > 0;
 
   const selectedMethod = useMemo(
-    () => initialData.paymentMethods.find((method) => method.id === paymentMethodId),
-    [initialData.paymentMethods, paymentMethodId]
+    () => paymentMethods.find((method) => method.id === paymentMethodId),
+    [paymentMethods, paymentMethodId]
   );
 
+  // --- Client-side data refresh ---
+  const refreshData = useCallback(async () => {
+    const supabase = createClient();
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+    const [purchasesRes, salesRes, recentRes, monthPaymentsRes, methodsRes] = await Promise.all([
+      supabase
+        .from("v_cuentas_por_pagar")
+        .select("id, folio, rut_emisor, razon_social_emisor, fecha_docto, monto_total, monto_pagado, monto_pendiente, payment_status")
+        .eq("organization_id", organizationId)
+        .order("fecha_docto", { ascending: true })
+        .limit(80),
+      supabase
+        .from("v_cuentas_por_cobrar")
+        .select("id, folio, rut_receptor, razon_social_receptor, fecha_docto, monto_total, monto_cobrado, monto_pendiente, payment_status")
+        .eq("organization_id", organizationId)
+        .order("fecha_docto", { ascending: true })
+        .limit(80),
+      supabase
+        .from("treasury_payments")
+        .select("id, tipo, monto, fecha_pago, referencia, notas, journal_entry_id, created_at, payment_methods(nombre, tipo)")
+        .eq("organization_id", organizationId)
+        .order("fecha_pago", { ascending: false })
+        .limit(12),
+      supabase
+        .from("treasury_payments")
+        .select("tipo, monto")
+        .eq("organization_id", organizationId)
+        .gte("fecha_pago", monthStart),
+      supabase
+        .from("payment_methods")
+        .select("id, nombre, tipo, chart_account_id, bank_account_id")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("nombre", { ascending: true }),
+    ]);
+
+    const toNum = (v: unknown) => { const p = Number(v || 0); return Number.isFinite(p) ? p : 0; };
+
+    const newPurchases: TreasuryDocument[] = ((purchasesRes.data || []) as any[]).map((row) => ({
+      id: row.id,
+      document_type: "purchase_record" as const,
+      folio: Number(row.folio),
+      rut: row.rut_emisor,
+      razon_social: row.razon_social_emisor || "Proveedor sin razon social",
+      fecha_docto: row.fecha_docto,
+      monto_total: toNum(row.monto_total),
+      payment_status: row.payment_status || "pending",
+      paid_amount: toNum(row.monto_pagado),
+      balance: toNum(row.monto_pendiente),
+    }));
+
+    const newSales: TreasuryDocument[] = ((salesRes.data || []) as any[]).map((row) => ({
+      id: row.id,
+      document_type: "sales_record" as const,
+      folio: Number(row.folio),
+      rut: row.rut_receptor,
+      razon_social: row.razon_social_receptor || "Cliente sin razon social",
+      fecha_docto: row.fecha_docto,
+      monto_total: toNum(row.monto_total),
+      payment_status: row.payment_status || "pending",
+      paid_amount: toNum(row.monto_cobrado),
+      balance: toNum(row.monto_pendiente),
+    }));
+
+    const today = now.toISOString().slice(0, 10);
+    const newTotals = {
+      payable: newPurchases.reduce((s, d) => s + d.balance, 0),
+      receivable: newSales.reduce((s, d) => s + d.balance, 0),
+      overduePayable: newPurchases.filter((d) => d.fecha_docto < today).reduce((s, d) => s + d.balance, 0),
+      overdueReceivable: newSales.filter((d) => d.fecha_docto < today).reduce((s, d) => s + d.balance, 0),
+      paidThisMonth: ((monthPaymentsRes.data || []) as any[]).filter((r) => r.tipo === "pago_proveedor").reduce((s, r) => s + toNum(r.monto), 0),
+      collectedThisMonth: ((monthPaymentsRes.data || []) as any[]).filter((r) => r.tipo === "cobro_cliente").reduce((s, r) => s + toNum(r.monto), 0),
+    };
+
+    const newRecent: TreasuryPayment[] = ((recentRes.data || []) as any[]).map((row) => ({
+      id: row.id,
+      tipo: row.tipo,
+      monto: toNum(row.monto),
+      fecha_pago: row.fecha_pago,
+      referencia: row.referencia,
+      notas: row.notas,
+      journal_entry_id: row.journal_entry_id,
+      created_at: row.created_at,
+      payment_methods: Array.isArray(row.payment_methods) ? row.payment_methods[0] || null : row.payment_methods,
+    }));
+
+    setPendingPurchases(newPurchases);
+    setPendingSales(newSales);
+    setRecentPayments(newRecent);
+    setTotals(newTotals);
+    if (methodsRes.data) {
+      setPaymentMethods(methodsRes.data as PaymentMethod[]);
+      if (!methodsRes.data.find((m: any) => m.id === paymentMethodId) && methodsRes.data.length > 0) {
+        setPaymentMethodId((methodsRes.data as any[])[0].id);
+      }
+    }
+  }, [organizationId, paymentMethodId]);
+
+  // --- Sync initialData on server re-render ---
+  useEffect(() => {
+    setPendingPurchases(initialData.pendingPurchases);
+    setPendingSales(initialData.pendingSales);
+    setRecentPayments(initialData.recentPayments);
+    setPaymentMethods(initialData.paymentMethods);
+    setTotals(initialData.totals);
+  }, [initialData]);
+
+  // --- Supabase Realtime subscriptions ---
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("treasury_realtime")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "treasury_payments",
+        filter: `organization_id=eq.${organizationId}`,
+      }, () => {
+        console.log("🔄 [Realtime] treasury_payments changed");
+        refreshData();
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "sales_records",
+        filter: `organization_id=eq.${organizationId}`,
+      }, () => {
+        console.log("🔄 [Realtime] sales_records changed");
+        refreshData();
+      })
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "purchase_records",
+        filter: `organization_id=eq.${organizationId}`,
+      }, () => {
+        console.log("🔄 [Realtime] purchase_records changed");
+        refreshData();
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "payment_methods",
+        filter: `organization_id=eq.${organizationId}`,
+      }, () => {
+        console.log("🔄 [Realtime] payment_methods changed");
+        refreshData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, refreshData]);
+
   function changeMovementType(value: MovementType) {
-    const docs = value === "pago_proveedor" ? initialData.pendingPurchases : initialData.pendingSales;
+    const docs = value === "pago_proveedor" ? pendingPurchases : pendingSales;
     setMovementType(value);
     setSelectedDocument(docs[0] || null);
     setAmount(String(docs[0]?.balance || ""));
@@ -216,6 +381,7 @@ export function TreasuryClient({
       toast.success(movementType === "pago_proveedor" ? "Pago registrado." : "Cobro registrado.");
       setReference("");
       setNotes("");
+      await refreshData();
     });
   }
 
@@ -240,6 +406,7 @@ export function TreasuryClient({
       toast.success("Medio de pago creado.");
       setNewMethodName("");
       setNewMethodBankAccountId("");
+      await refreshData();
       setNewMethodAccountId("");
     });
   }
@@ -247,10 +414,10 @@ export function TreasuryClient({
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Por pagar" value={initialData.totals.payable} icon={ArrowUpRight} tone="rose" />
-        <StatCard label="Por cobrar" value={initialData.totals.receivable} icon={ArrowDownLeft} tone="emerald" />
-        <StatCard label="Pagado este mes" value={initialData.totals.paidThisMonth} icon={Banknote} tone="primary" />
-        <StatCard label="Cobrado este mes" value={initialData.totals.collectedThisMonth} icon={WalletCards} tone="amber" />
+        <StatCard label="Por pagar" value={totals.payable} icon={ArrowUpRight} tone="rose" />
+        <StatCard label="Por cobrar" value={totals.receivable} icon={ArrowDownLeft} tone="emerald" />
+        <StatCard label="Pagado este mes" value={totals.paidThisMonth} icon={Banknote} tone="primary" />
+        <StatCard label="Cobrado este mes" value={totals.collectedThisMonth} icon={WalletCards} tone="amber" />
       </div>
 
       <Tabs defaultValue="pendientes" className="space-y-6">
@@ -296,10 +463,10 @@ export function TreasuryClient({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="pago_proveedor" className="mt-4">
-              <DocumentList documents={initialData.pendingPurchases} selectedId={selectedDocument?.id || ""} onSelect={selectDocument} />
+              <DocumentList documents={pendingPurchases} selectedId={selectedDocument?.id || ""} onSelect={selectDocument} />
             </TabsContent>
             <TabsContent value="cobro_cliente" className="mt-4">
-              <DocumentList documents={initialData.pendingSales} selectedId={selectedDocument?.id || ""} onSelect={selectDocument} />
+              <DocumentList documents={pendingSales} selectedId={selectedDocument?.id || ""} onSelect={selectDocument} />
             </TabsContent>
               </Tabs>
             </section>
@@ -352,7 +519,7 @@ export function TreasuryClient({
                   <SelectValue placeholder="Seleccione medio" />
                 </SelectTrigger>
                 <SelectContent>
-                  {initialData.paymentMethods.map((method) => (
+                  {paymentMethods.map((method) => (
                     <SelectItem key={method.id} value={method.id}>
                       {method.nombre} · {method.tipo}
                     </SelectItem>
@@ -514,7 +681,7 @@ export function TreasuryClient({
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 content-start">
-              {initialData.paymentMethods.map((method) => (
+              {paymentMethods.map((method) => (
                 <Card key={method.id} className="rounded-2xl border-border bg-white shadow-sm">
                   <CardContent className="p-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -525,7 +692,7 @@ export function TreasuryClient({
                   </CardContent>
                 </Card>
               ))}
-              {initialData.paymentMethods.length === 0 && (
+              {paymentMethods.length === 0 && (
                 <div className="md:col-span-2 rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
                   <p className="text-xs font-black uppercase tracking-widest text-foreground">Sin medios de pago</p>
                   <p className="text-[11px] font-bold text-muted-foreground mt-1">Cree el primero para habilitar la contabilizacion automatica.</p>
@@ -541,7 +708,7 @@ export function TreasuryClient({
           Movimientos recientes
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {initialData.recentPayments.map((payment) => (
+          {recentPayments.map((payment) => (
             <Card key={payment.id} className="rounded-2xl border-border bg-white shadow-sm">
               <CardContent className="p-4 flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -557,7 +724,7 @@ export function TreasuryClient({
               </CardContent>
             </Card>
           ))}
-          {initialData.recentPayments.length === 0 && (
+          {recentPayments.length === 0 && (
             <div className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
               <p className="text-xs font-black uppercase tracking-widest text-foreground">Sin movimientos registrados</p>
             </div>
