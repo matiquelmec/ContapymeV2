@@ -33,6 +33,7 @@ import { EditEmployeeButton } from './edit-employee-button'
 import { DeleteLiquidationButton } from './delete-liquidation-button'
 import { ApproveLiquidationButton } from './approve-liquidation-button'
 import { PayrollPeriodSelector } from './payroll-period-selector'
+import { BulkLiquidationsButton } from './bulk-liquidations-button'
 import { getActiveOrganizationId } from '@/actions/organizations'
 
 // ==========================================
@@ -338,6 +339,10 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
 
   return (
     <div className="space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-6 md:px-10 py-5 border-b border-border bg-muted/10">
+        <BulkLiquidationsButton organizationId={orgId} year={year} month={month} count={liquidations.length} />
+      </div>
+
       {/* BANNER DE RESUMEN INTELIGENTE */}
       <div className="grid grid-cols-3 gap-0 border-b border-border bg-emerald-600/5">
         <div className="px-10 py-6 border-r border-border/50">
