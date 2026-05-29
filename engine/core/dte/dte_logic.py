@@ -364,12 +364,30 @@ class DTELogic:
                     except Exception as pay_err:
                         print(f"Advertencia: No se pudo registrar el pago automático de la Boleta {folio}: {pay_err}")
         except Exception as sii_e:
-            sii_error_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
-            print(sii_error_msg)
-            self.supabase.table("dte_issued").update({
+            # Evitar volcar mensajes enormes en `error_log`. Guardar un mensaje corto
+            # y, si la excepción es `SIIError`, persistir la respuesta cruda en
+            # `sii_raw_response` para diagnóstico separado.
+            try:
+                from .sii_client import SIIError
+            except Exception:
+                SIIError = None
+
+            if SIIError and isinstance(sii_e, SIIError):
+                short_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {sii_e}"
+                raw_resp = sii_e.resp_text
+            else:
+                short_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
+                raw_resp = None
+
+            print(short_msg)
+            update_payload = {
                 "sii_submission_status": "error",
-                "error_log": sii_error_msg
-            }).eq("id", dte_id).execute()
+                "error_log": short_msg
+            }
+            if raw_resp:
+                update_payload["sii_raw_response"] = raw_resp
+
+            self.supabase.table("dte_issued").update(update_payload).eq("id", dte_id).execute()
 
         # 7. Sincronizar con RCV si aún no se ha hecho (cuando no se envió exitosamente al SII pero quedó firmado localmente)
         if not sii_res.get("success"):

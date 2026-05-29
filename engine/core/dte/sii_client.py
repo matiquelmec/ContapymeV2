@@ -6,6 +6,19 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
+
+class SIIError(Exception):
+    """Excepción específica para errores devueltos por el SII.
+
+    Contiene atributos opcionales `estado`, `glosa` y `resp_text` con la
+    respuesta cruda del SII para almacenamiento/diagnóstico separado.
+    """
+    def __init__(self, message: str, estado: Optional[str] = None, glosa: Optional[str] = None, resp_text: Optional[str] = None):
+        super().__init__(message)
+        self.estado = estado
+        self.glosa = glosa
+        self.resp_text = resp_text
+
 class SIIClient:
     """
     Cliente SOAP/REST Institucional para el Servicio de Impuestos Internos (SII).
@@ -153,21 +166,27 @@ class SIIClient:
                     if not estado_nodes or not estado_nodes[0].text:
                         raise Exception("No se encontró el nodo ESTADO en la respuesta del token.")
                     estado = estado_nodes[0].text
+                    glosa_nodes = inner_xml.xpath("//*[local-name()='GLOSA']")
+                    glosa = glosa_nodes[0].text if glosa_nodes else None
 
                     if estado != "00":
-                        logger.error(f"Error al canjear Token. Estado: {estado}. Body: {resp.text}")
-                        raise Exception(f"Error al canjear Token: {estado} Body: {resp.text}")
+                        # Registrar la respuesta completa en DEBUG y propagar una excepción corta.
+                        resp_text = resp.text if hasattr(resp, 'text') else None
+                        logger.debug("SII get_token full response: %s", resp_text)
+                        short_msg = f"Error al canjear Token: {estado} {glosa or ''}".strip()
+                        raise SIIError(short_msg, estado=estado, glosa=glosa, resp_text=resp_text)
 
                     token_nodes = inner_xml.xpath("//*[local-name()='TOKEN']")
                     if not token_nodes or not token_nodes[0].text:
                         raise Exception("No se encontró el nodo TOKEN en la respuesta del token.")
                     return token_nodes[0].text
             except Exception as e:
-                # Registrar excepción completa (stacktrace + contexto)
+                # Registrar excepción completa (stacktrace) sin adjuntar el body en el mensaje.
                 resp_text = None
                 if 'resp' in locals() and getattr(locals().get('resp'), 'text', None):
                     resp_text = locals().get('resp').text
-                logger.exception(f"Intento {attempt + 1} fallido al obtener token: {str(e)} RespBody: {resp_text}")
+                logger.exception("Intento %d fallido al obtener token", attempt + 1)
+                logger.debug("RespBody (trazado en DEBUG): %s", resp_text)
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(delay)
@@ -369,14 +388,17 @@ class SIIClient:
                     delay *= 2
                     continue
 
-                # Log completo antes de elevar excepción
-                logger.error(f"Error al canjear Token de Boleta. Estado: {estado} Glosa: {glosa} Body: {resp.text}")
-                raise Exception(f"Error al canjear Token de Boleta: {estado} {glosa} Body: {resp.text}")
+                # Log completo antes de elevar excepción (solo DEBUG guarda el body completo)
+                resp_text = resp.text if hasattr(resp, 'text') else None
+                logger.debug("SII get_boleta_token full response: %s", resp_text)
+                short_msg = f"Error al canjear Token de Boleta: {estado} {glosa or ''}".strip()
+                raise SIIError(short_msg, estado=estado, glosa=glosa, resp_text=resp_text)
             except Exception as e:
                 resp_text = None
                 if 'resp' in locals() and getattr(locals().get('resp'), 'text', None):
                     resp_text = locals().get('resp').text
-                logger.exception(f"Intento {attempt + 1} fallido al obtener token: {str(e)} RespBody: {resp_text}")
+                logger.exception("Intento %d fallido al obtener token", attempt + 1)
+                logger.debug("RespBody (trazado en DEBUG): %s", resp_text)
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(delay)
