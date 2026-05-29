@@ -105,7 +105,8 @@ class DTESigner:
             self.certificate.public_bytes(serialization.Encoding.DER)
         ).decode()
         
-        extra_cert_tag = f"<Certificate>{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
+        # Compatibilidad legacy SII boleta token: getCertificado busca <Certificate> sin namespace.
+        extra_cert_tag = f"<Certificate xmlns=\"\">{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
 
         signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}

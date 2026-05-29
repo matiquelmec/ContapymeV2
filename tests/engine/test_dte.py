@@ -221,3 +221,16 @@ def test_xml_signer_with_pfx(tmp_path):
     assert "<Signature" in signed_xml
     assert "<SignatureValue>" in signed_xml
     assert "<X509Certificate>" in signed_xml
+
+def test_seed_signature_includes_legacy_certificate_tag(tmp_path):
+    """Valida compatibilidad boleta token: include Certificate sin namespace."""
+    password = "seed_pass"
+    pfx_data = generate_dummy_pfx(password)
+
+    pfx_file = tmp_path / "seed_cert.pfx"
+    pfx_file.write_bytes(pfx_data)
+
+    signer = DTESigner(cert_path=str(pfx_file), password=password)
+    signed_seed = signer.sign_seed("123456789")
+
+    assert "<Certificate xmlns=\"\">" in signed_seed
