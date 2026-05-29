@@ -178,8 +178,8 @@ class SIIClient:
             # En certificación el SII usa el mismo servidor maullin para todo
             url_send = "https://maullin.sii.cl/cgi_dte/UPL/DTEUpload"
         else:
-            # En producción sí están separados
-            url_send = "https://boletasg.sii.cl/cgi_dte/UPL/DTEUpload" if is_boleta else "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
+            # En producción se utiliza el dominio unificado palena.sii.cl
+            url_send = "https://palena.sii.cl/cgi_dte/UPL/DTEUpload"
 
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
         emisor_rut_body = rut_emisor.split('-')[0]
