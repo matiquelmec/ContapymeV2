@@ -46,7 +46,7 @@ async def process_pending_dtes():
     # RCH / RPR = Rechazado
     # Consideramos status "signed" o "pending" como pendientes
     response = supabase.table("dte_issued")\
-        .select("id, company_id, track_id, status, sii_status, organization_id, dte_companies(rut)")\
+        .select("id, company_id, tipo_dte, track_id, status, sii_status, organization_id, dte_companies(rut)")\
         .not_is("track_id", "null")\
         .in_("sii_status", ["pending", "REC", "", None])\
         .execute()
@@ -83,7 +83,9 @@ async def process_pending_dtes():
             logger.warning(f"No se pudo determinar ambiente para DTE {dte_id}, usando 'certification': {e_caf}")
             env = "certification"
 
-        session_key = (org_id, company_id, env)
+        tipo_dte = int(dte["tipo_dte"])
+        is_boleta = tipo_dte in [39, 41]
+        session_key = (org_id, company_id, env, "boleta" if is_boleta else "dte")
         
         if session_key not in sii_sessions:
             logger.info(f"Inicializando sesión SII para Org {org_id}, Comp {company_id} en ambiente {env}...")
@@ -103,9 +105,14 @@ async def process_pending_dtes():
                     signer.load_certificate(tmp_pfx_path, cert_password)
                     
                     sii_client = SIIClient(environment=env)
-                    seed = await sii_client.get_seed()
-                    signed_seed = signer.sign_seed(seed)
-                    token = await sii_client.get_token(signed_seed)
+                    if is_boleta:
+                        seed = await sii_client.get_boleta_seed()
+                        signed_seed = signer.sign_seed(seed)
+                        token = await sii_client.get_boleta_token(signed_seed)
+                    else:
+                        seed = await sii_client.get_seed()
+                        signed_seed = signer.sign_seed(seed)
+                        token = await sii_client.get_token(signed_seed)
                     
                     sii_sessions[session_key] = (sii_client, token)
                 finally:
@@ -119,20 +126,30 @@ async def process_pending_dtes():
         logger.info(f"Consultando Track ID {track_id} para RUT {rut_empresa} ({env})")
         
         try:
-            status_res = await sii_client.query_track_id(token, rut_empresa, track_id)
+            if is_boleta:
+                status_res = await sii_client.query_boleta_track_id(token, rut_empresa, track_id)
+            else:
+                status_res = await sii_client.query_track_id(token, rut_empresa, track_id)
             estado_sii = status_res.get("estado")
             glosa = status_res.get("glosa")
             
             update_data = {
                 "sii_status": estado_sii,
-                "sii_message": glosa
+                "sii_message": glosa,
+                "sii_checked_at": __import__("datetime").datetime.datetime.now(__import__("datetime").timezone.utc).isoformat(),
+                "sii_response_payload": status_res.get("response") or status_res,
+                "sii_raw_response": status_res.get("raw_response") or status_res.get("raw_xml"),
             }
             
             # Si el estado es final, actualizamos también el status global
-            if estado_sii in ["EPR", "ACEPTADO"]:
+            if estado_sii in ["ACE", "ACEPTADO", "OK", "0"]:
                 update_data["status"] = "accepted"
-            elif estado_sii in ["RCH", "RECHAZADO", "RPR"]:
+                update_data["sii_submission_status"] = "accepted"
+            elif estado_sii in ["RCH", "RECHAZADO", "RPR", "RFR"]:
                 update_data["status"] = "rejected"
+                update_data["sii_submission_status"] = "rejected"
+            else:
+                update_data["sii_submission_status"] = "received"
                 
             supabase.table("dte_issued").update(update_data).eq("id", dte_id).execute()
             

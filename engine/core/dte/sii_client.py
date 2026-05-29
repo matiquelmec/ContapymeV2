@@ -247,7 +247,12 @@ class SIIClient:
                         if not track_id:
                             raise Exception("SII aceptó el envío pero no retornó TrackID.")
                         logger.info(f"DTE enviado exitosamente al SII. TrackID: {track_id}")
-                        return {"success": True, "track_id": track_id}
+                        return {
+                            "success": True,
+                            "track_id": track_id,
+                            "status": status,
+                            "raw_response": resp.text,
+                        }
 
                     # STATUS 99: Documento ya fue enviado previamente, extraer TrackID del mensaje
                     if status == "99":
@@ -259,7 +264,13 @@ class SIIClient:
                         if match:
                             existing_track_id = match.group(1)
                             logger.info(f"DTE ya fue enviado previamente. TrackID existente: {existing_track_id}")
-                            return {"success": True, "track_id": existing_track_id, "already_sent": True}
+                            return {
+                                "success": True,
+                                "track_id": existing_track_id,
+                                "already_sent": True,
+                                "status": status,
+                                "raw_response": resp.text,
+                            }
                         # Si no se puede extraer el TrackID, es un error fatal (no reintentar)
                         raise Exception(f"SII STATUS 99 sin TrackID extraíble: {error_text}")
 
@@ -375,7 +386,57 @@ class SIIClient:
             estado = payload.get("estado")
             if not track_id:
                 raise Exception(f"SII no retorno trackid para Boleta: {payload}")
-            return {"success": True, "track_id": str(track_id), "estado": estado, "response": payload}
+            return {
+                "success": True,
+                "track_id": str(track_id),
+                "estado": estado,
+                "response": payload,
+                "raw_response": resp.text,
+            }
+
+    async def query_boleta_track_id(self, token: str, rut_empresa: str, track_id: str) -> Dict[str, Any]:
+        """
+        Consulta el estado de un envio de boleta electronica por la API REST dedicada.
+        """
+        rut_body, dv = rut_empresa.split('-')
+        url = f"{self.boleta_auth}/boleta.electronica.envio/{rut_body}-{dv}-{track_id}"
+        headers = {
+            "accept": "application/json",
+            "User-Agent": "Mozilla/4.0 (compatible; PROG 1.0; Windows NT)",
+            "Cookie": f"TOKEN={token}",
+        }
+
+        async with self._get_client() as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code >= 400:
+                raise Exception(f"Fallo al consultar Track ID de Boleta: HTTP {resp.status_code} {resp.text}")
+
+            try:
+                payload = resp.json()
+            except Exception:
+                raise Exception(f"Respuesta de estado de Boleta no JSON: {resp.text}")
+
+            estado = (
+                payload.get("estado")
+                or payload.get("estadoEnvio")
+                or payload.get("codResp")
+                or payload.get("status")
+                or "DESC"
+            )
+            glosa = (
+                payload.get("glosa")
+                or payload.get("descripcion")
+                or payload.get("mensaje")
+                or payload.get("detalle")
+                or ""
+            )
+            return {
+                "success": True,
+                "estado": str(estado),
+                "glosa": str(glosa),
+                "response": payload,
+                "raw_response": resp.text,
+            }
 
     async def query_track_id(self, token: str, rut_empresa: str, track_id: str) -> Dict[str, Any]:
         """
@@ -412,15 +473,16 @@ class SIIClient:
                         raise Exception(f"Fallo al consultar Track ID: HTTP {resp.status_code}")
                         
                     root = etree.fromstring(resp.content)
-                    return_node = root.find(".//getEstUpReturn")
+                    return_nodes = root.xpath("//*[local-name()='getEstUpReturn']")
+                    return_node = return_nodes[0] if return_nodes else None
                     
                     if return_node is not None and return_node.text:
                         inner_xml = etree.fromstring(return_node.text.encode('utf-8'))
-                        estado = inner_xml.find(".//ESTADO")
-                        glosa = inner_xml.find(".//GLOSA")
+                        estado_nodes = inner_xml.xpath("//*[local-name()='ESTADO']")
+                        glosa_nodes = inner_xml.xpath("//*[local-name()='GLOSA']")
                         
-                        estado_text = estado.text if estado is not None else "DESC"
-                        glosa_text = glosa.text if glosa is not None else ""
+                        estado_text = estado_nodes[0].text if estado_nodes else "DESC"
+                        glosa_text = glosa_nodes[0].text if glosa_nodes else ""
                         
                         return {
                             "success": True,

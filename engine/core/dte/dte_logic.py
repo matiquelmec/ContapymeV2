@@ -305,7 +305,13 @@ class DTELogic:
         
         # ── PASO 6.2: Guardar XML firmado SIEMPRE (independiente del SII) ──
         self.supabase.table("dte_issued")\
-            .update({"xml_content": xml_signed, "status": "signed"})\
+            .update({
+                "xml_content": xml_signed,
+                "envio_xml_content": envio_signed,
+                "status": "signed",
+                "sii_environment": current_caf["environment"],
+                "sii_submission_status": "signed_local",
+            })\
             .eq("id", dte_id)\
             .execute()
 
@@ -330,6 +336,12 @@ class DTELogic:
                 self.supabase.table("dte_issued").update({
                     "track_id": dte_record["track_id"],
                     "status": "sent",
+                    "sii_status": sii_res.get("estado") or sii_res.get("status") or "REC",
+                    "sii_message": "Envio recibido por SII; pendiente de procesamiento final",
+                    "sii_submission_status": "submitted",
+                    "sii_sent_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "sii_response_payload": sii_res.get("response") or sii_res,
+                    "sii_raw_response": sii_res.get("raw_response"),
                     "error_log": None
                 }).eq("id", dte_id).execute()
                 
@@ -355,6 +367,7 @@ class DTELogic:
             sii_error_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
             print(sii_error_msg)
             self.supabase.table("dte_issued").update({
+                "sii_submission_status": "error",
                 "error_log": sii_error_msg
             }).eq("id", dte_id).execute()
 
@@ -542,7 +555,7 @@ class DTELogic:
             .eq("tipo_dte", dte["tipo_dte"])\
             .limit(1)\
             .execute()
-        env = caf_records.data[0]["environment"] if caf_records.data else "cert"
+        env = caf_records.data[0]["environment"] if caf_records.data else "certification"
         
         # 5. Enviar al SII
         sii_client = SIIClient(environment=env)
@@ -561,6 +574,14 @@ class DTELogic:
             self.supabase.table("dte_issued").update({
                 "track_id": sii_res.get("track_id"),
                 "status": "sent",
+                "envio_xml_content": envio_signed,
+                "sii_environment": env,
+                "sii_status": sii_res.get("estado") or sii_res.get("status") or "REC",
+                "sii_message": "Envio recibido por SII; pendiente de procesamiento final",
+                "sii_submission_status": "submitted",
+                "sii_sent_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "sii_response_payload": sii_res.get("response") or sii_res,
+                "sii_raw_response": sii_res.get("raw_response"),
                 "error_log": None
             }).eq("id", dte_id).execute()
             

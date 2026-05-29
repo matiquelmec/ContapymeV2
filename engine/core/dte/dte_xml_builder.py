@@ -132,18 +132,12 @@ class DTEXMLBuilder:
 
         # Construir el bloque DD
         # NOTA: La sangría debe ser limpia para evitar que rompa la estructura
-        dd_xml = f"""<DD>
-<RE>{rut_emisor}</RE>
-<TD>{tipo_dte}</TD>
-<F>{folio}</F>
-<FE>{fecha_emision}</FE>
-<RR>{rut_receptor}</RR>
-<RSR>{razon_social_receptor}</RSR>
-<MNT>{monto_total}</MNT>
-<IT1>{item_name_40}</IT1>
-{caf_xml_clean}
-<TSTED>{tstamp}</TSTED>
-</DD>"""
+        dd_xml = (
+            f"<DD><RE>{rut_emisor}</RE><TD>{tipo_dte}</TD><F>{folio}</F>"
+            f"<FE>{fecha_emision}</FE><RR>{rut_receptor}</RR>"
+            f"<RSR>{razon_social_receptor}</RSR><MNT>{monto_total}</MNT>"
+            f"<IT1>{item_name_40}</IT1>{caf_xml_clean}<TSTED>{tstamp}</TSTED></DD>"
+        )
 
         # Retornar el bloque completo TED
         ted_xml = f"""

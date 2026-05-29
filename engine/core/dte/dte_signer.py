@@ -42,7 +42,7 @@ class DTESigner:
         """Firma el documento XML (DTE)."""
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id, pretty_print=True)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id, pretty_print=False)
         
     def sign_seed(self, seed: str) -> str:
         """Firma la semilla (getToken)"""
@@ -55,7 +55,7 @@ class DTESigner:
         """Firma el EnvioDTE (SetDTE)"""
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(envio_xml.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id, pretty_print=True)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id, pretty_print=False)
 
     def _sign_node(self, root: etree._Element, node_xpath: str, reference_id: str, pretty_print: bool = False) -> str:
         if not self.private_key or not self.certificate:
@@ -86,23 +86,13 @@ class DTESigner:
     </Reference>
 </SignedInfo>"""
         
-        signed_info_elem = etree.fromstring(signed_info)
-        c14n_signed_info = etree.tostring(signed_info_elem, method="c14n", exclusive=False, with_comments=False)
-        
-        signature = self.private_key.sign(
-            c14n_signed_info,
-            padding.PKCS1v15(),
-            hashes.SHA1()
-        )
-        signature_value = base64.b64encode(signature).decode()
-        
         cert_b64 = base64.b64encode(
             self.certificate.public_bytes(serialization.Encoding.DER)
         ).decode()
         
         signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}
-    <SignatureValue>{signature_value}</SignatureValue>
+    <SignatureValue></SignatureValue>
     <KeyInfo>
         <KeyValue>
             <RSAKeyValue>
@@ -118,6 +108,17 @@ class DTESigner:
         
         signature_elem = etree.fromstring(signature_xml)
         root.append(signature_elem)
+
+        signed_info_elem = signature_elem.find("{http://www.w3.org/2000/09/xmldsig#}SignedInfo")
+        signature_value_elem = signature_elem.find("{http://www.w3.org/2000/09/xmldsig#}SignatureValue")
+        c14n_signed_info = etree.tostring(signed_info_elem, method="c14n", exclusive=False, with_comments=False)
+
+        signature = self.private_key.sign(
+            c14n_signed_info,
+            padding.PKCS1v15(),
+            hashes.SHA1()
+        )
+        signature_value_elem.text = base64.b64encode(signature).decode()
         
         xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True, pretty_print=pretty_print).decode('ISO-8859-1')
         if xml_str.startswith("<?xml version='1.0'"):
