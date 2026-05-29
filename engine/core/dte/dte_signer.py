@@ -56,6 +56,7 @@ class DTESigner:
             pretty_print=False,
             output_encoding="utf-8",
             include_legacy_certificate_tag=True,
+            use_ds_prefix=True,
         )
         
     def sign_envio(self, envio_xml: str, set_dte_id: str) -> str:
@@ -72,6 +73,7 @@ class DTESigner:
         pretty_print: bool = False,
         output_encoding: str = "ISO-8859-1",
         include_legacy_certificate_tag: bool = False,
+        use_ds_prefix: bool = False,
     ) -> str:
         if not self.private_key or not self.certificate:
             raise Exception("Certificado no cargado.")
@@ -89,7 +91,20 @@ class DTESigner:
         
         uri_str = f' URI="#{reference_id}"' if reference_id else ' URI=""'
         
-        signed_info = f"""<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
+        if use_ds_prefix:
+            signed_info = f"""<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
+    <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+    <ds:Reference{uri_str}>
+        <ds:Transforms>
+            <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+        </ds:Transforms>
+        <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <ds:DigestValue>{digest_value}</ds:DigestValue>
+    </ds:Reference>
+</ds:SignedInfo>"""
+        else:
+            signed_info = f"""<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
     <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />
     <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
     <Reference{uri_str}>
@@ -109,7 +124,26 @@ class DTESigner:
         extra_cert_tag = f"<Certificate xmlns=\"\">{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
         keyinfo_cert_tag = f"<Certificate xmlns=\"\">{cert_b64}</Certificate>" if include_legacy_certificate_tag else ""
 
-        signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+        if use_ds_prefix:
+            signature_xml = f"""<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    {signed_info}
+    <ds:SignatureValue></ds:SignatureValue>
+    <ds:KeyInfo>
+        {keyinfo_cert_tag}
+        <ds:KeyValue>
+            <ds:RSAKeyValue>
+                <ds:Modulus>{self._get_modulus_b64()}</ds:Modulus>
+                <ds:Exponent>{self._get_exponent_b64()}</ds:Exponent>
+            </ds:RSAKeyValue>
+        </ds:KeyValue>
+        <ds:X509Data>
+            <ds:X509Certificate>{cert_b64}</ds:X509Certificate>
+            {extra_cert_tag}
+        </ds:X509Data>
+    </ds:KeyInfo>
+</ds:Signature>"""
+        else:
+            signature_xml = f"""<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     {signed_info}
     <SignatureValue></SignatureValue>
     <KeyInfo>
