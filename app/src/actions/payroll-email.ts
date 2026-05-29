@@ -25,6 +25,16 @@ export type BulkPayrollEmailResult = {
   message: string
 }
 
+function failedResult(message: string): BulkPayrollEmailResult {
+  return {
+    success: false,
+    sent: 0,
+    skipped: [],
+    failed: [],
+    message
+  }
+}
+
 function getSmtpConfig() {
   const host = process.env.SMTP_HOST
   const port = Number(process.env.SMTP_PORT || '587')
@@ -66,138 +76,130 @@ export async function sendPayrollLiquidationsByEmailAction(params: {
   organizationId: string
   year: string
   month: string
-}) : Promise<BulkPayrollEmailResult> {
-  const supabase = await createClient()
-  const { transporter, from } = getSmtpConfig()
-  const { paddedMonth, dateStart, dateEnd } = buildPeriodRange(params.year, params.month)
+}): Promise<BulkPayrollEmailResult> {
+  try {
+    const supabase = await createClient()
+    const { paddedMonth, dateStart, dateEnd } = buildPeriodRange(params.year, params.month)
 
-  const [{ data: liquidations, error: liqError }, { data: organization }, { data: settings }] = await Promise.all([
-    supabase
-      .from('liquidations')
-      .select(`
-        *,
-        employees (
-          id,
-          nombres,
-          apellido_paterno,
-          apellido_materno,
-          rut,
-          email,
-          fecha_ingreso,
-          cargo
-        )
-      `)
-      .eq('organization_id', params.organizationId)
-      .eq('status', 'aprobada')
-      .gte('periodo', dateStart)
-      .lte('periodo', dateEnd)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', params.organizationId)
-      .single(),
-    supabase
-      .from('organization_payroll_settings')
-      .select('*')
-      .eq('organization_id', params.organizationId)
-      .maybeSingle()
-  ])
+    const [{ data: liquidations, error: liqError }, { data: organization }, { data: settings }] = await Promise.all([
+      supabase
+        .from('liquidations')
+        .select(`
+          *,
+          employees (
+            id,
+            nombres,
+            apellido_paterno,
+            apellido_materno,
+            rut,
+            email,
+            fecha_ingreso,
+            cargo
+          )
+        `)
+        .eq('organization_id', params.organizationId)
+        .eq('status', 'aprobada')
+        .gte('periodo', dateStart)
+        .lte('periodo', dateEnd)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', params.organizationId)
+        .single(),
+      supabase
+        .from('organization_payroll_settings')
+        .select('*')
+        .eq('organization_id', params.organizationId)
+        .maybeSingle()
+    ])
 
-  if (liqError) {
-    return {
-      success: false,
-      sent: 0,
-      skipped: [],
-      failed: [],
-      message: liqError.message
+    if (liqError) return failedResult(liqError.message)
+    if (!liquidations || liquidations.length === 0) {
+      return failedResult('No hay liquidaciones aprobadas para enviar en el periodo seleccionado.')
     }
-  }
 
-  if (!liquidations || liquidations.length === 0) {
-    return {
-      success: false,
-      sent: 0,
-      skipped: [],
-      failed: [],
-      message: 'No hay liquidaciones aprobadas para enviar en el periodo seleccionado.'
-    }
-  }
+    const { transporter, from } = getSmtpConfig()
+    const skipped: BulkEmailSkip[] = []
+    const failed: BulkEmailFailure[] = []
+    let sent = 0
 
-  const skipped: BulkEmailSkip[] = []
-  const failed: BulkEmailFailure[] = []
-  let sent = 0
+    for (const liquidation of liquidations as any[]) {
+      const employee = liquidation.employees
+      const employeeName = formatEmployeeName(employee) || 'Empleado sin nombre'
+      const email = String(employee?.email || '').trim().toLowerCase()
 
-  for (const liquidation of liquidations as any[]) {
-    const employee = liquidation.employees
-    const employeeName = formatEmployeeName(employee) || 'Empleado sin nombre'
-    const email = String(employee?.email || '').trim().toLowerCase()
+      if (!email) {
+        skipped.push({
+          liquidation_id: liquidation.id,
+          employee_name: employeeName,
+          reason: 'Sin correo registrado'
+        })
+        continue
+      }
 
-    if (!email) {
-      skipped.push({
-        liquidation_id: liquidation.id,
-        employee_name: employeeName,
-        reason: 'Sin correo registrado'
-      })
-      continue
+      try {
+        const doc = await buildLiquidationPDFDocument({ liquidation, organization, settings })
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+        const period = liquidation.periodo?.slice(0, 7) || `${params.year}-${paddedMonth}`
+
+        await transporter.sendMail({
+          from,
+          to: email,
+          subject: `Liquidacion de Sueldo ${period} - ${employeeName}`,
+          text: [
+            `Hola ${employee?.nombres || employeeName},`,
+            '',
+            `Adjuntamos tu liquidacion de sueldo correspondiente al periodo ${period}.`,
+            '',
+            'Saludos,',
+            organization?.nombre || 'Contapymepuq'
+          ].join('\n'),
+          attachments: [
+            {
+              filename: getLiquidationPdfFilename(liquidation),
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
+        })
+
+        sent += 1
+      } catch (error: any) {
+        failed.push({
+          liquidation_id: liquidation.id,
+          employee_name: employeeName,
+          reason: error?.message || 'Error desconocido enviando correo'
+        })
+      }
     }
 
     try {
-      const doc = await buildLiquidationPDFDocument({ liquidation, organization, settings })
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-
-      const subject = `Liquidación de Sueldo ${liquidation.periodo?.slice(0, 7) || `${params.year}-${paddedMonth}`} - ${employeeName}`
-      const text = [
-        `Hola ${employee?.nombres || employeeName},`,
-        '',
-        `Adjuntamos tu liquidación de sueldo correspondiente al periodo ${liquidation.periodo?.slice(0, 7) || `${params.year}-${paddedMonth}`}.`,
-        '',
-        'Saludos,',
-        organization?.nombre || 'Contapymepuq'
-      ].join('\n')
-
-      await transporter.sendMail({
-        from,
-        to: email,
-        subject,
-        text,
-        attachments: [
-          {
-            filename: getLiquidationPdfFilename(liquidation),
-            content: pdfBuffer,
-            contentType: 'application/pdf'
-          }
-        ]
+      await recordAuditAction({
+        action: 'PAYROLL_BULK_EMAIL_SEND',
+        entity_type: 'payroll',
+        entity_id: `${params.organizationId}:${params.year}-${paddedMonth}`,
+        details: {
+          period: `${params.year}-${paddedMonth}`,
+          total: liquidations.length,
+          sent,
+          skipped,
+          failed
+        }
       })
-
-      sent += 1
-    } catch (error: any) {
-      failed.push({
-        liquidation_id: liquidation.id,
-        employee_name: employeeName,
-        reason: error?.message || 'Error desconocido enviando correo'
-      })
+    } catch (auditError) {
+      console.error('Error recording payroll email audit:', auditError)
     }
-  }
 
-  await recordAuditAction({
-    action: 'PAYROLL_BULK_EMAIL_SEND',
-    entity_type: 'payroll',
-    entity_id: `${params.organizationId}:${params.year}-${paddedMonth}`,
-    details: {
-      period: `${params.year}-${paddedMonth}`,
-      total: liquidations.length,
+    return {
+      success: failed.length === 0,
       sent,
       skipped,
-      failed
+      failed,
+      message: `Enviados ${sent} correos. ${skipped.length} omitidos. ${failed.length} fallidos.`
     }
-  })
-
-  return {
-    success: failed.length === 0,
-    sent,
-    skipped,
-    failed,
-    message: `Enviados ${sent} correos. ${skipped.length} omitidos. ${failed.length} fallidos.`
+  } catch (error: any) {
+    console.error('Bulk payroll email action failed:', error)
+    return failedResult(error?.message || 'No se pudo completar el envio masivo de liquidaciones.')
   }
 }
