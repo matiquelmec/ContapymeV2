@@ -38,7 +38,7 @@ interface DTEPreviewDialogProps {
 }
 
 function parseDTEXML(xmlString: string) {
-    if (!xmlString) return null
+    if (!xmlString || typeof window === 'undefined') return null
     try {
         const parser = new DOMParser()
         const xmlDoc = parser.parseFromString(xmlString, 'text/xml')
