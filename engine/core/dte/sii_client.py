@@ -212,8 +212,10 @@ class SIIClient:
             "rutCompany": empresa_rut_body,
             "dvCompany": empresa_dv
         }
+        import time
+        filename = f"envio_{rut_emisor.replace('-', '')}_{int(time.time())}.xml"
         files = {
-            "archivo": ("envio.xml", xml_bytes, "text/xml")
+            "archivo": (filename, xml_bytes, "text/xml")
         }
 
         max_retries = 5

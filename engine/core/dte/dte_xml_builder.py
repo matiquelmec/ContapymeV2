@@ -170,8 +170,8 @@ class DTEXMLBuilder:
         tipo_dte = int(dte_data.get('tipo_dte', 33))
         is_boleta = tipo_dte in [39, 41]
         
-        root_tag = "EnvioDTE"
-        schema_xsd = "EnvioDTE_v10.xsd"
+        root_tag = "EnvioBOLETA" if is_boleta else "EnvioDTE"
+        schema_xsd = "EnvioBOLETA_v11.xsd" if is_boleta else "EnvioDTE_v10.xsd"
         
         envio_xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <{root_tag} xmlns="http://www.sii.cl/SiiDte" version="1.0">
