@@ -3,8 +3,10 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from core.auth import verify_org_role, verify_token
 from core.dte.dte_logic import DTELogic
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 class DTEItem(BaseModel):
     product_name: str
@@ -35,20 +37,20 @@ async def issue_dte(
     """
     # Verificación de rol manual para evitar conflictos de parámetros en Depends
     await verify_org_role(data.organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
-    
+
     try:
         logic = DTELogic(data.organization_id)
-        
+
         # Convertir items Pydantic a dict
         items_dict = [item.model_dump() for item in data.items]
-        
+
         # Datos del DTE
         dte_data = data.model_dump()
         del dte_data["items"]
-        
+
         result = await logic.create_and_sign_invoice(dte_data, items_dict)
         return result
-        
+
     except Exception as e:
         print(f"Error issuing DTE: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -62,10 +64,10 @@ async def list_issued_dtes(
     Lista los DTEs emitidos por la organización.
     """
     await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
-    
+
     from core.database import get_supabase
     db = get_supabase()
-    
+
     try:
         res = db.table("dte_issued")\
             .select("*")\
@@ -87,37 +89,45 @@ async def upload_caf(
     Sube y procesa un archivo CAF (Folios) del SII.
     """
     await verify_org_role(organization_id, required_roles=["owner", "admin"], auth=auth)
-    
+    # Normalizar y validar environment: sólo permitir 'certification' o 'production'
+    if environment is None:
+        environment = "certification"
+    environment = environment.strip().lower()
+    if environment not in ("certification", "production"):
+        raise HTTPException(status_code=400, detail="El campo 'environment' debe ser 'certification' o 'production'.")
+    if environment == "production":
+        logger.warning("CAF upload to PRODUCTION requested: organization=%s", organization_id)
+
     from lxml import etree
     from core.database import get_supabase
     db = get_supabase()
-    
+
     try:
         # Parsear XML
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(xml_content.encode('utf-8'), parser)
-        
+
         # El CAF real está en <CAF> o es el root si solo se subió el fragmento
         caf_node = root.find(".//CAF")
         if caf_node is None and root.tag == "CAF":
             caf_node = root
-        
+
         if caf_node is None:
             raise Exception("No se encontró el nodo <CAF> en el XML provisto.")
-            
+
         da_node = caf_node.find("DA")
         rut_emisor = da_node.find("RE").text
         tipo_dte = int(da_node.find("TD").text)
         range_start = int(da_node.find(".//D").text)
         range_end = int(da_node.find(".//H").text)
         fecha_auth = da_node.find("FA").text
-        
+
         # Buscar el company_id en dte_companies con normalización de RUT
         comp_res = db.table("dte_companies")\
             .select("id, rut")\
             .eq("organization_id", organization_id)\
             .execute()
-            
+
         from core.utils import clean_rut_simple
         cleaned_xml_rut = clean_rut_simple(rut_emisor)
         company = None
@@ -125,12 +135,12 @@ async def upload_caf(
             if clean_rut_simple(c.get("rut")) == cleaned_xml_rut:
                 company = c
                 break
-            
+
         if not company:
             raise Exception(f"Emisor No Encontrado: El RUT {rut_emisor} presente en el archivo CAF no coincide con la empresa configurada en esta organización. Por favor, verifique que el RUT en 'Configuración de Empresa > Facturación' sea el correcto antes de subir el archivo.")
-            
+
         company_id = company["id"]
-        
+
         # --- VALIDACIÓN CONTRA SOLAPAMIENTO DE RANGOS CAF ---
         existing_cafs = db.table("dte_caf_folios")\
             .select("range_start, range_end")\
@@ -139,7 +149,7 @@ async def upload_caf(
             .eq("tipo_dte", tipo_dte)\
             .eq("environment", environment)\
             .execute()
-            
+
         for ec in (existing_cafs.data or []):
             e_start = int(ec["range_start"])
             e_end = int(ec["range_end"])
@@ -148,7 +158,7 @@ async def upload_caf(
                     f"Conflicto de Rangos: El rango de folios provisto ({range_start}-{range_end}) se solapa "
                     f"con el rango preexistente ({e_start}-{e_end}) ya registrado en el sistema."
                 )
-        
+
         # Guardar en dte_caf_folios
         caf_data = {
             "organization_id": organization_id,
@@ -162,7 +172,7 @@ async def upload_caf(
             "authorized_at": fecha_auth,
             "is_active": True
         }
-        
+
         # Desactivar otros CAFs del mismo tipo y ambiente para esta empresa
         db.table("dte_caf_folios")\
             .update({"is_active": False})\
@@ -171,12 +181,12 @@ async def upload_caf(
             .eq("tipo_dte", tipo_dte)\
             .eq("environment", environment)\
             .execute()
-            
+
         # Insertar nuevo
         db.table("dte_caf_folios").insert(caf_data).execute()
-        
+
         return {
-            "success": True, 
+            "success": True,
             "message": f"CAF Procesado: Tipo {tipo_dte}, Folios {range_start}-{range_end}",
             "details": {
                 "tipo_dte": tipo_dte,
@@ -184,7 +194,7 @@ async def upload_caf(
                 "rut": rut_emisor
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -199,18 +209,18 @@ async def upload_pfx(
     Valida un certificado PFX y lo sube a la bóveda (Storage) encriptando la clave en la BD.
     """
     await verify_org_role(organization_id, required_roles=["owner", "admin"], auth=auth)
-    
+
     from core.database import get_supabase
     db = get_supabase()
-    
+
     import base64
     from cryptography.hazmat.primitives.serialization import pkcs12
     from cryptography.hazmat.backends import default_backend
-    
+
     try:
         # Decodificar Base64
         pfx_data = base64.b64decode(pfx_base64)
-        
+
         # Validar la contraseña cargando el certificado
         try:
             private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(
@@ -220,10 +230,10 @@ async def upload_pfx(
             )
         except Exception as e:
             raise Exception("La contraseña del certificado es incorrecta o el archivo es inválido.")
-            
+
         # Nombre del archivo en el bucket
         file_path = f"{organization_id}/cert.pfx"
-        
+
         # Subir a Supabase Storage (dte_certificates)
         try:
             # Usar API de Python supabase para storage upload
@@ -233,7 +243,7 @@ async def upload_pfx(
                 file_options={"content-type": "application/x-pkcs12", "upsert": "true"}
             )
         except Exception as upload_err:
-            # Si el upsert real falla en supabase-py, a veces lanza excepción de duplicado. 
+            # Si el upsert real falla en supabase-py, a veces lanza excepción de duplicado.
             # Si falla, intentamos hacer update
             try:
                 db.storage.from_("dte_certificates").update(
@@ -243,18 +253,18 @@ async def upload_pfx(
                 )
             except Exception as update_err:
                 raise Exception(f"No se pudo subir el archivo al Storage: {str(update_err)}")
-        
+
         # Cifrar la clave mediante RPC
         enc_res = db.rpc(
-            "encrypt_cert_password", 
+            "encrypt_cert_password",
             {"password": cert_password, "org_id": organization_id}
         ).execute()
-        
+
         if not enc_res.data:
             raise Exception("Error interno: No se pudo cifrar la clave del certificado.")
-            
+
         encrypted_pass = enc_res.data
-        
+
         # Actualizar la referencia en dte_companies
         db.table("dte_companies")\
             .update({
@@ -263,12 +273,12 @@ async def upload_pfx(
             })\
             .eq("organization_id", organization_id)\
             .execute()
-            
+
         return {
-            "success": True, 
+            "success": True,
             "message": "Certificado cargado exitosamente."
         }
-        
+
     except Exception as e:
         print("Error uploading PFX:", str(e))
         raise HTTPException(status_code=400, detail=str(e))
@@ -284,7 +294,7 @@ async def retry_send_to_sii(
     pero no pudo ser enviado (por ej. caída del SII).
     """
     await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
-    
+
     try:
         logic = DTELogic(organization_id)
         result = await logic.retry_send_to_sii(dte_id)
@@ -299,14 +309,14 @@ async def list_pending_sii(
     auth: dict = Depends(verify_token)
 ):
     """
-    Lista DTEs que fueron firmados localmente pero no pudieron ser 
+    Lista DTEs que fueron firmados localmente pero no pudieron ser
     enviados al SII (status = 'signed' sin track_id).
     """
     await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=auth)
-    
+
     from core.database import get_supabase
     db = get_supabase()
-    
+
     try:
         res = db.table("dte_issued")\
             .select("id, folio, tipo_dte, receptor_rut, receptor_razon_social, monto_total, fecha_emision, status, error_log")\

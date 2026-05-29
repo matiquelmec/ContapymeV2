@@ -1,0 +1,11 @@
+DTE rows: 33
+Oversized sii_raw_response > 65536: 0
+Duplicate DTE identities: 0
+DTE item duplicate lines: 0
+CAF rows: 90
+CAF all overlaps: 5
+CAF active overlaps: 0
+Accounting period duplicates: 0
+Organization member duplicates: 0
+Sales RCV duplicates: 0
+Purchase RCV duplicates: 0

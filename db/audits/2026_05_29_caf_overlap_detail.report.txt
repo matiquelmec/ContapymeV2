@@ -1,0 +1,14 @@
+all_overlaps=5
+active_overlaps=5
+[ACTIVE]
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=cb9a275c-6fec-470a-a7a6-9576ba0bbe8e 44-48 last=43 active=True auth=2026-04-23 B=ec82aaca-3999-4f45-ab15-04a1e3f77f94 45-49 last=44 active=True auth=2026-04-24
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=ec82aaca-3999-4f45-ab15-04a1e3f77f94 45-49 last=44 active=True auth=2026-04-24 B=dbdd2076-0e65-47c5-b508-1f52630b8b14 49-52 last=48 active=True auth=2026-04-23
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=dbdd2076-0e65-47c5-b508-1f52630b8b14 49-52 last=48 active=True auth=2026-04-23 B=98faee7f-0737-4020-8960-a6af3d8ff801 52-52 last=51 active=True auth=2026-04-24
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production') A=b5b07ac0-f7ee-48d4-8f82-b244551315e9 1-1000 last=6 active=True auth=2026-05-13 B=b5f304dd-daf3-47c3-aab3-0f6e2166f90c 7-26 last=6 active=True auth=2026-05-07
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production') A=b5b07ac0-f7ee-48d4-8f82-b244551315e9 1-1000 last=6 active=True auth=2026-05-13 B=5b9cce63-7e6a-4421-a668-26aef061f2fd 27-126 last=26 active=True auth=2026-05-08
+[ALL]
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=cb9a275c-6fec-470a-a7a6-9576ba0bbe8e 44-48 last=43 active=True auth=2026-04-23 B=ec82aaca-3999-4f45-ab15-04a1e3f77f94 45-49 last=44 active=True auth=2026-04-24
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=ec82aaca-3999-4f45-ab15-04a1e3f77f94 45-49 last=44 active=True auth=2026-04-24 B=dbdd2076-0e65-47c5-b508-1f52630b8b14 49-52 last=48 active=True auth=2026-04-23
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production') A=dbdd2076-0e65-47c5-b508-1f52630b8b14 49-52 last=48 active=True auth=2026-04-23 B=98faee7f-0737-4020-8960-a6af3d8ff801 52-52 last=51 active=True auth=2026-04-24
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production') A=b5b07ac0-f7ee-48d4-8f82-b244551315e9 1-1000 last=6 active=True auth=2026-05-13 B=b5f304dd-daf3-47c3-aab3-0f6e2166f90c 7-26 last=6 active=True auth=2026-05-07
+key=('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production') A=b5b07ac0-f7ee-48d4-8f82-b244551315e9 1-1000 last=6 active=True auth=2026-05-13 B=5b9cce63-7e6a-4421-a668-26aef061f2fd 27-126 last=26 active=True auth=2026-05-08

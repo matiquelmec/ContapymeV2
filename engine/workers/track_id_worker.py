@@ -5,6 +5,7 @@ from typing import Dict, Any
 
 from core.dte.sii_client import SIIClient
 from core.dte.dte_signer import DTESigner
+from core.dte.utils import prepare_sii_raw_response, sanitize_sii_payload
 from core.database import get_supabase
 
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +18,7 @@ async def process_pending_dtes():
     También busca DTEs que quedaron firmados ('signed') localmente pero no enviados y reintenta.
     """
     supabase = get_supabase()
-    
+
     # ── 1. Reintentar envío de DTEs que quedaron firmados localmente sin track_id ──
     try:
         signed_response = supabase.table("dte_issued")\
@@ -25,7 +26,7 @@ async def process_pending_dtes():
             .eq("status", "signed")\
             .is_("track_id", "null")\
             .execute()
-            
+
         signed_dtes = signed_response.data or []
         if signed_dtes:
             logger.info(f"Encontrados {len(signed_dtes)} DTEs en estado 'signed' para reintentar envío al SII.")
@@ -50,18 +51,18 @@ async def process_pending_dtes():
         .not_is("track_id", "null")\
         .in_("sii_status", ["pending", "REC", "", None])\
         .execute()
-        
+
     dtes_to_check = response.data
-    
+
     if not dtes_to_check:
         logger.info("No hay DTEs pendientes de revisión de Track ID.")
         return
 
     logger.info(f"Encontrados {len(dtes_to_check)} DTEs pendientes.")
-    
+
     # Cache para clientes y tokens de SII por (organization_id, company_id, environment)
     sii_sessions = {}
-            
+
     # Procesar cada DTE
     for dte in dtes_to_check:
         dte_id = dte["id"]
@@ -69,7 +70,7 @@ async def process_pending_dtes():
         rut_empresa = dte["dte_companies"]["rut"]
         org_id = dte["organization_id"]
         company_id = dte["company_id"]
-        
+
         # Determinar ambiente (certification o production) consultando los folios de la empresa
         try:
             caf_res = supabase.table("dte_caf_folios")\
@@ -86,24 +87,24 @@ async def process_pending_dtes():
         tipo_dte = int(dte["tipo_dte"])
         is_boleta = tipo_dte in [39, 41]
         session_key = (org_id, company_id, env, "boleta" if is_boleta else "dte")
-        
+
         if session_key not in sii_sessions:
             logger.info(f"Inicializando sesión SII para Org {org_id}, Comp {company_id} en ambiente {env}...")
             try:
                 from core.dte.dte_logic import DTELogic
                 logic = DTELogic(org_id)
                 pfx_bytes, cert_password = logic._get_certificate()
-                
+
                 # Descargar certificado a archivo temporal para DTESigner
                 import tempfile
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
                     tmp.write(pfx_bytes)
                     tmp_pfx_path = tmp.name
-                    
+
                 try:
                     signer = DTESigner()
                     signer.load_certificate(tmp_pfx_path, cert_password)
-                    
+
                     sii_client = SIIClient(environment=env)
                     if is_boleta:
                         seed = await sii_client.get_boleta_seed()
@@ -113,7 +114,7 @@ async def process_pending_dtes():
                         seed = await sii_client.get_seed()
                         signed_seed = signer.sign_seed(seed)
                         token = await sii_client.get_token(signed_seed)
-                    
+
                     sii_sessions[session_key] = (sii_client, token)
                 finally:
                     if os.path.exists(tmp_pfx_path):
@@ -124,7 +125,7 @@ async def process_pending_dtes():
 
         sii_client, token = sii_sessions[session_key]
         logger.info(f"Consultando Track ID {track_id} para RUT {rut_empresa} ({env})")
-        
+
         try:
             if is_boleta:
                 status_res = await sii_client.query_boleta_track_id(token, rut_empresa, track_id)
@@ -132,15 +133,15 @@ async def process_pending_dtes():
                 status_res = await sii_client.query_track_id(token, rut_empresa, track_id)
             estado_sii = status_res.get("estado")
             glosa = status_res.get("glosa")
-            
+
             update_data = {
                 "sii_status": estado_sii,
                 "sii_message": glosa,
                 "sii_checked_at": __import__("datetime").datetime.datetime.now(__import__("datetime").timezone.utc).isoformat(),
-                "sii_response_payload": status_res.get("response") or status_res,
-                "sii_raw_response": status_res.get("raw_response") or status_res.get("raw_xml"),
+                "sii_response_payload": sanitize_sii_payload(status_res.get("response") or status_res),
+                "sii_raw_response": prepare_sii_raw_response(status_res.get("raw_response") or status_res.get("raw_xml")),
             }
-            
+
             # Si el estado es final, actualizamos también el status global
             if estado_sii in ["ACE", "ACEPTADO", "OK", "0"]:
                 update_data["status"] = "accepted"
@@ -150,9 +151,9 @@ async def process_pending_dtes():
                 update_data["sii_submission_status"] = "rejected"
             else:
                 update_data["sii_submission_status"] = "received"
-                
+
             supabase.table("dte_issued").update(update_data).eq("id", dte_id).execute()
-            
+
             # Centralización automática e inteligente si es aceptado
             if update_data.get("status") == "accepted":
                 try:
@@ -161,7 +162,7 @@ async def process_pending_dtes():
                 except Exception as cent_err:
                     logger.error(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el worker de Track ID: {cent_err}")
             logger.info(f"DTE {dte_id} actualizado a estado SII: {estado_sii} - {glosa}")
-            
+
         except Exception as query_e:
             logger.error(f"Error consultando Track ID {track_id}: {query_e}")
 
@@ -171,7 +172,7 @@ async def run_worker():
             await process_pending_dtes()
         except Exception as e:
             logger.error(f"Worker Error: {e}")
-        
+
         # Esperar 60 segundos antes de la próxima revisión
         await asyncio.sleep(60)
 

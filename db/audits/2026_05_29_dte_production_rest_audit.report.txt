@@ -1,0 +1,15 @@
+DTE rows: 33
+Oversized sii_raw_response > 65536: 0
+Duplicate DTE identities: 0
+DTE item duplicate lines: 0
+CAF rows: 90
+CAF overlapping ranges: 5
+  (('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production'), 'cb9a275c-6fec-470a-a7a6-9576ba0bbe8e', 44, 48, 'ec82aaca-3999-4f45-ab15-04a1e3f77f94', 45, 49)
+  (('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production'), 'ec82aaca-3999-4f45-ab15-04a1e3f77f94', 45, 49, 'dbdd2076-0e65-47c5-b508-1f52630b8b14', 49, 52)
+  (('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 33, 'production'), 'dbdd2076-0e65-47c5-b508-1f52630b8b14', 49, 52, '98faee7f-0737-4020-8960-a6af3d8ff801', 52, 52)
+  (('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production'), 'b5b07ac0-f7ee-48d4-8f82-b244551315e9', 1, 1000, 'b5f304dd-daf3-47c3-aab3-0f6e2166f90c', 7, 26)
+  (('b924fd19-39f6-4f1c-93de-fe7f01f26bae', 39, 'production'), 'b5b07ac0-f7ee-48d4-8f82-b244551315e9', 1, 1000, '5b9cce63-7e6a-4421-a668-26aef061f2fd', 27, 126)
+Accounting period duplicates: 0
+Organization member duplicates: 0
+Sales RCV duplicates: 0
+Purchase RCV duplicates: 0

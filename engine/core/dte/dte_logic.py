@@ -11,12 +11,13 @@ from .dte_signer import DTESigner
 from .sii_client import SIIClient
 from .caf_manager import CAFManager
 from ..database import get_supabase
+from .utils import prepare_sii_raw_response, sanitize_sii_payload
 
 class DTELogic:
     """
     Orquestador principal para la generación, firma y registro de DTEs.
     """
-    
+
     def __init__(self, organization_id: str):
         self.organization_id = organization_id
         self.supabase = get_supabase()
@@ -30,7 +31,7 @@ class DTELogic:
             .select("*")\
             .eq("organization_id", self.organization_id)\
             .execute()
-        
+
         if (not response.data) or (len(response.data) == 0):
             raise Exception(
                 f"Configuración DTE Pendiente: La organización no ha sido registrada como emisor electrónico. "
@@ -48,16 +49,16 @@ class DTELogic:
             .eq("is_active", True)\
             .order("range_start")\
             .execute()
-        
+
         if not caf.data or len(caf.data) == 0:
             raise Exception(
                 f"Folios Agotados o Faltantes: No se encontraron folios (CAF) activos para el documento tipo {tipo_dte}. "
                 f"Por favor, descargue un nuevo archivo CAF desde el portal del SII y cárguelo en 'Configuración de Empresa > Facturación'."
             )
-            
+
         current_caf = caf.data[0]
         next_folio = current_caf["last_used_folio"] + 1
-        
+
         if next_folio > current_caf["range_end"]:
             # Marcar CAF como inactivo si se acabaron los folios
             self.supabase.table("dte_caf_folios")\
@@ -65,30 +66,30 @@ class DTELogic:
                 .eq("id", current_caf["id"])\
                 .execute()
             return self._get_next_folio_with_caf(tipo_dte)
-            
+
         # Actualizar último folio usado
         self.supabase.table("dte_caf_folios")\
             .update({"last_used_folio": next_folio})\
             .eq("id", current_caf["id"])\
             .execute()
-            
+
         return next_folio, current_caf
 
     def _get_certificate(self) -> tuple[bytes, str]:
         """Descarga el PFX de la empresa, con fallback al Certificado Maestro."""
         cert_path = self.company_data.get("cert_path")
         enc_pass = self.company_data.get("cert_password_encrypted")
-        
+
         if cert_path and enc_pass:
             # 1. Certificado Propio (Descentralizado)
             res = self.supabase.storage.from_("dte_certificates").download(cert_path)
             pfx_bytes = res
-            
+
             rpc_res = self.supabase.rpc(
-                "decrypt_cert_password", 
+                "decrypt_cert_password",
                 {"encrypted_password": enc_pass, "org_id": self.organization_id}
             ).execute()
-            
+
             if not rpc_res.data:
                 raise Exception("Error al obtener la clave del certificado de la empresa.")
             return pfx_bytes, rpc_res.data
@@ -97,9 +98,9 @@ class DTELogic:
             master_pass = os.environ.get("DTE_MASTER_CERT_PASSWORD")
             if not master_pass:
                 raise Exception("El cliente no tiene certificado y el Certificado Maestro no está configurado (DTE_MASTER_CERT_PASSWORD).")
-                
+
             master_pass = master_pass.strip('"').strip("'")
-            
+
             try:
                 try:
                     res = self.supabase.storage.from_("dte_certificates").download("system/master_cert.pfx")
@@ -119,10 +120,10 @@ class DTELogic:
             .order("folio", desc=True)\
             .limit(1)\
             .execute()
-        
+
         if not last_dte.data or len(last_dte.data) == 0:
             return "ORIGIN" # Sincronizado con COALESCE(prev_hash, 'ORIGIN') en trigger PostgreSQL
-            
+
         return last_dte.data[0]["integrity_hash"]
 
     def _calculate_integrity_hash(self, record: Dict[str, Any]) -> str:
@@ -179,7 +180,7 @@ class DTELogic:
                     "El SII no acepta documentos con fecha de emisión tan antigua con respecto a la fecha actual de transmisión. "
                     "Por favor, emita el documento con una fecha más reciente o del mes en curso."
                 )
-            
+
             # Si es del mes anterior, verificar si ya se cerró el periodo (vence el día 20 del mes actual)
             if fecha_emision.month != hoy.month or fecha_emision.year != hoy.year:
                 if hoy.day > 20:
@@ -195,13 +196,13 @@ class DTELogic:
         """
         tipo_dte = invoice_data.get("tipo_dte", 33)
         fecha_emision_str = invoice_data.get("fecha_emision") or datetime.date.today().isoformat()
-        
+
         # Validar la fecha de emisión de forma inteligente antes de continuar
         self.validate_dte_date(tipo_dte, fecha_emision_str)
-        
+
         # 1. Obtener Folio Real y su CAF
         folio, current_caf = self._get_next_folio_with_caf(tipo_dte)
-        
+
         # 2. Registrar en DB (Estado inicial: draft)
         dte_record = {
             "organization_id": self.organization_id,
@@ -219,20 +220,20 @@ class DTELogic:
             "previous_hash": self._get_previous_hash(tipo_dte),
             "referencias": invoice_data.get("referencias", [])
         }
-        
+
         # Calcular Integrity Hash de forma sincronizada con PostgreSQL
         dte_record["integrity_hash"] = self._calculate_integrity_hash(dte_record)
-        
+
         insert_response = self.supabase.table("dte_issued").insert(dte_record).execute()
         dte_id = insert_response.data[0]["id"]
-        
+
         # 3. Guardar items
         for i, item in enumerate(items, 1):
             item["dte_id"] = dte_id
             item["organization_id"] = self.organization_id
             item["line_number"] = i
             self.supabase.table("dte_items").insert(item).execute()
-            
+
         # 4. Construir y Firmar el Timbre Electrónico (TED)
         rsask_pem = CAFManager.get_private_key_from_caf(current_caf["caf_xml"])
         if not rsask_pem:
@@ -247,7 +248,7 @@ class DTELogic:
         razon_social_receptor = DTEXMLBuilder.clean_xml_text(dte_record['receptor_razon_social'])[:40]
         monto_total = dte_record['monto_total']
         item_name_40 = DTEXMLBuilder.clean_xml_text(item1_name)[:40]
-        
+
         from lxml import etree
         caf_xml_clean = current_caf["caf_xml"].strip()
         try:
@@ -267,42 +268,42 @@ class DTELogic:
 
         # Generar firma digital del TED
         ted_signature_b64 = self.signer.sign_ted(dd_xml_str, rsask_pem)
-        
+
         # Generar XML completo del TED
         ted_xml = self.xml_builder.build_ted_xml(dte_record, item1_name, current_caf["caf_xml"], ted_signature_b64, tstamp)
 
         # 5. Generar XML Unsigned (con TED e inyección de Referencias)
         xml_unsigned = self.xml_builder.build_dte_xml(
-            dte_record, 
-            items, 
-            ted_xml=ted_xml, 
+            dte_record,
+            items,
+            ted_xml=ted_xml,
             referencias=dte_record["referencias"]
         )
-        
+
         # 6. Firmar el XML con el Certificado de la empresa
         xml_signed = xml_unsigned
-        
+
         try:
             pfx_bytes, cert_password = self._get_certificate()
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
                 tmp.write(pfx_bytes)
                 tmp_pfx_path = tmp.name
-                
+
             try:
                 self.signer.load_certificate(tmp_pfx_path, cert_password)
                 xml_signed = self.signer.sign_xml(xml_unsigned, f"DTE_{tipo_dte}_{folio}")
-                
+
                 # 6.1 Crear EnvioDTE y firmarlo
                 envio_xml = self.xml_builder.build_envio_dte(xml_signed, dte_record)
                 envio_signed = self.signer.sign_envio(envio_xml, f"SetDoc_{folio}")
-                
+
             finally:
                 if os.path.exists(tmp_pfx_path):
                     os.remove(tmp_pfx_path)
         except Exception as e:
             # Si falla la firma, dejamos el registro en "draft" y burbujeamos el error real
             raise Exception(f"Error durante la firma del DTE: {str(e)}")
-        
+
         # ── PASO 6.2: Guardar XML firmado SIEMPRE (independiente del SII) ──
         self.supabase.table("dte_issued")\
             .update({
@@ -330,7 +331,7 @@ class DTELogic:
                 signed_seed = self.signer.sign_seed(seed)
                 token = await sii_client.get_token(signed_seed)
                 sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
-            
+
             if sii_res.get("success"):
                 dte_record["track_id"] = sii_res.get("track_id")
                 self.supabase.table("dte_issued").update({
@@ -340,23 +341,23 @@ class DTELogic:
                     "sii_message": "Envio recibido por SII; pendiente de procesamiento final",
                     "sii_submission_status": "submitted",
                     "sii_sent_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    "sii_response_payload": sii_res.get("response") or sii_res,
-                    "sii_raw_response": sii_res.get("raw_response"),
+                    "sii_response_payload": sanitize_sii_payload(sii_res.get("response") or sii_res),
+                    "sii_raw_response": prepare_sii_raw_response(sii_res.get("raw_response")),
                     "error_log": None
                 }).eq("id", dte_id).execute()
-                
+
                 # Sincronizar RCV primero para poder vincular el asiento contable y cobro
                 try:
                     self._sync_with_rcv(dte_record, tipo_dte, folio)
                 except Exception as rcv_err:
                     print(f"Advertencia: No se pudo sincronizar RCV antes de centralizar: {rcv_err}")
-                
+
                 try:
                     from .dte_centralizer import centralize_dte_accounting
                     await centralize_dte_accounting(dte_id, self.organization_id)
                 except Exception as cent_err:
                     print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id}: {cent_err}")
-                
+
                 # Automatizar el cobro en tesorería si es Boleta (39 o 41)
                 if str(tipo_dte) in ['39', '41']:
                     try:
@@ -374,7 +375,7 @@ class DTELogic:
 
             if SIIError and isinstance(sii_e, SIIError):
                 short_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {sii_e}"
-                raw_resp = sii_e.resp_text
+                raw_resp = prepare_sii_raw_response(sii_e.resp_text)
             else:
                 short_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
                 raw_resp = None
@@ -402,7 +403,7 @@ class DTELogic:
         if sii_error_msg:
             result["sii_warning"] = sii_error_msg
         return result
-            
+
     async def list_dtes(self, organization_id: str, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         """Lista los documentos emitidos para una organización."""
         response = self.supabase.table("dte_issued")\
@@ -423,10 +424,10 @@ class DTELogic:
             .eq("tipo_dte", tipo_dte)\
             .order("folio", desc=False)\
             .execute()
-        
+
         errors = []
         expected_prev_hash = "ORIGIN"
-        
+
         for dte in all_dtes.data:
             # 1. Verificar vínculo con el anterior
             if dte["previous_hash"] != expected_prev_hash:
@@ -434,17 +435,17 @@ class DTELogic:
                     f"Ruptura de cadena en Folio {dte['folio']}: Se esperaba {expected_prev_hash[:10]}... "
                     f"pero se encontró {dte['previous_hash'][:10]}..."
                 )
-            
+
             # 2. Recalcular Hash actual
             recalculated_hash = self._calculate_integrity_hash(dte)
             if dte["integrity_hash"] != recalculated_hash:
                 errors.append(
                     f"Manipulación detectada en Folio {dte['folio']}: El contenido no coincide con la firma digital de integridad."
                 )
-            
+
             # Actualizar para el siguiente eslabón
             expected_prev_hash = dte["integrity_hash"]
-            
+
         return {
             "status": "VALID" if not errors else "COMPROMISED",
             "total_documents": len(all_dtes.data),
@@ -463,27 +464,27 @@ class DTELogic:
             .single()\
             .execute()
         dte = dte_resp.data
-        
+
         if not dte:
             raise Exception(f"No se encontró DTE con id {dte_id}")
-        
+
         if dte.get("track_id"):
             return {"status": "already_sent", "track_id": dte["track_id"], "message": "Este DTE ya fue enviado al SII."}
-        
+
         if not dte.get("xml_content"):
             raise Exception(f"El DTE {dte_id} no tiene XML firmado. No se puede reenviar.")
-        
+
         # 1.1 Si es Boleta (39/41) y no tiene RznSocEmisor, regeneramos y re-firmamos
         tipo_dte = int(dte.get("tipo_dte", 33))
         is_boleta = tipo_dte in [39, 41]
         xml_content = dte.get("xml_content")
-        
+
         if is_boleta and ("RznSocEmisor" not in xml_content or "Acteco" in xml_content or "GiroRecep" in xml_content or "TasaIVA" in xml_content or "TmstFirma" not in xml_content or "xsi:schemaLocation" in xml_content):
             print(f"Regenerando XML obsoleto/inválido para Boleta Folio {dte['folio']} con el nuevo esquema...")
             # Cargar items
             items_resp = self.supabase.table("dte_items").select("*").eq("dte_id", dte_id).execute()
             items = items_resp.data
-            
+
             # Cargar CAF
             caf_records = self.supabase.table("dte_caf_folios")\
                 .select("*")\
@@ -491,23 +492,23 @@ class DTELogic:
                 .eq("tipo_dte", tipo_dte)\
                 .eq("is_active", True)\
                 .execute()
-            
+
             if not caf_records.data:
                 raise Exception(f"No hay CAF activo para DTE tipo {tipo_dte} al regenerar XML.")
-            
+
             current_caf = caf_records.data[0]
-            
+
             # Firmar Timbre Electrónico
             rsask_pem = CAFManager.get_private_key_from_caf(current_caf["caf_xml"])
             item1_name = items[0]["product_name"] if items else "SERVICIO"
             tstamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-            
+
             rut_emisor = self.company_data['rut']
             rut_receptor = dte['receptor_rut']
             razon_social_receptor = DTEXMLBuilder.clean_xml_text(dte['receptor_razon_social'])[:40]
             monto_total = dte['monto_total']
             item_name_40 = DTEXMLBuilder.clean_xml_text(item1_name)[:40]
-            
+
             from lxml import etree
             caf_xml_clean = current_caf["caf_xml"].strip()
             try:
@@ -518,54 +519,54 @@ class DTELogic:
                     caf_xml_clean = etree.tostring(caf_node, encoding='ISO-8859-1', xml_declaration=False).decode('ISO-8859-1')
             except Exception:
                 pass
-                
+
             dd_xml_str = f"<DD><RE>{rut_emisor}</RE><TD>{tipo_dte}</TD><F>{dte['folio']}</F><FE>{dte['fecha_emision']}</FE><RR>{rut_receptor}</RR><RSR>{razon_social_receptor}</RSR><MNT>{monto_total}</MNT><IT1>{item_name_40}</IT1>{caf_xml_clean}<TSTED>{tstamp}</TSTED></DD>"
             ted_signature_b64 = self.signer.sign_ted(dd_xml_str, rsask_pem)
             ted_xml = self.xml_builder.build_ted_xml(dte, item1_name, current_caf["caf_xml"], ted_signature_b64, tstamp)
-            
+
             xml_unsigned = self.xml_builder.build_dte_xml(
-                dte, 
-                items, 
-                ted_xml=ted_xml, 
+                dte,
+                items,
+                ted_xml=ted_xml,
                 referencias=dte.get("referencias")
             )
-            
+
             pfx_bytes, cert_password = self._get_certificate()
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
                 tmp.write(pfx_bytes)
                 tmp_pfx_path = tmp.name
-                
+
             try:
                 self.signer.load_certificate(tmp_pfx_path, cert_password)
                 xml_content = self.signer.sign_xml(xml_unsigned, f"DTE_{tipo_dte}_{dte['folio']}")
             finally:
                 if os.path.exists(tmp_pfx_path):
                     os.remove(tmp_pfx_path)
-            
+
             # Guardar el XML regenerado y firmado en base de datos
             self.supabase.table("dte_issued")\
                 .update({"xml_content": xml_content})\
                 .eq("id", dte_id)\
                 .execute()
-                
+
             dte["xml_content"] = xml_content
 
         # 2. Reconstruir el envío
         envio_xml = self.xml_builder.build_envio_dte(dte["xml_content"], dte)
-        
+
         # 3. Firmar el envío
         pfx_bytes, cert_password = self._get_certificate()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
             tmp.write(pfx_bytes)
             tmp_pfx_path = tmp.name
-        
+
         try:
             self.signer.load_certificate(tmp_pfx_path, cert_password)
             envio_signed = self.signer.sign_envio(envio_xml, f"SetDoc_{dte['folio']}")
         finally:
             if os.path.exists(tmp_pfx_path):
                 os.remove(tmp_pfx_path)
-        
+
         # 4. Determinar ambiente desde el CAF
         caf_records = self.supabase.table("dte_caf_folios")\
             .select("*")\
@@ -574,7 +575,7 @@ class DTELogic:
             .limit(1)\
             .execute()
         env = caf_records.data[0]["environment"] if caf_records.data else "certification"
-        
+
         # 5. Enviar al SII
         sii_client = SIIClient(environment=env)
         if str(dte["tipo_dte"]) in ['39', '41']:
@@ -587,7 +588,7 @@ class DTELogic:
             signed_seed = self.signer.sign_seed(seed)
             token = await sii_client.get_token(signed_seed)
             sii_res = await sii_client.send_dte(token, envio_signed, self.company_data["rut"], self.company_data["rut"])
-        
+
         if sii_res.get("success"):
             self.supabase.table("dte_issued").update({
                 "track_id": sii_res.get("track_id"),
@@ -598,17 +599,17 @@ class DTELogic:
                 "sii_message": "Envio recibido por SII; pendiente de procesamiento final",
                 "sii_submission_status": "submitted",
                 "sii_sent_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "sii_response_payload": sii_res.get("response") or sii_res,
-                "sii_raw_response": sii_res.get("raw_response"),
+                "sii_response_payload": sanitize_sii_payload(sii_res.get("response") or sii_res),
+                "sii_raw_response": prepare_sii_raw_response(sii_res.get("raw_response")),
                 "error_log": None
             }).eq("id", dte_id).execute()
-            
+
             try:
                 from .dte_centralizer import centralize_dte_accounting
                 await centralize_dte_accounting(dte_id, self.organization_id)
             except Exception as cent_err:
                 print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el reintento: {cent_err}")
-            
+
             # Automatizar el cobro en tesorería si es Boleta (39 o 41)
             if str(dte["tipo_dte"]) in ['39', '41']:
                 try:
@@ -617,12 +618,12 @@ class DTELogic:
                     print(f"Advertencia: No se pudo registrar el pago automático de la Boleta {dte['folio']} en el reintento: {pay_err}")
 
             return {"status": "sent", "track_id": sii_res.get("track_id"), "message": f"DTE Folio {dte['folio']} enviado exitosamente al SII."}
-        
+
         raise Exception(f"El SII no aceptó el envío: {sii_res}")
 
     async def _auto_book_boleta_payment(self, dte_id: str, tipo_dte: int, folio: int, fecha_emision: str, monto_total: int):
         """
-        Registra automáticamente el cobro en efectivo y su asiento de tesorería 
+        Registra automáticamente el cobro en efectivo y su asiento de tesorería
         para boletas de venta al contado (DTE 39/41).
         """
         try:
@@ -634,7 +635,7 @@ class DTELogic:
                 .eq("is_active", True)\
                 .limit(1)\
                 .execute()
-                
+
             payment_method_id = None
             if pm_res.data:
                 payment_method_id = pm_res.data[0]["id"]
@@ -646,7 +647,7 @@ class DTELogic:
                     .eq("codigo", "1.1.01.001")\
                     .eq("activo", True)\
                     .execute()
-                
+
                 chart_account_id = None
                 if acc_res.data:
                     chart_account_id = acc_res.data[0]["id"]
@@ -661,11 +662,11 @@ class DTELogic:
                         .execute()
                     if acc_fallback.data:
                         chart_account_id = acc_fallback.data[0]["id"]
-                
+
                 if not chart_account_id:
                     print(f"Advertencia: No se encontró cuenta contable de caja para el cobro automático de la Boleta {folio}.")
                     return
-                
+
                 # Crear método de pago por defecto
                 pm_data = {
                     "organization_id": self.organization_id,
@@ -677,11 +678,11 @@ class DTELogic:
                 pm_insert = self.supabase.table("payment_methods").insert(pm_data).execute()
                 if pm_insert.data:
                     payment_method_id = pm_insert.data[0]["id"]
-            
+
             if not payment_method_id:
                 print(f"Advertencia: No se pudo determinar el medio de pago para la Boleta {folio}.")
                 return
-                
+
             # 2. Registrar el cobro en Tesorería
             payment_data = {
                 "organization_id": self.organization_id,
@@ -697,7 +698,7 @@ class DTELogic:
                 print(f"Advertencia: No se pudo registrar el pago en tesorería para la Boleta {folio}.")
                 return
             payment_id = pay_insert.data[0]["id"]
-            
+
             # 3. Buscar el registro RCV (sales_records) para aplicar el pago
             # Nota: la sincronización RCV ya ocurrió en create_and_sign_invoice
             sales_res = self.supabase.table("sales_records")\
@@ -706,7 +707,7 @@ class DTELogic:
                 .eq("folio", folio)\
                 .eq("tipo_documento", str(tipo_dte))\
                 .execute()
-                
+
             if sales_res.data:
                 sales_record_id = sales_res.data[0]["id"]
                 # Aplicar el pago al documento RCV

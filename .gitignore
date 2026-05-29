@@ -9,6 +9,10 @@
 .env.production
 
 # Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
 engine/.venv/
 engine/__pycache__/
 engine/**/__pycache__/
@@ -37,6 +41,7 @@ engine/output_images/
 .agents/
 .claude/
 .gemini/
+supabase/.temp/
 dev_tools/*/  # Ignorar scripts locales si son muy pesados o sensibles
 node_modules/
 dist/

@@ -14,6 +14,7 @@ from engine.core.dte.caf_manager import CAFManager
 from engine.core.dte.dte_signer import DTESigner
 from engine.core.dte.dte_xml_builder import DTEXMLBuilder
 from engine.core.dte.dte_logic import DTELogic
+from engine.core.dte.utils import prepare_sii_raw_response, sanitize_sii_payload
 
 def generate_dummy_pfx(password: str) -> bytes:
     """Genera un archivo PFX dummy en memoria usando cryptography real."""
@@ -236,3 +237,41 @@ def test_seed_signature_includes_legacy_certificate_tag(tmp_path):
     assert "<Certificate xmlns=\"\">" in signed_seed
     assert "<ds:KeyInfo>" in signed_seed
     assert "<ds:Signature" in signed_seed
+
+
+def test_prepare_sii_raw_response_keeps_small_payload():
+    raw = "<xml>ok</xml>"
+
+    assert prepare_sii_raw_response(raw) == raw
+
+
+def test_prepare_sii_raw_response_truncates_large_payload():
+    raw = "A" * 70000
+
+    prepared = prepare_sii_raw_response(raw)
+
+    assert prepared is not None
+    parsed = __import__("json").loads(prepared)
+    assert parsed["truncated"] is True
+    assert parsed["original_length"] == 70000
+    assert parsed["head"] == "A" * 4096
+    assert parsed["tail"] == "A" * 4096
+    assert len(prepared) <= 65536
+
+
+def test_sanitize_sii_payload_truncates_raw_fields_only():
+    raw = "B" * 10000
+    payload = {
+        "success": True,
+        "track_id": "123",
+        "raw_response": raw,
+        "raw_xml": raw,
+    }
+
+    sanitized = sanitize_sii_payload(payload, max_raw_len=4096)
+
+    assert sanitized["success"] is True
+    assert sanitized["track_id"] == "123"
+    assert sanitized["raw_response"] != raw
+    assert sanitized["raw_xml"] != raw
+    assert __import__("json").loads(sanitized["raw_response"])["original_length"] == 10000

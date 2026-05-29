@@ -1,0 +1,97 @@
+[
+  {
+    "id": "ec82aaca-3999-4f45-ab15-04a1e3f77f94",
+    "reason": "DTE 33 avoid reissuing folio 45-48 already covered by previous CAF",
+    "after": {
+      "id": "ec82aaca-3999-4f45-ab15-04a1e3f77f94",
+      "organization_id": "2e9f634b-4087-448c-bfa6-244bfa1eec61",
+      "company_id": "b924fd19-39f6-4f1c-93de-fe7f01f26bae",
+      "tipo_dte": 33,
+      "range_start": 45,
+      "range_end": 49,
+      "last_used_folio": 48,
+      "environment": "production",
+      "caf_xml": "<?xml version=\"1.0\"?>\n<AUTORIZACION>\n<CAF version=\"1.0\">\n<DA>\n<RE>77411206-5</RE>\n<RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>\n<TD>33</TD>\n<RNG><D>45</D><H>49</H></RNG>\n<FA>2026-04-24</FA>\n<RSAPK><M>3WXuoPhkkeJD8P73B3nYnLc+lscKrza0UpB34CF2NmJ25gbkUcQRtKlrURF4SO9/QCz21LKtdc3qH/zng8Hydw==</M><E>Aw==</E></RSAPK>\n<IDK>300</IDK>\n</DA>\n<FRMA algoritmo=\"SHA1withRSA\">e5VURSnD+lTC7Ptd30CWQw6/ql7BbvLjXCguSPLf7JpJbXbHAPFJcc83UuNxwVeVJhXGIiCv7GyeQdzOsBXRDw==</FRMA>\n</CAF>\n<RSASK>-----BEGIN RSA PRIVATE KEY-----\nMIIBOwIBAAJBAN1l7qD4ZJHiQ/D+9wd52Jy3PpbHCq82tFKQd+AhdjZiduYG5FHE\nEbSpa1EReEjvf0As9tSyrXXN6h/854PB8ncCAQMCQQCTmUnApZhhQYKgqfoE++W9\nz38PL1x0zyLhtaVAFk7O6xFmXqSIzea8OJ/zia/gRtL4j8tpvvza5nMqm99EiYEL\nAiEA+ub7KkRfc2cg8Rvl0Db0VTGAlrC3WCQ1qFrX604NJXkCIQDh5X3DQC/EMzOK\nR90gQZDtmdSvBVzaCT6VBTstTuaLbwIhAKdEp3GC6kzva0tn7orPTY4hAGR1z5AY\nI8WR5UeJXhj7AiEAlpj+girKgszNBtqTatZgnmaNygOTPAYpuK4nc4nvB58CIQCb\nI1lnhWQj2kdCodHwIJBwawZlPHDKg3J6AUu+CF7vGQ==\n-----END RSA PRIVATE KEY-----\n</RSASK>\n\n<RSAPUBK>-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBAN1l7qD4ZJHiQ/D+9wd52Jy3PpbHCq82\ntFKQd+AhdjZiduYG5FHEEbSpa1EReEjvf0As9tSyrXXN6h/854PB8ncCAQM=\n-----END PUBLIC KEY-----\n</RSAPUBK>\n</AUTORIZACION>\n",
+      "is_active": true,
+      "authorized_at": "2026-04-24",
+      "created_at": "2026-05-23T11:52:15.736965+00:00",
+      "updated_at": "2026-05-29T22:57:16.404229+00:00"
+    }
+  },
+  {
+    "id": "dbdd2076-0e65-47c5-b508-1f52630b8b14",
+    "reason": "DTE 33 avoid reissuing folio 49 already covered by previous CAF",
+    "after": {
+      "id": "dbdd2076-0e65-47c5-b508-1f52630b8b14",
+      "organization_id": "2e9f634b-4087-448c-bfa6-244bfa1eec61",
+      "company_id": "b924fd19-39f6-4f1c-93de-fe7f01f26bae",
+      "tipo_dte": 33,
+      "range_start": 49,
+      "range_end": 52,
+      "last_used_folio": 49,
+      "environment": "production",
+      "caf_xml": "<?xml version=\"1.0\"?>\n<AUTORIZACION>\n<CAF version=\"1.0\">\n<DA>\n<RE>77411206-5</RE>\n<RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>\n<TD>33</TD>\n<RNG><D>49</D><H>52</H></RNG>\n<FA>2026-04-23</FA>\n<RSAPK><M>0w+Ee2wDhf37sfhXlSRRLWubxt7SU3BHcKxufOxLu3l7oegsgzeqRULLDHDXmVeCeKzRkAP3REzFqN83njl4fQ==</M><E>Aw==</E></RSAPK>\n<IDK>100</IDK>\n</DA>\n<FRMA algoritmo=\"SHA1withRSA\">SpDORWHBwB9m2DlQfqhXHWl8kItYgvBTkGb3T4ilxFtFtI44vdMMf78Q5Iw00NR6YZLqa8UD2orUa8lvF8o+Jg==</FRMA>\n</CAF>\n<RSASK>-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBANMPhHtsA4X9+7H4V5UkUS1rm8be0lNwR3CsbnzsS7t5e6HoLIM3\nqkVCywxw15lXgnis0ZAD90RMxajfN545eH0CAQMCQQCMtQL88q0D/qfL+uUOGDYe\nR70vPzbiStpLHZ798t0npRxBlnLWaNN1Ap8WihApQ55RZeJpStmE66DF5yEIzHMT\nAiEA8bQts6q30Cfrm7u1B3ywMMqp0x8d5OrDCmG6CrWGxvsCIQDfi1jMluKc7dNA\nruy33sHkM+oq0vXMEihKHkp7W4AE5wIhAKEiySJxz+AanRJ9I1pTICCHG+IUvpic\nggbr0Vx5BISnAiEAlQeQiGSXE0k3gHSdz+nWmCKcHIyj3WFwMWmG/Oeqre8CIGVU\ndZOxy+Gi9zCLcf8xCtR1UuA2iE3mgYA1jPzEE/Au\n-----END RSA PRIVATE KEY-----\n</RSASK>\n\n<RSAPUBK>-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBANMPhHtsA4X9+7H4V5UkUS1rm8be0lNw\nR3CsbnzsS7t5e6HoLIM3qkVCywxw15lXgnis0ZAD90RMxajfN545eH0CAQM=\n-----END PUBLIC KEY-----\n</RSAPUBK>\n</AUTORIZACION>\n",
+      "is_active": true,
+      "authorized_at": "2026-04-23",
+      "created_at": "2026-05-23T11:52:16.15467+00:00",
+      "updated_at": "2026-05-29T22:57:16.404229+00:00"
+    }
+  },
+  {
+    "id": "98faee7f-0737-4020-8960-a6af3d8ff801",
+    "reason": "DTE 33 single folio 52 already covered by 49-52 CAF",
+    "after": {
+      "id": "98faee7f-0737-4020-8960-a6af3d8ff801",
+      "organization_id": "2e9f634b-4087-448c-bfa6-244bfa1eec61",
+      "company_id": "b924fd19-39f6-4f1c-93de-fe7f01f26bae",
+      "tipo_dte": 33,
+      "range_start": 52,
+      "range_end": 52,
+      "last_used_folio": 52,
+      "environment": "production",
+      "caf_xml": "<?xml version=\"1.0\"?>\n<AUTORIZACION>\n<CAF version=\"1.0\">\n<DA>\n<RE>77411206-5</RE>\n<RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>\n<TD>33</TD>\n<RNG><D>52</D><H>52</H></RNG>\n<FA>2026-04-24</FA>\n<RSAPK><M>t9ZN8PczgVALfW61wB25+2j1D187+yaW1/xBumSupMfm48Q2Rn829iDZl8kVHR1GuISYDtftrGkbACVJdWreqQ==</M><E>Aw==</E></RSAPK>\n<IDK>300</IDK>\n</DA>\n<FRMA algoritmo=\"SHA1withRSA\">QDAJsG0tth5yzeLtqni1zEo4eYMRkjcXBYQ30Y7oCKQTVMpASNCjVuWvS3bX3fGc7NbXvEoWyKOOKg8D5SmkBA==</FRMA>\n</CAF>\n<RSASK>-----BEGIN RSA PRIVATE KEY-----\nMIIBOQIBAAJBALfWTfD3M4FQC31utcAdufto9Q9fO/smltf8QbpkrqTH5uPENkZ/\nNvYg2ZfJFR0dRriEmA7X7axpGwAlSXVq3qkCAQMCQHqO3qCkzQDgB6j0eSq+e/zw\no1+U0qdvDzqoK9GYdG3Zd+cLcNUR0i0XIWmmzgUVVSy5FsZ21KMDDkOGDQNBz+MC\nIQDpYo1q135HvTc9Gch8yiG7Ani7EJm5vhq3A5neJ3xZbwIhAMmmpaIvZjP1Rupf\nhmNLW4vy9jrUi/T5yc6XQlfJC81nAiEAm5cI8eT+2n4k02aFqIbBJ1b7J2Bme9QR\nz1e76W+oO58CIQCGbxkWykQio4ScP67s3Oeyofl8jbKjUTE0ZNblMLKI7wIgfNIM\nyq/XdjrF4dOdEFQ0aPJwNnKUgcRbHjxVAKNmwwQ=\n-----END RSA PRIVATE KEY-----\n</RSASK>\n\n<RSAPUBK>-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBALfWTfD3M4FQC31utcAdufto9Q9fO/sm\nltf8QbpkrqTH5uPENkZ/NvYg2ZfJFR0dRriEmA7X7axpGwAlSXVq3qkCAQM=\n-----END PUBLIC KEY-----\n</RSAPUBK>\n</AUTORIZACION>\n",
+      "is_active": false,
+      "authorized_at": "2026-04-24",
+      "created_at": "2026-05-23T11:52:16.584079+00:00",
+      "updated_at": "2026-05-29T22:57:16.404229+00:00"
+    }
+  },
+  {
+    "id": "b5f304dd-daf3-47c3-aab3-0f6e2166f90c",
+    "reason": "DTE 39 narrower CAF superseded by active 1-1000 CAF",
+    "after": {
+      "id": "b5f304dd-daf3-47c3-aab3-0f6e2166f90c",
+      "organization_id": "2e9f634b-4087-448c-bfa6-244bfa1eec61",
+      "company_id": "b924fd19-39f6-4f1c-93de-fe7f01f26bae",
+      "tipo_dte": 39,
+      "range_start": 7,
+      "range_end": 26,
+      "last_used_folio": 26,
+      "environment": "production",
+      "caf_xml": "<?xml version=\"1.0\"?>\n<AUTORIZACION>\n<CAF version=\"1.0\">\n<DA>\n<RE>77411206-5</RE>\n<RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>\n<TD>39</TD>\n<RNG><D>7</D><H>26</H></RNG>\n<FA>2026-05-07</FA>\n<RSAPK><M>6MtxFqnKVKMPqH5fF8429K4DpUxMKIhzhhYn8URQlemxUJXamoUl2VCHtbPtSPoZfex/ynk6R2lP+LqD4FFPdw==</M><E>Aw==</E></RSAPK>\n<IDK>100</IDK>\n</DA>\n<FRMA algoritmo=\"SHA1withRSA\">x9K2I0PTyKKbbBq7UXRWuRX26TWCQJNHSdapk54LjIsCTTXvEmDtIRPfe2PWPDFo7Cx3SPOobRao6fdq3du72g==</FRMA>\n</CAF>\n<RSASK>-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAOjLcRapylSjD6h+XxfONvSuA6VMTCiIc4YWJ/FEUJXpsVCV2pqF\nJdlQh7Wz7Uj6GX3sf8p5OkdpT/i6g+BRT3cCAQMCQQCbMktkcTGNwgpwVD9lNCSj\nHq0Y3YgbBaJZZBqg2DW5RTC1uC0g6vLsQ3KULOj3PxRZBhOeR50tQIp3yJJCapyL\nAiEA9WHE5WdLbp5gl4Wsh5DmJt3ZpayJ46besLt4fGaevE8CIQDy3jyxgdlK2IrE\nUcQIRTVUGom8sIPq3KnPiZUsFhKoWQIhAKOWg0OaMkm+6w+ucwULRBnpO8PIW+0Z\n6csnpahEadLfAiEAoel9y6vmMeWx2DaCsC4jjWcGfcsCnJMb37EOHWQMcDsCICrz\n9Vd6AOGE4FBd9sSLPtDo4KMYTYTZf9d0mC06pT8E\n-----END RSA PRIVATE KEY-----\n</RSASK>\n\n<RSAPUBK>-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBAOjLcRapylSjD6h+XxfONvSuA6VMTCiI\nc4YWJ/FEUJXpsVCV2pqFJdlQh7Wz7Uj6GX3sf8p5OkdpT/i6g+BRT3cCAQM=\n-----END PUBLIC KEY-----\n</RSAPUBK>\n</AUTORIZACION>\n",
+      "is_active": false,
+      "authorized_at": "2026-05-07",
+      "created_at": "2026-05-23T11:52:20.338076+00:00",
+      "updated_at": "2026-05-29T22:57:16.404229+00:00"
+    }
+  },
+  {
+    "id": "5b9cce63-7e6a-4421-a668-26aef061f2fd",
+    "reason": "DTE 39 narrower CAF superseded by active 1-1000 CAF",
+    "after": {
+      "id": "5b9cce63-7e6a-4421-a668-26aef061f2fd",
+      "organization_id": "2e9f634b-4087-448c-bfa6-244bfa1eec61",
+      "company_id": "b924fd19-39f6-4f1c-93de-fe7f01f26bae",
+      "tipo_dte": 39,
+      "range_start": 27,
+      "range_end": 126,
+      "last_used_folio": 126,
+      "environment": "production",
+      "caf_xml": "<?xml version=\"1.0\"?>\n<AUTORIZACION>\n<CAF version=\"1.0\">\n<DA>\n<RE>77411206-5</RE>\n<RS>TECNOLOGIA RODRIGUEZ SALDIVIA SPA</RS>\n<TD>39</TD>\n<RNG><D>27</D><H>126</H></RNG>\n<FA>2026-05-08</FA>\n<RSAPK><M>uiomVS59ayuSwl1f3XGdsAyoyCUrl1l6OD0hC24cmNU14vfPUSvRNvo/mTIorZxw71cTQ8rdNgETXRW6hDsRpw==</M><E>Aw==</E></RSAPK>\n<IDK>100</IDK>\n</DA>\n<FRMA algoritmo=\"SHA1withRSA\">AeeEK7hmMxCGPnTi5Y5atBW1SG5s96VhUCyWESXje8dwQHUIUzTXF1M3GJ032e41fZQH4MpnIYRktvH6EamyPA==</FRMA>\n</CAF>\n<RSASK>-----BEGIN RSA PRIVATE KEY-----\nMIIBOQIBAAJBALoqJlUufWsrksJdX91xnbAMqMglK5dZejg9IQtuHJjVNeL3z1Er\n0Tb6P5kyKK2ccO9XE0PK3TYBE10VuoQ7EacCAQMCQHwcGY4e/kdyYdbo6pOhE8qz\nGzAYx7o7ptAowLJJaGXiVgH+eO2a1MZZ/75eHZal0/KkfYZNrbz0WYGN97fudhsC\nIQDh+OB4rbK6xCZFNrGnc3GjuIHEj5uA2Zkp91n8zjutmwIhANLnGaE/ENdJTPrE\n81TYMg9K3pJqutfA+WMjZsoiGbLlAiEAlqXq+x53Jy1u2M8hGkz2bSWr2F+9AJEQ\nxqTmqIl9HmcCIQCMmhEWKgs6MN38g0zjOswKMem28dHlK1DswkSGwWZ3QwIgN11q\nN1DhJVYZj8ZK8zMRiFGFq1WyRNUuFDG2opL2wjk=\n-----END RSA PRIVATE KEY-----\n</RSASK>\n\n<RSAPUBK>-----BEGIN PUBLIC KEY-----\nMFowDQYJKoZIhvcNAQEBBQADSQAwRgJBALoqJlUufWsrksJdX91xnbAMqMglK5dZ\nejg9IQtuHJjVNeL3z1Er0Tb6P5kyKK2ccO9XE0PK3TYBE10VuoQ7EacCAQM=\n-----END PUBLIC KEY-----\n</RSAPUBK>\n</AUTORIZACION>\n",
+      "is_active": false,
+      "authorized_at": "2026-05-08",
+      "created_at": "2026-05-23T11:52:19.927241+00:00",
+      "updated_at": "2026-05-29T22:57:16.404229+00:00"
+    }
+  }
+]
