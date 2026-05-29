@@ -34,6 +34,7 @@ import { DeleteLiquidationButton } from './delete-liquidation-button'
 import { ApproveLiquidationButton } from './approve-liquidation-button'
 import { PayrollPeriodSelector } from './payroll-period-selector'
 import { BulkLiquidationsButton } from './bulk-liquidations-button'
+import { BulkEmailLiquidationsButton } from './bulk-email-liquidations-button'
 import { getActiveOrganizationId } from '@/actions/organizations'
 
 // ==========================================
@@ -336,11 +337,13 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
   const totalNeto = liquidations.reduce((acc, l) => acc + Number(l.sueldo_liquido), 0)
   const totalDescuentos = liquidations.reduce((acc, l) => acc + Number(l.total_descuentos), 0)
   const totalCosto = liquidations.reduce((acc, l) => acc + Number(l.total_haberes_brutos), 0)
+  const approvedLiquidationsCount = liquidations.filter((liq) => liq.status === 'aprobada').length
 
   return (
     <div className="space-y-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-6 md:px-10 py-5 border-b border-border bg-muted/10">
         <BulkLiquidationsButton organizationId={orgId} year={year} month={month} count={liquidations.length} />
+        <BulkEmailLiquidationsButton organizationId={orgId} year={year} month={month} count={approvedLiquidationsCount} />
       </div>
 
       {/* BANNER DE RESUMEN INTELIGENTE */}

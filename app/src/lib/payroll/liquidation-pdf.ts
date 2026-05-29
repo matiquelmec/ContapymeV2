@@ -1,5 +1,3 @@
-'use client'
-
 import jsPDF from 'jspdf'
 import { fCurrency } from '@/lib/utils'
 import { formatRUT } from '@/lib/utils/rut'
@@ -20,16 +18,28 @@ async function fetchQRBase64(data: string): Promise<string | null> {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data)}`
     const res = await fetch(qrUrl)
     if (!res.ok) return null
-    const blob = await res.blob()
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.readAsDataURL(blob)
-    })
+    const arrayBuffer = await res.arrayBuffer()
+    const contentType = res.headers.get('content-type') || 'image/png'
+    return `data:${contentType};base64,${arrayBufferToBase64(arrayBuffer)}`
   } catch {
     console.warn('No se pudo generar QR de verificacion')
     return null
   }
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer)
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64')
+  }
+
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+
+  return btoa(binary)
 }
 
 export function getLiquidationPdfFilename(liquidation: any) {
