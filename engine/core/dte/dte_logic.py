@@ -327,6 +327,12 @@ class DTELogic:
                     "error_log": None
                 }).eq("id", dte_id).execute()
                 
+                # Sincronizar RCV primero para poder vincular el asiento contable y cobro
+                try:
+                    self._sync_with_rcv(dte_record, tipo_dte, folio)
+                except Exception as rcv_err:
+                    print(f"Advertencia: No se pudo sincronizar RCV antes de centralizar: {rcv_err}")
+                
                 try:
                     from .dte_centralizer import centralize_dte_accounting
                     await centralize_dte_accounting(dte_id, self.organization_id)
@@ -346,31 +352,12 @@ class DTELogic:
                 "error_log": sii_error_msg
             }).eq("id", dte_id).execute()
 
-        # 7. Sincronizar con RCV (sales_records) para reportes inmediatos
-        periodo = dte_record["fecha_emision"][:7] + "-01"
-        monto_calculado = dte_record["monto_total"]
-        if str(tipo_dte) in ['61', '112']: # Notas de crédito restan
-            monto_calculado = -monto_calculado
-            es_suma = False
-        else:
-            es_suma = True
-
-        rcv_entry = {
-            "organization_id": self.organization_id,
-            "periodo": periodo,
-            "tipo_documento": str(tipo_dte),
-            "folio": folio,
-            "rut_receptor": dte_record["receptor_rut"],
-            "razon_social_receptor": dte_record["receptor_razon_social"],
-            "fecha_docto": dte_record["fecha_emision"],
-            "monto_neto": dte_record["monto_neto"],
-            "monto_exento": 0,
-            "monto_iva": dte_record["monto_iva"],
-            "monto_total": dte_record["monto_total"],
-            "monto_calculado": monto_calculado,
-            "es_suma": es_suma
-        }
-        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
+        # 7. Sincronizar con RCV si aún no se ha hecho (cuando no se envió exitosamente al SII pero quedó firmado localmente)
+        if not sii_res.get("success"):
+            try:
+                self._sync_with_rcv(dte_record, tipo_dte, folio)
+            except Exception as rcv_err:
+                print(f"Advertencia: No se pudo sincronizar con el RCV (sales_records): {rcv_err}")
 
         # 8. Retorno final
         final_status = "sent" if dte_record.get("track_id") else "signed"
@@ -607,3 +594,29 @@ class DTELogic:
                 print(f"Cobro y conciliación automáticos de Boleta Folio {folio} realizados con éxito.")
         except Exception as e:
             print(f"Advertencia: Falló el cobro automático de la Boleta {folio}: {e}")
+
+    def _sync_with_rcv(self, dte_record: dict, tipo_dte: int, folio: int):
+        periodo = dte_record["fecha_emision"][:7] + "-01"
+        monto_calculado = dte_record["monto_total"]
+        if str(tipo_dte) in ['61', '112']: # Notas de crédito restan
+            monto_calculado = -monto_calculado
+            es_suma = False
+        else:
+            es_suma = True
+
+        rcv_entry = {
+            "organization_id": self.organization_id,
+            "periodo": periodo,
+            "tipo_documento": str(tipo_dte),
+            "folio": folio,
+            "rut_receptor": dte_record["receptor_rut"],
+            "razon_social_receptor": dte_record["receptor_razon_social"],
+            "fecha_docto": dte_record["fecha_emision"],
+            "monto_neto": dte_record["monto_neto"],
+            "monto_exento": 0,
+            "monto_iva": dte_record["monto_iva"],
+            "monto_total": dte_record["monto_total"],
+            "monto_calculado": monto_calculado,
+            "es_suma": es_suma
+        }
+        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
