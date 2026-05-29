@@ -57,10 +57,8 @@ class DTEXMLBuilder:
             <Razon>{razon_recortada}</Razon>
         </Referencia>"""
 
-        tmst_firma_xml = ""
-        if str(tipo_dte) not in ['39', '41']:
-            tmst_firma = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-            tmst_firma_xml = f"\n        <TmstFirma>{tmst_firma}</TmstFirma>"
+        tmst_firma = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        tmst_firma_xml = f"\n        <TmstFirma>{tmst_firma}</TmstFirma>"
 
         xml = f"""<?xml version="1.0" encoding="ISO-8859-1"?>
 <DTE version="1.0" xmlns="http://www.sii.cl/SiiDte" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sii.cl/SiiDte DTE_v10.xsd">
