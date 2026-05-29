@@ -33,13 +33,16 @@ class SIIClient:
         """
         import ssl
         # Forzar protocolo TLSv1.2 estricto para asegurar compatibilidad de negociación con el SII
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ctx.maximum_version = ssl.TLSVersion.TLSv1_2
         # Ciphers compatibles que el proxy del SII acepta sin desconectar el socket
         ctx.set_ciphers('DEFAULT:!DH:!aNULL:!eNULL:!LOW:!EXP:!MD5:!3DES:!RC4:!SEED')
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # En ambiente SII de producción/certificación a menudo hay problemas de certificados intermedios
         
-        return httpx.AsyncClient(verify=ctx, timeout=timeout, follow_redirects=True)
+        transport = httpx.AsyncHTTPTransport(verify=ctx)
+        return httpx.AsyncClient(transport=transport, timeout=timeout, follow_redirects=True)
 
     async def get_seed(self) -> str:
         """
@@ -165,7 +168,10 @@ class SIIClient:
         """
         Paso 4: Envía el archivo DTE firmado mediante POST multipart al SII.
         Retorna el Track ID. Incluye reintentos con backoff exponencial.
+        Maneja STATUS 0 (éxito), STATUS 7 (encoding), STATUS 99 (ya enviado).
         """
+        import re
+
         # Formatear RUTs quitando guión (ej: 11111111-1 -> 111111111 y el DV)
         emisor_rut_body = rut_emisor.split('-')[0]
         emisor_dv = rut_emisor.split('-')[1]
@@ -182,13 +188,21 @@ class SIIClient:
             "Connection": "Keep-Alive",
             "Cache-Control": "no-cache"
         }
-        
+
+        # Codificar el XML a ISO-8859-1 (requerido por el SII)
+        try:
+            xml_bytes = dte_xml.encode('iso-8859-1')
+        except UnicodeEncodeError:
+            # Limpiar caracteres no-ISO-8859-1 reemplazándolos por su equivalente ASCII
+            xml_bytes = dte_xml.encode('iso-8859-1', errors='replace')
+            logger.warning("Se reemplazaron caracteres no compatibles con ISO-8859-1 en el XML del DTE.")
+
         files = {
             "rutSender": (None, emisor_rut_body),
             "dvSender": (None, emisor_dv),
             "rutCompany": (None, empresa_rut_body),
             "dvCompany": (None, empresa_dv),
-            "archivo": ("envio.xml", dte_xml.encode('iso-8859-1'), "text/xml")
+            "archivo": ("envio.xml", xml_bytes, "text/xml; charset=ISO-8859-1")
         }
 
         max_retries = 5
@@ -200,21 +214,57 @@ class SIIClient:
                     
                     if resp.status_code != 200:
                         raise Exception(f"Error al enviar DTE: HTTP {resp.status_code}")
-                        
-                    try:
-                        root = etree.fromstring(resp.content)
-                        status = root.find(".//STATUS").text
-                        track_id = root.find(".//TRACKID").text
-                        
-                        if status != "0":
-                            raise Exception(f"SII Rechazó el envío. Status: {status}")
-                            
+
+                    # Parsear la respuesta XML del SII
+                    root = etree.fromstring(resp.content)
+                    status_node = root.find(".//STATUS")
+                    status = status_node.text if status_node is not None else None
+
+                    if status is None:
+                        raise Exception(f"Respuesta sin STATUS del SII: {resp.text}")
+
+                    # STATUS 0: Envío exitoso, extraer TrackID
+                    if status == "0":
+                        track_id_node = root.find(".//TRACKID")
+                        track_id = track_id_node.text if track_id_node is not None else None
+                        if not track_id:
+                            raise Exception("SII aceptó el envío pero no retornó TrackID.")
+                        logger.info(f"DTE enviado exitosamente al SII. TrackID: {track_id}")
                         return {"success": True, "track_id": track_id}
-                    except Exception as e:
-                        # Fallback si no parsea el XML de respuesta
-                        raise Exception(f"Respuesta no reconocida del SII: {resp.text}")
+
+                    # STATUS 99: Documento ya fue enviado previamente, extraer TrackID del mensaje
+                    if status == "99":
+                        error_node = root.find(".//ERROR")
+                        error_text = error_node.text if error_node is not None else ""
+                        logger.info(f"SII STATUS 99: {error_text}")
+                        # Extraer TrackID del mensaje: "...con Trackid 249904842..."
+                        match = re.search(r'Trackid\s+(\d+)', error_text, re.IGNORECASE)
+                        if match:
+                            existing_track_id = match.group(1)
+                            logger.info(f"DTE ya fue enviado previamente. TrackID existente: {existing_track_id}")
+                            return {"success": True, "track_id": existing_track_id, "already_sent": True}
+                        # Si no se puede extraer el TrackID, es un error fatal (no reintentar)
+                        raise Exception(f"SII STATUS 99 sin TrackID extraíble: {error_text}")
+
+                    # STATUS 7: Error de Character Set - error fatal, no reintentar
+                    if status == "7":
+                        error_node = root.find(".//ERROR")
+                        error_text = error_node.text if error_node is not None else "Invalid Character Set"
+                        raise Exception(f"SII Error de Encoding (STATUS 7): {error_text}")
+
+                    # Cualquier otro STATUS: error del SII
+                    error_node = root.find(".//ERROR")
+                    error_text = error_node.text if error_node is not None else f"Status desconocido: {status}"
+                    raise Exception(f"SII rechazó el envío (STATUS {status}): {error_text}")
+
             except Exception as e:
-                logger.warning(f"Intento {attempt + 1} fallido al enviar DTE: {str(e)}")
+                error_msg = str(e)
+                logger.warning(f"Intento {attempt + 1} fallido al enviar DTE: {error_msg}")
+
+                # No reintentar errores fatales (encoding o ya enviado sin TrackID)
+                if "STATUS 7" in error_msg or "STATUS 99" in error_msg:
+                    raise
+
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(delay)
