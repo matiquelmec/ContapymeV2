@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 from core.dte.sii_client import SIIClient
 from core.dte.dte_signer import DTESigner
-from database import get_supabase
+from core.database import get_supabase
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,45 +57,66 @@ async def process_pending_dtes():
         logger.info("No hay DTEs pendientes de revisión de Track ID.")
         return
 
-    logger.info(f"Encontrados {len(dtes_to_check)} DTEs pendientes. Inicializando Master Cert...")
+    logger.info(f"Encontrados {len(dtes_to_check)} DTEs pendientes.")
     
-    # Obtener certificado maestro
-    master_pass = os.environ.get("DTE_MASTER_CERT_PASSWORD")
-    if not master_pass:
-        logger.error("DTE_MASTER_CERT_PASSWORD no configurado en entorno.")
-        return
-        
-    try:
-        # Descargar master cert a un archivo temporal para DTESigner
-        import tempfile
-        res = supabase.storage.from_("dte_certificates").download("system/master_cert.pfx")
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
-            tmp.write(res)
-            tmp_pfx_path = tmp.name
-            
-        signer = DTESigner()
-        signer.load_certificate(tmp_pfx_path, master_pass)
-        
-        sii_client = SIIClient(environment="certification") # O production según la variable
-        seed = await sii_client.get_seed()
-        signed_seed = signer.sign_seed(seed)
-        token = await sii_client.get_token(signed_seed)
-        
-    except Exception as e:
-        logger.error(f"Fallo al autenticar Master Cert en el SII: {e}")
-        return
-    finally:
-        if 'tmp_pfx_path' in locals() and os.path.exists(tmp_pfx_path):
-            os.remove(tmp_pfx_path)
+    # Cache para clientes y tokens de SII por (organization_id, company_id, environment)
+    sii_sessions = {}
             
     # Procesar cada DTE
     for dte in dtes_to_check:
         dte_id = dte["id"]
         track_id = dte["track_id"]
         rut_empresa = dte["dte_companies"]["rut"]
+        org_id = dte["organization_id"]
+        company_id = dte["company_id"]
         
-        logger.info(f"Consultando Track ID {track_id} para RUT {rut_empresa}")
+        # Determinar ambiente (certification o production) consultando los folios de la empresa
+        try:
+            caf_res = supabase.table("dte_caf_folios")\
+                .select("environment")\
+                .eq("company_id", company_id)\
+                .eq("tipo_dte", dte["tipo_dte"])\
+                .limit(1)\
+                .execute()
+            env = caf_res.data[0]["environment"] if (caf_res.data and len(caf_res.data) > 0) else "certification"
+        except Exception as e_caf:
+            logger.warning(f"No se pudo determinar ambiente para DTE {dte_id}, usando 'certification': {e_caf}")
+            env = "certification"
+
+        session_key = (org_id, company_id, env)
+        
+        if session_key not in sii_sessions:
+            logger.info(f"Inicializando sesión SII para Org {org_id}, Comp {company_id} en ambiente {env}...")
+            try:
+                from core.dte.dte_logic import DTELogic
+                logic = DTELogic(org_id)
+                pfx_bytes, cert_password = logic._get_certificate()
+                
+                # Descargar certificado a archivo temporal para DTESigner
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pfx") as tmp:
+                    tmp.write(pfx_bytes)
+                    tmp_pfx_path = tmp.name
+                    
+                try:
+                    signer = DTESigner()
+                    signer.load_certificate(tmp_pfx_path, cert_password)
+                    
+                    sii_client = SIIClient(environment=env)
+                    seed = await sii_client.get_seed()
+                    signed_seed = signer.sign_seed(seed)
+                    token = await sii_client.get_token(signed_seed)
+                    
+                    sii_sessions[session_key] = (sii_client, token)
+                finally:
+                    if os.path.exists(tmp_pfx_path):
+                        os.remove(tmp_pfx_path)
+            except Exception as e_auth:
+                logger.error(f"Fallo al autenticar sesión para Org {org_id}, Comp {company_id} en SII: {e_auth}")
+                continue
+
+        sii_client, token = sii_sessions[session_key]
+        logger.info(f"Consultando Track ID {track_id} para RUT {rut_empresa} ({env})")
         
         try:
             status_res = await sii_client.query_track_id(token, rut_empresa, track_id)
@@ -119,7 +140,7 @@ async def process_pending_dtes():
             if update_data.get("status") == "accepted":
                 try:
                     from core.dte.dte_centralizer import centralize_dte_accounting
-                    await centralize_dte_accounting(dte_id, dte["organization_id"])
+                    await centralize_dte_accounting(dte_id, org_id)
                 except Exception as cent_err:
                     logger.error(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el worker de Track ID: {cent_err}")
             logger.info(f"DTE {dte_id} actualizado a estado SII: {estado_sii} - {glosa}")

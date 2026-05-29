@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { 
     FileText, 
@@ -32,6 +32,7 @@ import { exportDTEToCSV } from '@/actions/billing'
 import { IssueInvoiceDialog } from './issue-invoice-dialog'
 import { DTEPreviewDialog } from './dte-preview-dialog'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface BillingClientProps {
     organizationId: string
@@ -53,12 +54,65 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
     const [previewTab, setPreviewTab] = useState<'visual' | 'security' | 'xml'>('visual')
     const [statusFilter, setStatusFilter] = useState<'all' | 'official' | 'draft'>('official')
+    const [dtes, setDtes] = useState<any[]>(initialData)
+    const [statsState, setStatsState] = useState(stats)
 
-    const openPreview = (dte: any, tab: 'visual' | 'security' | 'xml') => {
-        setSelectedDTE(dte)
-        setPreviewTab(tab)
-        setIsPreviewOpen(true)
-    }
+    useEffect(() => {
+        setDtes(initialData)
+    }, [initialData])
+
+    useEffect(() => {
+        const signedAndAccepted = dtes.filter(d => ['signed', 'accepted', 'sent'].includes(d.status))
+        const totalDTEs = signedAndAccepted.length
+        const acceptedDTEs = dtes.filter(d => d.status === 'accepted').length
+        const signedDTEs = dtes.filter(d => d.status === 'signed').length
+        const totalFacturado = signedAndAccepted.reduce((sum, d) => sum + (d.monto_total || 0), 0)
+        
+        setStatsState(prev => ({
+            ...prev,
+            totalDTEs,
+            acceptedDTEs,
+            signedDTEs,
+            totalFacturado
+        }))
+    }, [dtes])
+
+    useEffect(() => {
+        const supabase = createClient()
+        const channel = supabase
+            .channel('dte_issued_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'dte_issued',
+                    filter: `organization_id=eq.${organizationId}`
+                },
+                (payload) => {
+                    console.log('🔄 [Realtime] DTE Change detected:', payload)
+                    if (payload.eventType === 'INSERT') {
+                        setDtes(prev => {
+                            if (prev.some(d => d.id === payload.new.id)) return prev
+                            return [payload.new, ...prev]
+                        })
+                        toast.success(`Nuevo DTE emitido: Folio ${payload.new.folio}`)
+                    } else if (payload.eventType === 'UPDATE') {
+                        setDtes(prev => prev.map(d => d.id === payload.new.id ? { ...d, ...payload.new } : d))
+                        if (payload.new.status === 'accepted') {
+                            toast.success(`DTE Folio ${payload.new.folio} aceptado por el SII`)
+                        }
+                    } else if (payload.eventType === 'DELETE') {
+                        setDtes(prev => prev.filter(d => d.id !== payload.old.id))
+                    }
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [organizationId])
 
     const downloadXML = (dte: any) => {
         if (!dte.xml_content) {
@@ -102,7 +156,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
         }
     }
 
-    const filteredData = initialData
+    const filteredData = dtes
         .filter(dte => {
             if (statusFilter === 'official') {
                 return ['signed', 'accepted', 'sent'].includes(dte.status)
@@ -155,7 +209,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">+12.5%</span>
                         </div>
                         <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">Total Facturado Bruto</h3>
-                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{formatCurrency(stats.totalFacturado)}</p>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{formatCurrency(statsState.totalFacturado)}</p>
                     </CardContent>
                 </Card>
 
@@ -168,7 +222,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                             <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-1 rounded-lg">SII Activo</span>
                         </div>
                         <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">DTEs Emitidos</h3>
-                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{stats.totalDTEs} <span className="text-sm text-muted-foreground not-italic font-bold">Docs</span></p>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{statsState.totalDTEs} <span className="text-sm text-muted-foreground not-italic font-bold">Docs</span></p>
                     </CardContent>
                 </Card>
 
@@ -180,7 +234,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                             </div>
                         </div>
                         <h3 className="text-xs font-black text-muted-foreground uppercase tracking-tighter mb-1">Folios Disponibles (CAF)</h3>
-                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{stats.availableFolios} <span className="text-sm text-amber-600 not-italic font-bold">Críticos</span></p>
+                        <p className="text-2xl font-black text-foreground tracking-tighter italic">{statsState.availableFolios} <span className="text-sm text-amber-600 not-italic font-bold">Críticos</span></p>
                     </CardContent>
                 </Card>
 
@@ -283,7 +337,20 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
                                         {formatCurrency(dte.monto_total)}
                                     </TableCell>
                                     <TableCell>
-                                        {getStatusBadge(dte.status)}
+                                        <div className="flex flex-col gap-1.5 items-start">
+                                            {getStatusBadge(dte.status)}
+                                            {dte.status !== 'draft' && dte.status !== 'error_signing' && (
+                                                <Badge variant="outline" className={
+                                                    dte.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' :
+                                                    dte.payment_status === 'partial' ? 'bg-amber-50 text-amber-700 border-amber-200 font-bold' :
+                                                    'bg-slate-50 text-slate-600 border-slate-200 font-bold'
+                                                }>
+                                                    {dte.payment_status === 'paid' ? 'Pagada' :
+                                                     dte.payment_status === 'partial' ? 'Pago Parcial' :
+                                                     'Pendiente'}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right pr-8">
                                         <div className="flex items-center justify-end gap-2">
