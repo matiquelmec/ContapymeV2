@@ -332,6 +332,13 @@ class DTELogic:
                     await centralize_dte_accounting(dte_id, self.organization_id)
                 except Exception as cent_err:
                     print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id}: {cent_err}")
+                
+                # Automatizar el cobro en tesorería si es Boleta (39 o 41)
+                if str(tipo_dte) in ['39', '41']:
+                    try:
+                        await self._auto_book_boleta_payment(dte_id, tipo_dte, folio, dte_record["fecha_emision"], dte_record["monto_total"])
+                    except Exception as pay_err:
+                        print(f"Advertencia: No se pudo registrar el pago automático de la Boleta {folio}: {pay_err}")
         except Exception as sii_e:
             sii_error_msg = f"DTE firmado localmente (Folio {folio}). Pendiente de envio al SII: {str(sii_e)}"
             print(sii_error_msg)
@@ -488,6 +495,115 @@ class DTELogic:
             except Exception as cent_err:
                 print(f"Advertencia: No se pudo centralizar contablemente el DTE {dte_id} en el reintento: {cent_err}")
             
+            # Automatizar el cobro en tesorería si es Boleta (39 o 41)
+            if str(dte["tipo_dte"]) in ['39', '41']:
+                try:
+                    await self._auto_book_boleta_payment(dte_id, dte["tipo_dte"], dte["folio"], dte["fecha_emision"], dte["monto_total"])
+                except Exception as pay_err:
+                    print(f"Advertencia: No se pudo registrar el pago automático de la Boleta {dte['folio']} en el reintento: {pay_err}")
+
             return {"status": "sent", "track_id": sii_res.get("track_id"), "message": f"DTE Folio {dte['folio']} enviado exitosamente al SII."}
         
         raise Exception(f"El SII no aceptó el envío: {sii_res}")
+
+    async def _auto_book_boleta_payment(self, dte_id: str, tipo_dte: int, folio: int, fecha_emision: str, monto_total: int):
+        """
+        Registra automáticamente el cobro en efectivo y su asiento de tesorería 
+        para boletas de venta al contado (DTE 39/41).
+        """
+        try:
+            # 1. Buscar o crear el medio de pago "Efectivo" para la organización
+            pm_res = self.supabase.table("payment_methods")\
+                .select("id")\
+                .eq("organization_id", self.organization_id)\
+                .eq("tipo", "efectivo")\
+                .eq("is_active", True)\
+                .limit(1)\
+                .execute()
+                
+            payment_method_id = None
+            if pm_res.data:
+                payment_method_id = pm_res.data[0]["id"]
+            else:
+                # Buscar la cuenta contable "Caja General" (1.1.01.001) para asociarla
+                acc_res = self.supabase.table("chart_of_accounts")\
+                    .select("id")\
+                    .eq("organization_id", self.organization_id)\
+                    .eq("codigo", "1.1.01.001")\
+                    .eq("activo", True)\
+                    .execute()
+                
+                chart_account_id = None
+                if acc_res.data:
+                    chart_account_id = acc_res.data[0]["id"]
+                else:
+                    # Fallback a buscar cualquier cuenta de Caja
+                    acc_fallback = self.supabase.table("chart_of_accounts")\
+                        .select("id")\
+                        .eq("organization_id", self.organization_id)\
+                        .eq("activo", True)\
+                        .ilike("nombre", "%caja%")\
+                        .limit(1)\
+                        .execute()
+                    if acc_fallback.data:
+                        chart_account_id = acc_fallback.data[0]["id"]
+                
+                if not chart_account_id:
+                    print(f"Advertencia: No se encontró cuenta contable de caja para el cobro automático de la Boleta {folio}.")
+                    return
+                
+                # Crear método de pago por defecto
+                pm_data = {
+                    "organization_id": self.organization_id,
+                    "nombre": "Caja General (Autogenerado)",
+                    "tipo": "efectivo",
+                    "chart_account_id": chart_account_id,
+                    "is_active": True
+                }
+                pm_insert = self.supabase.table("payment_methods").insert(pm_data).execute()
+                if pm_insert.data:
+                    payment_method_id = pm_insert.data[0]["id"]
+            
+            if not payment_method_id:
+                print(f"Advertencia: No se pudo determinar el medio de pago para la Boleta {folio}.")
+                return
+                
+            # 2. Registrar el cobro en Tesorería
+            payment_data = {
+                "organization_id": self.organization_id,
+                "tipo": "cobro_cliente",
+                "payment_method_id": payment_method_id,
+                "monto": monto_total,
+                "fecha_pago": fecha_emision,
+                "referencia": f"Boleta {folio}",
+                "notas": f"Cobro automático generado por la emisión de Boleta Folio {folio}"
+            }
+            pay_insert = self.supabase.table("treasury_payments").insert(payment_data).execute()
+            if not pay_insert.data:
+                print(f"Advertencia: No se pudo registrar el pago en tesorería para la Boleta {folio}.")
+                return
+            payment_id = pay_insert.data[0]["id"]
+            
+            # 3. Buscar el registro RCV (sales_records) para aplicar el pago
+            # Nota: la sincronización RCV ya ocurrió en create_and_sign_invoice
+            sales_res = self.supabase.table("sales_records")\
+                .select("id")\
+                .eq("organization_id", self.organization_id)\
+                .eq("folio", folio)\
+                .eq("tipo_documento", str(tipo_dte))\
+                .execute()
+                
+            if sales_res.data:
+                sales_record_id = sales_res.data[0]["id"]
+                # Aplicar el pago al documento RCV
+                app_data = {
+                    "payment_id": payment_id,
+                    "document_type": "sales_record",
+                    "document_id": sales_record_id,
+                    "monto_aplicado": monto_total,
+                    "organization_id": self.organization_id
+                }
+                self.supabase.table("treasury_payment_documents").insert(app_data).execute()
+                print(f"Cobro y conciliación automáticos de Boleta Folio {folio} realizados con éxito.")
+        except Exception as e:
+            print(f"Advertencia: Falló el cobro automático de la Boleta {folio}: {e}")
