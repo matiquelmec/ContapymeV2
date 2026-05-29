@@ -42,22 +42,22 @@ class DTESigner:
         """Firma el documento XML (DTE)."""
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}Documento", reference_id, pretty_print=True)
         
     def sign_seed(self, seed: str) -> str:
         """Firma la semilla (getToken)"""
         xml_string = f"<getToken><item><Semilla>{seed}</Semilla></item></getToken>"
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(xml_string.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".", "")
+        return self._sign_node(root, ".", "", pretty_print=False)
         
     def sign_envio(self, envio_xml: str, set_dte_id: str) -> str:
         """Firma el EnvioDTE (SetDTE)"""
         parser = etree.XMLParser(remove_blank_text=True)
         root = etree.fromstring(envio_xml.encode('ISO-8859-1'), parser)
-        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id)
+        return self._sign_node(root, ".//{http://www.sii.cl/SiiDte}SetDTE", set_dte_id, pretty_print=True)
 
-    def _sign_node(self, root: etree._Element, node_xpath: str, reference_id: str) -> str:
+    def _sign_node(self, root: etree._Element, node_xpath: str, reference_id: str, pretty_print: bool = False) -> str:
         if not self.private_key or not self.certificate:
             raise Exception("Certificado no cargado.")
             
@@ -119,7 +119,7 @@ class DTESigner:
         signature_elem = etree.fromstring(signature_xml)
         root.append(signature_elem)
         
-        xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True, pretty_print=True).decode('ISO-8859-1')
+        xml_str = etree.tostring(root, encoding='ISO-8859-1', xml_declaration=True, pretty_print=pretty_print).decode('ISO-8859-1')
         if xml_str.startswith("<?xml version='1.0'"):
             xml_str = xml_str.replace("<?xml version='1.0' encoding='ISO-8859-1'?>", '<?xml version="1.0" encoding="ISO-8859-1"?>', 1)
         return xml_str
