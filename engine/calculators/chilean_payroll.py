@@ -184,7 +184,7 @@ def calcular_gratificacion_legal(sueldo_base: int, sueldo_minimo: int) -> int:
     return min(gratif, tope_mensual)
 
 
-def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 44) -> int:
+def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 42) -> int:
     """
     Calcula el valor de horas extras (Art. 32 CT).
     Fórmula oficial Dirección del Trabajo: (Sueldo / 30) * 7 / Horas_Semanales * 1.5

@@ -631,7 +631,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
 
                                     <div className="py-3 flex flex-col sm:flex-row justify-between gap-1 text-xs">
                                         <span className="text-slate-500 font-bold uppercase tracking-tight">Estándar de Seguridad</span>
-                                        <span className="font-black text-primary uppercase tracking-widest flex items-center gap-1"><Scale className="w-4 h-4" /> ClicLaboral / SII Compliant</span>
+                                        <span className="font-black text-primary uppercase tracking-widest flex items-center gap-1"><Scale className="w-4 h-4" /> Contapymepuq / SII Compliant</span>
                                     </div>
 
                                 </div>

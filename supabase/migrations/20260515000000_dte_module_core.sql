@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS public.dte_issued (
     sii_message TEXT,
     xml_content TEXT, -- XML firmado
     pdf_url TEXT,
-    integrity_hash TEXT, -- Estándar ClicLaboral
+    integrity_hash TEXT, -- Estándar Contapymepuq
     previous_hash TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
@@ -112,7 +112,7 @@ CREATE POLICY "dte_issued_isolation" ON public.dte_issued
 
 -- [Triggers de integridad y auditoría se omiten en este mensaje por brevedad, pero están incluidos en el archivo]
 
--- 🛡️ TRIGGER: CRYPTO HASH CHAIN (Estándar ClicLaboral)
+-- 🛡️ TRIGGER: CRYPTO HASH CHAIN (Estándar Contapymepuq)
 CREATE OR REPLACE FUNCTION public.compute_dte_integrity()
 RETURNS TRIGGER AS $$
 DECLARE
