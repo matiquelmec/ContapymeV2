@@ -476,6 +476,79 @@ def calcular_liquidacion(
     return res
 
 
+def calcular_sueldo_base_desde_liquido(
+    target_liquido: int,
+    gratificacion_legal: bool,
+    afp_code: str,
+    afp_comision_pct: float,
+    salud_code: str,
+    plan_salud_uf: float,
+    tipo_contrato: str,
+    asignacion_movilizacion: int,
+    asignacion_colacion: int,
+    settings: PayrollSettings,
+    utm_valor: float,
+    es_zona_extrema: bool = False,
+    zona_extrema: str = ""
+) -> LiquidacionResult:
+    """
+    Calcula el sueldo base y la liquidación detallada correspondiente
+    para alcanzar un sueldo líquido objetivo (target_liquido) mediante bisección.
+    """
+    # Rango inicial para la búsqueda por bisección del sueldo base.
+    # El sueldo base no puede ser negativo, y raramente excederá el sueldo líquido * 3.
+    low = 0.0
+    high = max(100000000.0, float(target_liquido) * 3.0)
+    best_res = None
+
+    # Con 40 iteraciones la precisión numérica llega a menos de 1 peso (2^-40 de 100M es ~0.0001)
+    for _ in range(40):
+        mid = (low + high) / 2.0
+        emp_input = EmployeeInput(
+            sueldo_base=int(mid),
+            tipo_contrato=tipo_contrato,
+            afp_code=afp_code,
+            afp_comision_pct=afp_comision_pct,
+            salud_code=salud_code,
+            plan_salud_uf=plan_salud_uf,
+            gratificacion_legal=gratificacion_legal,
+            asignacion_movilizacion=asignacion_movilizacion,
+            asignacion_colacion=asignacion_colacion,
+            dias_trabajados=30,
+            es_zona_extrema=es_zona_extrema,
+            zona_extrema=zona_extrema
+        )
+        res = calcular_liquidacion(emp_input, settings, utm_valor)
+        best_res = res
+
+        if res.sueldo_liquido < target_liquido:
+            low = mid
+        else:
+            high = mid
+
+    # Asegurar que el sueldo base en el resultado sea el entero final redondeado
+    if best_res:
+        # Volvemos a calcular una última vez con el sueldo_base redondeado a entero
+        final_base = int(round(low))
+        emp_input = EmployeeInput(
+            sueldo_base=final_base,
+            tipo_contrato=tipo_contrato,
+            afp_code=afp_code,
+            afp_comision_pct=afp_comision_pct,
+            salud_code=salud_code,
+            plan_salud_uf=plan_salud_uf,
+            gratificacion_legal=gratificacion_legal,
+            asignacion_movilizacion=asignacion_movilizacion,
+            asignacion_colacion=asignacion_colacion,
+            dias_trabajados=30,
+            es_zona_extrema=es_zona_extrema,
+            zona_extrema=zona_extrema
+        )
+        best_res = calcular_liquidacion(emp_input, settings, utm_valor)
+
+    return best_res
+
+
 def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -> dict:
     """
     Convierte un LiquidacionResult al dict listo para insertar en la tabla

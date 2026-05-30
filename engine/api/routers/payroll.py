@@ -405,3 +405,145 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
     except Exception as e:
         logger.exception("Error en proceso de nómina")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ReversePayrollRequest(BaseModel):
+    org_id: str
+    target_liquido: int
+    periodo: str  # YYYY-MM
+    gratificacion_legal: bool = True
+    afp_code: str = "HABITAT"
+    afp_comision_pct: Optional[float] = None
+    salud_code: str = "FONASA"
+    plan_salud_uf: float = 0.0
+    tipo_contrato: str = "indefinido"
+    asignacion_movilizacion: int = 0
+    asignacion_colacion: int = 0
+    es_zona_extrema: bool = False
+    zona_extrema: str = ""
+
+
+@router.post("/calculate-base")
+async def calculate_base_salary(
+    req: ReversePayrollRequest,
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Calcula el sueldo base necesario a partir de un sueldo líquido deseado.
+    """
+    await verify_org_role(req.org_id, auth=current_user)
+    db = get_supabase()
+
+    try:
+        # Cargar configuración de empresa
+        cfg_res = db.table("organization_payroll_settings") \
+            .select("*") \
+            .eq("organization_id", req.org_id) \
+            .execute()
+        cfg = cfg_res.data[0] if cfg_res.data else {}
+
+        # Determinar indicadores económicos (UF y UTM)
+        periodo_clean = req.periodo[:7]
+        target_period_start = f"{periodo_clean}-01"
+        
+        uf_valor = 38000.0
+        utm_valor = 67294.0
+
+        try:
+            ind_res = db.table("economic_indicators") \
+                .select("codigo, valor") \
+                .in_("codigo", ["uf", "utm"]) \
+                .lte("fecha", target_period_start) \
+                .order("fecha", desc=True) \
+                .limit(2) \
+                .execute()
+
+            if ind_res.data:
+                for ind in ind_res.data:
+                    if ind["codigo"] == "uf":
+                        uf_valor = float(ind["valor"])
+                    elif ind["codigo"] == "utm":
+                        utm_valor = float(ind["valor"])
+        except Exception as e:
+            logger.warning(f"Error al obtener indicadores económicos para la calculadora: {e}")
+
+        # Cargar parámetros nacionales
+        p_sueldo_minimo = SUELDO_MINIMO
+        p_tope_afp = TOPE_AFP_UF
+        p_tope_salud = TOPE_SALUD_UF
+        p_tope_afc = TOPE_AFC_UF
+        p_sis = SIS_PCT
+        p_afc_ind_trab = AFC_INDEFINIDO_TRABAJADOR_PCT
+        p_afc_ind_emp = AFC_INDEFINIDO_EMPRESA_PCT
+        p_afc_fijo_emp = AFC_FIJO_EMPRESA_PCT
+
+        try:
+            param_res = db.table("national_payroll_params") \
+                .select("*") \
+                .eq("periodo", target_period_start) \
+                .execute()
+            if param_res.data:
+                p_data = param_res.data[0]
+                p_sueldo_minimo = int(p_data.get("sueldo_minimo", p_sueldo_minimo))
+                p_tope_afp = float(p_data.get("tope_afp_uf", p_tope_afp))
+                p_tope_salud = float(p_data.get("tope_salud_uf", p_tope_salud))
+                p_tope_afc = float(p_data.get("tope_afc_uf", p_tope_afc))
+                p_sis = float(p_data.get("sis_pct", p_sis))
+                p_afc_ind_trab = float(p_data.get("afc_indefinido_trabajador_pct", p_afc_ind_trab))
+                p_afc_ind_emp = float(p_data.get("afc_indefinido_empresa_pct", p_afc_ind_emp))
+                p_afc_fijo_emp = float(p_data.get("afc_fijo_empresa_pct", p_afc_fijo_emp))
+        except Exception as e:
+            logger.warning(f"Error al obtener parámetros legales para la calculadora: {e}")
+
+        settings = PayrollSettings(
+            uf_valor=uf_valor,
+            uf_tope_afp=p_tope_afp,
+            uf_tope_salud=p_tope_salud,
+            uf_tope_afc=p_tope_afc,
+            sueldo_minimo=p_sueldo_minimo,
+            afp_sis_pct=p_sis,
+            afc_indefinido_trabajador_pct=p_afc_ind_trab,
+            afc_indefinido_empresa_pct=p_afc_ind_emp,
+            afc_fijo_empresa_pct=p_afc_fijo_emp,
+        )
+
+        # Resolver comisión AFP
+        afp_comision_pct = req.afp_comision_pct
+        if afp_comision_pct is None:
+            afp_comision_pct = get_afp_comision(req.afp_code.upper())
+            if cfg.get("afp_configs"):
+                for afp in cfg["afp_configs"]:
+                    if afp.get("code") == req.afp_code.upper():
+                        afp_comision_pct = float(afp.get("commission_pct", afp_comision_pct))
+                        break
+
+        # Llamar a la función de cálculo inverso
+        from calculators.chilean_payroll import calcular_sueldo_base_desde_liquido, to_db_dict
+        res = calcular_sueldo_base_desde_liquido(
+            target_liquido=req.target_liquido,
+            gratificacion_legal=req.gratificacion_legal,
+            afp_code=req.afp_code.upper(),
+            afp_comision_pct=afp_comision_pct,
+            salud_code=req.salud_code.upper(),
+            plan_salud_uf=req.plan_salud_uf,
+            tipo_contrato=req.tipo_contrato,
+            asignacion_movilizacion=req.asignacion_movilizacion,
+            asignacion_colacion=req.asignacion_colacion,
+            settings=settings,
+            utm_valor=utm_valor,
+            es_zona_extrema=req.es_zona_extrema,
+            zona_extrema=req.zona_extrema
+        )
+
+        return {
+            "success": True,
+            "sueldo_base": res.sueldo_base,
+            "uf_usada": uf_valor,
+            "utm_usada": utm_valor,
+            "liquidacion": to_db_dict(res, req.org_id, "00000000-0000-0000-0000-000000000000", target_period_start)
+        }
+
+    except Exception as e:
+        logger.exception("Error al calcular sueldo base desde líquido")
+        raise HTTPException(status_code=500, detail=str(e))
+

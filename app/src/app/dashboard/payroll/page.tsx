@@ -12,7 +12,8 @@ import {
   Calendar as CalendarIcon, 
   Briefcase, 
   RefreshCcw,
-  CheckCircle2
+  CheckCircle2,
+  Calculator
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -122,6 +123,15 @@ export default async function PayrollPage({
             >
               <FileText className="w-4 h-4 mr-2" />
               Libro LRE
+            </Button>
+          </Link>
+          <Link href="/dashboard/payroll/calculator">
+            <Button
+              variant="outline"
+              className="border-blue-200 bg-blue-50/30 text-blue-700 hover:bg-blue-50 hover:border-blue-300 font-black uppercase text-xs tracking-widest rounded-[1.5rem] h-11 px-6 shadow-lg shadow-blue-500/5 transition-all"
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              Calculadora Inversa
             </Button>
           </Link>
           <Link href="/dashboard/payroll/novedades">

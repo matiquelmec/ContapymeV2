@@ -139,7 +139,7 @@ class SIIClient:
 </SOAP-ENV:Envelope>"""
 
         import asyncio
-        max_retries = 3
+        max_retries = 5
         delay = 1.0
 
         for attempt in range(max_retries):
@@ -170,6 +170,15 @@ class SIIClient:
                     glosa = glosa_nodes[0].text if glosa_nodes else None
 
                     if estado != "00":
+                        # Estado 10: error interno SII, normalmente transitorio.
+                        if estado == "10" and attempt < (max_retries - 1):
+                            logger.warning(
+                                f"Token SII estado 10, reintentando ({attempt + 1}/{max_retries}): {glosa}. Response body: {resp.text}"
+                            )
+                            await asyncio.sleep(delay)
+                            delay *= 2
+                            continue
+
                         # Registrar la respuesta completa en DEBUG y propagar una excepción corta.
                         resp_text = resp.text if hasattr(resp, 'text') else None
                         logger.debug("SII get_token full response: %s", resp_text)

@@ -331,6 +331,44 @@ export async function getLiquidationByFolio(folio: string) {
     .single()
 
   if (error) return { data: null, error: error.message }
-
   return { data, error: null }
+}
+
+export async function calculateBaseSalaryAction(params: {
+  target_liquido: number;
+  periodo: string;
+  gratificacion_legal: boolean;
+  afp_code: string;
+  salud_code: string;
+  plan_salud_uf: number;
+  tipo_contrato: string;
+  asignacion_movilizacion: number;
+  asignacion_colacion: number;
+  es_zona_extrema: boolean;
+  zona_extrema: string;
+}) {
+  try {
+    const { getActiveOrganizationId } = await import('./organizations')
+    const activeOrgId = await getActiveOrganizationId()
+    if (!activeOrgId) return { success: false, error: 'No se encontró empresa activa.' }
+
+    const { engineFetch } = await import('@/lib/engine-client')
+    const response = await engineFetch('/api/v1/payroll/calculate-base', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        org_id: activeOrgId,
+        ...params
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Error al calcular sueldo base');
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Error inesperado al conectar con el motor.' };
+  }
 }
