@@ -217,31 +217,83 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           </div>
         </div>
 
-        {/* Marco de Imagen de alto impacto - Asimétrico */}
+        {/* Contenedor de Teléfono Móvil 3D en Perspectiva */}
         <div style={{
           margin: '20px 80px 40px 80px',
-          borderRadius: '32px',
-          overflow: 'hidden',
           flex: '1',
           maxHeight: '850px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
           position: 'relative',
-          border: '3px solid rgba(0, 242, 254, 0.4)', // Borde cian neón en imagen
-          boxShadow: '0 20px 50px rgba(0, 242, 254, 0.15)',
+          perspective: '1200px', // Perspectiva 3D
           zIndex: 10,
         }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={title}
-            crossOrigin="anonymous"
-            style={{
+          {/* Resplandor neón (glow) detrás del teléfono */}
+          <div style={{
+            position: 'absolute',
+            width: '450px',
+            height: '800px',
+            background: 'radial-gradient(circle, rgba(0, 242, 254, 0.25) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            transform: 'rotateY(-15deg) rotateX(10deg) translateZ(-50px)',
+            zIndex: 1,
+          }} />
+
+          {/* Cuerpo del Teléfono Inteligente en 3D */}
+          <div style={{
+            width: '420px',
+            height: '780px',
+            backgroundColor: '#090d16',
+            borderRadius: '50px',
+            padding: '16px',
+            boxSizing: 'border-box',
+            border: '4px solid rgba(0, 242, 254, 0.6)', // Borde neón cian
+            boxShadow: '0 25px 60px -15px rgba(0, 242, 254, 0.3), -20px 20px 40px rgba(0,0,0,0.7)',
+            transform: 'rotateY(-15deg) rotateX(10deg) rotateZ(-3deg)', // Inclinación 3D realista
+            transformStyle: 'preserve-3d',
+            position: 'relative',
+            zIndex: 5,
+          }}>
+            {/* Altavoz superior / Notch del teléfono */}
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '120px',
+              height: '18px',
+              backgroundColor: '#020712',
+              borderRadius: '20px',
+              border: '1px solid rgba(0, 242, 254, 0.2)',
+              zIndex: 10,
+            }} />
+
+            {/* Pantalla del teléfono */}
+            <div style={{
               width: '100%',
               height: '100%',
-              objectFit: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'contain' : 'cover',
-              padding: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? '120px' : '0',
-              backgroundColor: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'rgba(255,255,255,0.03)' : 'transparent',
-            }}
-          />
+              borderRadius: '36px',
+              overflow: 'hidden',
+              position: 'relative',
+              backgroundColor: '#020712',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={title}
+                crossOrigin="anonymous"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'contain' : 'cover',
+                  padding: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? '70px' : '0',
+                  backgroundColor: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'rgba(255,255,255,0.03)' : 'transparent',
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Sección de Textos (Diseño suizo editorial masivo) */}
