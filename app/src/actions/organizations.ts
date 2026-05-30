@@ -31,6 +31,24 @@ export async function getUserOrganizations() {
 }
 
 export async function setActiveOrganization(orgId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'No autenticado' }
+  }
+
+  const { data: membership, error } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (error || !membership) {
+    return { success: false, error: 'No perteneces a esta organizacion' }
+  }
+
   const cookieStore = await cookies()
   cookieStore.set('active_organization_id', orgId, {
     path: '/',

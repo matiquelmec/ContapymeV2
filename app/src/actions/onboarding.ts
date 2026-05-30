@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { normalizeRUT } from '@/lib/utils/rut'
 
@@ -20,12 +21,23 @@ export async function updateProfileOnboarding(data: {
 
   if (!user) throw new Error('No autenticado')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('preferences')
+    .eq('id', user.id)
+    .single()
+
+  const preferences = {
+    ...(profile?.preferences || {}),
+    professional_role: data.role,
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({
       full_name: data.fullName,
       phone: data.phone,
-      role: data.role,
+      preferences,
     })
     .eq('id', user.id)
 
@@ -144,7 +156,19 @@ export async function seedPayrollSettings(organizationId: string, repLegalNombre
 
   if (!user) throw new Error('No autenticado')
 
-  const { error } = await supabase.rpc('seed_payroll_settings', {
+  const { data: membership, error: membershipError } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (membershipError || !membership) {
+    return { success: false, error: 'No perteneces a esta organizacion.' }
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin.rpc('seed_payroll_settings', {
     p_org_id: organizationId,
     p_rep_nombre: repLegalNombre,
     p_rep_rut: normalizeRUT(repLegalRut)
