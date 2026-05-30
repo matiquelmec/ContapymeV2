@@ -152,68 +152,93 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           pointerEvents: 'none',
         }} />
 
-        {/* Header / Branding (Alineación superior minimalista) */}
+        {/* Header / Branding Disruptivo "Infórmate Con" */}
         <div style={{
-          padding: '100px 80px 40px 80px',
+          padding: '110px 80px 40px 80px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          flexDirection: 'column',
           width: '100%',
           boxSizing: 'border-box',
           position: 'relative',
           zIndex: 10,
+          gap: '24px'
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%'
           }}>
-            {/* Logo Oficial de Contapymepuq - Sin recuadros, se fusiona directamente con el fondo */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/logo-contapyme.png" 
-              alt="Contapymepuq Logo"
-              style={{
-                height: '190px',
-                width: 'auto',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 8px rgba(0, 242, 254, 0.2))', // Efecto neón suave en el logo
-              }}
-              crossOrigin="anonymous"
-            />
-            
+            {/* Contenedor "INFÓRMATE CON" + Logo */}
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              marginLeft: '36px'
+              gap: '12px'
             }}>
               <span style={{
-                color: '#ffffff',
-                fontSize: '44px',
-                fontWeight: 950,
-                letterSpacing: '5px',
+                color: '#00f2fe',
+                fontSize: '24px',
+                fontWeight: 900,
+                letterSpacing: '8px',
                 textTransform: 'uppercase',
                 fontStyle: 'italic',
-                lineHeight: 1.1,
+                textShadow: '0 0 10px rgba(0, 242, 254, 0.4)'
               }}>
-                DIARIO
+                INFÓRMATE CON
               </span>
+              
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(2, 7, 18, 0.6)',
+                border: '2px solid rgba(0, 242, 254, 0.3)',
+                padding: '16px 28px',
+                borderRadius: '24px',
+                boxShadow: '0 10px 30px rgba(0, 242, 254, 0.08)',
+                backdropFilter: 'blur(10px)',
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src="/logo-contapyme.png" 
+                  alt="Contapymepuq Logo"
+                  style={{
+                    height: '80px',
+                    width: 'auto',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 0 12px rgba(0, 242, 254, 0.4))', // Resalte del logo neón
+                  }}
+                  crossOrigin="anonymous"
+                />
+                <span style={{
+                  color: '#ffffff',
+                  fontSize: '38px',
+                  fontWeight: 950,
+                  letterSpacing: '4px',
+                  textTransform: 'uppercase',
+                  marginLeft: '20px',
+                  fontStyle: 'italic'
+                }}>
+                  ContaPyme
+                </span>
+              </div>
             </div>
-          </div>
-          
-          {/* Categoria Badge minimalista en negro */}
-          <div style={{
-            background: 'rgba(0, 242, 254, 0.15)',
-            border: '1px solid rgba(0, 242, 254, 0.3)',
-            borderRadius: '16px',
-            padding: '16px 36px',
-            color: '#00f2fe',
-            fontSize: '22px',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            letterSpacing: '4px',
-            fontStyle: 'italic',
-          }}>
-            {category}
+
+            {/* Categoría con diseño insignia flotante */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.25) 0%, rgba(2, 7, 18, 0.9) 100%)',
+              border: '2px solid #00f2fe',
+              borderRadius: '20px',
+              padding: '20px 40px',
+              color: '#ffffff',
+              fontSize: '24px',
+              fontWeight: 950,
+              textTransform: 'uppercase',
+              letterSpacing: '5px',
+              fontStyle: 'italic',
+              boxShadow: '0 0 20px rgba(0, 242, 254, 0.2)'
+            }}>
+              {category}
+            </div>
           </div>
         </div>
 
