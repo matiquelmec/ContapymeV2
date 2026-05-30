@@ -7,11 +7,13 @@ import {
   Share2, 
   Copy, 
   Check, 
-  HelpCircle,
   ArrowRight,
   TrendingUp,
   Percent,
-  DollarSign
+  DollarSign,
+  Building,
+  Shield,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -21,6 +23,16 @@ const SUELDO_MINIMO = 529000;
 const UTM_VALOR = 67294;
 const UF_VALOR = 38000;
 const TOPE_AFP_UF = 84.3;
+
+const AFPS = [
+  { code: "HABITAT", name: "Habitat", commission: 1.27 },
+  { code: "CAPITAL", name: "Capital", commission: 1.44 },
+  { code: "CUPRUM", name: "Cuprum", commission: 1.44 },
+  { code: "MODELO", name: "Modelo", commission: 0.58 },
+  { code: "PLANVITAL", name: "Planvital", commission: 1.16 },
+  { code: "UNO", name: "Uno", commission: 0.69 },
+  { code: "PROVIDA", name: "Provida", commission: 1.45 }
+];
 
 const TRAMOS_IMPUESTO = [
   { inf: 0, sup: 13.5, tasa: 0.00, rebaja: 0.000 },
@@ -33,24 +45,81 @@ const TRAMOS_IMPUESTO = [
   { inf: 310.0, sup: Infinity, tasa: 0.40, rebaja: 38.820 }
 ];
 
-function forwardCalculation(base: number, gratificacion: boolean, indefinido: boolean) {
+function forwardCalculation(params: {
+  base: number;
+  gratificacion: boolean;
+  afpCode: string;
+  saludCode: string;
+  planSaludUf: number;
+  tipoContrato: string;
+  asignacionMovilizacion: number;
+  asignacionColacion: number;
+  esZonaExtrema: boolean;
+}) {
+  const {
+    base,
+    gratificacion,
+    afpCode,
+    saludCode,
+    planSaludUf,
+    tipoContrato,
+    asignacionMovilizacion,
+    asignacionColacion,
+    esZonaExtrema
+  } = params;
+
+  // 1. Gratificación
   let grat = 0;
   if (gratificacion) {
     const topeGrat = Math.floor((4.75 * SUELDO_MINIMO) / 12);
     grat = Math.min(Math.floor(base * 0.25), topeGrat);
   }
-  
-  const bruto = base + grat;
+
+  // Haberes imponibles y brutos
+  const brutoImponible = base + grat;
+  const totalHaberesBrutos = brutoImponible + asignacionMovilizacion + asignacionColacion;
+
+  // 2. Límites imponibles
   const topePesos = Math.floor(TOPE_AFP_UF * UF_VALOR);
-  const imponible = Math.min(bruto, topePesos);
-  
-  const afp = Math.floor(imponible * 0.112); // Promedio estimado de 10% + 1.2% comisión
-  const salud = Math.floor(imponible * 0.07); // Fonasa estándar
-  const afc = indefinido ? Math.floor(imponible * 0.006) : 0;
-  
-  const baseImpuesto = imponible - afp - salud - afc;
-  
+  const imponibleTope = Math.min(brutoImponible, topePesos);
+
+  // 3. AFP
+  const afpInfo = AFPS.find(a => a.code === afpCode) || AFPS[0];
+  const afpRate = (10.0 + afpInfo.commission) / 100.0;
+  const afp = Math.floor(imponibleTope * afpRate);
+
+  // 4. Salud
+  let saludTotal = 0;
+  let saludVoluntaria = 0;
+  const salud7Pct = Math.floor(imponibleTope * 0.07);
+
+  if (saludCode === "FONASA") {
+    saludTotal = salud7Pct;
+  } else {
+    // Isapre
+    const planPesos = Math.floor(planSaludUf * UF_VALOR);
+    saludTotal = Math.max(salud7Pct, planPesos);
+    saludVoluntaria = Math.max(0, saludTotal - salud7Pct);
+  }
+
+  // 5. AFC (Seguro Cesantía)
+  let afcTrabajador = 0;
+  let afcEmpresa = 0;
+  if (tipoContrato === "indefinido") {
+    afcTrabajador = Math.floor(imponibleTope * 0.006);
+    afcEmpresa = Math.floor(imponibleTope * 0.024);
+  } else {
+    afcTrabajador = 0;
+    afcEmpresa = Math.floor(imponibleTope * 0.03);
+  }
+
+  // SIS
+  const sisEmpresa = Math.floor(imponibleTope * 0.0149);
+
+  // 6. Impuesto Único de Segunda Categoría
+  const baseImpuesto = imponibleTope - afp - salud7Pct - afcTrabajador;
   let impuesto = 0;
+
   if (baseImpuesto > 0) {
     const baseUtm = baseImpuesto / UTM_VALOR;
     for (const tramo of TRAMOS_IMPUESTO) {
@@ -61,38 +130,59 @@ function forwardCalculation(base: number, gratificacion: boolean, indefinido: bo
       }
     }
   }
-  
-  const descuentos = afp + salud + afc + impuesto;
-  const liquido = bruto - descuentos;
-  
+
+  // Rebaja de Zona Extrema (DL 889): 98% de rebaja al impuesto en Magallanes
+  if (esZonaExtrema) {
+    impuesto = Math.floor(impuesto * 0.02);
+  }
+
+  const totalDescuentosLegales = afp + saludTotal + afcTrabajador + impuesto;
+  const liquido = totalHaberesBrutos - totalDescuentosLegales;
+
   return {
     sueldoBase: base,
     gratificacion: grat,
-    bruto,
+    asignacionMovilizacion,
+    asignacionColacion,
+    totalHaberesBrutos,
     afp,
-    salud,
-    afc,
+    salud: salud7Pct,
+    saludVoluntaria,
+    saludTotal,
+    afcTrabajador,
+    afcEmpresa,
+    sisEmpresa,
     impuesto,
-    descuentos,
-    liquido
+    totalDescuentosLegales,
+    sueldoLiquido: liquido
   };
 }
 
-function runBisection(targetLiquido: number, gratificacion: boolean, indefinido: boolean) {
+function runBisection(params: {
+  targetLiquido: number;
+  gratificacion: boolean;
+  afpCode: string;
+  saludCode: string;
+  planSaludUf: number;
+  tipoContrato: string;
+  asignacionMovilizacion: number;
+  asignacionColacion: number;
+  esZonaExtrema: boolean;
+}) {
   let low = 0;
-  let high = Math.max(100000000, targetLiquido * 3);
+  let high = Math.max(100000000, params.targetLiquido * 3);
   
   for (let i = 0; i < 40; i++) {
     const mid = (low + high) / 2;
-    const res = forwardCalculation(mid, gratificacion, indefinido);
-    if (res.liquido < targetLiquido) {
+    const res = forwardCalculation({ ...params, base: mid });
+    if (res.sueldoLiquido < params.targetLiquido) {
       low = mid;
     } else {
       high = mid;
     }
   }
   
-  return forwardCalculation(Math.round(low), gratificacion, indefinido);
+  return forwardCalculation({ ...params, base: Math.round(low) });
 }
 
 const formatCLP = (amount: number) =>
@@ -100,123 +190,282 @@ const formatCLP = (amount: number) =>
 
 function CalculatorContent() {
   const searchParams = useSearchParams();
-  const [liquido, setLiquido] = useState<number>(1000000);
+  const [targetLiquido, setTargetLiquido] = useState<number>(1000000);
   const [gratificacion, setGratificacion] = useState<boolean>(true);
-  const [indefinido, setIndefinido] = useState<boolean>(true);
-  
+  const [tipoContrato, setTipoContrato] = useState<string>("indefinido");
+  const [afpCode, setAfpCode] = useState<string>("HABITAT");
+  const [saludCode, setSaludCode] = useState<string>("FONASA");
+  const [planSaludUf, setPlanSaludUf] = useState<number>(0);
+  const [asignacionMovilizacion, setAsignacionMovilizacion] = useState<number>(0);
+  const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
+  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(true); // Por defecto en Magallanes (portada regional)
+
   const [result, setResult] = useState<any>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Leer params de la URL si existen
+  // Cargar de URL si existe
   useEffect(() => {
-    const urlLiquido = searchParams.get("liq");
+    const urlLiq = searchParams.get("liq");
     const urlGrat = searchParams.get("grat");
-    const urlInd = searchParams.get("ind");
+    const urlCont = searchParams.get("cont");
+    const urlAfp = searchParams.get("afp");
+    const urlSalud = searchParams.get("salud");
+    const urlUf = searchParams.get("uf");
+    const urlMov = searchParams.get("mov");
+    const urlCol = searchParams.get("col");
+    const urlZona = searchParams.get("zona");
 
-    if (urlLiquido) setLiquido(Math.max(0, parseInt(urlLiquido) || 1000000));
+    if (urlLiq) setTargetLiquido(Math.max(0, parseInt(urlLiq) || 1000000));
     if (urlGrat) setGratificacion(urlGrat === "true");
-    if (urlInd) setIndefinido(urlInd === "true");
+    if (urlCont) setTipoContrato(urlCont);
+    if (urlAfp) setAfpCode(urlAfp.toUpperCase());
+    if (urlSalud) setSaludCode(urlSalud.toUpperCase());
+    if (urlUf) setPlanSaludUf(parseFloat(urlUf) || 0);
+    if (urlMov) setAsignacionMovilizacion(parseInt(urlMov) || 0);
+    if (urlCol) setAsignacionColacion(parseInt(urlCol) || 0);
+    if (urlZona) setEsZonaExtrema(urlZona === "true");
   }, [searchParams]);
 
   useEffect(() => {
-    const res = runBisection(liquido, gratificacion, indefinido);
+    const res = runBisection({
+      targetLiquido,
+      gratificacion,
+      afpCode,
+      saludCode,
+      planSaludUf,
+      tipoContrato,
+      asignacionMovilizacion,
+      asignacionColacion,
+      esZonaExtrema
+    });
     setResult(res);
-  }, [liquido, gratificacion, indefinido]);
+  }, [
+    targetLiquido,
+    gratificacion,
+    afpCode,
+    saludCode,
+    planSaludUf,
+    tipoContrato,
+    asignacionMovilizacion,
+    asignacionColacion,
+    esZonaExtrema
+  ]);
 
   const handleShareLink = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${liquido}&grat=${gratificacion}&ind=${indefinido}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}`;
     
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
-    toast.success("Enlace de cálculo copiado al portapapeles.");
+    toast.success("Enlace de simulación exacta copiado.");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShareWhatsApp = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${liquido}&grat=${gratificacion}&ind=${indefinido}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}`;
     const text = encodeURIComponent(
-      `📊 ¡Calculé un Sueldo Base de ${formatCLP(result?.sueldoBase || 0)} para obtener un líquido de ${formatCLP(liquido)}! Calcula el tuyo aquí: ${shareUrl}`
+      `📊 ¡Simulé un Sueldo Base de ${formatCLP(result?.sueldoBase || 0)} para obtener un líquido de ${formatCLP(targetLiquido)}! Calcula el tuyo con leyes sociales en vivo aquí: ${shareUrl}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
 
   return (
     <div className="space-y-4">
-      {/* Inputs */}
-      <div className="space-y-2.5">
-        <div className="relative">
-          <span className="absolute left-3 inset-y-0 flex items-center text-xs font-black text-slate-400">$</span>
-          <input
-            type="number"
-            className="w-full h-9 rounded-lg border border-primary/15 bg-white pl-6 pr-3 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder="Sueldo Líquido Deseado"
-            value={liquido}
-            onChange={(e) => setLiquido(Math.max(0, parseInt(e.target.value) || 0))}
-          />
+      {/* Inputs de Entrada */}
+      <div className="space-y-3">
+        {/* Sueldo Líquido */}
+        <div className="space-y-1">
+          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Sueldo Líquido Objetivo</label>
+          <div className="relative">
+            <span className="absolute left-3 inset-y-0 flex items-center text-xs font-black text-slate-400">$</span>
+            <input
+              type="number"
+              className="w-full h-10 rounded-xl border border-primary/15 bg-white pl-6 pr-3 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={targetLiquido}
+              onChange={(e) => setTargetLiquido(Math.max(0, parseInt(e.target.value) || 0))}
+            />
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 px-1">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+        {/* Tipo de Contrato y AFP */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Contrato</label>
+            <select
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={tipoContrato}
+              onChange={(e) => setTipoContrato(e.target.value)}
+            >
+              <option value="indefinido">Indefinido</option>
+              <option value="fijo">Plazo Fijo</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Previsión AFP</label>
+            <select
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={afpCode}
+              onChange={(e) => setAfpCode(e.target.value)}
+            >
+              {AFPS.map(a => (
+                <option key={a.code} value={a.code}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Salud y UF */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Salud</label>
+            <select
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={saludCode}
+              onChange={(e) => {
+                setSaludCode(e.target.value);
+                if (e.target.value === "FONASA") setPlanSaludUf(0);
+              }}
+            >
+              <option value="FONASA">FONASA (7%)</option>
+              <option value="ISAPRE">ISAPRE</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Plan Isapre (UF)</label>
+            <input
+              type="number"
+              step="0.01"
+              disabled={saludCode === "FONASA"}
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
+              value={planSaludUf}
+              onChange={(e) => setPlanSaludUf(Math.max(0, parseFloat(e.target.value) || 0))}
+            />
+          </div>
+        </div>
+
+        {/* Asignaciones no imponibles */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Movilización ($)</label>
+            <input
+              type="number"
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={asignacionMovilizacion}
+              onChange={(e) => setAsignacionMovilizacion(Math.max(0, parseInt(e.target.value) || 0))}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Colación ($)</label>
+            <input
+              type="number"
+              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={asignacionColacion}
+              onChange={(e) => setAsignacionColacion(Math.max(0, parseInt(e.target.value) || 0))}
+            />
+          </div>
+        </div>
+
+        {/* Toggles Rápidos */}
+        <div className="flex items-center justify-between gap-2 px-1 pt-1.5 border-t border-slate-100">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={gratificacion}
               onChange={(e) => setGratificacion(e.target.checked)}
               className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary/10"
             />
-            <span className="text-[10px] font-black uppercase text-slate-600">Con Gratificación</span>
+            <span className="text-[9px] font-black uppercase text-slate-600">Gratificación (Art. 50)</span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <input
               type="checkbox"
-              checked={indefinido}
-              onChange={(e) => setIndefinido(e.target.checked)}
+              checked={esZonaExtrema}
+              onChange={(e) => setEsZonaExtrema(e.target.checked)}
               className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary/10"
             />
-            <span className="text-[10px] font-black uppercase text-slate-600">Indefinido</span>
+            <span className="text-[9px] font-black uppercase text-slate-600">Zona Extrema (DL 889)</span>
           </label>
         </div>
       </div>
 
-      {/* Resultados rápidos */}
+      {/* Resultados Completos en Acordeón Detallado */}
       {result && (
-        <div className="bg-slate-100/80 border border-slate-200/50 rounded-xl p-3.5 space-y-2.5 font-mono text-[10.5px]">
-          <div className="flex justify-between items-center text-slate-800">
-            <span className="font-sans font-bold text-slate-500">Sueldo Base:</span>
-            <span className="font-black text-xs text-primary">{formatCLP(result.sueldoBase)}</span>
+        <div className="space-y-2.5 pt-2 border-t border-slate-200">
+          {/* Tarjeta Principal KPI */}
+          <div className="bg-emerald-500/[0.04] border border-emerald-500/10 rounded-xl p-3.5 text-center space-y-1">
+            <p className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">Sueldo Base Requerido</p>
+            <p className="text-xl font-black text-emerald-950 tracking-tighter">{formatCLP(result.sueldoBase)}</p>
+            <p className="text-[7.5px] font-black text-slate-500 uppercase tracking-wider">
+              Costo Empresa: {formatCLP(result.totalHaberesBrutos + result.afcEmpresa + result.sisEmpresa)}
+            </p>
           </div>
-          {result.gratificacion > 0 && (
-            <div className="flex justify-between items-center text-slate-600">
-              <span className="font-sans font-bold text-slate-500">Gratificación:</span>
-              <span className="font-bold">{formatCLP(result.gratificacion)}</span>
+
+          {/* Desglose Detallado */}
+          <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 space-y-2 font-mono text-[10px]">
+            {/* Haberes */}
+            <div className="space-y-1 border-b border-dashed border-slate-200 pb-1.5">
+              <p className="font-sans font-black text-[8px] uppercase tracking-wider text-slate-400">Haberes (Ingresos)</p>
+              <div className="flex justify-between">
+                <span className="font-sans text-slate-500">Sueldo Base:</span>
+                <span className="font-bold">{formatCLP(result.sueldoBase)}</span>
+              </div>
+              {result.gratificacion > 0 && (
+                <div className="flex justify-between">
+                  <span className="font-sans text-slate-500">Gratificación:</span>
+                  <span className="font-bold">{formatCLP(result.gratificacion)}</span>
+                </div>
+              )}
+              {(result.asignacionMovilizacion > 0 || result.asignacionColacion > 0) && (
+                <div className="flex justify-between">
+                  <span className="font-sans text-slate-500">Asignaciones (No imp):</span>
+                  <span className="font-bold">{formatCLP(result.asignacionMovilizacion + result.asignacionColacion)}</span>
+                </div>
+              )}
             </div>
-          )}
-          <div className="flex justify-between items-center text-slate-600">
-            <span className="font-sans font-bold text-slate-500">Retenciones Previsionales:</span>
-            <span className="font-bold text-rose-600">-{formatCLP(result.afp + result.salud + result.afc)}</span>
-          </div>
-          {result.impuesto > 0 && (
-            <div className="flex justify-between items-center text-slate-600">
-              <span className="font-sans font-bold text-slate-500">Impuesto Único:</span>
-              <span className="font-bold text-rose-700">-{formatCLP(result.impuesto)}</span>
+
+            {/* Deducciones */}
+            <div className="space-y-1 border-b border-dashed border-slate-200 pb-1.5">
+              <p className="font-sans font-black text-[8px] uppercase tracking-wider text-slate-400">Retenciones (Descuentos)</p>
+              <div className="flex justify-between">
+                <span className="font-sans text-slate-500">AFP ({afpCode}):</span>
+                <span className="font-bold text-rose-600">-{formatCLP(result.afp)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-sans text-slate-500">Salud ({saludCode}):</span>
+                <span className="font-bold text-rose-600">-{formatCLP(result.saludTotal)}</span>
+              </div>
+              {result.afcTrabajador > 0 && (
+                <div className="flex justify-between">
+                  <span className="font-sans text-slate-500">AFC Seguro:</span>
+                  <span className="font-bold text-rose-600">-{formatCLP(result.afcTrabajador)}</span>
+                </div>
+              )}
+              {result.impuesto > 0 && (
+                <div className="flex justify-between">
+                  <span className="font-sans text-slate-500">Impuesto Único:</span>
+                  <span className="font-bold text-rose-700">-{formatCLP(result.impuesto)}</span>
+                </div>
+              )}
             </div>
-          )}
-          <div className="flex justify-between items-center border-t border-dashed border-slate-300 pt-2 font-sans font-black text-xs text-slate-900">
-            <span>Sueldo Bruto:</span>
-            <span>{formatCLP(result.bruto)}</span>
+
+            {/* Totales */}
+            <div className="flex justify-between font-sans font-black text-[11px] text-slate-800 pt-0.5">
+              <span>Sueldo Bruto:</span>
+              <span>{formatCLP(result.totalHaberesBrutos)}</span>
+            </div>
           </div>
         </div>
       )}
 
       {/* Botones de acción viral */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 pt-1">
         <Button 
           size="sm"
           variant="outline"
           onClick={handleShareLink}
-          className="h-8 text-[9px] font-black uppercase tracking-wider rounded-lg border-zinc-200 hover:bg-slate-50 transition-all gap-1.5"
+          className="h-9 text-[9px] font-black uppercase tracking-wider rounded-lg border-zinc-200 hover:bg-slate-50 transition-all gap-1.5"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? "COPIADO" : "COPIAR LINK"}
@@ -224,7 +473,7 @@ function CalculatorContent() {
         <Button 
           size="sm"
           onClick={handleShareWhatsApp}
-          className="h-8 text-[9px] font-black uppercase tracking-wider rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all gap-1.5"
+          className="h-9 text-[9px] font-black uppercase tracking-wider rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all gap-1.5"
         >
           <Share2 className="w-3.5 h-3.5" />
           WHATSAPP
