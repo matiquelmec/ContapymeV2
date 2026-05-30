@@ -1,6 +1,7 @@
 import pytest
 from api.routers.accounting import get_supabase
 from postgrest.exceptions import APIError
+import time
 
 
 def test_rut_normalization():
@@ -15,6 +16,8 @@ def test_rut_normalization():
 
 def test_treasury_flow():
     db = get_supabase()
+    unique_suffix = int(time.time() * 1000) % 100000000
+    test_folio = 90000000 + (unique_suffix % 9999999)
 
     org_res = db.table("organizations").select("id").limit(1).execute()
     assert org_res.data, "Se requiere al menos una organizacion."
@@ -44,7 +47,7 @@ def test_treasury_flow():
             "organization_id": org_id,
             "rut_emisor": "76.123.456-k",
             "razon_social_emisor": "Proveedor Test Tesoreria",
-            "folio": 99999,
+            "folio": test_folio,
             "tipo_documento": "33",
             "fecha_docto": "2029-08-01",
             "monto_neto": 100000,
@@ -110,5 +113,5 @@ def test_treasury_flow():
     finally:
         db.table("treasury_payment_documents").delete().eq("organization_id", org_id).execute()
         db.table("treasury_payments").delete().eq("organization_id", org_id).execute()
-        db.table("purchase_records").delete().eq("organization_id", org_id).eq("folio", 99999).execute()
+        db.table("purchase_records").delete().eq("organization_id", org_id).eq("folio", test_folio).execute()
         db.table("payment_methods").delete().eq("id", method_id).execute()

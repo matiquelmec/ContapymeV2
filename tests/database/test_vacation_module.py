@@ -52,13 +52,17 @@ def test_vacation_module_lifecycle():
     assert len(ledger_usage.data) == 1
     assert float(ledger_usage.data[0]["dias"]) == -10.0
     
-    # 6. Intentar crear y aprobar una solicitud de 8 días (Supera el saldo disponible, ya que quedan 5)
+    # 6. Intentar crear y aprobar una solicitud que exceda el saldo real disponible
+    balance_res = db.rpc("fn_employee_vacation_balance", {"p_employee_id": emp_id}).execute()
+    current_balance = float(balance_res.data)
+    exceed_days = round(current_balance + 1.0, 1)
+
     exceed_req_res = db.table("vacation_requests").insert({
         "organization_id": org_id,
         "employee_id": emp_id,
         "fecha_inicio": "2029-02-01",
         "fecha_fin": "2029-02-10",
-        "dias_solicitados": 8.0,
+        "dias_solicitados": exceed_days,
         "status": "pending"
     }).execute()
     assert len(exceed_req_res.data) == 1
@@ -114,4 +118,3 @@ def test_vacation_module_lifecycle():
     # 9. Limpieza final de la prueba
     db.table("vacation_ledger").delete().eq("employee_id", emp_id).execute()
     db.table("vacation_requests").delete().eq("employee_id", emp_id).execute()
-

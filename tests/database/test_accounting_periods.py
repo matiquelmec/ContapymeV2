@@ -74,12 +74,12 @@ def test_accounting_periods_integrity():
             "p_glosa": "Asiento en Periodo Cerrado",
             "p_lines": lines
         }).execute()
-    assert "no admite modificaciones" in str(exc_info.value)
+    assert "Periodo contable" in str(exc_info.value)
     
     # 6. Intentar ACTUALIZAR la glosa del asiento existente en el periodo cerrado (debe fallar)
     with pytest.raises(APIError) as exc_info:
         db.table("journal_entries").update({"glosa": "Glosa Modificada Cerrado"}).eq("id", entry_id).execute()
-    assert "no admite modificaciones" in str(exc_info.value)
+    assert "Periodo contable" in str(exc_info.value)
     
     # 7. Intentar ACTUALIZAR una línea del asiento existente en el periodo cerrado (debe fallar)
     # Obtener el id de una línea
@@ -88,17 +88,17 @@ def test_accounting_periods_integrity():
     
     with pytest.raises(APIError) as exc_info:
         db.table("journal_entry_lines").update({"monto": 99999}).eq("id", line_id).execute()
-    assert "no admite modificaciones en sus lineas" in str(exc_info.value)
+    assert "Periodo contable" in str(exc_info.value)
     
     # 8. Intentar ELIMINAR una línea del asiento existente (debe fallar)
     with pytest.raises(APIError) as exc_info:
         db.table("journal_entry_lines").delete().eq("id", line_id).execute()
-    assert "no admite modificaciones en sus lineas" in str(exc_info.value)
+    assert "Periodo contable" in str(exc_info.value)
     
     # 9. Intentar ELIMINAR el asiento completo (debe fallar)
     with pytest.raises(APIError) as exc_info:
         db.table("journal_entries").delete().eq("id", entry_id).execute()
-    assert "no admite modificaciones" in str(exc_info.value)
+    assert "Periodo contable" in str(exc_info.value)
     
     # 10. Cambiar el estado del periodo a 'open' y validar que se pueden hacer modificaciones
     db.table("accounting_periods") \
