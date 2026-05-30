@@ -213,6 +213,13 @@ function runBisection(params: {
   return forwardCalculation({ ...params, base: Math.round(low) });
 }
 
+const formatCLP = (amount: number) =>
+  new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0
+  }).format(amount);
+
 function CalculatorContent() {
   const searchParams = useSearchParams();
   const [targetLiquido, setTargetLiquido] = useState<number>(1000000);
