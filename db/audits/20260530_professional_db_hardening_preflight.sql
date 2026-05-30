@@ -120,7 +120,7 @@ SELECT
   periodo,
   COUNT(*) AS duplicate_count
 FROM public.liquidations
-WHERE status::text <> 'anulada'
+WHERE status IN ('borrador', 'aprobada')
 GROUP BY employee_id, periodo
 HAVING COUNT(*) > 1
 ORDER BY duplicate_count DESC, employee_id, periodo;

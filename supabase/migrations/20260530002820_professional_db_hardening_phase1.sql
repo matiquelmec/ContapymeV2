@@ -115,7 +115,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_purchase_records_natural_document
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_liquidations_employee_period_active
   ON public.liquidations (employee_id, periodo)
-  WHERE status::text <> 'anulada';
+  -- Avoid status::text here: enum-to-text casts are not immutable in index predicates.
+  WHERE status IN ('borrador', 'aprobada');
 
 -- ---------------------------------------------------------------------------
 -- 3. Vacation overlap guard. Only approved requests block another approved
