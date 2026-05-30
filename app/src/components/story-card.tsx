@@ -187,94 +187,28 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           zIndex: 2,
         }} />
 
-        {/* Header / Branding Disruptivo "Infórmate Con" */}
+        {/* Header / Solo Logo al lado derecho sin contornos */}
         <div style={{
-          padding: '110px 80px 40px 80px',
+          padding: '100px 80px 20px 80px',
           display: 'flex',
-          flexDirection: 'column',
+          justifyContent: 'flex-end', // Alinear al lado derecho
           width: '100%',
           boxSizing: 'border-box',
           position: 'relative',
           zIndex: 10,
-          gap: '24px'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%'
-          }}>
-            {/* Contenedor "INFÓRMATE CON" + Logo */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
-              <span style={{
-                color: '#00f2fe',
-                fontSize: '24px',
-                fontWeight: 900,
-                letterSpacing: '8px',
-                textTransform: 'uppercase',
-                fontStyle: 'italic',
-                textShadow: '0 0 10px rgba(0, 242, 254, 0.4)'
-              }}>
-                INFÓRMATE CON
-              </span>
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'rgba(2, 7, 18, 0.75)',
-                border: '2px solid rgba(0, 242, 254, 0.4)',
-                padding: '16px 28px',
-                borderRadius: '24px',
-                boxShadow: '0 10px 30px rgba(0, 242, 254, 0.15)',
-                backdropFilter: 'blur(15px)',
-              }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/logo-contapyme.png" 
-                  alt="Contapymepuq Logo"
-                  style={{
-                    height: '80px',
-                    width: 'auto',
-                    objectFit: 'contain',
-                    filter: 'drop-shadow(0 0 12px rgba(0, 242, 254, 0.4))', // Resalte del logo neón
-                  }}
-                  crossOrigin="anonymous"
-                />
-                <span style={{
-                  color: '#ffffff',
-                  fontSize: '38px',
-                  fontWeight: 950,
-                  letterSpacing: '4px',
-                  textTransform: 'uppercase',
-                  marginLeft: '20px',
-                  fontStyle: 'italic'
-                }}>
-                  ContaPyme
-                </span>
-              </div>
-            </div>
-
-            {/* Categoría con diseño insignia flotante */}
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.35) 0%, rgba(2, 7, 18, 0.95) 100%)',
-              border: '2px solid #00f2fe',
-              borderRadius: '20px',
-              padding: '20px 40px',
-              color: '#ffffff',
-              fontSize: '24px',
-              fontWeight: 950,
-              textTransform: 'uppercase',
-              letterSpacing: '5px',
-              fontStyle: 'italic',
-              boxShadow: '0 0 25px rgba(0, 242, 254, 0.3)'
-            }}>
-              {category}
-            </div>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="/logo-contapyme.png" 
+            alt="ContaPyme Logo"
+            style={{
+              height: '180px', // Mayor tamaño
+              width: 'auto',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 15px rgba(0, 242, 254, 0.45))', // Brillo neón limpio
+            }}
+            crossOrigin="anonymous"
+          />
         </div>
 
         {/* Contenedor de Teléfono Móvil 3D en Perspectiva */}
