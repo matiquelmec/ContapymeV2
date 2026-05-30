@@ -273,31 +273,20 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             {title}
           </h2>
 
-          {/* Resumen Expectante / Gancho Narrativo Dinámico */}
-          <div style={{
-            background: 'rgba(2, 7, 18, 0.85)',
-            borderLeft: '5px solid #00f2fe',
-            borderRight: '1px solid rgba(0, 242, 254, 0.1)',
-            borderTop: '1px solid rgba(0, 242, 254, 0.1)',
-            borderBottom: '1px solid rgba(0, 242, 254, 0.1)',
-            borderRadius: '24px',
-            padding: '36px 40px',
-            boxShadow: '0 15px 45px rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(10px)',
+          {/* Resumen expectante / Gancho limpio y sin contenedores */}
+          <p style={{
+            color: '#ffffff', // Letras blancas
+            fontSize: '30px', // Ligeramente mayor para legibilidad
+            fontWeight: 500,
+            lineHeight: 1.5,
+            margin: '0 auto',
+            maxWidth: '850px',
+            textAlign: 'center',
+            fontStyle: 'italic',
+            textShadow: '0 4px 12px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.8)' // Sombra dura para legibilidad total
           }}>
-            <p style={{
-              color: '#90e0ef',
-              fontSize: '28px',
-              fontWeight: 700,
-              lineHeight: 1.45,
-              margin: 0,
-              textAlign: 'center',
-              fontStyle: 'italic',
-              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-            }}>
-              {summary || "¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde..."}
-            </p>
-          </div>
+            {summary || "¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde..."}
+          </p>
         </div>
 
         {/* Footer Minimalista de Contraste */}
