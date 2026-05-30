@@ -6,6 +6,7 @@ de chilean_payroll.py. Este router es solo el intermediario HTTP:
 NO contiene lógica de negocio.
 """
 from fastapi import APIRouter, HTTPException
+from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime, date
 import calendar
