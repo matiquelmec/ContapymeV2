@@ -237,9 +237,9 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             style={{
               width: '100%',
               height: '100%',
-              objectFit: (imageUrl.includes('logo.clearbit.com') || imageUrl.includes('clearbit')) ? 'contain' : 'cover',
-              padding: (imageUrl.includes('logo.clearbit.com') || imageUrl.includes('clearbit')) ? '120px' : '0',
-              backgroundColor: (imageUrl.includes('logo.clearbit.com') || imageUrl.includes('clearbit')) ? 'rgba(255,255,255,0.03)' : 'transparent',
+              objectFit: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'contain' : 'cover',
+              padding: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? '120px' : '0',
+              backgroundColor: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'rgba(255,255,255,0.03)' : 'transparent',
             }}
           />
         </div>

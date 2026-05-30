@@ -122,7 +122,8 @@ async def download_and_upload_image(image_url: str) -> str:
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
             response = await client.get(image_url)
             if response.status_code == 200:
-                return await _upload_to_supabase(response.content, "stock")
+                prefix = "brand" if "clearbit" in image_url else "stock"
+                return await _upload_to_supabase(response.content, prefix)
             else:
                 logger.warning(f"[Images] Fallo al descargar de {image_url}: status={response.status_code}")
     except Exception as e:
