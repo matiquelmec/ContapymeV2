@@ -47,7 +47,7 @@ class PayrollSettings:
     afc_fijo_empresa_pct: float = 3.0            # % empresa contrato a plazo fijo
     uf_tope_afc: float = 126.6                   # UF tope imponible AFC (Ley 19.728)
     # Legales
-    sueldo_minimo: int = 529_000                 # $CLP vigente 2025
+    sueldo_minimo: int = 539_000                 # $CLP vigente desde enero 2026
     uf_valor: float = 38_000.0                   # Valor UF del día (se actualiza desde DB)
 
 

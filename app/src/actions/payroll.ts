@@ -344,8 +344,8 @@ export async function calculateBaseSalaryAction(params: {
   tipo_contrato: string;
   asignacion_movilizacion: number;
   asignacion_colacion: number;
-  es_zona_extrema: boolean;
-  zona_extrema: string;
+  es_zona_extrema?: boolean;
+  zona_extrema?: string;
 }) {
   try {
     const { getActiveOrganizationId } = await import('./organizations')
@@ -360,6 +360,8 @@ export async function calculateBaseSalaryAction(params: {
       },
       body: JSON.stringify({
         org_id: activeOrgId,
+        es_zona_extrema: params.es_zona_extrema ?? false,
+        zona_extrema: params.zona_extrema ?? "",
         ...params
       }),
     });

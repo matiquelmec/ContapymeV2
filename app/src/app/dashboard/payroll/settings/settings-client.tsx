@@ -36,7 +36,7 @@ const NATIONAL_PARAMS = {
   tope_salud_uf: 84.3,
   tope_afc_uf: 126.6,
   sis_pct: 1.49,
-  sueldo_minimo: 529000,
+  sueldo_minimo: 539000,
   afp_cotizacion_pct: 10.0,
   salud_legal_pct: 7.0,
   afc_indef_trab: 0.6,

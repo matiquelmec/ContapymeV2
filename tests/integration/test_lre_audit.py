@@ -15,7 +15,7 @@ settings = PayrollSettings(
     uf_tope_afp=87.8,
     uf_tope_salud=83.3,
     uf_tope_afc=126.6,
-    sueldo_minimo=529000
+    sueldo_minimo=539000
 )
 utm_valor = 67294.0
 
@@ -51,7 +51,7 @@ print(f"Impuesto a pagar: ${res1.impuesto_unico:,} (Campo LRE 3161)")
 # Escenario 2: Sueldo Mínimo con Horas Extras (Factor 0.007777 / 0.007954)
 print("\n[TEST 2] Trabajador Renta Mínima + Horas Extras")
 emp2 = EmployeeInput(
-    sueldo_base=529_000,
+    sueldo_base=539_000,
     tipo_contrato="indefinido",
     afp_code="MODELO",
     afp_comision_pct=0.58,

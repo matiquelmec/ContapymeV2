@@ -6,27 +6,22 @@ import {
   ArrowLeft, 
   Calculator, 
   Percent, 
-  Info, 
-  Shield, 
-  DollarSign, 
   Building, 
   Check,
-  TrendingUp,
-  FileText,
-  AlertTriangle
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { calculateBaseSalaryAction } from "@/actions/payroll";
 import { toast } from "sonner";
 
-const AFPS = [
+const DEFAULT_AFPS = [
   { code: "HABITAT", name: "Habitat", commission: 1.27 },
   { code: "CAPITAL", name: "Capital", commission: 1.44 },
   { code: "CUPRUM", name: "Cuprum", commission: 1.44 },
   { code: "MODELO", name: "Modelo", commission: 0.58 },
   { code: "PLANVITAL", name: "Planvital", commission: 1.16 },
-  { code: "UNO", name: "Uno", commission: 0.69 },
+  { code: "UNO", name: "Uno", commission: 0.49 },
   { code: "PROVIDA", name: "Provida", commission: 1.45 }
 ];
 
@@ -46,8 +41,7 @@ export default function SalaryCalculatorPage() {
   const [tipoContrato, setTipoContrato] = useState<string>("indefinido");
   const [asignacionMovilizacion, setAsignacionMovilizacion] = useState<number>(0);
   const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
-  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(false);
-  const [zonaExtrema, setZonaExtrema] = useState<string>("MAGALLANES");
+  const [afps, setAfps] = useState(DEFAULT_AFPS);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<any>(null);
@@ -64,9 +58,7 @@ export default function SalaryCalculatorPage() {
         plan_salud_uf: planSaludUf,
         tipo_contrato: tipoContrato,
         asignacion_movilizacion: asignacionMovilizacion,
-        asignacion_colacion: asignacionColacion,
-        es_zona_extrema: esZonaExtrema,
-        zona_extrema: zonaExtrema
+        asignacion_colacion: asignacionColacion
       });
 
       if (res.success) {
@@ -86,6 +78,31 @@ export default function SalaryCalculatorPage() {
   useEffect(() => {
     handleCalculate();
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/public/payroll-params?period=${periodo}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const commissions = data?.legal_params?.afp_commissions;
+        if (!commissions) return;
+        const names: Record<string, string> = {
+          HABITAT: "Habitat",
+          CAPITAL: "Capital",
+          CUPRUM: "Cuprum",
+          MODELO: "Modelo",
+          PLANVITAL: "Planvital",
+          UNO: "Uno",
+          PROVIDA: "Provida"
+        };
+        const dynamicAfps = Object.entries(commissions).map(([code, commission]) => ({
+          code,
+          name: names[code] || code,
+          commission: Number(commission)
+        }));
+        if (dynamicAfps.length > 0) setAfps(dynamicAfps);
+      })
+      .catch(() => {});
+  }, [periodo]);
 
   return (
     <div className="space-y-10 animate-in fade-in zoom-in duration-700">
@@ -155,8 +172,8 @@ export default function SalaryCalculatorPage() {
                 </div>
               </div>
 
-              {/* Gratificación y Zona Extrema */}
-              <div className="grid grid-cols-2 gap-6 pt-2">
+              {/* Gratificación */}
+              <div className="grid grid-cols-1 gap-6 pt-2">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -169,19 +186,6 @@ export default function SalaryCalculatorPage() {
                     <span className="text-[9px] text-muted-foreground font-bold italic">Art. 50 (25%)</span>
                   </div>
                 </label>
-                
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={esZonaExtrema}
-                    onChange={(e) => setEsZonaExtrema(e.target.checked)}
-                    className="w-4.5 h-4.5 rounded border-border text-primary focus:ring-primary/20"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase text-foreground">Zona Extrema</span>
-                    <span className="text-[9px] text-muted-foreground font-bold italic">Deducción DL 889</span>
-                  </div>
-                </label>
               </div>
 
               {/* AFP Previsión */}
@@ -192,7 +196,7 @@ export default function SalaryCalculatorPage() {
                   value={afpCode}
                   onChange={(e) => setAfpCode(e.target.value)}
                 >
-                  {AFPS.map((afp) => (
+                  {afps.map((afp) => (
                     <option key={afp.code} value={afp.code}>
                       {afp.name} ({afp.commission}%)
                     </option>
@@ -386,20 +390,6 @@ export default function SalaryCalculatorPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Exención Zona Extrema */}
-                {esZonaExtrema && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex gap-4 text-blue-900">
-                    <Shield className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
-                    <div>
-                      <h5 className="font-black text-xs uppercase tracking-wider mb-1">Beneficios aplicados de Zona Extrema (Magallanes)</h5>
-                      <p className="text-[11px] leading-relaxed text-blue-800">
-                        Se ha calificado la liquidación con la rebaja tributaria correspondiente al decreto DL 889. 
-                        Esto reduce la base del Impuesto Único de Segunda Categoría, optimizando la tributación del trabajador para alcanzar el líquido deseado con un menor costo imponible.
-                      </p>
-                    </div>
-                  </div>
-                )}
 
               </CardContent>
             </Card>

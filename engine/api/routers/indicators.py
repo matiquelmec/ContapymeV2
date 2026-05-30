@@ -12,6 +12,11 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from core.database import get_supabase
 from core.auth import verify_token
+from core.payroll_legal_params import (
+    get_period_start,
+    resolve_economic_indicators,
+    resolve_legal_payroll_params,
+)
 
 logger = logging.getLogger("contapyme.indicators.api")
 router = APIRouter()
@@ -130,3 +135,25 @@ async def get_latest_indicators():
     except Exception as e:
         logger.error(f"[INDICATORS] Error fetching latest: {e}")
         raise HTTPException(status_code=500, detail="Error de base de datos.")
+
+
+@router.get("/payroll-legal-params")
+async def get_payroll_legal_params(periodo: Optional[str] = None):
+    """
+    Entrega parametros legales y economicos de remuneraciones para un periodo.
+    Endpoint publico para que frontend y motor usen una sola fuente centralizada.
+    """
+    db = get_supabase()
+    target_period = periodo or date.today().strftime("%Y-%m")
+    period_start = get_period_start(target_period)
+
+    legal_params = resolve_legal_payroll_params(db, period_start)
+    econ_params = resolve_economic_indicators(db, period_start)
+
+    return {
+        "success": True,
+        "periodo_solicitado": target_period[:7],
+        "periodo_resuelto": period_start,
+        "legal_params": legal_params,
+        "economic_params": econ_params,
+    }

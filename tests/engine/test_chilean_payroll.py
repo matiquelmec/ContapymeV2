@@ -29,7 +29,7 @@ class TestChileanPayrollEngine:
             afc_indefinido_trabajador_pct=0.6,
             afc_indefinido_empresa_pct=2.4,
             uf_tope_afc=126.6,
-            sueldo_minimo=500000,
+            sueldo_minimo=539000,
             uf_valor=38000.0,
         )
 
@@ -79,9 +79,9 @@ class TestChileanPayrollEngine:
 
     def test_liquidacion_completa_sueldo_minimo(self, default_settings):
         """Validar liquidación completa para un trabajador con el mínimo legal, sin gratificación."""
-        # 500.000 sin gratificacion legal para este test
+        # IMM vigente sin gratificacion legal para este test
         emp = EmployeeInput(
-            sueldo_base=500000,
+            sueldo_base=539000,
             tipo_contrato="indefinido",
             afp_comision_pct=1.27, # Habitat
             dias_trabajados=30,
@@ -90,18 +90,18 @@ class TestChileanPayrollEngine:
         res = calcular_liquidacion(emp, default_settings, utm_valor=67294.0)
         
         # Haberes
-        assert res.sueldo_base == 500000
+        assert res.sueldo_base == 539000
         assert res.gratificacion == 0
-        assert res.total_haberes_brutos == 500000
+        assert res.total_haberes_brutos == 539000
         
         # Base Imponible Topada (no supera las 84.3 UF)
-        assert res.base_imponible_afp == 500000
+        assert res.base_imponible_afp == 539000
         
         # Descuentos
-        afp_obl = int(500000 * 0.10)
-        afp_com = int(500000 * 0.0127)
-        salud = int(500000 * 0.07)
-        afc = int(500000 * 0.006)
+        afp_obl = int(539000 * 0.10)
+        afp_com = int(539000 * 0.0127)
+        salud = int(539000 * 0.07)
+        afc = int(539000 * 0.006)
         
         assert res.afp == afp_obl
         assert res.afp_comision == afp_com
@@ -111,7 +111,7 @@ class TestChileanPayrollEngine:
         
         total_descuentos = afp_obl + afp_com + salud + afc
         assert res.total_descuentos_legales == total_descuentos
-        assert res.sueldo_liquido == 500000 - total_descuentos
+        assert res.sueldo_liquido == 539000 - total_descuentos
 
     def test_liquidacion_proporcional(self, default_settings):
         """Validar que un empleado que trabajó 15 días reciba haberes e imponibles correctos."""
@@ -212,4 +212,3 @@ class TestChileanPayrollEngine:
         assert res_prop.sueldo_base == 500000
         assert res_prop.bono_fijo == 100000
         assert res_prop.total_haberes_brutos == 600000
-

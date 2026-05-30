@@ -21,19 +21,21 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 // Parámetros legales estándar chilenos (2025/2026)
-const SUELDO_MINIMO = 529000;
-const UTM_VALOR = 67294;
-const UF_VALOR = 38000;
-const TOPE_AFP_UF = 84.3;
-const TOPE_AFC_UF = 126.6;
+const DEFAULT_LEGAL_PARAMS = {
+  sueldo_minimo: 539000,
+  tope_afp_uf: 84.3,
+  tope_afc_uf: 126.6,
+  uf_valor: 38000,
+  utm_valor: 67294
+};
 
-const AFPS = [
+const DEFAULT_AFPS = [
   { code: "HABITAT", name: "Habitat", commission: 1.27 },
   { code: "CAPITAL", name: "Capital", commission: 1.44 },
   { code: "CUPRUM", name: "Cuprum", commission: 1.44 },
   { code: "MODELO", name: "Modelo", commission: 0.58 },
   { code: "PLANVITAL", name: "Planvital", commission: 1.16 },
-  { code: "UNO", name: "Uno", commission: 0.69 },
+  { code: "UNO", name: "Uno", commission: 0.49 },
   { code: "PROVIDA", name: "Provida", commission: 1.45 }
 ];
 
@@ -57,7 +59,8 @@ function forwardCalculation(params: {
   tipoContrato: string;
   asignacionMovilizacion: number;
   asignacionColacion: number;
-  esZonaExtrema: boolean;
+  legalParams: typeof DEFAULT_LEGAL_PARAMS;
+  afps: Array<{ code: string; name: string; commission: number }>;
 }) {
   const {
     base,
@@ -68,13 +71,14 @@ function forwardCalculation(params: {
     tipoContrato,
     asignacionMovilizacion,
     asignacionColacion,
-    esZonaExtrema
+    legalParams,
+    afps
   } = params;
 
   // 1. Gratificación Legal (Art. 50 Código del Trabajo)
   let grat = 0;
   if (gratificacion) {
-    const topeGrat = Math.floor((4.75 * SUELDO_MINIMO) / 12);
+    const topeGrat = Math.floor((4.75 * legalParams.sueldo_minimo) / 12);
     grat = Math.min(Math.floor(base * 0.25), topeGrat);
   }
 
@@ -83,15 +87,15 @@ function forwardCalculation(params: {
   const totalHaberesBrutos = brutoImponible + asignacionMovilizacion + asignacionColacion;
 
   // 2. Límites y Topes Imponibles Reales
-  const topePesosAFP = Math.floor(TOPE_AFP_UF * UF_VALOR);
-  const topePesosAFC = Math.floor(TOPE_AFC_UF * UF_VALOR);
+  const topePesosAFP = Math.floor(legalParams.tope_afp_uf * legalParams.uf_valor);
+  const topePesosAFC = Math.floor(legalParams.tope_afc_uf * legalParams.uf_valor);
 
   const baseAFP = Math.min(brutoImponible, topePesosAFP);
   const baseSalud = baseAFP; // Mismo tope que AFP
   const baseAFC = Math.min(brutoImponible, topePesosAFC);
 
   // 3. AFP (Cotización + Comisión)
-  const afpInfo = AFPS.find(a => a.code === afpCode) || AFPS[0];
+  const afpInfo = afps.find(a => a.code === afpCode) || afps[0];
   const descuentoAfp = Math.floor(baseAFP * 0.10);
   const descuentoAfpComision = Math.floor(baseAFP * (afpInfo.commission / 100.0));
 
@@ -101,7 +105,7 @@ function forwardCalculation(params: {
   let descuentoSaludVoluntaria = 0;
 
   if (saludCode === "ISAPRE" && planSaludUf > 0) {
-    let planPesos = Math.floor(planSaludUf * UF_VALOR);
+    let planPesos = Math.floor(planSaludUf * legalParams.uf_valor);
     planPesos = Math.min(planPesos, baseSalud); // Isapre topada al imponible
     if (planPesos > descuentoSaludLegal) {
       descuentoSaludVoluntaria = planPesos - descuentoSaludLegal;
@@ -127,24 +131,15 @@ function forwardCalculation(params: {
   // Nota Normativa: La base imponible parte del bruto imponible (sin topes) menos descuentos previsionales obligatorios topados
   let baseImpuesto = brutoImponible - descuentoAfp - descuentoAfpComision - descuentoSaludLegal - descuentoAfcTrab;
 
-  // Deducción por asignación de zona extrema (DL 889 / Asig. Zona Magallanes)
-  let asignacionZona = 0;
-  if (esZonaExtrema) {
-    const grado1a = 210000; // Valor aproximado escala sueldo grado 1A
-    asignacionZona = Math.floor(grado1a * 0.875);
-    baseImpuesto = Math.max(0, baseImpuesto - asignacionZona);
-  }
-
   baseImpuesto = Math.max(0, baseImpuesto);
   let impuestoBruto = 0;
   let impuesto = 0;
-  let rebajaMonto = 0;
 
   if (baseImpuesto > 0) {
-    const baseUtm = baseImpuesto / UTM_VALOR;
+    const baseUtm = baseImpuesto / legalParams.utm_valor;
     for (const tramo of TRAMOS_IMPUESTO) {
       if (baseUtm >= tramo.inf && baseUtm < tramo.sup) {
-        impuestoBruto = Math.floor((baseImpuesto * tramo.tasa) - (tramo.rebaja * UTM_VALOR));
+        impuestoBruto = Math.floor((baseImpuesto * tramo.tasa) - (tramo.rebaja * legalParams.utm_valor));
         if (impuestoBruto < 0) impuestoBruto = 0;
         break;
       }
@@ -152,12 +147,6 @@ function forwardCalculation(params: {
   }
 
   impuesto = impuestoBruto;
-
-  // Rebaja del impuesto por Zona Extrema (98% de exención para Magallanes)
-  if (esZonaExtrema && impuestoBruto > 0) {
-    rebajaMonto = Math.floor(impuestoBruto * 0.98);
-    impuesto = impuestoBruto - rebajaMonto;
-  }
 
   const totalDescuentosLegales = descuentoAfp + descuentoAfpComision + descuentoSaludTotal + descuentoAfcTrab + impuesto;
   const liquido = totalHaberesBrutos - totalDescuentosLegales;
@@ -178,10 +167,7 @@ function forwardCalculation(params: {
     sisEmpresa,
     impuestoUnico: impuesto,
     totalDescuentosLegales,
-    sueldoLiquido: liquido,
-    asignacionZonaExtrema: asignacionZona,
-    impuestoUnicoSinRebaja: impuestoBruto,
-    rebajaZonaExtrema: rebajaMonto
+    sueldoLiquido: liquido
   };
 }
 
@@ -194,7 +180,8 @@ function runBisection(params: {
   tipoContrato: string;
   asignacionMovilizacion: number;
   asignacionColacion: number;
-  esZonaExtrema: boolean;
+  legalParams: typeof DEFAULT_LEGAL_PARAMS;
+  afps: Array<{ code: string; name: string; commission: number }>;
 }) {
   let low = 0;
   let high = Math.max(100000000, params.targetLiquido * 3);
@@ -230,7 +217,8 @@ function CalculatorContent() {
   const [planSaludUf, setPlanSaludUf] = useState<number>(0);
   const [asignacionMovilizacion, setAsignacionMovilizacion] = useState<number>(0);
   const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
-  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(true); // Activado por defecto para Magallanes
+  const [legalParams, setLegalParams] = useState(DEFAULT_LEGAL_PARAMS);
+  const [afps, setAfps] = useState(DEFAULT_AFPS);
 
   const [result, setResult] = useState<any>(null);
   const [copied, setCopied] = useState<boolean>(false);
@@ -244,7 +232,6 @@ function CalculatorContent() {
     const urlUf = searchParams.get("uf");
     const urlMov = searchParams.get("mov");
     const urlCol = searchParams.get("col");
-    const urlZona = searchParams.get("zona");
 
     if (urlLiq) setTargetLiquido(Math.max(0, parseInt(urlLiq) || 1000000));
     if (urlGrat) setGratificacion(urlGrat === "true");
@@ -254,8 +241,45 @@ function CalculatorContent() {
     if (urlUf) setPlanSaludUf(parseFloat(urlUf) || 0);
     if (urlMov) setAsignacionMovilizacion(parseInt(urlMov) || 0);
     if (urlCol) setAsignacionColacion(parseInt(urlCol) || 0);
-    if (urlZona) setEsZonaExtrema(urlZona === "true");
   }, [searchParams]);
+
+  useEffect(() => {
+    const period = new Date().toISOString().slice(0, 7);
+    fetch(`/api/public/payroll-params?period=${period}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const legal = data?.legal_params;
+        if (legal) {
+          setLegalParams({
+            sueldo_minimo: Number(legal.sueldo_minimo ?? DEFAULT_LEGAL_PARAMS.sueldo_minimo),
+            tope_afp_uf: Number(legal.tope_afp_uf ?? DEFAULT_LEGAL_PARAMS.tope_afp_uf),
+            tope_afc_uf: Number(legal.tope_afc_uf ?? DEFAULT_LEGAL_PARAMS.tope_afc_uf),
+            uf_valor: Number(data?.economic_params?.uf_valor ?? DEFAULT_LEGAL_PARAMS.uf_valor),
+            utm_valor: Number(data?.economic_params?.utm_valor ?? DEFAULT_LEGAL_PARAMS.utm_valor)
+          });
+        }
+        if (legal?.afp_commissions) {
+          const names: Record<string, string> = {
+            HABITAT: "Habitat",
+            CAPITAL: "Capital",
+            CUPRUM: "Cuprum",
+            MODELO: "Modelo",
+            PLANVITAL: "Planvital",
+            UNO: "Uno",
+            PROVIDA: "Provida"
+          };
+          const dynamicAfps = Object.entries(legal.afp_commissions).map(([code, commission]) => ({
+            code,
+            name: names[code] || code,
+            commission: Number(commission)
+          }));
+          if (dynamicAfps.length > 0) setAfps(dynamicAfps);
+        }
+      })
+      .catch(() => {
+        // No-op: keep defaults
+      });
+  }, []);
 
   useEffect(() => {
     const res = runBisection({
@@ -267,7 +291,8 @@ function CalculatorContent() {
       tipoContrato,
       asignacionMovilizacion,
       asignacionColacion,
-      esZonaExtrema
+      legalParams,
+      afps
     });
     setResult(res);
   }, [
@@ -279,12 +304,13 @@ function CalculatorContent() {
     tipoContrato,
     asignacionMovilizacion,
     asignacionColacion,
-    esZonaExtrema
+    legalParams,
+    afps
   ]);
 
   const handleShareLink = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}`;
     
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -294,7 +320,7 @@ function CalculatorContent() {
 
   const handleShareWhatsApp = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}`;
     const text = encodeURIComponent(
       `📊 ¡Simulé un Sueldo Base de ${formatCLP(result?.sueldoBase || 0)} para obtener un líquido de ${formatCLP(targetLiquido)}! Calcula el tuyo con leyes sociales en vivo aquí: ${shareUrl}`
     );
@@ -343,7 +369,7 @@ function CalculatorContent() {
               value={afpCode}
               onChange={(e) => setAfpCode(e.target.value)}
             >
-              {AFPS.map(a => (
+              {afps.map(a => (
                 <option key={a.code} value={a.code}>{a.name} ({a.commission}%)</option>
               ))}
             </select>
@@ -416,18 +442,6 @@ function CalculatorContent() {
             </div>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={esZonaExtrema}
-              onChange={(e) => setEsZonaExtrema(e.target.checked)}
-              className="w-4.5 h-4.5 rounded border-slate-300 text-primary focus:ring-primary/10"
-            />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase text-slate-700">Zona Extrema</span>
-              <span className="text-[8px] text-slate-400 font-bold italic">Deducción DL 889 (98%)</span>
-            </div>
-          </label>
         </div>
       </div>
 
@@ -538,19 +552,6 @@ function CalculatorContent() {
                 </div>
               </div>
             </div>
-
-            {/* Alerta de Exenciones de Zona Extrema */}
-            {esZonaExtrema && (
-              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-5 flex gap-4 text-blue-900">
-                <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h5 className="font-black text-[10px] uppercase tracking-wider">Beneficio Zona Extrema Activo</h5>
-                  <p className="text-[10.5px] leading-relaxed text-blue-800/90 font-medium">
-                    Se está deduciendo <strong className="text-blue-950">{formatCLP(result.asignacionZonaExtrema)}</strong> de la base imponible y aplicando un **98% de exención** sobre el Impuesto Único de Segunda Categoría debido a las exenciones del **D.L. 889** vigentes en Magallanes.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Compartir */}
             <div className="flex flex-col sm:flex-row gap-3">

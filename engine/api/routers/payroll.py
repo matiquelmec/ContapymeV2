@@ -20,10 +20,12 @@ from calculators.chilean_payroll import (
 from core.auth import verify_token, verify_org_role
 from core.logger import log_activity
 from fastapi import Depends
+from core.payroll_legal_params import (
+    get_period_start,
+    resolve_economic_indicators,
+    resolve_legal_payroll_params,
+)
 from calculators.national_params import (
-    TOPE_AFP_UF, TOPE_SALUD_UF, TOPE_AFC_UF,
-    SIS_PCT, SUELDO_MINIMO,
-    AFC_INDEFINIDO_TRABAJADOR_PCT, AFC_INDEFINIDO_EMPRESA_PCT, AFC_FIJO_EMPRESA_PCT,
     get_afp_comision,
 )
 import logging
@@ -547,4 +549,3 @@ async def calculate_base_salary(
     except Exception as e:
         logger.exception("Error al calcular sueldo base desde líquido")
         raise HTTPException(status_code=500, detail=str(e))
-

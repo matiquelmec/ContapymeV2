@@ -7,7 +7,7 @@ from calculators.chilean_payroll import (
 # Constants for testing
 UF_VALOR = 38045.54 # Value for late 2024 / early 2025
 UTM_VALOR = 67294.0 # Value for Jan 2025
-SUELDO_MINIMO = 529000
+SUELDO_MINIMO = 539000
 
 @pytest.fixture
 def default_settings():
@@ -35,13 +35,12 @@ def test_standard_salary_calculation(default_settings):
     res = calcular_liquidacion(emp, default_settings, utm_valor=UTM_VALOR)
     
     # Assertions
-    # Gratificacion: 25% of 1M but capped at (4.75 * 529k)/12 = 209,395
-    expected_grat = 209395 # int((4.75 * 529000) / 12)
+    # Gratificacion: 25% of 1M but capped at (4.75 * IMM)/12.
+    expected_grat = int((4.75 * SUELDO_MINIMO) / 12)
     assert res.gratificacion == expected_grat
     assert res.sueldo_base == 1000000
     
-    # Total Haberes Brutos: 1,000,000 + 209,395 = 1,209,395
-    assert res.total_haberes_brutos == 1209395
+    assert res.total_haberes_brutos == 1000000 + expected_grat
     
     # Check legal discounts
     assert res.afp == int(res.base_imponible_afp * 0.10)

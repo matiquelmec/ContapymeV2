@@ -42,14 +42,14 @@ AFP_COMISIONES = {
     "PLANVITAL": 1.16,
     "PROVIDA":   1.45,
     "MODELO":    0.58,
-    "UNO":       0.69,
+    "UNO":       0.49,
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. SUELDO MÍNIMO Y ASIGNACIONES FAMILIARES
 #    Fuente: Ley vigente + Decreto Hacienda
 # ═══════════════════════════════════════════════════════════════════════════════
-SUELDO_MINIMO = 529_000     # $CLP — Ingreso Mínimo Mensual vigente 2025
+SUELDO_MINIMO = 539_000     # $CLP — Ingreso Mínimo Mensual vigente desde enero 2026
 
 # Asignación Familiar por carga (montos mensuales en $CLP, vigentes 2025)
 ASIGNACION_FAMILIAR = {

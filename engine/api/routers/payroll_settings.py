@@ -16,7 +16,7 @@ DEFAULT_AFP_CONFIGS = [
     {"name": "AFP PlanVital", "code": "PLANVITAL", "commission_pct": 1.16, "sis_pct": 1.49, "active": True},
     {"name": "AFP ProVida",   "code": "PROVIDA",   "commission_pct": 1.45, "sis_pct": 1.49, "active": True},
     {"name": "AFP Modelo",    "code": "MODELO",    "commission_pct": 0.58, "sis_pct": 1.49, "active": True},
-    {"name": "AFP Uno",       "code": "UNO",       "commission_pct": 0.69, "sis_pct": 1.49, "active": True},
+    {"name": "AFP Uno",       "code": "UNO",       "commission_pct": 0.49, "sis_pct": 1.49, "active": True},
 ]
 
 # NOTA: En Chile, la cotización LEGAL de salud es siempre 7%.
@@ -41,7 +41,7 @@ DEFAULT_SETTINGS = {
     "uf_tope_salud": 84.3,            # UF — Mismo tope para salud (DL 3500)
     "uf_tope_afc": 126.6,             # UF — Tope Seguro de Cesantía (Ley 19.728)
     # Sueldo Mínimo (Ley vigente)
-    "sueldo_minimo": 529000,
+    "sueldo_minimo": 539000,
     # Asignación Familiar (Montos por carga, vigentes 2025)
     "limite_asignacion_familiar": 1335433,
     "asignacion_tramo_a": 21243,

@@ -49,7 +49,7 @@ def seed_world_class():
 
     db.table("organization_payroll_settings").insert({
         "organization_id": org_a_id,
-        "sueldo_minimo": 529000,
+        "sueldo_minimo": 539000,
         "rep_legal_nombre": "Matías Riquelme",
         "rep_legal_rut": "12.345.678-9",
         "rep_legal_cargo": "Gerente General"
@@ -77,7 +77,7 @@ def seed_world_class():
 
     db.table("organization_payroll_settings").insert({
         "organization_id": org_b_id,
-        "sueldo_minimo": 529000,
+        "sueldo_minimo": 539000,
         "rep_legal_nombre": "Paula Rivera",
         "rep_legal_rut": "15.987.654-2",
         "rep_legal_cargo": "Directora Ejecutiva"
