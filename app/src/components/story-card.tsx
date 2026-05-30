@@ -187,11 +187,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           zIndex: 2,
         }} />
 
-        {/* Header / Solo Logo al lado derecho sin contornos */}
+        {/* Header / Logo centrado y más grande sin contornos */}
         <div style={{
-          padding: '100px 80px 20px 80px',
+          padding: '120px 80px 10px 80px',
           display: 'flex',
-          justifyContent: 'flex-end', // Alinear al lado derecho
+          justifyContent: 'center', // Centrar el logo
           width: '100%',
           boxSizing: 'border-box',
           position: 'relative',
@@ -202,10 +202,10 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             src="/logo-contapyme.png" 
             alt="ContaPyme Logo"
             style={{
-              height: '180px', // Mayor tamaño
+              height: '260px', // Agrandar tamaño
               width: 'auto',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 0 15px rgba(0, 242, 254, 0.45))', // Brillo neón limpio
+              filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.5))', // Brillo neón más intenso
             }}
             crossOrigin="anonymous"
           />
