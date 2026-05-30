@@ -295,9 +295,6 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   {/* Calendario Macro */}
                   <MacroCalendarWidget />
 
-                  {/* Calculadora Express Pública (Marketing Viral) */}
-                  <PublicSalaryCalculator />
-
                   {/* Ads Patrocinados & Facturín */}
                   <div className="space-y-6">
                      {/* Video de Facturín */}
@@ -407,6 +404,11 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             </div>
           );
         })()}
+
+         {/* Calculadora Express Pública Central (Marketing Viral) */}
+         <div className="mt-16">
+            <PublicSalaryCalculator />
+         </div>
 
         {/* Mini CTA hacia el Software al final */}
         <div className="py-16 border-t border-border bg-background mt-16 text-center space-y-6 rounded-[2.5rem]">

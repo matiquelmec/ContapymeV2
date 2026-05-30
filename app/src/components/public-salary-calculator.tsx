@@ -13,7 +13,9 @@ import {
   DollarSign,
   Building,
   Shield,
-  HelpCircle
+  HelpCircle,
+  Clock,
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -23,6 +25,7 @@ const SUELDO_MINIMO = 529000;
 const UTM_VALOR = 67294;
 const UF_VALOR = 38000;
 const TOPE_AFP_UF = 84.3;
+const TOPE_AFC_UF = 126.6;
 
 const AFPS = [
   { code: "HABITAT", name: "Habitat", commission: 1.27 },
@@ -68,75 +71,95 @@ function forwardCalculation(params: {
     esZonaExtrema
   } = params;
 
-  // 1. Gratificación
+  // 1. Gratificación Legal (Art. 50 Código del Trabajo)
   let grat = 0;
   if (gratificacion) {
     const topeGrat = Math.floor((4.75 * SUELDO_MINIMO) / 12);
     grat = Math.min(Math.floor(base * 0.25), topeGrat);
   }
 
-  // Haberes imponibles y brutos
+  // Remuneración imponible y haberes totales
   const brutoImponible = base + grat;
   const totalHaberesBrutos = brutoImponible + asignacionMovilizacion + asignacionColacion;
 
-  // 2. Límites imponibles
-  const topePesos = Math.floor(TOPE_AFP_UF * UF_VALOR);
-  const imponibleTope = Math.min(brutoImponible, topePesos);
+  // 2. Límites y Topes Imponibles Reales
+  const topePesosAFP = Math.floor(TOPE_AFP_UF * UF_VALOR);
+  const topePesosAFC = Math.floor(TOPE_AFC_UF * UF_VALOR);
 
-  // 3. AFP
+  const baseAFP = Math.min(brutoImponible, topePesosAFP);
+  const baseSalud = baseAFP; // Mismo tope que AFP
+  const baseAFC = Math.min(brutoImponible, topePesosAFC);
+
+  // 3. AFP (Cotización + Comisión)
   const afpInfo = AFPS.find(a => a.code === afpCode) || AFPS[0];
-  const afpRate = (10.0 + afpInfo.commission) / 100.0;
-  const afp = Math.floor(imponibleTope * afpRate);
+  const descuentoAfp = Math.floor(baseAFP * 0.10);
+  const descuentoAfpComision = Math.floor(baseAFP * (afpInfo.commission / 100.0));
 
-  // 4. Salud
-  let saludTotal = 0;
-  let saludVoluntaria = 0;
-  const salud7Pct = Math.floor(imponibleTope * 0.07);
+  // 4. Previsión Salud (Lógica dual Fonasa vs Isapre)
+  const descuentoSaludLegal = Math.floor(baseSalud * 0.07);
+  let descuentoSaludTotal = descuentoSaludLegal;
+  let descuentoSaludVoluntaria = 0;
 
-  if (saludCode === "FONASA") {
-    saludTotal = salud7Pct;
-  } else {
-    // Isapre
-    const planPesos = Math.floor(planSaludUf * UF_VALOR);
-    saludTotal = Math.max(salud7Pct, planPesos);
-    saludVoluntaria = Math.max(0, saludTotal - salud7Pct);
+  if (saludCode === "ISAPRE" && planSaludUf > 0) {
+    let planPesos = Math.floor(planSaludUf * UF_VALOR);
+    planPesos = Math.min(planPesos, baseSalud); // Isapre topada al imponible
+    if (planPesos > descuentoSaludLegal) {
+      descuentoSaludVoluntaria = planPesos - descuentoSaludLegal;
+    }
+    descuentoSaludTotal = Math.max(descuentoSaludLegal, planPesos);
   }
 
-  // 5. AFC (Seguro Cesantía)
-  let afcTrabajador = 0;
+  // 5. AFC Seguro de Cesantía (Trabajador)
+  let descuentoAfcTrab = 0;
   let afcEmpresa = 0;
   if (tipoContrato === "indefinido") {
-    afcTrabajador = Math.floor(imponibleTope * 0.006);
-    afcEmpresa = Math.floor(imponibleTope * 0.024);
+    descuentoAfcTrab = Math.floor(baseAFC * 0.006);
+    afcEmpresa = Math.floor(baseAFC * 0.024);
   } else {
-    afcTrabajador = 0;
-    afcEmpresa = Math.floor(imponibleTope * 0.03);
+    descuentoAfcTrab = 0; // En contrato a plazo fijo paga 100% el empleador
+    afcEmpresa = Math.floor(baseAFC * 0.03);
   }
 
-  // SIS
-  const sisEmpresa = Math.floor(imponibleTope * 0.0149);
+  // SIS (Seguro de Invalidez y Sobrevivencia - pagado por empleador)
+  const sisEmpresa = Math.floor(baseAFP * 0.0149);
 
-  // 6. Impuesto Único de Segunda Categoría
-  const baseImpuesto = imponibleTope - afp - salud7Pct - afcTrabajador;
+  // 6. Impuesto Único de Segunda Categoría (IRPF Mensual)
+  // Nota Normativa: La base imponible parte del bruto imponible (sin topes) menos descuentos previsionales obligatorios topados
+  let baseImpuesto = brutoImponible - descuentoAfp - descuentoAfpComision - descuentoSaludLegal - descuentoAfcTrab;
+
+  // Deducción por asignación de zona extrema (DL 889 / Asig. Zona Magallanes)
+  let asignacionZona = 0;
+  if (esZonaExtrema) {
+    const grado1a = 210000; // Valor aproximado escala sueldo grado 1A
+    asignacionZona = Math.floor(grado1a * 0.875);
+    baseImpuesto = Math.max(0, baseImpuesto - asignacionZona);
+  }
+
+  baseImpuesto = Math.max(0, baseImpuesto);
+  let impuestoBruto = 0;
   let impuesto = 0;
+  let rebajaMonto = 0;
 
   if (baseImpuesto > 0) {
     const baseUtm = baseImpuesto / UTM_VALOR;
     for (const tramo of TRAMOS_IMPUESTO) {
       if (baseUtm >= tramo.inf && baseUtm < tramo.sup) {
-        impuesto = Math.floor((baseImpuesto * tramo.tasa) - (tramo.rebaja * UTM_VALOR));
-        if (impuesto < 0) impuesto = 0;
+        impuestoBruto = Math.floor((baseImpuesto * tramo.tasa) - (tramo.rebaja * UTM_VALOR));
+        if (impuestoBruto < 0) impuestoBruto = 0;
         break;
       }
     }
   }
 
-  // Rebaja de Zona Extrema (DL 889): 98% de rebaja al impuesto en Magallanes
-  if (esZonaExtrema) {
-    impuesto = Math.floor(impuesto * 0.02);
+  impuesto = impuestoBruto;
+
+  // Rebaja del impuesto por Zona Extrema (98% de exención para Magallanes)
+  if (esZonaExtrema && impuestoBruto > 0) {
+    rebajaMonto = Math.floor(impuestoBruto * 0.98);
+    impuesto = impuestoBruto - rebajaMonto;
   }
 
-  const totalDescuentosLegales = afp + saludTotal + afcTrabajador + impuesto;
+  const totalDescuentosLegales = descuentoAfp + descuentoAfpComision + descuentoSaludTotal + descuentoAfcTrab + impuesto;
   const liquido = totalHaberesBrutos - totalDescuentosLegales;
 
   return {
@@ -145,16 +168,20 @@ function forwardCalculation(params: {
     asignacionMovilizacion,
     asignacionColacion,
     totalHaberesBrutos,
-    afp,
-    salud: salud7Pct,
-    saludVoluntaria,
-    saludTotal,
-    afcTrabajador,
+    afp: descuentoAfp,
+    afpComision: descuentoAfpComision,
+    salud: descuentoSaludLegal,
+    saludVoluntaria: descuentoSaludVoluntaria,
+    saludTotal: descuentoSaludTotal,
+    afcTrabajador: descuentoAfcTrab,
     afcEmpresa,
     sisEmpresa,
-    impuesto,
+    impuestoUnico: impuesto,
     totalDescuentosLegales,
-    sueldoLiquido: liquido
+    sueldoLiquido: liquido,
+    asignacionZonaExtrema: asignacionZona,
+    impuestoUnicoSinRebaja: impuestoBruto,
+    rebajaZonaExtrema: rebajaMonto
   };
 }
 
@@ -182,11 +209,9 @@ function runBisection(params: {
     }
   }
   
+  // Realizar última pasada con el entero redondeado
   return forwardCalculation({ ...params, base: Math.round(low) });
 }
-
-const formatCLP = (amount: number) =>
-  new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(amount);
 
 function CalculatorContent() {
   const searchParams = useSearchParams();
@@ -198,12 +223,11 @@ function CalculatorContent() {
   const [planSaludUf, setPlanSaludUf] = useState<number>(0);
   const [asignacionMovilizacion, setAsignacionMovilizacion] = useState<number>(0);
   const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
-  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(true); // Por defecto en Magallanes (portada regional)
+  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(true); // Activado por defecto para Magallanes
 
   const [result, setResult] = useState<any>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Cargar de URL si existe
   useEffect(() => {
     const urlLiq = searchParams.get("liq");
     const urlGrat = searchParams.get("grat");
@@ -271,17 +295,21 @@ function CalculatorContent() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Inputs de Entrada */}
-      <div className="space-y-3">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* COLUMNA IZQUIERDA: CONFIGURACIÓN DE INPUTS */}
+      <div className="lg:col-span-5 space-y-6 bg-white/60 backdrop-blur-md p-6 sm:p-8 rounded-[2rem] border border-neutral-200/50 shadow-sm">
+        <h3 className="text-sm font-black uppercase text-neutral-800 tracking-wider flex items-center gap-2">
+          <Calculator className="w-4 h-4 text-primary" /> Parámetros del Trabajador
+        </h3>
+        
         {/* Sueldo Líquido */}
-        <div className="space-y-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Sueldo Líquido Objetivo</label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Sueldo Líquido Objetivo</label>
           <div className="relative">
-            <span className="absolute left-3 inset-y-0 flex items-center text-xs font-black text-slate-400">$</span>
+            <span className="absolute left-3.5 inset-y-0 flex items-center text-xs font-black text-slate-400">$</span>
             <input
               type="number"
-              className="w-full h-10 rounded-xl border border-primary/15 bg-white pl-6 pr-3 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white pl-8 pr-4 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={targetLiquido}
               onChange={(e) => setTargetLiquido(Math.max(0, parseInt(e.target.value) || 0))}
             />
@@ -289,11 +317,11 @@ function CalculatorContent() {
         </div>
 
         {/* Tipo de Contrato y AFP */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Contrato</label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Contrato</label>
             <select
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={tipoContrato}
               onChange={(e) => setTipoContrato(e.target.value)}
             >
@@ -301,26 +329,26 @@ function CalculatorContent() {
               <option value="fijo">Plazo Fijo</option>
             </select>
           </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Previsión AFP</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Previsión AFP</label>
             <select
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={afpCode}
               onChange={(e) => setAfpCode(e.target.value)}
             >
               {AFPS.map(a => (
-                <option key={a.code} value={a.code}>{a.name}</option>
+                <option key={a.code} value={a.code}>{a.name} ({a.commission}%)</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Salud y UF */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Salud</label>
+        {/* Previsión Salud */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Salud</label>
             <select
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={saludCode}
               onChange={(e) => {
                 setSaludCode(e.target.value);
@@ -331,13 +359,13 @@ function CalculatorContent() {
               <option value="ISAPRE">ISAPRE</option>
             </select>
           </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Plan Isapre (UF)</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Plan Pactado (UF)</label>
             <input
               type="number"
               step="0.01"
               disabled={saludCode === "FONASA"}
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-50"
               value={planSaludUf}
               onChange={(e) => setPlanSaludUf(Math.max(0, parseFloat(e.target.value) || 0))}
             />
@@ -345,21 +373,21 @@ function CalculatorContent() {
         </div>
 
         {/* Asignaciones no imponibles */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Movilización ($)</label>
+        <div className="grid grid-cols-2 gap-4 pt-1">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Movilización ($)</label>
             <input
               type="number"
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={asignacionMovilizacion}
               onChange={(e) => setAsignacionMovilizacion(Math.max(0, parseInt(e.target.value) || 0))}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">Colación ($)</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Colación ($)</label>
             <input
               type="number"
-              className="w-full h-9 rounded-lg border border-primary/15 bg-white px-2 text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={asignacionColacion}
               onChange={(e) => setAsignacionColacion(Math.max(0, parseInt(e.target.value) || 0))}
             />
@@ -367,117 +395,180 @@ function CalculatorContent() {
         </div>
 
         {/* Toggles Rápidos */}
-        <div className="flex items-center justify-between gap-2 px-1 pt-1.5 border-t border-slate-100">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pt-3 border-t border-neutral-100">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={gratificacion}
               onChange={(e) => setGratificacion(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary/10"
+              className="w-4.5 h-4.5 rounded border-slate-300 text-primary focus:ring-primary/10"
             />
-            <span className="text-[9px] font-black uppercase text-slate-600">Gratificación (Art. 50)</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-slate-700">Gratificación Legal</span>
+              <span className="text-[8px] text-slate-400 font-bold italic">Art. 50 (25% imponible)</span>
+            </div>
           </label>
 
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={esZonaExtrema}
               onChange={(e) => setEsZonaExtrema(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-primary focus:ring-primary/10"
+              className="w-4.5 h-4.5 rounded border-slate-300 text-primary focus:ring-primary/10"
             />
-            <span className="text-[9px] font-black uppercase text-slate-600">Zona Extrema (DL 889)</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-slate-700">Zona Extrema</span>
+              <span className="text-[8px] text-slate-400 font-bold italic">Deducción DL 889 (98%)</span>
+            </div>
           </label>
         </div>
       </div>
 
-      {/* Resultados Completos en Acordeón Detallado */}
-      {result && (
-        <div className="space-y-2.5 pt-2 border-t border-slate-200">
-          {/* Tarjeta Principal KPI */}
-          <div className="bg-emerald-500/[0.04] border border-emerald-500/10 rounded-xl p-3.5 text-center space-y-1">
-            <p className="text-[8px] font-black text-emerald-700 uppercase tracking-widest">Sueldo Base Requerido</p>
-            <p className="text-xl font-black text-emerald-950 tracking-tighter">{formatCLP(result.sueldoBase)}</p>
-            <p className="text-[7.5px] font-black text-slate-500 uppercase tracking-wider">
-              Costo Empresa: {formatCLP(result.totalHaberesBrutos + result.afcEmpresa + result.sisEmpresa)}
-            </p>
+      {/* COLUMNA DERECHA: DESGLOSE Y REPORTES */}
+      <div className="lg:col-span-7 space-y-6">
+        {result ? (
+          <div className="space-y-6">
+            {/* Tarjetas KPI de Resultados Principales */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-emerald-500/[0.04] border border-emerald-500/15 rounded-[1.8rem] p-6 text-center space-y-1">
+                <p className="text-[9px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5" /> Sueldo Base Determinado
+                </p>
+                <p className="text-3xl font-black text-emerald-950 tracking-tighter">{formatCLP(result.sueldoBase)}</p>
+                <p className="text-[9px] font-bold text-slate-400 italic">Conversión exacta al peso</p>
+              </div>
+
+              <div className="bg-slate-500/[0.04] border border-slate-500/15 rounded-[1.8rem] p-6 text-center space-y-1">
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-center gap-1">
+                  <Building className="w-3.5 h-3.5" /> Costo Mensual del Empleador
+                </p>
+                <p className="text-3xl font-black text-slate-900 tracking-tighter">
+                  {formatCLP(result.totalHaberesBrutos + result.afcEmpresa + result.sisEmpresa)}
+                </p>
+                <p className="text-[9px] font-bold text-slate-400 italic">Incluye leyes sociales patronales</p>
+              </div>
+            </div>
+
+            {/* Ficha Contable Detallada */}
+            <div className="bg-white/80 backdrop-blur-md border border-neutral-200/60 rounded-[2rem] p-6 sm:p-8 space-y-5">
+              
+              {/* Haberes */}
+              <div className="space-y-2 border-b border-dashed border-slate-200 pb-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Ingresos / Haberes
+                </h4>
+                <div className="font-mono text-xs space-y-2">
+                  <div className="flex justify-between text-slate-700">
+                    <span>Sueldo Base:</span>
+                    <span className="font-bold">{formatCLP(result.sueldoBase)}</span>
+                  </div>
+                  {result.gratificacion > 0 && (
+                    <div className="flex justify-between text-slate-700">
+                      <span>Gratificación Legal (Art. 50):</span>
+                      <span className="font-bold">{formatCLP(result.gratificacion)}</span>
+                    </div>
+                  )}
+                  {(result.asignacionMovilizacion > 0 || result.asignacionColacion > 0) && (
+                    <div className="flex justify-between text-slate-700">
+                      <span>Asignaciones no imponibles:</span>
+                      <span className="font-bold">{formatCLP(result.asignacionMovilizacion + result.asignacionColacion)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-slate-100 pt-2 font-sans font-black text-xs text-slate-900">
+                    <span>Total Haberes Brutos:</span>
+                    <span>{formatCLP(result.totalHaberesBrutos)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deducciones previsionales */}
+              <div className="space-y-2 border-b border-dashed border-slate-200 pb-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <Percent className="w-3.5 h-3.5 text-rose-600" /> Retenciones Legales (Descuentos)
+                </h4>
+                <div className="font-mono text-xs space-y-2">
+                  <div className="flex justify-between text-slate-700">
+                    <span>AFP ({afpCode} - obligatorio + comisión):</span>
+                    <span className="font-bold text-rose-600">-{formatCLP(result.afp + result.afpComision)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>Salud ({saludCode} - {saludCode === "FONASA" ? "7%" : `${formatCLP(result.saludTotal)} total`}):</span>
+                    <span className="font-bold text-rose-600">-{formatCLP(result.saludTotal)}</span>
+                  </div>
+                  {result.afcTrabajador > 0 && (
+                    <div className="flex justify-between text-slate-700">
+                      <span>Seguro Cesantía (AFC 0.6%):</span>
+                      <span className="font-bold text-rose-600">-{formatCLP(result.afcTrabajador)}</span>
+                    </div>
+                  )}
+                  {result.impuestoUnico > 0 && (
+                    <div className="flex justify-between text-slate-700">
+                      <span>Impuesto Único Segunda Categoría:</span>
+                      <span className="font-bold text-rose-700">-{formatCLP(result.impuestoUnico)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-slate-100 pt-2 font-sans font-black text-xs text-slate-900">
+                    <span>Total Descuentos Legales:</span>
+                    <span>-{formatCLP(result.totalDescuentosLegales)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cargos Patronales */}
+              <div className="space-y-2 pb-1">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-slate-600" /> Aportes del Empleador
+                </h4>
+                <div className="font-mono text-xs space-y-2">
+                  <div className="flex justify-between text-slate-700">
+                    <span>Seguro Invalidez (SIS 1.49%):</span>
+                    <span className="font-bold">{formatCLP(result.sisEmpresa)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>Aporte AFC Empresa:</span>
+                    <span className="font-bold">{formatCLP(result.afcEmpresa)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Alerta de Exenciones de Zona Extrema */}
+            {esZonaExtrema && (
+              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-5 flex gap-4 text-blue-900">
+                <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h5 className="font-black text-[10px] uppercase tracking-wider">Beneficio Zona Extrema Activo</h5>
+                  <p className="text-[10.5px] leading-relaxed text-blue-800/90 font-medium">
+                    Se está deduciendo <strong className="text-blue-950">{formatCLP(result.asignacionZonaExtrema)}</strong> de la base imponible y aplicando un **98% de exención** sobre el Impuesto Único de Segunda Categoría debido a las exenciones del **D.L. 889** vigentes en Magallanes.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Compartir */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                variant="outline"
+                onClick={handleShareLink}
+                className="flex-1 h-11 text-xs font-black uppercase tracking-[0.2em] rounded-xl border-zinc-200 bg-white hover:bg-slate-50 transition-all gap-2"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-600 animate-pulse" /> : <Copy className="w-4 h-4" />}
+                {copied ? "COPIADO" : "COPIAR LINK SIMULACIÓN"}
+              </Button>
+              <Button 
+                onClick={handleShareWhatsApp}
+                className="flex-1 h-11 text-xs font-black uppercase tracking-[0.2em] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                COMPARTIR POR WHATSAPP
+              </Button>
+            </div>
           </div>
-
-          {/* Desglose Detallado */}
-          <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 space-y-2 font-mono text-[10px]">
-            {/* Haberes */}
-            <div className="space-y-1 border-b border-dashed border-slate-200 pb-1.5">
-              <p className="font-sans font-black text-[8px] uppercase tracking-wider text-slate-400">Haberes (Ingresos)</p>
-              <div className="flex justify-between">
-                <span className="font-sans text-slate-500">Sueldo Base:</span>
-                <span className="font-bold">{formatCLP(result.sueldoBase)}</span>
-              </div>
-              {result.gratificacion > 0 && (
-                <div className="flex justify-between">
-                  <span className="font-sans text-slate-500">Gratificación:</span>
-                  <span className="font-bold">{formatCLP(result.gratificacion)}</span>
-                </div>
-              )}
-              {(result.asignacionMovilizacion > 0 || result.asignacionColacion > 0) && (
-                <div className="flex justify-between">
-                  <span className="font-sans text-slate-500">Asignaciones (No imp):</span>
-                  <span className="font-bold">{formatCLP(result.asignacionMovilizacion + result.asignacionColacion)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Deducciones */}
-            <div className="space-y-1 border-b border-dashed border-slate-200 pb-1.5">
-              <p className="font-sans font-black text-[8px] uppercase tracking-wider text-slate-400">Retenciones (Descuentos)</p>
-              <div className="flex justify-between">
-                <span className="font-sans text-slate-500">AFP ({afpCode}):</span>
-                <span className="font-bold text-rose-600">-{formatCLP(result.afp)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-sans text-slate-500">Salud ({saludCode}):</span>
-                <span className="font-bold text-rose-600">-{formatCLP(result.saludTotal)}</span>
-              </div>
-              {result.afcTrabajador > 0 && (
-                <div className="flex justify-between">
-                  <span className="font-sans text-slate-500">AFC Seguro:</span>
-                  <span className="font-bold text-rose-600">-{formatCLP(result.afcTrabajador)}</span>
-                </div>
-              )}
-              {result.impuesto > 0 && (
-                <div className="flex justify-between">
-                  <span className="font-sans text-slate-500">Impuesto Único:</span>
-                  <span className="font-bold text-rose-700">-{formatCLP(result.impuesto)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Totales */}
-            <div className="flex justify-between font-sans font-black text-[11px] text-slate-800 pt-0.5">
-              <span>Sueldo Bruto:</span>
-              <span>{formatCLP(result.totalHaberesBrutos)}</span>
-            </div>
+        ) : (
+          <div className="h-full flex items-center justify-center p-20 bg-white/40 border border-dashed border-neutral-300 rounded-[2rem]">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">Cargando cálculos contables...</p>
           </div>
-        </div>
-      )}
-
-      {/* Botones de acción viral */}
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <Button 
-          size="sm"
-          variant="outline"
-          onClick={handleShareLink}
-          className="h-9 text-[9px] font-black uppercase tracking-wider rounded-lg border-zinc-200 hover:bg-slate-50 transition-all gap-1.5"
-        >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? "COPIADO" : "COPIAR LINK"}
-        </Button>
-        <Button 
-          size="sm"
-          onClick={handleShareWhatsApp}
-          className="h-9 text-[9px] font-black uppercase tracking-wider rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all gap-1.5"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          WHATSAPP
-        </Button>
+        )}
       </div>
     </div>
   );
@@ -485,23 +576,31 @@ function CalculatorContent() {
 
 export function PublicSalaryCalculator() {
   return (
-    <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-4 relative overflow-hidden group shadow-md hover:shadow-lg transition-all duration-300">
-      <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all duration-500" />
-      <div className="relative space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary px-2 py-0.5 bg-primary/10 rounded-full flex items-center gap-1">
-            <Calculator className="w-3 h-3" /> Calculadora Express
-          </span>
-          <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Viral Tool</span>
-        </div>
-        <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-          Sueldo <span className="font-serif italic text-primary">Líquido a Base</span>
-        </h5>
-        <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-normal">
-          Calcula al instante el sueldo base y las retenciones requeridas para tu líquido deseado en Chile.
-        </p>
+    <div className="w-full rounded-[3.5rem] bg-gradient-to-tr from-slate-50 via-white to-sky-500/[0.02] border border-neutral-200/60 p-8 md:p-12 shadow-[0_30px_80px_rgba(30,58,138,0.03)] relative overflow-hidden">
+      {/* Auroras Patagónicas */}
+      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-primary/10 to-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-tr from-sky-600/5 to-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <Suspense fallback={<div className="h-28 flex items-center justify-center text-xs font-bold text-slate-400">Cargando simulador...</div>}>
+      <div className="space-y-8 relative z-10">
+        {/* Cabecera Central */}
+        <div className="space-y-3 text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/20 shadow-[0_5px_15px_rgba(30,58,138,0.02)]">
+            <Calculator className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-primary to-sky-600">Herramienta Financiera en Vivo</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-neutral-900 leading-none">
+            Calculadora de Sueldo <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-sky-600 to-blue-500 font-extrabold">Líquido a Base</span>
+          </h2>
+          <p className="text-neutral-500 font-bold italic text-xs leading-relaxed max-w-lg mx-auto">
+            Ingresa tu sueldo líquido deseado y simula instantáneamente la base imponible y el costo de contratación real con normativa chilena 2026.
+          </p>
+        </div>
+
+        <Suspense fallback={
+          <div className="h-60 flex items-center justify-center text-xs font-bold text-slate-400 border border-dashed border-neutral-200 rounded-[2rem]">
+            Cargando simulador contable...
+          </div>
+        }>
           <CalculatorContent />
         </Suspense>
       </div>
