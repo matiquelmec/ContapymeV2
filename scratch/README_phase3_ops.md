@@ -7,7 +7,7 @@ Este playbook define la operacion recurrente para los controles de Fase 3.
 Comando:
 
 ```bash
-python scratch/run_phase3_validation.py
+python tools/db/run_phase3_validation.py
 ```
 
 Esperado:
@@ -22,19 +22,19 @@ Si cualquier valor es mayor a `0`, abrir incidente y pasar a la seccion 2.
 Primero simular:
 
 ```bash
-python scratch/remediate_unbalanced_entries.py
+python tools/db/remediate_unbalanced_entries.py
 ```
 
 Aplicar solo con aprobacion:
 
 ```bash
-python scratch/remediate_unbalanced_entries.py --apply
+python tools/db/remediate_unbalanced_entries.py --apply
 ```
 
 Volver a validar:
 
 ```bash
-python scratch/run_phase3_validation.py
+python tools/db/run_phase3_validation.py
 ```
 
 ## 3) Politica Operativa
