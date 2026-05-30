@@ -8,7 +8,8 @@ import {
   Percent, 
   Building, 
   Check,
-  TrendingUp
+  TrendingUp,
+  Shield
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,15 @@ const DEFAULT_AFPS = [
   { code: "PLANVITAL", name: "Planvital", commission: 1.16 },
   { code: "UNO", name: "Uno", commission: 0.49 },
   { code: "PROVIDA", name: "Provida", commission: 1.45 }
+];
+
+const ZONAS_EXTREMAS = [
+  { code: "ARICA", label: "Arica" },
+  { code: "TARAPACA", label: "Tarapaca" },
+  { code: "AYSEN", label: "Aysen" },
+  { code: "MAGALLANES", label: "Magallanes" },
+  { code: "CHILOE", label: "Chiloe" },
+  { code: "PALENA", label: "Palena" }
 ];
 
 const formatCLP = (amount: number) =>
@@ -42,6 +52,8 @@ export default function SalaryCalculatorPage() {
   const [asignacionMovilizacion, setAsignacionMovilizacion] = useState<number>(0);
   const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
   const [afps, setAfps] = useState(DEFAULT_AFPS);
+  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(false);
+  const [zonaExtrema, setZonaExtrema] = useState<string>("MAGALLANES");
 
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<any>(null);
@@ -58,7 +70,9 @@ export default function SalaryCalculatorPage() {
         plan_salud_uf: planSaludUf,
         tipo_contrato: tipoContrato,
         asignacion_movilizacion: asignacionMovilizacion,
-        asignacion_colacion: asignacionColacion
+        asignacion_colacion: asignacionColacion,
+        es_zona_extrema: esZonaExtrema,
+        zona_extrema: zonaExtrema
       });
 
       if (res.success) {
@@ -173,7 +187,7 @@ export default function SalaryCalculatorPage() {
               </div>
 
               {/* Gratificación */}
-              <div className="grid grid-cols-1 gap-6 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -186,7 +200,35 @@ export default function SalaryCalculatorPage() {
                     <span className="text-[9px] text-muted-foreground font-bold italic">Art. 50 (25%)</span>
                   </div>
                 </label>
+
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={esZonaExtrema}
+                    onChange={(e) => setEsZonaExtrema(e.target.checked)}
+                    className="w-4.5 h-4.5 rounded border-border text-primary focus:ring-primary/20"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black uppercase text-foreground">Zona Extrema</span>
+                    <span className="text-[9px] text-muted-foreground font-bold italic">Beneficio DL 889</span>
+                  </div>
+                </label>
               </div>
+
+              {esZonaExtrema && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Zona</label>
+                  <select
+                    className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    value={zonaExtrema}
+                    onChange={(e) => setZonaExtrema(e.target.value)}
+                  >
+                    {ZONAS_EXTREMAS.map((zona) => (
+                      <option key={zona.code} value={zona.code}>{zona.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* AFP Previsión */}
               <div className="space-y-2">
@@ -390,6 +432,18 @@ export default function SalaryCalculatorPage() {
                     </div>
                   </div>
                 </div>
+
+                {esZonaExtrema && result.liquidacion?.zona_extrema?.es_zona_extrema && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex gap-4 text-blue-900">
+                    <Shield className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="font-black text-xs uppercase tracking-wider mb-1">Beneficio Zona Extrema Activo</h5>
+                      <p className="text-[11px] leading-relaxed text-blue-800">
+                        Zona {zonaExtrema}: deduccion base {formatCLP(result.liquidacion.zona_extrema.asignacion_zona_extrema || 0)} y rebaja de impuesto {formatCLP(result.liquidacion.zona_extrema.rebaja_zona_extrema || 0)}.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
               </CardContent>
             </Card>

@@ -50,6 +50,17 @@ const TRAMOS_IMPUESTO = [
   { inf: 310.0, sup: Infinity, tasa: 0.40, rebaja: 38.820 }
 ];
 
+const ZONAS_EXTREMAS: Record<string, { label: string; rebajaImpuesto: number; porcentajeAsigZona: number }> = {
+  ARICA: { label: "Arica", rebajaImpuesto: 0.5, porcentajeAsigZona: 0 },
+  TARAPACA: { label: "Tarapaca", rebajaImpuesto: 0.5, porcentajeAsigZona: 0 },
+  AYSEN: { label: "Aysen", rebajaImpuesto: 0.98, porcentajeAsigZona: 0 },
+  MAGALLANES: { label: "Magallanes", rebajaImpuesto: 0.98, porcentajeAsigZona: 0.875 },
+  CHILOE: { label: "Chiloe", rebajaImpuesto: 0.98, porcentajeAsigZona: 0 },
+  PALENA: { label: "Palena", rebajaImpuesto: 0.98, porcentajeAsigZona: 0 }
+};
+
+const obtenerGrado1A = () => 535000;
+
 function forwardCalculation(params: {
   base: number;
   gratificacion: boolean;
@@ -61,6 +72,8 @@ function forwardCalculation(params: {
   asignacionColacion: number;
   legalParams: typeof DEFAULT_LEGAL_PARAMS;
   afps: Array<{ code: string; name: string; commission: number }>;
+  esZonaExtrema: boolean;
+  zonaExtrema: string;
 }) {
   const {
     base,
@@ -72,7 +85,9 @@ function forwardCalculation(params: {
     asignacionMovilizacion,
     asignacionColacion,
     legalParams,
-    afps
+    afps,
+    esZonaExtrema,
+    zonaExtrema
   } = params;
 
   // 1. Gratificación Legal (Art. 50 Código del Trabajo)
@@ -130,6 +145,16 @@ function forwardCalculation(params: {
   // 6. Impuesto Único de Segunda Categoría (IRPF Mensual)
   // Nota Normativa: La base imponible parte del bruto imponible (sin topes) menos descuentos previsionales obligatorios topados
   let baseImpuesto = brutoImponible - descuentoAfp - descuentoAfpComision - descuentoSaludLegal - descuentoAfcTrab;
+  let asignacionZona = 0;
+  let rebajaMonto = 0;
+
+  if (esZonaExtrema && zonaExtrema in ZONAS_EXTREMAS) {
+    const porcentajeAsigZona = ZONAS_EXTREMAS[zonaExtrema].porcentajeAsigZona;
+    if (porcentajeAsigZona > 0) {
+      asignacionZona = Math.round(obtenerGrado1A() * porcentajeAsigZona);
+      baseImpuesto = Math.max(0, baseImpuesto - asignacionZona);
+    }
+  }
 
   baseImpuesto = Math.max(0, baseImpuesto);
   let impuestoBruto = 0;
@@ -147,6 +172,11 @@ function forwardCalculation(params: {
   }
 
   impuesto = impuestoBruto;
+
+  if (esZonaExtrema && zonaExtrema in ZONAS_EXTREMAS && impuestoBruto > 0) {
+    rebajaMonto = Math.round(impuestoBruto * ZONAS_EXTREMAS[zonaExtrema].rebajaImpuesto);
+    impuesto = impuestoBruto - rebajaMonto;
+  }
 
   const totalDescuentosLegales = descuentoAfp + descuentoAfpComision + descuentoSaludTotal + descuentoAfcTrab + impuesto;
   const liquido = totalHaberesBrutos - totalDescuentosLegales;
@@ -166,6 +196,9 @@ function forwardCalculation(params: {
     afcEmpresa,
     sisEmpresa,
     impuestoUnico: impuesto,
+    impuestoUnicoSinRebaja: impuestoBruto,
+    asignacionZonaExtrema: asignacionZona,
+    rebajaZonaExtrema: rebajaMonto,
     totalDescuentosLegales,
     sueldoLiquido: liquido
   };
@@ -182,6 +215,8 @@ function runBisection(params: {
   asignacionColacion: number;
   legalParams: typeof DEFAULT_LEGAL_PARAMS;
   afps: Array<{ code: string; name: string; commission: number }>;
+  esZonaExtrema: boolean;
+  zonaExtrema: string;
 }) {
   let low = 0;
   let high = Math.max(100000000, params.targetLiquido * 3);
@@ -219,6 +254,8 @@ function CalculatorContent() {
   const [asignacionColacion, setAsignacionColacion] = useState<number>(0);
   const [legalParams, setLegalParams] = useState(DEFAULT_LEGAL_PARAMS);
   const [afps, setAfps] = useState(DEFAULT_AFPS);
+  const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(false);
+  const [zonaExtrema, setZonaExtrema] = useState<string>("MAGALLANES");
 
   const [result, setResult] = useState<any>(null);
   const [copied, setCopied] = useState<boolean>(false);
@@ -232,6 +269,8 @@ function CalculatorContent() {
     const urlUf = searchParams.get("uf");
     const urlMov = searchParams.get("mov");
     const urlCol = searchParams.get("col");
+    const urlZona = searchParams.get("zona");
+    const urlZonaCode = searchParams.get("zonaCode");
 
     if (urlLiq) setTargetLiquido(Math.max(0, parseInt(urlLiq) || 1000000));
     if (urlGrat) setGratificacion(urlGrat === "true");
@@ -241,6 +280,8 @@ function CalculatorContent() {
     if (urlUf) setPlanSaludUf(parseFloat(urlUf) || 0);
     if (urlMov) setAsignacionMovilizacion(parseInt(urlMov) || 0);
     if (urlCol) setAsignacionColacion(parseInt(urlCol) || 0);
+    if (urlZona) setEsZonaExtrema(urlZona === "true");
+    if (urlZonaCode && urlZonaCode.toUpperCase() in ZONAS_EXTREMAS) setZonaExtrema(urlZonaCode.toUpperCase());
   }, [searchParams]);
 
   useEffect(() => {
@@ -292,7 +333,9 @@ function CalculatorContent() {
       asignacionMovilizacion,
       asignacionColacion,
       legalParams,
-      afps
+      afps,
+      esZonaExtrema,
+      zonaExtrema
     });
     setResult(res);
   }, [
@@ -305,12 +348,14 @@ function CalculatorContent() {
     asignacionMovilizacion,
     asignacionColacion,
     legalParams,
-    afps
+    afps,
+    esZonaExtrema,
+    zonaExtrema
   ]);
 
   const handleShareLink = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
     
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -320,7 +365,7 @@ function CalculatorContent() {
 
   const handleShareWhatsApp = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}`;
+    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
     const text = encodeURIComponent(
       `📊 ¡Simulé un Sueldo Base de ${formatCLP(result?.sueldoBase || 0)} para obtener un líquido de ${formatCLP(targetLiquido)}! Calcula el tuyo con leyes sociales en vivo aquí: ${shareUrl}`
     );
@@ -442,7 +487,34 @@ function CalculatorContent() {
             </div>
           </label>
 
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={esZonaExtrema}
+              onChange={(e) => setEsZonaExtrema(e.target.checked)}
+              className="w-4.5 h-4.5 rounded border-slate-300 text-primary focus:ring-primary/10"
+            />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-slate-700">Zona Extrema</span>
+              <span className="text-[8px] text-slate-400 font-bold italic">Beneficio tributario DL 889</span>
+            </div>
+          </label>
         </div>
+
+        {esZonaExtrema && (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Zona</label>
+            <select
+              className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              value={zonaExtrema}
+              onChange={(e) => setZonaExtrema(e.target.value)}
+            >
+              {Object.entries(ZONAS_EXTREMAS).map(([code, zone]) => (
+                <option key={code} value={code}>{zone.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* COLUMNA DERECHA: DESGLOSE Y REPORTES */}
@@ -552,6 +624,18 @@ function CalculatorContent() {
                 </div>
               </div>
             </div>
+
+            {esZonaExtrema && (
+              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-5 flex gap-4 text-blue-900">
+                <Shield className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h5 className="font-black text-[10px] uppercase tracking-wider">Beneficio Zona Extrema Activo</h5>
+                  <p className="text-[10.5px] leading-relaxed text-blue-800/90 font-medium">
+                    Zona {ZONAS_EXTREMAS[zonaExtrema].label}: deduccion base {formatCLP(result.asignacionZonaExtrema)} y rebaja de impuesto {formatCLP(result.rebajaZonaExtrema)}.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Compartir */}
             <div className="flex flex-col sm:flex-row gap-3">
