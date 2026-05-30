@@ -132,11 +132,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           height: '1920px',
           overflow: 'hidden',
           fontFamily: "var(--font-geist-sans), 'Inter', 'Helvetica Neue', Arial, sans-serif",
-          background: '#ffffff', // Fondo blanco puro para fusionar el logo
+          background: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)', // Master Brand Deep Space Blue!
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
-          border: '24px solid #0f172a', // Marco elegante de contraste (Slate 900)
+          border: '24px solid #020712', // Marco elegante de contraste neón
         }}
       >
         {/* Líneas geométricas minimalistas de fondo */}
@@ -146,8 +146,8 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           left: 0,
           right: 0,
           bottom: 0,
-          borderRight: '1px solid rgba(15, 23, 42, 0.05)',
-          borderLeft: '1px solid rgba(15, 23, 42, 0.05)',
+          borderRight: '1px solid rgba(0, 242, 254, 0.08)',
+          borderLeft: '1px solid rgba(0, 242, 254, 0.08)',
           margin: '0 80px',
           pointerEvents: 'none',
         }} />
@@ -176,6 +176,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
                 height: '190px',
                 width: 'auto',
                 objectFit: 'contain',
+                filter: 'drop-shadow(0 0 8px rgba(0, 242, 254, 0.2))', // Efecto neón suave en el logo
               }}
               crossOrigin="anonymous"
             />
@@ -186,7 +187,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               marginLeft: '36px'
             }}>
               <span style={{
-                color: '#0f172a',
+                color: '#ffffff',
                 fontSize: '44px',
                 fontWeight: 950,
                 letterSpacing: '5px',
@@ -201,10 +202,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           
           {/* Categoria Badge minimalista en negro */}
           <div style={{
-            background: '#0f172a',
+            background: 'rgba(0, 242, 254, 0.15)',
+            border: '1px solid rgba(0, 242, 254, 0.3)',
             borderRadius: '16px',
             padding: '16px 36px',
-            color: '#ffffff',
+            color: '#00f2fe',
             fontSize: '22px',
             fontWeight: 900,
             textTransform: 'uppercase',
@@ -223,8 +225,8 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           flex: '1',
           maxHeight: '850px',
           position: 'relative',
-          border: '3px solid #0f172a',
-          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
+          border: '3px solid rgba(0, 242, 254, 0.4)', // Borde cian neón en imagen
+          boxShadow: '0 20px 50px rgba(0, 242, 254, 0.15)',
           zIndex: 10,
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -251,7 +253,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            color: '#00b4d8',
+            color: theme.textColor || '#90e0ef',
             fontSize: '14px',
             fontWeight: 900,
             textTransform: 'uppercase',
@@ -262,14 +264,14 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             <span style={{
               width: '32px',
               height: '3px',
-              backgroundColor: '#0f172a',
+              backgroundColor: '#00f2fe',
             }} />
             {theme.slogan}
           </div>
           
           {/* Título de la noticia gigante y de altísimo contraste */}
           <h2 style={{
-            color: '#0f172a',
+            color: '#ffffff',
             fontSize: '66px',
             fontWeight: 950,
             fontStyle: 'italic',
@@ -292,7 +294,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTop: '2px solid #0f172a',
+          borderTop: '2px solid rgba(0, 242, 254, 0.2)',
           marginTop: 'auto',
           position: 'relative',
           zIndex: 10,
@@ -301,7 +303,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
         }}>
           <div>
             <div style={{
-              color: '#0f172a',
+              color: '#ffffff',
               fontSize: '18px',
               fontWeight: 900,
               textTransform: 'uppercase',
@@ -311,7 +313,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               {sourceName}
             </div>
             <div style={{
-              color: '#64748b',
+              color: '#94a3b8',
               fontSize: '14px',
               fontWeight: 700,
               textTransform: 'uppercase',
@@ -329,11 +331,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             alignItems: 'flex-end',
           }}>
             <div style={{
-              background: 'rgba(15, 23, 42, 0.05)',
-              border: '2px solid #0f172a',
+              background: 'rgba(0, 242, 254, 0.05)',
+              border: '2px solid #00f2fe',
               borderRadius: '8px',
               padding: '6px 14px',
-              color: '#0f172a',
+              color: '#00f2fe',
               fontSize: '12px',
               fontWeight: 900,
               letterSpacing: '1.5px',
@@ -344,7 +346,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               ✓ INTEGRIDAD VERIFICADA
             </div>
             <div style={{
-              color: '#64748b',
+              color: '#94a3b8',
               fontSize: '12px',
               fontFamily: 'monospace',
               letterSpacing: '1px',
