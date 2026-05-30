@@ -18,6 +18,7 @@ import {
 import { HeroBentoGrid } from "@/components/hero-bento";
 import { GlobalMarketPanel } from "@/components/global-market-panel";
 import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
+import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
 interface NewsArticle {
@@ -293,6 +294,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
 
                   {/* Calendario Macro */}
                   <MacroCalendarWidget />
+
+                  {/* Calculadora Express Pública (Marketing Viral) */}
+                  <PublicSalaryCalculator />
 
                   {/* Ads Patrocinados & Facturín */}
                   <div className="space-y-6">
