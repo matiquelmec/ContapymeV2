@@ -1,0 +1,8 @@
+dte_identity_duplicates=0
+dte_item_line_duplicates=0
+accounting_period_duplicates=0
+organization_member_duplicates=0
+sales_natural_duplicates=0
+purchase_natural_duplicates=0
+liquidation_active_duplicates=0
+vacation_approved_overlaps=0

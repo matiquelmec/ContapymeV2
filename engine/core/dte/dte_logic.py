@@ -40,15 +40,34 @@ class DTELogic:
             )
         return response.data[0]
 
-    def _get_next_folio_with_caf(self, tipo_dte: int) -> tuple[int, Dict[str, Any]]:
-        """Obtiene el siguiente folio disponible y el CAF correspondiente."""
-        caf = self.supabase.table("dte_caf_folios")\
+    def _get_next_folio_with_caf(self, tipo_dte: int, environment: str | None = None) -> tuple[int, Dict[str, Any]]:
+        """Reserva el siguiente folio disponible y el CAF correspondiente."""
+        try:
+            rpc_res = self.supabase.rpc("reserve_dte_folio", {
+                "p_organization_id": self.organization_id,
+                "p_company_id": self.company_data["id"],
+                "p_tipo_dte": tipo_dte,
+                "p_environment": environment,
+            }).execute()
+            payload = rpc_res.data
+            if isinstance(payload, list):
+                payload = payload[0] if payload else None
+            if payload and payload.get("folio") and payload.get("caf"):
+                return int(payload["folio"]), payload["caf"]
+        except Exception as rpc_err:
+            print(f"Advertencia: reserva atomica de folio no disponible, usando flujo legado: {rpc_err}")
+
+        query = self.supabase.table("dte_caf_folios")\
             .select("*")\
             .eq("organization_id", self.organization_id)\
+            .eq("company_id", self.company_data["id"])\
             .eq("tipo_dte", tipo_dte)\
-            .eq("is_active", True)\
-            .order("range_start")\
-            .execute()
+            .eq("is_active", True)
+
+        if environment:
+            query = query.eq("environment", environment)
+
+        caf = query.order("range_start").execute()
 
         if not caf.data or len(caf.data) == 0:
             raise Exception(
@@ -65,7 +84,7 @@ class DTELogic:
                 .update({"is_active": False})\
                 .eq("id", current_caf["id"])\
                 .execute()
-            return self._get_next_folio_with_caf(tipo_dte)
+            return self._get_next_folio_with_caf(tipo_dte, environment)
 
         # Actualizar último folio usado
         self.supabase.table("dte_caf_folios")\
@@ -201,7 +220,10 @@ class DTELogic:
         self.validate_dte_date(tipo_dte, fecha_emision_str)
 
         # 1. Obtener Folio Real y su CAF
-        folio, current_caf = self._get_next_folio_with_caf(tipo_dte)
+        target_environment = invoice_data.get("sii_environment") or invoice_data.get("environment")
+        if target_environment:
+            target_environment = str(target_environment).strip().lower()
+        folio, current_caf = self._get_next_folio_with_caf(tipo_dte, target_environment)
 
         # 2. Registrar en DB (Estado inicial: draft)
         dte_record = {
