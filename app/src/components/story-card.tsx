@@ -132,13 +132,47 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           height: '1920px',
           overflow: 'hidden',
           fontFamily: "var(--font-geist-sans), 'Inter', 'Helvetica Neue', Arial, sans-serif",
-          background: 'linear-gradient(180deg, #040e22 0%, #020712 60%, #000000 100%)', // Master Brand Deep Space Blue!
+          backgroundColor: '#020712', // Fallback color
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
-          border: '24px solid #020712', // Marco elegante de contraste neón
+          border: '24px solid #020712', // Marco elegante
         }}
       >
+        {/* Imagen a Pantalla Completa Inmersiva de Fondo */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt="Fondo Inmersivo"
+            crossOrigin="anonymous"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'blur(25px) brightness(0.20) contrast(1.1)', // Blur masivo para legibilidad y efecto bokeh
+              transform: 'scale(1.15)', // Evita bordes blancos por el blur
+            }}
+          />
+          {/* Capa de mezcla de color azul/cian sobre la imagen para fusionar con la marca */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, rgba(4, 14, 34, 0.4) 0%, rgba(2, 7, 18, 0.8) 60%, rgba(0, 0, 0, 0.95) 100%)',
+            mixBlendMode: 'multiply'
+          }} />
+        </div>
+
         {/* Líneas geométricas minimalistas de fondo */}
         <div style={{
           position: 'absolute',
@@ -146,10 +180,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           left: 0,
           right: 0,
           bottom: 0,
-          borderRight: '1px solid rgba(0, 242, 254, 0.08)',
-          borderLeft: '1px solid rgba(0, 242, 254, 0.08)',
+          borderRight: '1px solid rgba(0, 242, 254, 0.06)',
+          borderLeft: '1px solid rgba(0, 242, 254, 0.06)',
           margin: '0 80px',
           pointerEvents: 'none',
+          zIndex: 2,
         }} />
 
         {/* Header / Branding Disruptivo "Infórmate Con" */}
@@ -190,12 +225,12 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                background: 'rgba(2, 7, 18, 0.6)',
-                border: '2px solid rgba(0, 242, 254, 0.3)',
+                background: 'rgba(2, 7, 18, 0.75)',
+                border: '2px solid rgba(0, 242, 254, 0.4)',
                 padding: '16px 28px',
                 borderRadius: '24px',
-                boxShadow: '0 10px 30px rgba(0, 242, 254, 0.08)',
-                backdropFilter: 'blur(10px)',
+                boxShadow: '0 10px 30px rgba(0, 242, 254, 0.15)',
+                backdropFilter: 'blur(15px)',
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
@@ -225,7 +260,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
 
             {/* Categoría con diseño insignia flotante */}
             <div style={{
-              background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.25) 0%, rgba(2, 7, 18, 0.9) 100%)',
+              background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.35) 0%, rgba(2, 7, 18, 0.95) 100%)',
               border: '2px solid #00f2fe',
               borderRadius: '20px',
               padding: '20px 40px',
@@ -235,7 +270,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               textTransform: 'uppercase',
               letterSpacing: '5px',
               fontStyle: 'italic',
-              boxShadow: '0 0 20px rgba(0, 242, 254, 0.2)'
+              boxShadow: '0 0 25px rgba(0, 242, 254, 0.3)'
             }}>
               {category}
             </div>
@@ -259,7 +294,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             position: 'absolute',
             width: '450px',
             height: '800px',
-            background: 'radial-gradient(circle, rgba(0, 242, 254, 0.25) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(0, 242, 254, 0.3) 0%, transparent 70%)',
             filter: 'blur(40px)',
             transform: 'rotateY(-15deg) rotateX(10deg) translateZ(-50px)',
             zIndex: 1,
@@ -273,8 +308,8 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             borderRadius: '50px',
             padding: '16px',
             boxSizing: 'border-box',
-            border: '4px solid rgba(0, 242, 254, 0.6)', // Borde neón cian
-            boxShadow: '0 25px 60px -15px rgba(0, 242, 254, 0.3), -20px 20px 40px rgba(0,0,0,0.7)',
+            border: '4px solid rgba(0, 242, 254, 0.75)', // Borde neón cian más brillante
+            boxShadow: '0 30px 70px -15px rgba(0, 242, 254, 0.4), -25px 25px 50px rgba(0,0,0,0.8)',
             transform: 'rotateY(-15deg) rotateX(10deg) rotateZ(-3deg)', // Inclinación 3D realista
             transformStyle: 'preserve-3d',
             position: 'relative',
@@ -290,7 +325,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               height: '18px',
               backgroundColor: '#020712',
               borderRadius: '20px',
-              border: '1px solid rgba(0, 242, 254, 0.2)',
+              border: '1px solid rgba(0, 242, 254, 0.3)',
               zIndex: 10,
             }} />
 
@@ -362,6 +397,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             WebkitLineClamp: 4,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            textShadow: '0 5px 25px rgba(0,0,0,0.8)' // Sombra para legibilidad sobre fondo inmersivo
           }}>
             {title}
           </h2>
@@ -373,7 +409,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderTop: '2px solid rgba(0, 242, 254, 0.2)',
+          borderTop: '2px solid rgba(0, 242, 254, 0.25)',
           marginTop: 'auto',
           position: 'relative',
           zIndex: 10,
@@ -410,7 +446,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             alignItems: 'flex-end',
           }}>
             <div style={{
-              background: 'rgba(0, 242, 254, 0.05)',
+              background: 'rgba(2, 7, 18, 0.8)',
               border: '2px solid #00f2fe',
               borderRadius: '8px',
               padding: '6px 14px',
@@ -421,6 +457,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               textTransform: 'uppercase',
               marginBottom: '6px',
               fontStyle: 'italic',
+              boxShadow: '0 0 10px rgba(0, 242, 254, 0.2)'
             }}>
               ✓ INTEGRIDAD VERIFICADA
             </div>
