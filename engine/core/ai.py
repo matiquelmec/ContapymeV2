@@ -44,14 +44,15 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     7. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples ('). Esto es CRÍTICO para que el formato JSON no se rompa.
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
-    {{
+    {
         "title": "Titular reescrito",
         "category": "CATEGORÍA",
         "summary": "Resumen ejecutivo.",
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
+        "brand_name": "Nombre de la marca o tienda local/nacional involucrada si aplica (ej: H&M, Cerveza Austral, SII), de lo contrario null",
         "visual_prompt": "Descripción visual detallada en inglés. Si la noticia involucra una tienda, marca o negocio local, el prompt debe describir una escena fotorrealista mostrando la fachada o el interior del negocio con sus elementos característicos, o un dispositivo móvil mostrando una captura de su sitio/marca. El prompt DEBE seguir este ADN: 'A hyperrealistic, high-fidelity news documentary photograph, natural ambient lighting, authentic environments of Punta Arenas/Magallanes, Patagonia, [detalles específicos de la tienda, marca o locación], shot on 35mm lens, f/2.8, raw photo, lifelike details, 8k'."
-    }}
+    }
     """
 
     payload = {
@@ -84,6 +85,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
                     "summary": data.get("summary", ""),
                     "full_content": data.get("full_content", content),
                     "is_featured": data.get("is_featured", False),
+                    "brand_name": data.get("brand_name", None),
                     "visual_prompt": data.get("visual_prompt", f"A hyperrealistic news photograph of Punta Arenas, Magallanes, Patagonia, 8k, cinematic lighting, realistic colors.")
                 }
             else:

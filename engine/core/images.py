@@ -111,7 +111,10 @@ async def _upload_to_supabase(content: bytes, prefix: str) -> str:
         filename = f"{prefix}_{uuid.uuid4()}.webp"
         db.storage.from_("news_images").upload(path=filename, file=content, file_options={"content-type": "image/webp"})
         return str(db.storage.from_("news_images").get_public_url(filename)).split('?')[0]
-    except: return None
+    except Exception as e:
+        logger.error(f"[Images] Error al subir a Supabase Storage: {e}")
+        traceback.print_exc()
+        return None
 
 async def download_and_upload_image(image_url: str) -> str:
     if not image_url or not image_url.startswith("http"): return None
@@ -120,7 +123,11 @@ async def download_and_upload_image(image_url: str) -> str:
             response = await client.get(image_url)
             if response.status_code == 200:
                 return await _upload_to_supabase(response.content, "stock")
-    except: pass
+            else:
+                logger.warning(f"[Images] Fallo al descargar de {image_url}: status={response.status_code}")
+    except Exception as e:
+        logger.error(f"[Images] Excepcion en download_and_upload_image: {e}")
+        traceback.print_exc()
     return None
 
 async def get_category_fallback_url(category: str, title: str = "") -> str:

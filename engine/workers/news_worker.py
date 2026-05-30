@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
 from core.ai import process_news_with_local_llm
+from core.brand_scrapper import fetch_brand_logo_url
 from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback_url
 
 logger = logging.getLogger("contapyme.news")
@@ -224,24 +225,35 @@ async def _fetch_and_process_news():
             continue
 
         try:
-            # Prioridad 1: Estilo Artístico (IA) - Para mantener el estilo Contapyme
+            # Prioridad 1: Logotipo de Marca si aplica (Clearbit Scrapper)
             image_url = None
-            if ai_data.get("visual_prompt"):
-                logger.info(f"[News Worker] 🎨 Generando ESTILO ARTÍSTICO para: {ai_data['title']}")
-                image_url = await generate_and_upload_image(ai_data["visual_prompt"])
+            brand_name = ai_data.get("brand_name")
+            if brand_name:
+                logger.info(f"[News Worker] Encontrada marca '{brand_name}' en la noticia. Buscando logo oficial...")
+                brand_logo_url = await fetch_brand_logo_url(brand_name)
+                if brand_logo_url:
+                    image_url = await download_and_upload_image(brand_logo_url)
+                    if image_url:
+                        logger.info(f"[News Worker] Exito descargando logo oficial de la marca: {image_url}")
             
-            # Prioridad 2: Imagen Original (RSS) - Si la IA falla
+            # Prioridad 2: Estilo Artístico (IA) - Si no hay marca o falló el logo
+            if not image_url or "placeholder" in image_url:
+                if ai_data.get("visual_prompt"):
+                    logger.info(f"[News Worker] Generando ESTILO ARTÍSTICO para: {ai_data['title']}")
+                    image_url = await generate_and_upload_image(ai_data["visual_prompt"])
+            
+            # Prioridad 3: Imagen Original (RSS) - Si la IA falla
             if not image_url or "placeholder" in image_url:
                 original_img = raw_news.get("img")
                 if original_img and not original_img.startswith("/"):
-                    logger.info(f"[News Worker] 📸 IA falló, usando imagen original del RSS.")
+                    logger.info(f"[News Worker] Usando imagen original del RSS.")
                     image_url = await download_and_upload_image(original_img)
             
-            # Prioridad 3: Stock Profesional (Ahora asíncrono y seguro)
+            # Prioridad 4: Stock Profesional (Ahora asíncrono y seguro)
             if not image_url or "placeholder" in image_url:
                 category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
                 image_url = await get_category_fallback_url(category, ai_data.get("title", ""))
-                logger.info(f"[News Worker] 🖼️ Usando stock seguro en Supabase para: {category}")
+                logger.info(f"[News Worker] Usando stock seguro en Supabase para: {category}")
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
