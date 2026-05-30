@@ -50,7 +50,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         "summary": "Resumen ejecutivo.",
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
-        "visual_prompt": "Descripción visual detallada en inglés. DEBE seguir este ADN: 'A hyperrealistic, high-fidelity news documentary photograph, natural ambient lighting, authentic environments of Punta Arenas/Magallanes, Patagonia, shot on 35mm lens, f/2.8, raw photo, lifelike details, 8k'."
+        "visual_prompt": "Descripción visual detallada en inglés. Si la noticia involucra una tienda, marca o negocio local, el prompt debe describir una escena fotorrealista mostrando la fachada o el interior del negocio con sus elementos característicos, o un dispositivo móvil mostrando una captura de su sitio/marca. El prompt DEBE seguir este ADN: 'A hyperrealistic, high-fidelity news documentary photograph, natural ambient lighting, authentic environments of Punta Arenas/Magallanes, Patagonia, [detalles específicos de la tienda, marca o locación], shot on 35mm lens, f/2.8, raw photo, lifelike details, 8k'."
     }}
     """
 
