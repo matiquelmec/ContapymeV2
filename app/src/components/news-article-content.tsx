@@ -193,6 +193,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         category={news.category || 'Regional'}
         imageUrl={news.image_url || '/news-placeholder.png'}
         date={news.published_at}
+        summary={news.summary}
       />
 
       {/* Imagen Principal Inmersiva */}

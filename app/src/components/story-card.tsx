@@ -7,6 +7,7 @@ interface StoryCardProps {
   category: string
   imageUrl: string
   date: string
+  summary?: string
   sourceName?: string
 }
 
@@ -100,7 +101,7 @@ const getTheme = (cat: string, title: string) => {
  * para html2canvas.
  */
 export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
-  ({ title, category, imageUrl, date, sourceName = 'Diario Contapymepuq' }, ref) => {
+  ({ title, category, imageUrl, date, summary, sourceName = 'Diario Contapymepuq' }, ref) => {
     const theme = getTheme(category, title);
 
     const formattedDate = new Date(date).toLocaleDateString('es-CL', {
@@ -272,7 +273,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             {title}
           </h2>
 
-          {/* Resumen Expectante / Gancho Narrativo */}
+          {/* Resumen Expectante / Gancho Narrativo Dinámico */}
           <div style={{
             background: 'rgba(2, 7, 18, 0.85)',
             borderLeft: '5px solid #00f2fe',
@@ -294,7 +295,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               fontStyle: 'italic',
               textShadow: '0 2px 4px rgba(0,0,0,0.5)'
             }}>
-              ¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde...
+              {summary || "¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde..."}
             </p>
           </div>
         </div>
