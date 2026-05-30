@@ -211,130 +211,92 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           />
         </div>
 
-        {/* Contenedor de Teléfono Móvil 3D en Perspectiva */}
+        {/* Zona Central de Textos Disruptivos (Sin Celular) */}
         <div style={{
-          margin: '20px 80px 40px 80px',
           flex: '1',
-          maxHeight: '850px',
+          padding: '0 80px',
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'relative',
-          perspective: '1200px', // Perspectiva 3D
-          zIndex: 10,
-        }}>
-          {/* Resplandor neón (glow) detrás del teléfono */}
-          <div style={{
-            position: 'absolute',
-            width: '450px',
-            height: '800px',
-            background: 'radial-gradient(circle, rgba(0, 242, 254, 0.3) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-            transform: 'rotateY(-15deg) rotateX(10deg) translateZ(-50px)',
-            zIndex: 1,
-          }} />
-
-          {/* Cuerpo del Teléfono Inteligente en 3D */}
-          <div style={{
-            width: '420px',
-            height: '780px',
-            backgroundColor: '#090d16',
-            borderRadius: '50px',
-            padding: '16px',
-            boxSizing: 'border-box',
-            border: '4px solid rgba(0, 242, 254, 0.75)', // Borde neón cian más brillante
-            boxShadow: '0 30px 70px -15px rgba(0, 242, 254, 0.4), -25px 25px 50px rgba(0,0,0,0.8)',
-            transform: 'rotateY(-15deg) rotateX(10deg) rotateZ(-3deg)', // Inclinación 3D realista
-            transformStyle: 'preserve-3d',
-            position: 'relative',
-            zIndex: 5,
-          }}>
-            {/* Altavoz superior / Notch del teléfono */}
-            <div style={{
-              position: 'absolute',
-              top: '8px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '120px',
-              height: '18px',
-              backgroundColor: '#020712',
-              borderRadius: '20px',
-              border: '1px solid rgba(0, 242, 254, 0.3)',
-              zIndex: 10,
-            }} />
-
-            {/* Pantalla del teléfono */}
-            <div style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '36px',
-              overflow: 'hidden',
-              position: 'relative',
-              backgroundColor: '#020712',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt={title}
-                crossOrigin="anonymous"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'contain' : 'cover',
-                  padding: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? '70px' : '0',
-                  backgroundColor: (imageUrl.toLowerCase().includes('logo') || imageUrl.includes('clearbit') || imageUrl.includes('brand_')) ? 'rgba(255,255,255,0.03)' : 'transparent',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Sección de Textos (Diseño suizo editorial masivo) */}
-        <div style={{
-          padding: '0 80px 40px 80px',
-          flex: '0 0 auto',
+          flexDirection: 'column',
+          justifyContent: 'center', // Centrar verticalmente en el espacio disponible
           position: 'relative',
           zIndex: 10,
+          boxSizing: 'border-box',
         }}>
+          {/* Eslógan / Categoría superior con glow */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            justifyContent: 'center',
+            gap: '16px',
             color: theme.textColor || '#90e0ef',
-            fontSize: '14px',
-            fontWeight: 900,
+            fontSize: '18px',
+            fontWeight: 950,
             textTransform: 'uppercase',
-            letterSpacing: '6px',
+            letterSpacing: '8px',
             fontStyle: 'italic',
-            marginBottom: '24px',
+            marginBottom: '36px',
+            textShadow: '0 0 10px rgba(0, 242, 254, 0.4)'
           }}>
             <span style={{
-              width: '32px',
+              width: '40px',
               height: '3px',
               backgroundColor: '#00f2fe',
+              boxShadow: '0 0 8px #00f2fe'
             }} />
-            {theme.slogan}
+            {category}
+            <span style={{
+              width: '40px',
+              height: '3px',
+              backgroundColor: '#00f2fe',
+              boxShadow: '0 0 8px #00f2fe'
+            }} />
           </div>
           
-          {/* Título de la noticia gigante y de altísimo contraste */}
+          {/* Titular Principal de Impacto Masivo Centrado */}
           <h2 style={{
             color: '#ffffff',
-            fontSize: '66px',
+            fontSize: '78px', // Aumentado para máximo impacto
             fontWeight: 950,
             fontStyle: 'italic',
             letterSpacing: '-2px',
             lineHeight: 1.05,
             textTransform: 'uppercase',
-            margin: 0,
+            textAlign: 'center',
+            margin: '0 0 40px 0',
             display: '-webkit-box',
             WebkitLineClamp: 4,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textShadow: '0 5px 25px rgba(0,0,0,0.8)' // Sombra para legibilidad sobre fondo inmersivo
+            textShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0, 242, 254, 0.1)'
           }}>
             {title}
           </h2>
+
+          {/* Resumen Expectante / Gancho Narrativo */}
+          <div style={{
+            background: 'rgba(2, 7, 18, 0.85)',
+            borderLeft: '5px solid #00f2fe',
+            borderRight: '1px solid rgba(0, 242, 254, 0.1)',
+            borderTop: '1px solid rgba(0, 242, 254, 0.1)',
+            borderBottom: '1px solid rgba(0, 242, 254, 0.1)',
+            borderRadius: '24px',
+            padding: '36px 40px',
+            boxShadow: '0 15px 45px rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(10px)',
+          }}>
+            <p style={{
+              color: '#90e0ef',
+              fontSize: '28px',
+              fontWeight: 700,
+              lineHeight: 1.45,
+              margin: 0,
+              textAlign: 'center',
+              fontStyle: 'italic',
+              textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+            }}>
+              ¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde...
+            </p>
+          </div>
         </div>
 
         {/* Footer Minimalista de Contraste */}
