@@ -410,27 +410,72 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
           );
         })()}
 
-         {/* Calculadora Express Pública Central (Marketing Viral) */}
-         <div className="mt-16">
-            <PublicSalaryCalculator />
-         </div>
+        {/* Sección de Ventas Premium del Software ContaPyme */}
+        <div className="mt-20 py-20 border-t border-zinc-150 relative overflow-hidden rounded-[3.5rem] bg-gradient-to-tr from-slate-900 via-zinc-950 to-slate-900 text-white px-8 md:px-16 shadow-2xl">
+          {/* Auroras de fondo */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/20 to-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/10 to-primary/25 rounded-full blur-[140px] pointer-events-none" />
+          
+          <div className="relative z-10 space-y-12">
+            <div className="text-center max-w-3xl mx-auto space-y-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Plataforma Empresarial ContaPyme</span>
+              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
+                La Inteligencia Contable <br />
+                <span className="text-primary italic font-serif">Que tu PyME Necesita</span>
+              </h2>
+              <p className="text-zinc-400 font-medium italic text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
+                Diseñado exclusivamente para cumplir con las normativas locales del SII en Magallanes, facilitando la gestión de Zona Franca y optimizando el flujo de caja diario.
+              </p>
+            </div>
 
-        {/* Mini CTA hacia el Software al final */}
-        <div className="py-16 border-t border-border bg-background mt-16 text-center space-y-6 rounded-[2.5rem]">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Plataforma Contable</p>
-          <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-foreground">
-            ¿Necesitas herramientas contables <br />de grado institucional?
-          </h3>
-          <p className="text-muted-foreground font-medium italic text-sm max-w-lg mx-auto">
-            Facturación SII, conciliación bancaria, remuneraciones LRE, registros criptográficos y más — todo diseñado para Magallanes.
-          </p>
-          <Link href="/software">
-            <Button size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-10 rounded-2xl bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all group">
-              Explorar Software <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
+            {/* Grilla Bento de Características */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              
+              {/* Tarjeta 1: Facturación */}
+              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+                  <Landmark className="h-5 w-5" />
+                </div>
+                <h4 className="text-lg font-black italic uppercase tracking-tight">Facturación Express</h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                  Emisión instantánea de boletas y facturas electrónicas integradas al SII. Cumple con la normativa vigente sin demoras.
+                </p>
+              </div>
+
+              {/* Tarjeta 2: Remuneraciones */}
+              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <h4 className="text-lg font-black italic uppercase tracking-tight">Leyes Sociales & LRE</h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                  Generación de liquidaciones con firma digital basadas en nuestro motor de cálculo. Exportación directa para el Libro de Remuneraciones Electrónico.
+                </p>
+              </div>
+
+              {/* Tarjeta 3: Conciliación */}
+              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <h4 className="text-lg font-black italic uppercase tracking-tight">Zona Franca Directa</h4>
+                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                  Auditoría inteligente del beneficio fiscal de Zona Franca vs Régimen General. Reportes financieros adaptados a Magallanes.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Botón de Acción Principal */}
+            <div className="text-center pt-4">
+              <Link href="/login">
+                <Button size="lg" className="text-xs font-black uppercase tracking-widest h-14 px-12 rounded-2xl bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all group">
+                  Iniciar Prueba Gratis de 14 Días <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Modal de Auditoría de Impacto IA (Glassmorphic) */}
       {analyzedNews && (

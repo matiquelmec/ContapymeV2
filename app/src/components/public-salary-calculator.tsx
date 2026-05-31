@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { 
   Calculator, 
   Share2, 
@@ -635,7 +636,32 @@ function CalculatorContent() {
                   </p>
                 </div>
               </div>
-            )}
+            {/* CTA de Conversión al Software */}
+            <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary/[0.07] via-sky-500/[0.02] to-transparent border border-primary/20 space-y-4 relative overflow-hidden">
+              <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-xl" />
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-primary/10 rounded-2xl text-primary shrink-0 mt-0.5">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-primary">Plataforma ContaPyme</span>
+                  <h4 className="text-sm font-black italic tracking-tighter uppercase text-slate-800 leading-tight">
+                    ¿Quieres emitir liquidaciones con esta simulación?
+                  </h4>
+                  <p className="text-[10.5px] leading-relaxed text-slate-500 font-medium">
+                    Con ContaPyme puedes crear los perfiles de tus trabajadores en un clic, generar liquidaciones de sueldo con firma digital y enviarlas directo al Libro de Remuneraciones Electrónico (LRE) del SII.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100/50">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Prueba gratuita de 14 días</span>
+                <Link href="/login">
+                  <Button className="rounded-xl font-black uppercase tracking-widest text-[9px] bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all h-9 px-5">
+                    Probar ContaPyme Gratis →
+                  </Button>
+                </Link>
+              </div>
+            </div>
 
             {/* Compartir */}
             <div className="flex flex-col sm:flex-row gap-3">
