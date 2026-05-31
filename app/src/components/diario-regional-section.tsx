@@ -67,7 +67,7 @@ export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle |
     else if (recencyIndex <= 2) score += 30;
     else if (recencyIndex <= 5) score += 20;
 
-    if (article.is_featured) score += 20;
+    if (article.is_featured) score += 1000;
 
     return { ...article, finalScore: score };
   });

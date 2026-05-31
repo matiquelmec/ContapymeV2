@@ -7,8 +7,41 @@ from typing import Any, Optional
 from datetime import datetime
 from .database import get_supabase
 
-# Logger estándar de Python para consola
+# Logger estándar de Python para consola con soporte seguro para Unicode/emojis en Windows
+class UnicodeSafeStreamHandler(logging.StreamHandler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            if stream is None:
+                return
+            
+            encoding = getattr(stream, "encoding", None) or "utf-8"
+            try:
+                stream.write(msg + self.terminator)
+            except UnicodeEncodeError:
+                try:
+                    # Intenta codificar de forma segura reemplazando caracteres que no existan en la codificación actual
+                    safe_bytes = msg.encode(encoding, errors="replace")
+                    safe_msg = safe_bytes.decode(encoding)
+                except Exception:
+                    # Fallback extremo reemplazando cualquier caracter no-ASCII por '?'
+                    safe_msg = "".join(c if ord(c) < 128 else "?" for c in msg)
+                stream.write(safe_msg + self.terminator)
+            self.flush()
+        except RecursionError:
+            raise
+        except Exception:
+            self.handleError(record)
+
 logger = logging.getLogger("contapyme.audit")
+logger.setLevel(logging.INFO)
+
+# Configurar el manejador seguro
+handler = UnicodeSafeStreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 def log_activity(
     action: str,

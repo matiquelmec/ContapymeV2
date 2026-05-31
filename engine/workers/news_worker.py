@@ -10,6 +10,7 @@ from core.database import get_supabase
 from core.ai import process_news_with_local_llm
 from core.brand_scrapper import fetch_brand_logo_url
 from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback_url
+from googlenewsdecoder import new_decoderv1
 
 logger = logging.getLogger("contapyme.news")
 # Trace: News Worker Pipeline v8.7.2 - Estabilizado con fallback de imágenes profesionales
@@ -110,8 +111,23 @@ async def _fetch_from_magallanes_rss():
                         # Deep Scraping: Intentar obtener el contenido real del artículo
                         full_content = ""
                         if link:
-                            logger.info(f"[News Worker] 🔍 Deep Scraping habilitado para: {link}")
-                            full_content = await _fetch_full_content(link, client)
+                            # Decodificar URL si es enlace de Google News
+                            if "news.google.com" in link:
+                                try:
+                                    logger.info(f"[News Worker] 🔗 Decodificando URL de Google News: {link}")
+                                    decoded_data = new_decoderv1(link)
+                                    if decoded_data.get("status") and decoded_data.get("decoded_url"):
+                                        real_url = decoded_data["decoded_url"]
+                                        logger.info(f"[News Worker] 🚀 URL Real decodificada: {real_url}")
+                                        full_content = await _fetch_full_content(real_url, client)
+                                        # Actualizar link para guardar la fuente original
+                                        link = real_url
+                                except Exception as dec_err:
+                                    logger.warning(f"[News Worker] ⚠️ Error al decodificar URL de Google News: {dec_err}")
+                                    full_content = await _fetch_full_content(link, client)
+                            else:
+                                logger.info(f"[News Worker] 🔍 Deep Scraping habilitado para: {link}")
+                                full_content = await _fetch_full_content(link, client)
                         
                         news.append({
                             "headline": title.strip() if title else "Sin Título",
@@ -169,9 +185,10 @@ async def _fetch_and_process_news():
             logger.info(f"[News Worker] ⏭️ Omitiendo (Título similar ya existe): {headline[:50]}...")
             continue
 
-        # Blindaje de Sustancia: Si el contenido es demasiado corto, no hay material para una noticia premium
-        if len(raw.get("content", "")) < 200:
-            logger.info(f"[News Worker] ⏭️ Omitiendo (Contenido insuficiente): {headline[:50]}...")
+        # Blindaje de Sustancia: Si el contenido es demasiado corto, está vacío o viene con puntos suspensivos (truncado), no califica para noticia premium
+        content_text = raw.get("content", "").strip()
+        if len(content_text) < 450 or content_text.endswith("...") or content_text.endswith("…"):
+            logger.info(f"[News Worker] ⏭️ Omitiendo (Contenido insuficiente o truncado): {headline[:50]}...")
             continue
 
         # 4. Escudo Regional y de Nicho (Estrategia Híbrida Experta)
@@ -202,7 +219,7 @@ async def _fetch_and_process_news():
     logger.info(f"[News Worker] 🤖 Iniciando redacción paralela de {len(candidates)} noticias...")
     
     async def _news_pipeline_task(raw):
-        print(f"🎨 [Redactor] Iniciando procesamiento de: {raw['headline']}", flush=True)
+        print(f"[Redactor] Iniciando procesamiento de: {raw['headline']}", flush=True)
         ai_data = await process_news_with_local_llm(raw["headline"], raw["content"])
         return (raw, ai_data)
 
@@ -278,7 +295,9 @@ async def _fetch_and_process_news():
                 "source_url": raw_news.get("link", ""),
                 "source_name": "Diario Punta Arenas", 
                 "published_at": pub_date_iso,
-                "updated_at": datetime.now().isoformat()
+                "updated_at": datetime.now().isoformat(),
+                "seo_keywords": ai_data.get("seo_keywords", "contapymepuq, magallanes, punta arenas, chile"),
+                "seo_description": ai_data.get("seo_description", ai_data.get("summary", "")[:155])
             }).execute()
             
             # CADENCIA: Pausa de 5 segundos para evitar Rate Limits (Groq 429 / Images)
