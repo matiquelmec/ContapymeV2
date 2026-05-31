@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from calculators.ml_engine import FinancialClassifier
+from core.auth import verify_token, verify_org_role
 
 router = APIRouter()
 
@@ -12,11 +13,15 @@ class SuggestAccountRequest(BaseModel):
     description: str
 
 @router.post("/train")
-async def train_financial_model(req: TrainModelRequest):
+async def train_financial_model(
+    req: TrainModelRequest,
+    current_user: dict = Depends(verify_token)
+):
     """
     Entrena forzadamente el modelo de ML bayesiano para una PyME estructurando 
     los pesos en base a cómo ellos mismos codifican sus compras históricas.
     """
+    await verify_org_role(req.organization_id, auth=current_user)
     clf = FinancialClassifier(req.organization_id)
     try:
         result = clf.train_model()
@@ -28,11 +33,15 @@ async def train_financial_model(req: TrainModelRequest):
 
 
 @router.post("/suggest")
-async def suggest_account(req: SuggestAccountRequest):
+async def suggest_account(
+    req: SuggestAccountRequest,
+    current_user: dict = Depends(verify_token)
+):
     """
     Cerebro Activo: Recibe el texto de la glosa bancaria o F29 y lanza
     una inferencia de 2 milisegundos para predecir la imputación.
     """
+    await verify_org_role(req.organization_id, auth=current_user)
     clf = FinancialClassifier(req.organization_id)
     try:
         # Intenta cargar The Sovereign AI Memory

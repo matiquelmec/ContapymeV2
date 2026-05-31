@@ -167,14 +167,19 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                </p>
             </div>
              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/contacto" className="w-full sm:w-auto">
-                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
-                    Anuncia con Nosotros
+                <Link href="/calculadora" className="w-full sm:w-auto">
+                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
+                    Calculadora Tributaria
                   </Button>
                 </Link>
                 <Link href="/noticias" className="w-full sm:w-auto">
-                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
+                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
                     Hemeroteca Regional
+                  </Button>
+                </Link>
+                <Link href="/contacto" className="w-full sm:w-auto">
+                  <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest border border-dashed border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
+                    Anuncia
                   </Button>
                 </Link>
              </div>

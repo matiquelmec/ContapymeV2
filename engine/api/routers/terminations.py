@@ -1,13 +1,14 @@
 from datetime import date, datetime, timedelta
 import calendar
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from core.database import get_supabase
+from core.auth import verify_token, verify_org_role
 import os
 import tempfile
 import uuid
@@ -62,7 +63,11 @@ def calculate_proportional_holidays_precise(start_date: date, end_date: date):
     return round(proportional_days, 2)
 
 @router.post("/calculate")
-async def calculate_termination(req: TerminationRequest):
+async def calculate_termination(
+    req: TerminationRequest,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(req.organization_id, auth=current_user)
     db = get_supabase()
     try:
         emp_res = db.table("employees").select("*").eq("id", req.employee_id).single().execute()
@@ -94,7 +99,7 @@ async def calculate_termination(req: TerminationRequest):
         requires_notice = False
         severance_calculation_type = None
         causal_desc = req.causal_despido
-
+ 
         try:
             cause_res = db.table("termination_causes").select("*").or_(f"article_code.eq.{req.causal_despido},article_name.ilike.%{req.causal_despido}%").execute()
             if cause_res.data:
@@ -113,7 +118,7 @@ async def calculate_termination(req: TerminationRequest):
                 requires_severance = True
                 requires_notice = True
                 severance_calculation_type = "years_service"
-
+ 
         time_stats = calculate_years_of_service(fecha_ingreso, req.fecha_termino)
         
         last_day_of_month = calendar.monthrange(req.fecha_termino.year, req.fecha_termino.month)[1]
@@ -131,13 +136,13 @@ async def calculate_termination(req: TerminationRequest):
             tope_90_uf = int(uf_value * 90)
             base_indemnizacion = min(base_calculo, tope_90_uf)
             monto_anos_servicio = base_indemnizacion * time_stats["severance_years"]
-
+ 
         monto_mes_aviso = 0
         if requires_notice and not req.aviso_previo:
             tope_90_uf_aviso = int(uf_value * 90)
             base_aviso = min(base_calculo, tope_90_uf_aviso)
             monto_mes_aviso = base_aviso
-
+ 
         # Total bruto de compensaciones (haberes de finiquito)
         total_haberes_finiquito = (
             pending_salary_amount + 
@@ -186,14 +191,14 @@ async def calculate_termination(req: TerminationRequest):
             "anticipo_sueldo": req.anticipo_sueldo,
             "updated_at": datetime.now().isoformat()
         }
-
+ 
         # Actualizar datos bancarios directamente en la ficha del empleado (Employees) para normalización
         db.table("employees").update({
             "banco_transferencia": req.banco_transferencia,
             "tipo_cuenta": req.tipo_cuenta,
             "cuenta_transferencia": req.cuenta_transferencia
         }).eq("id", req.employee_id).execute()
-
+ 
         exist = db.table("employee_terminations").select("id").eq("employee_id", req.employee_id).execute()
         
         if exist.data:
@@ -203,7 +208,7 @@ async def calculate_termination(req: TerminationRequest):
         else:
             ins_res = db.table("employee_terminations").insert(termination_data).execute()
             termination_data["id"] = ins_res.data[0]["id"]
-
+ 
         return {
             "success": True,
             "data": termination_data,
@@ -220,7 +225,7 @@ async def calculate_termination(req: TerminationRequest):
         raise HTTPException(status_code=500, detail=f"Error en el cálculo de finiquito: {str(e)}")
 
 @router.get("/causes")
-async def get_termination_causes():
+async def get_termination_causes(current_user: dict = Depends(verify_token)):
     db = get_supabase()
     try:
         res = db.table("termination_causes").select("*").order("article_code").execute()
@@ -254,13 +259,19 @@ def format_date_spanish(dt: date | datetime) -> str:
     return f"{dt.day} de {meses[dt.month]} de {dt.year}"
 
 @router.get("/{termination_id}/document/{doc_type}")
-async def generate_document_text(termination_id: str, doc_type: str):
+async def generate_document_text(
+    termination_id: str, 
+    doc_type: str,
+    current_user: dict = Depends(verify_token)
+):
     db = get_supabase()
     try:
         term_res = db.table("employee_terminations").select("*, employees(*)").eq("id", termination_id).single().execute()
         term = term_res.data
         if not term:
             raise HTTPException(status_code=404, detail="Finiquito no encontrado")
+        
+        await verify_org_role(term["organization_id"], auth=current_user)
         
         emp = term.get("employees", {})
         if not emp:
@@ -367,7 +378,11 @@ async def generate_document_text(termination_id: str, doc_type: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{termination_id}/download/{doc_type}")
-async def download_docx(termination_id: str, doc_type: str):
+async def download_docx(
+    termination_id: str, 
+    doc_type: str,
+    current_user: dict = Depends(verify_token)
+):
     db = get_supabase()
     try:
         # Reutilizar lógica de obtención de datos
@@ -375,6 +390,8 @@ async def download_docx(termination_id: str, doc_type: str):
         term = term_res.data
         if not term:
             raise HTTPException(status_code=404, detail="Finiquito no encontrado")
+        
+        await verify_org_role(term["organization_id"], auth=current_user)
         
         emp = term.get("employees", {})
         org_id = term["organization_id"]
@@ -599,7 +616,10 @@ async def download_docx(termination_id: str, doc_type: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{termination_id}/export-dt-csv")
-async def export_dt_csv(termination_id: str):
+async def export_dt_csv(
+    termination_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Genera el CSV de carga masiva de Finiquito Electrónico de la Dirección del Trabajo (48 columnas).
     Basado en el instructivo oficial DT versión 3.0.
@@ -610,6 +630,8 @@ async def export_dt_csv(termination_id: str):
         term = term_res.data
         if not term:
             raise HTTPException(status_code=404, detail="Finiquito no encontrado")
+        
+        await verify_org_role(term["organization_id"], auth=current_user)
         
         emp = term.get("employees", {})
         org_id = term["organization_id"]

@@ -2,10 +2,11 @@ import os
 import re
 from datetime import date
 from io import StringIO
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from core.database import get_supabase
 from core.utils.shared_utils import split_rut
 from fastapi.responses import StreamingResponse
+from core.auth import verify_token, verify_org_role
 
 router = APIRouter()
 
@@ -45,11 +46,16 @@ def clean_text(text: str) -> str:
     return re.sub(r'[^A-Z0-9 ]', '', text).strip()
 
 @router.get("/export-previred/{organization_id}")
-async def export_previred(organization_id: str, periodo: str):
+async def export_previred(
+    organization_id: str, 
+    periodo: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Genera el archivo plano ROBUSTO (CSV delimitado por ;) de 105 campos.
     Basado en el estándar oficial Previred de carga masiva 2025/2026.
     """
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
 
     # 1. Mapeos de Códigos Oficiales Previred (Tablas de Referencia)

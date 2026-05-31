@@ -3,6 +3,15 @@ import { Header } from '@/components/layout/header'
 import { MarketTicker } from '@/components/market-ticker'
 import { getLatestIndicators } from '@/actions/indicators'
 import { ScrollToTop } from './components/scroll-to-top'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const indicatorsRes = await getLatestIndicators()

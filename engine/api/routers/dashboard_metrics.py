@@ -1,9 +1,10 @@
 import time
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from core.database import get_supabase
 from datetime import datetime
 import calendar
+from core.auth import verify_token, verify_org_role
 
 router = APIRouter()
 
@@ -29,7 +30,11 @@ def _save_to_cache(org_id: str, year: int, data: dict):
     _metrics_cache[(org_id, year)] = (data, time.time())
 
 @router.post("/executive-metrics")
-async def get_executive_metrics(req: MetricsRequest):
+async def get_executive_metrics(
+    req: MetricsRequest,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(req.organization_id, auth=current_user)
     """
     Agrega todas las métricas financieras (Ventas, Compras, Activos, F29)
     para el Dashboard Ejecutivo V2.

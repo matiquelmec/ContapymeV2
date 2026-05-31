@@ -637,13 +637,21 @@ async def get_chart_of_accounts(
     return res.data or []
 
 @router.post("/chart-of-accounts/initialize")
-async def initialize_chart_of_accounts(organization_id: str):
+async def initialize_chart_of_accounts(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     db.rpc("create_default_chart_of_accounts", {"p_org_id": organization_id}).execute()
     return {"success": True}
 
 @router.post("/chart-of-accounts")
-async def create_account(req: CreateAccountRequest):
+async def create_account(
+    req: CreateAccountRequest,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(req.organization_id, auth=current_user)
     db = get_supabase()
     try:
         data = req.dict()
@@ -656,7 +664,12 @@ async def create_account(req: CreateAccountRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/chart-of-accounts/{account_id}")
-async def delete_account(account_id: str, organization_id: str):
+async def delete_account(
+    account_id: str, 
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         # 1. Obtener el código de la cuenta
@@ -680,9 +693,20 @@ async def delete_account(account_id: str, organization_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/chart-of-accounts/{account_id}")
-async def update_account(account_id: str, req: UpdateAccountRequest):
+async def update_account(
+    account_id: str, 
+    req: UpdateAccountRequest,
+    current_user: dict = Depends(verify_token)
+):
     """Actualiza parcialmente una cuenta contable."""
     db = get_supabase()
+    # 1. Obtener la organización de la cuenta para validar permisos
+    acc_res = db.table("chart_of_accounts").select("organization_id").eq("id", account_id).execute()
+    if not acc_res.data:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    org_id = acc_res.data[0]["organization_id"]
+    await verify_org_role(org_id, auth=current_user)
+    
     try:
         data = req.dict(exclude_unset=True)
         res = db.table("chart_of_accounts").update(data).eq("id", account_id).execute()
@@ -1193,8 +1217,12 @@ async def get_accounting_config_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/config/initialize")
-async def initialize_accounting_config(organization_id: str):
+async def initialize_accounting_config(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """Inicializa la tabla de configuraciones con valores por defecto si está vacía."""
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         # Inicializar llamando upsert_config_entry
@@ -1234,7 +1262,11 @@ async def initialize_accounting_config(organization_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/config/{config_id}")
-async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountingConfigRequest):
+async def update_accounting_config_endpoint(
+    config_id: str, 
+    req: UpdateAccountingConfigRequest,
+    current_user: dict = Depends(verify_token)
+):
     """Actualiza un mapeo de cuentas específico en la tabla normalizada account_config_entries."""
     db = get_supabase()
     try:
@@ -1260,6 +1292,7 @@ async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountin
         if not module or not org_id:
             raise HTTPException(status_code=400, detail="Identificador de configuración inválido")
             
+        await verify_org_role(org_id, auth=current_user)
         data = req.model_dump(exclude_unset=True)
         
         def upsert_entry(p_key: str, p_code: str):
@@ -1295,7 +1328,7 @@ async def update_accounting_config_endpoint(config_id: str, req: UpdateAccountin
                     upsert_entry(field, data[code_field])
                     
         # Retornar la fila reconstruida
-        updated_res = await get_accounting_config_endpoint(organization_id=org_id)
+        updated_res = await get_accounting_config_endpoint(organization_id=org_id, current_user=current_user)
         for row in updated_res:
             if row["id"] == config_id:
                 return row
@@ -1324,8 +1357,12 @@ async def get_mapping_rules(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/mapping-rules")
-async def create_mapping_rule(req: AccountMappingRuleRequest):
+async def create_mapping_rule(
+    req: AccountMappingRuleRequest,
+    current_user: dict = Depends(verify_token)
+):
     """Crea una nueva regla de mapeo específica."""
+    await verify_org_role(req.organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("account_mapping_rules").insert(req.dict()).execute()
@@ -1336,9 +1373,19 @@ async def create_mapping_rule(req: AccountMappingRuleRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/mapping-rules/{rule_id}")
-async def delete_mapping_rule(rule_id: str):
+async def delete_mapping_rule(
+    rule_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """Elimina una regla de mapeo."""
     db = get_supabase()
+    # Obtener org_id de la regla para validar permisos
+    rule_res = db.table("account_mapping_rules").select("organization_id").eq("id", rule_id).execute()
+    if not rule_res.data:
+        raise HTTPException(status_code=404, detail="Regla de mapeo no encontrada")
+    org_id = rule_res.data[0]["organization_id"]
+    await verify_org_role(org_id, auth=current_user)
+    
     try:
         db.table("account_mapping_rules").delete().eq("id", rule_id).execute()
         return {"success": True}

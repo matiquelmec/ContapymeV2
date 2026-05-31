@@ -115,7 +115,7 @@ async def _fetch_from_magallanes_rss():
                         
                         news.append({
                             "headline": title.strip() if title else "Sin Título",
-                            "content": full_content if len(full_content) > 100 else desc.strip(),
+                            "content": full_content if len(full_content) > 100 else _clean_html(desc.strip()),
                             "img": "/news-placeholder.png",
                             "link": link,
                             "source_name": source["name"],

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from core.database import get_supabase
+from core.auth import verify_token, verify_org_role
 
 router = APIRouter()
 
@@ -82,11 +83,15 @@ class PayrollSettingsUpdate(BaseModel):
 
 
 @router.get("/settings/{organization_id}")
-async def get_payroll_settings(organization_id: str):
+async def get_payroll_settings(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Obtiene la configuración previsional de una organización.
     Si no existe, la crea con los valores oficiales de Previred.
     """
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("organization_payroll_settings") \
@@ -110,10 +115,14 @@ async def get_payroll_settings(organization_id: str):
 
 
 @router.put("/settings")
-async def update_payroll_settings(req: PayrollSettingsUpdate):
+async def update_payroll_settings(
+    req: PayrollSettingsUpdate,
+    current_user: dict = Depends(verify_token)
+):
     """
     Actualiza la configuración previsional. Solo actualiza los campos enviados (patch parcial).
     """
+    await verify_org_role(req.organization_id, auth=current_user)
     db = get_supabase()
     try:
         # Construir solo los campos enviados
@@ -140,11 +149,15 @@ async def update_payroll_settings(req: PayrollSettingsUpdate):
 
 
 @router.post("/settings/sync-previred/{organization_id}")
-async def sync_from_previred(organization_id: str):
+async def sync_from_previred(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Restablece los valores oficiales de Previred (útil cuando cambian tasas mensuales).
     En producción, esta función haría scraping de previred.com.
     """
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         # Upsert: si existe actualiza, si no existe crea

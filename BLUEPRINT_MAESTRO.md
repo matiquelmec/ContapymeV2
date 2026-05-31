@@ -103,8 +103,8 @@ El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
 
 ### FASE 14: Monitoreo y Auditorías Periódicas (Gobernanza GRC) 🛡️ — **EN PROGRESO**
 *   [x] **Auditoría de Consistencia Documental:** Evaluación y sincronización de Blueprint Maestro y catálogos de base de datos (v9.0).
-*   [ ] **Limpieza Automática de Audit Logs:** Tarea cron para rotación física e higiene del tier gratuito.
-*   [ ] **Auditorías de Penetración Básicas:** Check de APIs de FastAPI que usan Service Role vs. JWT de usuario.
+*   [x] **Limpieza Automática de Audit Logs:** Tarea cron para rotación física e higiene del tier gratuito.
+*   [x] **Auditorías de Penetración Básicas:** Check de APIs de FastAPI que usan Service Role vs. JWT de usuario.
 
 ---
 

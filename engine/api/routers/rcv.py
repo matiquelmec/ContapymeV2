@@ -4,7 +4,7 @@ import uuid
 from io import StringIO
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from core.database import get_supabase
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.logger import log_activity, log_system_error
 from typing import Optional, List, Dict, Any
 
@@ -114,6 +114,7 @@ async def import_purchases(
     file: UploadFile = File(...),
     current_user: dict = Depends(verify_token)
 ):
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         if not periodo or periodo == "undefined" or len(periodo) < 6:
@@ -239,6 +240,7 @@ async def import_sales(
     file: UploadFile = File(...),
     current_user: dict = Depends(verify_token)
 ):
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         if not periodo or periodo == "undefined" or len(periodo) < 6:
@@ -356,7 +358,13 @@ async def import_sales(
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/analysis/top-vendors")
-async def get_top_vendors(organization_id: str, periodo: Optional[str] = None, limit: int = 10):
+async def get_top_vendors(
+    organization_id: str, 
+    periodo: Optional[str] = None, 
+    limit: int = 10,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     cache_key = f"vendors_{organization_id}_{periodo}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -399,7 +407,13 @@ async def get_top_vendors(organization_id: str, periodo: Optional[str] = None, l
     return result[:limit]
 
 @router.get("/analysis/top-customers")
-async def get_top_customers(organization_id: str, periodo: Optional[str] = None, limit: int = 10):
+async def get_top_customers(
+    organization_id: str, 
+    periodo: Optional[str] = None, 
+    limit: int = 10,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     cache_key = f"customers_{organization_id}_{periodo}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -442,7 +456,12 @@ async def get_top_customers(organization_id: str, periodo: Optional[str] = None,
     return result[:limit]
 
 @router.get("/analysis/summary")
-async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
+async def get_rcv_summary(
+    organization_id: str, 
+    periodo: Optional[str] = None,
+    current_user: dict = Depends(verify_token)
+):
+    await verify_org_role(organization_id, auth=current_user)
     cache_key = f"summary_{organization_id}_{periodo}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -513,11 +532,15 @@ async def get_rcv_summary(organization_id: str, periodo: Optional[str] = None):
     return result
 
 @router.get("/periodos")
-async def get_available_periods(organization_id: str):
+async def get_available_periods(
+    organization_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Lista los periodos que tienen documentos físicos en la base de datos.
     Filtra periodos 'fantasma' que solo existen en la bitácora de importación.
     """
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).execute()
     s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).execute()

@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
 from core.database import get_supabase
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.utils.shared_utils import clean_rut, format_clp, to_words, format_date_cl
 
 router = APIRouter()
@@ -29,7 +29,10 @@ class GenerateDocRequest(BaseModel):
     signature_base64: Optional[str] = None
 
 @router.post("/generate")
-async def generate_document(req: GenerateDocRequest):
+async def generate_document(
+    req: GenerateDocRequest,
+    current_user: dict = Depends(verify_token)
+):
     """
     Genera un Contrato o Anexo de Trabajo inteligente.
     """
@@ -57,6 +60,8 @@ async def generate_document(req: GenerateDocRequest):
             org = org[0]
         
         org_id = org.get('id') or emp.get('organization_id')
+        if org_id:
+            await verify_org_role(org_id, auth=current_user)
         
         # 2. Cargar parámetros legales (Rep Legal)
         settings = {}
@@ -175,7 +180,10 @@ async def generate_document(req: GenerateDocRequest):
         raise HTTPException(status_code=500, detail=f"Error en motor: {str(e)}")
 
 @router.get("/generate-annex")
-async def generate_annex(mod_id: str):
+async def generate_annex(
+    mod_id: str,
+    current_user: dict = Depends(verify_token)
+):
     """
     Generador de Anexos Profesional.
     """
@@ -188,6 +196,8 @@ async def generate_annex(mod_id: str):
         
         employee_id = mod.get('employee_id')
         org_id = mod.get('organization_id')
+        if org_id:
+            await verify_org_role(org_id, auth=current_user)
 
         emp_res = db.table("employees").select("*").eq("id", employee_id).single().execute()
         emp = emp_res.data or {}

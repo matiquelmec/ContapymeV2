@@ -355,7 +355,7 @@ function CalculatorContent() {
 
   const handleShareLink = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
+    const shareUrl = `${origin}/calculadora?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
     
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -365,7 +365,7 @@ function CalculatorContent() {
 
   const handleShareWhatsApp = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
+    const shareUrl = `${origin}/calculadora?liq=${targetLiquido}&grat=${gratificacion}&cont=${tipoContrato}&afp=${afpCode}&salud=${saludCode}&uf=${planSaludUf}&mov=${asignacionMovilizacion}&col=${asignacionColacion}&zona=${esZonaExtrema}&zonaCode=${zonaExtrema}`;
     const text = encodeURIComponent(
       `📊 ¡Simulé un Sueldo Base de ${formatCLP(result?.sueldoBase || 0)} para obtener un líquido de ${formatCLP(targetLiquido)}! Calcula el tuyo con leyes sociales en vivo aquí: ${shareUrl}`
     );
