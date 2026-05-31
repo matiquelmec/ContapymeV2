@@ -398,7 +398,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                            <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed italic">
                               "Optimizamos la gestión patrimonial y tributaria en Magallanes."
                            </p>
-                           <Link href="/contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
+                       <Link href="/contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
                               <span>Consultar</span>
                               <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
                            </Link>
@@ -411,19 +411,19 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
         })()}
 
         {/* Sección de Ventas Premium del Software ContaPyme */}
-        <div className="mt-20 py-20 border-t border-zinc-150 relative overflow-hidden rounded-[3.5rem] bg-gradient-to-tr from-slate-900 via-zinc-950 to-slate-900 text-white px-8 md:px-16 shadow-2xl">
-          {/* Auroras de fondo */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/20 to-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/10 to-primary/25 rounded-full blur-[140px] pointer-events-none" />
+        <div className="mt-20 py-20 border-t border-zinc-150 relative overflow-hidden rounded-[3.5rem] bg-gradient-to-tr from-slate-50 via-white to-sky-500/[0.02] border border-neutral-200/60 text-slate-850 px-8 md:px-16 shadow-[0_30px_80px_rgba(30,58,138,0.02)]">
+          {/* Auroras de fondo muy suaves */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/5 to-sky-500/[0.02] rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/[0.02] to-primary/5 rounded-full blur-[140px] pointer-events-none" />
           
           <div className="relative z-10 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-4">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Plataforma Empresarial ContaPyme</span>
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
+              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-slate-900">
                 La Inteligencia Contable <br />
                 <span className="text-primary italic font-serif">Que tu PyME Necesita</span>
               </h2>
-              <p className="text-zinc-400 font-medium italic text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
+              <p className="text-slate-500 font-medium italic text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
                 Diseñado exclusivamente para cumplir con las normativas locales del SII en Magallanes, facilitando la gestión de Zona Franca y optimizando el flujo de caja diario.
               </p>
             </div>
@@ -432,34 +432,34 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               
               {/* Tarjeta 1: Facturación */}
-              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <Landmark className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight">Facturación Express</h4>
-                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Facturación Express</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
                   Emisión instantánea de boletas y facturas electrónicas integradas al SII. Cumple con la normativa vigente sin demoras.
                 </p>
               </div>
 
               {/* Tarjeta 2: Remuneraciones */}
-              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight">Leyes Sociales & LRE</h4>
-                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Leyes Sociales & LRE</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
                   Generación de liquidaciones con firma digital basadas en nuestro motor de cálculo. Exportación directa para el Libro de Remuneraciones Electrónico.
                 </p>
               </div>
 
               {/* Tarjeta 3: Conciliación */}
-              <div className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-primary/30 transition-all duration-300 space-y-4 group">
+              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight">Zona Franca Directa</h4>
-                <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Zona Franca Directa</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
                   Auditoría inteligente del beneficio fiscal de Zona Franca vs Régimen General. Reportes financieros adaptados a Magallanes.
                 </p>
               </div>
