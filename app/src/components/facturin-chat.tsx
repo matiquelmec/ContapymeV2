@@ -21,49 +21,108 @@ export function FacturinChat() {
     }
   ])
   const [isTyping, setIsTyping] = useState(false)
+  const [inputValue, setInputValue] = useState('')
 
   const quickQuestions = [
-    {
-      q: '¿Cómo funciona la exención de la Zona Franca?',
-      a: 'La Zona Franca de Punta Arenas permite importar y comercializar productos exentos del 19% de IVA y aranceles aduaneros dentro del recinto. Las empresas autorizadas también gozan de beneficios en el Impuesto de Primera Categoría. Nuestro software Contapymepuq emite y clasifica automáticamente los DTE exentos requeridos por el SII para esta zona.'
-    },
-    {
-      q: '¿Qué es el LRE y cómo se genera?',
-      a: 'El Libro de Remuneraciones Electrónico (LRE) es un registro mensual obligatorio para informar sueldos y cotizaciones previsionales ante la Dirección del Trabajo (DT). Nuestro sistema exporta automáticamente el archivo CSV oficial con el formato exacto requerido por el portal de la DT, ahorrándote horas de carga manual.'
-    },
-    {
-      q: '¿Qué beneficios otorga la Ley Navarino?',
-      a: 'La Ley Navarino (N° 18.392) concede exención de IVA en compras/ventas y del Impuesto de Primera Categoría a empresas instaladas en Tierra del Fuego y Cabo de Hornos, además de una bonificación a las ventas. Contapymepuq te permite configurar la facturación bajo este régimen tributario regional especial de forma nativa.'
-    },
-    {
-      q: '¿Cómo calculo la bonificación de la Ley 889?',
-      a: 'La Ley 889 entrega una bonificación fiscal a los empleadores del 17% sobre la remuneración imponible de los trabajadores contratados en zonas extremas (con un tope imponible). Nuestro motor de remuneraciones calcula esta bonificación de forma automática en cada liquidación de sueldo y genera el reporte consolidado para cobrar el subsidio en la Tesorería General.'
-    }
+    { q: 'Zona Franca 🏢', a: '¿Cómo funciona la exención de la Zona Franca en Punta Arenas?' },
+    { q: 'Libro LRE 📊', a: '¿Qué es el Libro de Remuneraciones Electrónico (LRE) y cómo lo genera el sistema?' },
+    { q: 'Ley Navarino ⚓', a: '¿Qué beneficios tributarios y de exención otorga la Ley Navarino?' },
+    { q: 'Ley 889 (Zona Extrema) 🏔️', a: '¿Cómo se calcula el subsidio del 17% por contratación de la Ley 889?' }
   ]
 
-  const handleSelectQuestion = (qText: string, aText: string) => {
-    // Añadir pregunta de usuario
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isTyping) return;
+
+    const userText = inputValue;
+    setInputValue('');
+
+    const userMsg: Message = {
+      id: Math.random().toString(),
+      sender: 'user',
+      text: userText,
+      timestamp: new Date()
+    };
+
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('/api/chat/facturin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages })
+      });
+
+      if (!response.ok) throw new Error('Error al conectar con el servidor de chat');
+
+      const data = await response.json();
+      
+      const facturinMsg: Message = {
+        id: Math.random().toString(),
+        sender: 'facturin',
+        text: data.reply || 'Disculpa, no pude procesar la respuesta en este momento.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, facturinMsg]);
+    } catch (error) {
+      const errorMsg: Message = {
+        id: Math.random().toString(),
+        sender: 'facturin',
+        text: 'Lo siento, en este momento el viento magallánico interrumpió la señal. Por favor, vuelve a intentarlo en unos instantes.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleSelectQuestion = async (qLabel: string, qText: string) => {
+    if (isTyping) return;
+
     const userMsg: Message = {
       id: Math.random().toString(),
       sender: 'user',
       text: qText,
       timestamp: new Date()
-    }
-    setMessages(prev => [...prev, userMsg])
-    setIsTyping(true)
+    };
 
-    // Simular respuesta de Facturín con delay de lectura
-    setTimeout(() => {
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('/api/chat/facturin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updatedMessages })
+      });
+
+      if (!response.ok) throw new Error('Error al conectar');
+
+      const data = await response.json();
+      
       const facturinMsg: Message = {
         id: Math.random().toString(),
         sender: 'facturin',
-        text: aText,
+        text: data.reply || 'Disculpa, tuve un inconveniente al procesar.',
         timestamp: new Date()
-      }
-      setMessages(prev => [...prev, facturinMsg])
-      setIsTyping(false)
-    }, 1000)
-  }
+      };
+      setMessages(prev => [...prev, facturinMsg]);
+    } catch (error) {
+      const errorMsg: Message = {
+        id: Math.random().toString(),
+        sender: 'facturin',
+        text: 'El viento magallánico interrumpió la señal temporalmente. Vuelve a intentar la consulta rápida en un momento.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   return (
     <>
@@ -164,23 +223,41 @@ export function FacturinChat() {
             )}
           </div>
 
-          {/* Panel de Consultas Rápidas (Educativo) */}
-          <div className="p-3 bg-white border-t border-zinc-100 space-y-2 shrink-0">
+          {/* Panel de Consultas Rápidas (Deslizable horizontal) */}
+          <div className="p-3 bg-white border-t border-zinc-100 space-y-1.5 shrink-0">
             <span className="text-[8px] font-black text-muted-foreground/50 uppercase tracking-wider block px-1">Consultas rápidas en Magallanes</span>
-            <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto">
+            <div className="flex flex-row gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
               {quickQuestions.map((q, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSelectQuestion(q.q, q.a)}
                   disabled={isTyping}
-                  className="w-full text-left text-[9.5px] font-semibold text-zinc-600 hover:text-emerald-700 bg-zinc-50 hover:bg-emerald-50 border border-zinc-150 rounded-xl px-3 py-2 transition-all cursor-pointer flex items-center justify-between disabled:opacity-50 group"
+                  className="whitespace-nowrap text-[9px] font-bold text-zinc-650 hover:text-emerald-700 bg-zinc-50 hover:bg-emerald-50 border border-zinc-150 rounded-lg px-3 py-1.5 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <span className="pr-2 line-clamp-1">{q.q}</span>
-                  <ArrowRight className="h-3 w-3 shrink-0 text-zinc-300 group-hover:text-emerald-500 transition-colors" />
+                  {q.q}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Formulario de Entrada de Texto */}
+          <form onSubmit={handleSendMessage} className="p-3 bg-zinc-50 border-t border-zinc-150 flex gap-2 items-center shrink-0">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Escribe tu consulta tributaria o de ContaPyme..."
+              disabled={isTyping}
+              className="flex-1 h-10 px-3 bg-white border border-zinc-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={isTyping || !inputValue.trim()}
+              className="h-10 w-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-40 disabled:scale-100 cursor-pointer"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </button>
+          </form>
         </div>
       )}
     </>
