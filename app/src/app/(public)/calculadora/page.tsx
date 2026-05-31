@@ -1,10 +1,6 @@
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
-import { getLatestIndicators } from "@/actions/indicators";
-import { MarketTicker } from "@/components/market-ticker";
 import { Calculator, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-
-export const revalidate = 600; // Refrescar indicadores cada 10 min
 
 export const metadata: Metadata = {
   title: "Calculadora de Sueldo Líquido a Base y Costo Empleador",
@@ -13,13 +9,8 @@ export const metadata: Metadata = {
 };
 
 export default async function CalculadoraPublicaPage() {
-  const indicatorsRes = await getLatestIndicators();
-  const indicators = indicatorsRes.success ? indicatorsRes.data : [];
-
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col">
-      <MarketTicker indicators={indicators} />
-      
       <main className="flex-1 py-16 px-6 sm:px-12">
         <div className="container mx-auto max-w-6xl space-y-12">
           
