@@ -476,6 +476,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             </div>
           </div>
         </div>
+      </div>
 
       {/* Modal de Auditoría de Impacto IA (Glassmorphic) */}
       {analyzedNews && (

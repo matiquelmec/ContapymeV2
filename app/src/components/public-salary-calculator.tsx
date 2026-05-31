@@ -636,6 +636,7 @@ function CalculatorContent() {
                   </p>
                 </div>
               </div>
+            )}
             {/* CTA de Conversión al Software */}
             <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary/[0.07] via-sky-500/[0.02] to-transparent border border-primary/20 space-y-4 relative overflow-hidden">
               <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-xl" />
