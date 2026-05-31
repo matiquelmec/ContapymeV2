@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 const tabs = [
   { href: '/', label: 'Diario' },
+  { href: '/calculadora', label: 'Calculadora' },
   { href: '/software', label: 'Software' },
   { href: '/precios', label: 'Precios' },
   { href: '/contacto', label: 'Contacto' },
