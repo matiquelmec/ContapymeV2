@@ -1,6 +1,8 @@
 import { getActiveOrganizationId } from "@/actions/organizations";
 import { createClient } from "@/lib/supabase/server";
+import { getMedicalLeaves } from "@/actions/medical-leaves";
 import NovedadesClient from "./novedades-client";
+import MedicalLeavesCard from "./medical-leaves-card";
 import { Briefcase } from "lucide-react";
 
 export default async function NovedadesPage() {
@@ -28,6 +30,8 @@ export default async function NovedadesPage() {
     .eq("activo", true)
     .order("apellido_paterno", { ascending: true });
 
+  const medicalLeaves = await getMedicalLeaves(orgId);
+
   return (
     <div className="space-y-10 animate-in fade-in zoom-in duration-700">
       {/* ===== CABECERA PREMIUM ===== */}
@@ -46,6 +50,12 @@ export default async function NovedadesPage() {
       <NovedadesClient
         organization={organization}
         initialEmployees={employees || []}
+      />
+
+      <MedicalLeavesCard
+        orgId={orgId}
+        employees={employees || []}
+        initialLeaves={medicalLeaves}
       />
     </div>
   );
