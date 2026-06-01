@@ -15,8 +15,11 @@ try:
     def robust_clean_html(text: str) -> str:
         if not text:
             return ""
+        import html
+        # Des-escapar entidades HTML como &lt; y &gt;
+        unescaped = html.unescape(text)
         # Regex robusto que elimina etiquetas HTML cerradas o abiertas/truncadas sin cerrar
-        cleaned = re.sub(r'<[^>]*>?', ' ', text)
+        cleaned = re.sub(r'<[^>]*>?', ' ', unescaped)
         # Limpiar entidades comunes
         cleaned = cleaned.replace("&#8211;", "-").replace("&nbsp;", " ")
         # Colapsar espacios multiples

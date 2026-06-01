@@ -308,22 +308,24 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         </div>
 
         {/* CTA Contextual Único y Global */}
-        <div className="p-8 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/10 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-            Solución Pyme Local
-          </p>
-          <h4 className="text-xl font-black italic tracking-tighter uppercase text-emerald-950">
-            Crea tu empresa, administra y emite boletas en un solo lugar.
-          </h4>
-          <p className="text-sm text-muted-foreground">
-            Todo integrado con soporte local en Magallanes. Olvídate de los contadores que no te responden y toma el control de tu negocio hoy mismo.
-          </p>
-          <Link href="/dashboard">
-            <Button className="rounded-xl font-black uppercase tracking-widest text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg hover:shadow-emerald-600/20 transition-all border-none">
-              Bienvenido a ContaPymePuq →
-            </Button>
-          </Link>
-        </div>
+        {news.category && ['SII / LEGAL', 'FINANZAS', 'ECONOMÍA'].includes(news.category.toUpperCase()) && (
+          <div className="p-8 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/10 space-y-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+              Solución Pyme Local
+            </p>
+            <h4 className="text-xl font-black italic tracking-tighter uppercase text-emerald-950">
+              Crea tu empresa, administra y emite boletas en un solo lugar.
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Todo integrado con soporte local en Magallanes. Olvídate de los contadores que no te responden y toma el control de tu negocio hoy mismo.
+            </p>
+            <Link href="/dashboard">
+              <Button className="rounded-xl font-black uppercase tracking-widest text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg hover:shadow-emerald-600/20 transition-all border-none">
+                Bienvenido a ContaPymePuq →
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Barra de Interacción y Compartir */}
         <div className="pt-8 border-t border-border/50 space-y-4">

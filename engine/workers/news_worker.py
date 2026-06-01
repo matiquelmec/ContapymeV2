@@ -39,12 +39,15 @@ STEALTH_HEADERS = {
 
 _scheduler: AsyncIOScheduler | None = None
 
-def _clean_html(html: str) -> str:
+def _clean_html(html_str: str) -> str:
     """Elimina etiquetas HTML, scripts y ruido publicitario/administrativo de diarios locales."""
+    import html
+    # Des-escapar entidades HTML como &lt; y &gt; antes de limpiar
+    html_str = html.unescape(html_str)
     # 1. Eliminar etiquetas estructurales ruidosas
-    html = re.sub(r'<(script|style|header|footer|nav|aside|form|search).*?>.*?</\1>', '', html, flags=re.DOTALL | re.IGNORECASE)
-    # 2. Eliminar etiquetas HTML restantes
-    text = re.sub(r'<[^>]+>', ' ', html)
+    html_str = re.sub(r'<(script|style|header|footer|nav|aside|form|search).*?>.*?</\1>', '', html_str, flags=re.DOTALL | re.IGNORECASE)
+    # 2. Eliminar etiquetas HTML restantes (incluyendo mal formadas o sin cerrar)
+    text = re.sub(r'<[^>]*>?', ' ', html_str)
     # 3. Eliminar frases de basura (Footers, Metadatos de diarios)
     junk_patterns = [
         r"Waldo Seguel \d+, Punta Arenas", r"Tel\.\s?\+\d+", r"©\s?\d+-\d+", r"Empresa de Publicaciones",
@@ -236,9 +239,26 @@ async def _fetch_and_process_news():
         if not ai_data.get("title") or not ai_data.get("full_content"):
             continue
 
+        ai_title = ai_data["title"].strip()
+        ai_content = ai_data["full_content"].strip()
+        ai_summary = ai_data.get("summary", "").strip()
+
+        # Blindaje Post-IA de Calidad y Sustancia Absoluta
+        if len(ai_content) < 350 or len(ai_title) < 10:
+            logger.warning(f"[News Worker] ⚠️ Contenido generado por la IA es demasiado corto ({len(ai_content)} caracteres). Omitiendo: {ai_title}")
+            continue
+
+        if ai_content.endswith("...") or ai_content.endswith("…") or ai_summary.endswith("...") or ai_summary.endswith("…"):
+            logger.warning(f"[News Worker] ⚠️ Contenido o resumen de la IA está incompleto/truncado. Omitiendo: {ai_title}")
+            continue
+
+        if "<" in ai_content or ">" in ai_content or "href=" in ai_content:
+            logger.warning(f"[News Worker] ⚠️ Contenido de la IA contiene código HTML residual. Omitiendo: {ai_title}")
+            continue
+
         # Si la IA no redactó nada nuevo (copy-paste literal), descartamos por falta de calidad premium
-        if ai_data["full_content"].strip() == raw_news["content"].strip():
-            logger.warning(f"[News Worker] ⚠️ IA devolvió contenido idéntico. Omitiendo: {ai_data['title']}")
+        if ai_content == raw_news["content"].strip():
+            logger.warning(f"[News Worker] ⚠️ IA devolvió contenido idéntico. Omitiendo: {ai_title}")
             continue
 
         try:
