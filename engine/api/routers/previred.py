@@ -429,12 +429,24 @@ async def export_previred(
         y, m = periodo.split("-")[:2]
         p_format = f"{m}{y}"
         output = StringIO()
+        omitidos_honorarios = 0
         for liq in liquidations:
             emp = liq.get("employees") or {}
+            # Los trabajadores a honorarios no cotizan; no se informan en Previred.
+            tipo_contrato = str(emp.get("tipo_contrato") or "").lower()
+            if tipo_contrato == "honorarios":
+                omitidos_honorarios += 1
+                continue
             output.write(build_previred_line(liq, emp, settings, p_format, legal_params) + "\n")
 
         content = output.getvalue()
         output.close()
+        if not content.strip():
+            raise HTTPException(
+                status_code=404,
+                detail=f"No hay liquidaciones con cotizaciones para Previred en {periodo} "
+                       f"(se omitieron {omitidos_honorarios} a honorarios).",
+            )
         filename = f"PREVIRED_{organization_id[:5]}_{periodo.replace('-', '')}.txt"
         return StreamingResponse(
             iter([content]),
