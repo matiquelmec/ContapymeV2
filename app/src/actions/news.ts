@@ -3,10 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { engineFetch } from '@/lib/engine-client'
 
 let lastNewsSync = 0
 const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
 const NEWS_OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 // 4 horas de validez de noticias en DB
+
 
 const FALLBACK_IMAGES_REGIONAL = [
   "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=800&q=80", // Plaza Muñoz Gamero
@@ -173,14 +175,19 @@ export async function getRegionalNews() {
 
     if (shouldSync) {
       lastNewsSync = Date.now()
-      console.log('[News Action] Noticias obsoletas. Gatillando sincronización en segundo plano...')
-      syncNewsAction()
-        .then((res) => {
-          console.log(`[News Action] Sincronización en segundo plano completa. Noticias agregadas: ${res.addedCount}`)
-          revalidatePath('/')
+      console.log('[News Action] Noticias obsoletas. Gatillando sincronización en segundo plano en el motor de IA...')
+      engineFetch('/api/v1/news/sync', { method: 'POST' })
+        .then(async (res) => {
+          if (res.ok) {
+            console.log('[News Action] Sincronización en el motor de IA iniciada con éxito.')
+            revalidatePath('/')
+          } else {
+            const errText = await res.text()
+            console.error('[News Action] Error de API al gatillar sincronización en el motor:', errText)
+          }
         })
         .catch((err) => {
-          console.error('[News Action] Error en sincronización de noticias en segundo plano:', err.message)
+          console.error('[News Action] Error de red al contactar al motor de noticias:', err.message)
         })
     }
 
