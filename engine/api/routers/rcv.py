@@ -98,6 +98,20 @@ def _get_val(row_clean: dict, key: str, default: any = "") -> any:
             return row_lower[target.lower()]
     return default
 
+def _dedup_records(records: List[Dict[str, Any]], key_fields: tuple) -> List[Dict[str, Any]]:
+    """Colapsa filas con la misma clave de conflicto (gana la última ocurrencia).
+
+    Evita el error 21000 de Postgres ('ON CONFLICT DO UPDATE command cannot affect
+    row a second time') cuando el archivo del SII trae folios repetidos dentro del
+    mismo tipo de documento (típicamente filas de resumen con folio 0) o documentos
+    duplicados. La clave debe coincidir EXACTAMENTE con la constraint del on_conflict.
+    """
+    deduped: Dict[tuple, Dict[str, Any]] = {}
+    for r in records:
+        k = tuple(r.get(f) for f in key_fields)
+        deduped[k] = r
+    return list(deduped.values())
+
 def _to_int(val: any) -> int:
     if not val: return 0
     if isinstance(val, (int, float)): return int(val)
@@ -215,8 +229,9 @@ async def import_purchases(
             db.table("rcv_imports").update({"error_log": errors[:50]}).eq("id", import_id).execute()
             raise HTTPException(status_code=422, detail=f"Errores en filas: {errors[:3]}")
 
-        if records: 
-            db.table("purchase_records").upsert(records, on_conflict="organization_id,folio,rut_emisor,periodo").execute()
+        if records:
+            records = _dedup_records(records, ("organization_id", "tipo_documento", "folio", "rut_emisor"))
+            db.table("purchase_records").upsert(records, on_conflict="organization_id,tipo_documento,folio,rut_emisor").execute()
             _clear_rcv_cache(organization_id)
         
         db.table("rcv_imports").update({"total_docs": len(records)}).eq("id", import_id).execute()
@@ -340,8 +355,9 @@ async def import_sales(
             db.table("rcv_imports").update({"error_log": errors[:50]}).eq("id", import_id).execute()
             raise HTTPException(status_code=422, detail=f"Errores en filas: {errors[:3]}")
 
-        if records: 
-            db.table("sales_records").upsert(records, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
+        if records:
+            records = _dedup_records(records, ("organization_id", "tipo_documento", "folio", "rut_receptor"))
+            db.table("sales_records").upsert(records, on_conflict="organization_id,tipo_documento,folio,rut_receptor").execute()
             _clear_rcv_cache(organization_id)
         
         db.table("rcv_imports").update({"total_docs": len(records)}).eq("id", import_id).execute()

@@ -769,4 +769,4 @@ class DTELogic:
             "monto_calculado": monto_calculado,
             "es_suma": es_suma
         }
-        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,folio,rut_receptor,periodo,tipo_documento").execute()
+        self.supabase.table("sales_records").upsert(rcv_entry, on_conflict="organization_id,tipo_documento,folio,rut_receptor").execute()
