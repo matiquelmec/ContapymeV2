@@ -74,9 +74,9 @@ async def export_previred(
     }
 
     try:
-        # 2. Obtener ajustes de la organización (Mutual, CCAF)
+        # 2. Obtener ajustes de la organización (Mutual, CCAF, Tasa Mutual)
         settings_res = db.table("organization_payroll_settings") \
-            .select("mutual_code, caja_compensacion_code") \
+            .select("mutual_code, caja_compensacion_code, tasa_mutual") \
             .eq("organization_id", organization_id) \
             .maybe_single() \
             .execute()
@@ -152,8 +152,19 @@ async def export_previred(
             
             # 15-25: Movimientos
             fields[14] = "0" 
-            fields[17] = "D" # Tramo Asignación Familiar
-            fields[18] = str(emp.get('cargas_familiares', 0))
+            
+            # Calcular Tramo Asignación Familiar dinámicamente
+            cargas = int(emp.get('cargas_familiares') or emp.get('family_allowances') or 0)
+            tramo = "D"
+            if cargas > 0:
+                tramo = (emp.get('tramo_asignacion') or "").upper().strip()
+                if tramo not in ["A", "B", "C", "D"]:
+                    if imponible <= 321928: tramo = "A"
+                    elif imponible <= 474999: tramo = "B"
+                    elif imponible <= 737023: tramo = "C"
+                    else: tramo = "D"
+            fields[17] = tramo
+            fields[18] = str(cargas)
             fields[21] = str(int(liq.get('asignacion_familiar', 0)))
 
             # 26-61: Previsión (AFP)
@@ -205,8 +216,9 @@ async def export_previred(
             fields[95] = mutual_code 
             # Renta imponible mutual (index 96 / Campo 97)
             fields[96] = str(imponible) if mutual_code != "0" else "0"
-            # Cotización accidentes (index 97 / Campo 98) - 0.95% tasa básica default
-            fields[97] = str(int(imponible * 0.0095)) if mutual_code != "0" else "0"
+            # Cotización accidentes (index 97 / Campo 98) - tasa real de siniestralidad de la empresa
+            tasa_m = float(org_settings.get('tasa_mutual') or 0.93) / 100
+            fields[97] = str(int(imponible * tasa_m)) if mutual_code != "0" else "0"
 
             # 100-102: Seguro Cesantía (AFC)
             fields[99] = str(imponible) 

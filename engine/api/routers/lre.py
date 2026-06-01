@@ -300,15 +300,42 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             .execute()
         settings = settings_res.data[0] if settings_res.data else {}
 
+        # Cargar liquidaciones del periodo para rebajas y snapshots
+        liq_res = db.table("liquidations") \
+            .select("employee_id, calculation_snapshot, asignacion_familiar") \
+            .eq("organization_id", org_id) \
+            .eq("periodo", book.get("periodo")) \
+            .execute()
+        liq_map = {l["employee_id"]: l for l in liq_res.data}
+
+        # Cargar empleados para tramos y sueldos base nominales
+        emp_res = db.table("employees") \
+            .select("id, tramo_asignacion, family_allowances, es_zona_extrema, zona_extrema, sueldo_base, afp") \
+            .eq("organization_id", org_id) \
+            .execute()
+        emp_map = {e["id"]: e for e in emp_res.data}
+
         # 4. Generar CSV
         output = io.StringIO()
         output.write('\uFEFF')  # BOM para Excel
         writer = csv.DictWriter(output, fieldnames=DT_HEADERS, delimiter=';')
         writer.writeheader()
         
+        TASAS_AFP_2026 = {
+            'CAPITAL': 11.44, 'CUPRUM': 11.44, 'HABITAT': 11.27, 'MODELO': 10.58,
+            'PLANVITAL': 11.16, 'PROVIDA': 11.45, 'UNO': 10.60
+        }
+        
         for d in details:
+            emp_id = d.get("employee_id")
+            liq_ref = liq_map.get(emp_id, {})
+            emp_ref = emp_map.get(emp_id, {})
+            
             # Inicializar todos los campos en "0" (formato estricto DT)
             row: dict[str, Any] = {h: "0" for h in DT_HEADERS}
+            
+            dias_trab = safe_int(d.get("dias_trabajados", 30))
+            es_subsidio_total = (dias_trab == 0)
             
             # ── SECCIÓN 1000: DATOS ADMINISTRATIVOS ──
             row["Rut trabajador(1101)"] = clean_rut(d.get("employee_rut"))
@@ -333,54 +360,126 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             
             # Cargas y días
             row["Nro cargas familiares legales autorizadas(1111)"] = str(safe_int(d.get("family_allowances", 0)))
-            row["Nro días trabajados en el mes(1115)"] = str(safe_int(d.get("dias_trabajados", 30)))
-
-            # ── SECCIÓN 2000: HABERES ──
-            row["Sueldo(2101)"] = str(safe_int(d.get("sueldo_base", 0)))
-            row["Sobresueldo(2102)"] = str(safe_int(d.get("sobresueldo", 0)))
-            row["Gratificación(2106)"] = str(safe_int(d.get("gratificacion_legal", 0)))
-            row["Bonos u otras remun. fijas mensuales(2111)"] = str(safe_int(d.get("bono_extra", 0)))
-            row["Colación(2301)"] = str(safe_int(d.get("colacion", 0)))
-            row["Movilización(2302)"] = str(safe_int(d.get("movilizacion", 0)))
-            row["Asignación familiar legal(2311)"] = str(safe_int(d.get("asig_familiar", 0)))
-
-            # ── SECCIÓN 3000: DESCUENTOS ──
-            row["Cotización obligatoria previsional (AFP o IPS)(3141)"] = str(safe_int(d.get("descuento_afp_total", 0)))
-            row["Cotización obligatoria salud 7%(3143)"] = str(safe_int(d.get("descuento_salud", 0)))
-            row["Cotización voluntaria para salud(3144)"] = str(safe_int(d.get("salud_voluntaria", 0)))
-            row["Cotización AFC - trabajador(3151)"] = str(safe_int(d.get("afc_trab", 0)))
-            row["Impuesto retenido por remuneraciones(3161)"] = str(safe_int(d.get("impuesto_unico", 0)))
-
-            # ── SECCIÓN 4000: APORTES EMPLEADOR ──
-            row["AFC - Aporte empleador(4151)"] = str(safe_int(d.get("afc_emp", 0)))
-            row["Aporte empleador seguro invalidez y sobrevivencia(4155)"] = str(safe_int(d.get("sis_emp", 0)))
-
-            # ── SECCIÓN 5000: TOTALES DT (calculados) ──
-            haberes_brutos = safe_int(d.get("total_haberes_brutos", 0))
-            haberes_imponibles = safe_int(d.get("total_haberes_imponibles", 0))
-            colacion = safe_int(d.get("colacion", 0))
-            movilizacion = safe_int(d.get("movilizacion", 0))
-            asig_fam = safe_int(d.get("asig_familiar", 0))
-            no_imponible = colacion + movilizacion + asig_fam
+            row["Nro días trabajados en el mes(1115)"] = str(dias_trab)
             
-            descuento_afp = safe_int(d.get("descuento_afp_total", 0))
-            descuento_salud = safe_int(d.get("descuento_salud", 0))
-            salud_vol = safe_int(d.get("salud_voluntaria", 0))
-            afc_trab = safe_int(d.get("afc_trab", 0))
-            cot_trabajador = descuento_afp + descuento_salud + salud_vol + afc_trab
-            
-            afc_emp = safe_int(d.get("afc_emp", 0))
-            sis_emp = safe_int(d.get("sis_emp", 0))
-            aportes_emp = afc_emp + sis_emp
+            # Tramo asignación familiar (1114)
+            fam_allowances = safe_int(d.get("family_allowances", 0))
+            tramo = "D"
+            if fam_allowances > 0:
+                tramo = emp_ref.get("tramo_asignacion") or ""
+                if tramo not in ["A", "B", "C", "D"]:
+                    renta_imp = safe_int(d.get("total_haberes_imponibles", 0))
+                    if renta_imp <= 321928: tramo = "A"
+                    elif renta_imp <= 474999: tramo = "B"
+                    elif renta_imp <= 737023: tramo = "C"
+                    else: tramo = "D"
+            row["Tramo asignación familiar(1114)"] = tramo
 
-            row["Total haberes(5201)"] = str(haberes_brutos)
-            row["Total haberes imponibles y tributables(5210)"] = str(haberes_imponibles)
-            row["Total haberes no imponibles y no tributables(5230)"] = str(no_imponible)
-            row["Total descuentos(5301)"] = str(safe_int(d.get("total_descuentos", 0)))
-            row["Total descuentos impuestos a las remuneraciones(5361)"] = str(safe_int(d.get("impuesto_unico", 0)))
-            row["Total descuentos por cotizaciones del trabajador(5341)"] = str(cot_trabajador)
-            row["Total aportes empleador(5410)"] = str(aportes_emp)
-            row["Total líquido(5501)"] = str(safe_int(d.get("sueldo_liquido", 0)))
+            if es_subsidio_total:
+                # Subsidio nominal LRE
+                sueldo_pactado = safe_int(emp_ref.get("sueldo_base", 0))
+                renta_ref = max(sueldo_pactado, 539000)
+                
+                row["Sueldo(2101)"] = str(renta_ref)
+                row["Nro días de licencia médica en el mes(1116)"] = "30"
+                row["Nro días trabajados en el mes(1115)"] = "0"
+                
+                # Calcular previsión nominal
+                afp_nom = str(d.get("afp_nom", "MODELO")).upper()
+                tasa_afp = TASAS_AFP_2026.get(afp_nom, 10.58) / 100
+                afp_monto_nom = int(round(renta_ref * tasa_afp))
+                row["Cotización obligatoria previsional (AFP o IPS)(3141)"] = str(afp_monto_nom)
+                
+                salud_monto_nom = int(round(renta_ref * 0.07))
+                row["Cotización obligatoria salud 7%(3143)"] = str(salud_monto_nom)
+                
+                afc_trab_nom = 0
+                afc_emp_nom = 0
+                if "HONORARIO" not in d.get("tipo_contrato", "").upper():
+                    if "indefinido" in d.get("tipo_contrato", "").lower():
+                        afc_trab_nom = int(round(renta_ref * 0.006))
+                        afc_emp_nom = int(round(renta_ref * 0.024))
+                    else:
+                        afc_emp_nom = int(round(renta_ref * 0.03))
+                row["Cotización AFC - trabajador(3151)"] = str(afc_trab_nom)
+                row["AFC - Aporte empleador(4151)"] = str(afc_emp_nom)
+                
+                sis_monto_nom = int(round(renta_ref * 0.0162))
+                row["Aporte empleador seguro invalidez y sobrevivencia(4155)"] = str(sis_monto_nom)
+                
+                tasa_mutual = float(settings.get("tasa_mutual", 0.93)) / 100
+                mutual_monto_nom = int(round(renta_ref * tasa_mutual))
+                row["Aporte empleador seguro accidentes del trabajo y Ley SANNA(4152)"] = str(mutual_monto_nom)
+                
+                # Totales nominales
+                row["Total haberes(5201)"] = str(renta_ref)
+                row["Total haberes imponibles y tributables(5210)"] = str(renta_ref)
+                row["Total haberes no imponibles y no tributables(5230)"] = "0"
+                
+                cot_trabajador = afp_monto_nom + salud_monto_nom + afc_trab_nom
+                row["Total descuentos(5301)"] = str(cot_trabajador)
+                row["Total descuentos por cotizaciones del trabajador(5341)"] = str(cot_trabajador)
+                
+                aportes_emp = afc_emp_nom + mutual_monto_nom + sis_monto_nom
+                row["Total aportes empleador(5410)"] = str(aportes_emp)
+                row["Total líquido(5501)"] = "0"
+            else:
+                # ── SECCIÓN 2000: HABERES ──
+                row["Sueldo(2101)"] = str(safe_int(d.get("sueldo_base", 0)))
+                row["Sobresueldo(2102)"] = str(safe_int(d.get("sobresueldo", 0)))
+                row["Gratificación(2106)"] = str(safe_int(d.get("gratificacion_legal", 0)))
+                row["Bonos u otras remun. fijas mensuales(2111)"] = str(safe_int(d.get("bono_extra", 0)))
+                row["Colación(2301)"] = str(safe_int(d.get("colacion", 0)))
+                row["Movilización(2302)"] = str(safe_int(d.get("movilizacion", 0)))
+                row["Asignación familiar legal(2311)"] = str(safe_int(d.get("asig_familiar", 0)))
+
+                # ── SECCIÓN 3000: DESCUENTOS ──
+                row["Cotización obligatoria previsional (AFP o IPS)(3141)"] = str(safe_int(d.get("descuento_afp_total", 0)))
+                row["Cotización obligatoria salud 7%(3143)"] = str(safe_int(d.get("descuento_salud", 0)))
+                row["Cotización voluntaria para salud(3144)"] = str(safe_int(d.get("salud_voluntaria", 0)))
+                row["Cotización AFC - trabajador(3151)"] = str(safe_int(d.get("afc_trab", 0)))
+                row["Impuesto retenido por remuneraciones(3161)"] = str(safe_int(d.get("impuesto_unico", 0)))
+
+                # ── SECCIÓN 4000: APORTES EMPLEADOR ──
+                row["AFC - Aporte empleador(4151)"] = str(safe_int(d.get("afc_emp", 0)))
+                row["Aporte empleador seguro invalidez y sobrevivencia(4155)"] = str(safe_int(d.get("sis_emp", 0)))
+                
+                # Aporte Mutual real de la empresa
+                tasa_mutual = float(settings.get("tasa_mutual", 0.93)) / 100
+                imponible = safe_int(d.get("total_haberes_imponibles", 0))
+                mutual_monto = int(round(imponible * tasa_mutual))
+                row["Aporte empleador seguro accidentes del trabajo y Ley SANNA(4152)"] = str(mutual_monto)
+
+                # ── SECCIÓN 5000: TOTALES DT (calculados) ──
+                haberes_brutos = safe_int(d.get("total_haberes_brutos", 0))
+                haberes_imponibles = imponible
+                colacion = safe_int(d.get("colacion", 0))
+                movilizacion = safe_int(d.get("movilizacion", 0))
+                asig_fam = safe_int(d.get("asig_familiar", 0))
+                no_imponible = colacion + movilizacion + asig_fam
+                
+                descuento_afp = safe_int(d.get("descuento_afp_total", 0))
+                descuento_salud = safe_int(d.get("descuento_salud", 0))
+                salud_vol = safe_int(d.get("salud_voluntaria", 0))
+                afc_trab = safe_int(d.get("afc_trab", 0))
+                cot_trabajador = descuento_afp + descuento_salud + salud_vol + afc_trab
+                
+                afc_emp = safe_int(d.get("afc_emp", 0))
+                sis_emp = safe_int(d.get("sis_emp", 0))
+                aportes_emp = afc_emp + mutual_monto + sis_emp
+
+                row["Total haberes(5201)"] = str(haberes_brutos)
+                row["Total haberes imponibles y tributables(5210)"] = str(haberes_imponibles)
+                row["Total haberes no imponibles y no tributables(5230)"] = str(no_imponible)
+                row["Total descuentos(5301)"] = str(safe_int(d.get("total_descuentos", 0)))
+                row["Total descuentos impuestos a las remuneraciones(5361)"] = str(safe_int(d.get("impuesto_unico", 0)))
+                row["Total descuentos por cotizaciones del trabajador(5341)"] = str(cot_trabajador)
+                row["Total aportes empleador(5410)"] = str(aportes_emp)
+                row["Total líquido(5501)"] = str(safe_int(d.get("sueldo_liquido", 0)))
+
+            # Rebaja zona extrema DL 889 (Campo 3167)
+            rebaja_extrema = safe_int(liq_ref.get("calculation_snapshot", {}).get("rebaja_zona_extrema", 0))
+            row["Rebaja zona extrema DL 889 (3167)"] = str(rebaja_extrema)
 
             # Sello de integridad: garantizar que no queden None
             for header in DT_HEADERS:

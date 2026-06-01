@@ -55,11 +55,17 @@ def calculate_years_of_service(start_date: date, end_date: date):
         "severance_years": min(severance_years, 11)
     }
 
-def calculate_proportional_holidays_precise(start_date: date, end_date: date):
-    # Fórmula estricta de vacaciones proporcionales DT (Días corridos * (1.25/30))
+def calculate_proportional_holidays_precise(start_date: date, end_date: date, es_zona_extrema: bool = False, zona_extrema: str = ""):
+    # Fórmula estricta de vacaciones proporcionales DT (Días corridos * (factor/30))
+    # Para Magallanes, Aysén y Palena, el feriado anual es de 20 días hábiles, lo que da un factor mensual de 1.6667 (20/12)
     delta = end_date - start_date
     total_days = delta.days + 1
-    proportional_days = (total_days / 30.0) * 1.25
+    
+    factor = 1.25
+    if es_zona_extrema and (zona_extrema or "").upper() in ["MAGALLANES", "AYSEN", "PALENA"]:
+        factor = 1.6667
+        
+    proportional_days = (total_days / 30.0) * factor
     return round(proportional_days, 2)
 
 @router.post("/calculate")
@@ -125,7 +131,9 @@ async def calculate_termination(
         worked_days_last_month = req.fecha_termino.day
         pending_salary_amount = int((sueldo_base / 30) * worked_days_last_month)
         
-        proportional_days = calculate_proportional_holidays_precise(fecha_ingreso, req.fecha_termino)
+        es_ze = emp.get("es_zona_extrema", False)
+        ze = emp.get("zona_extrema", "")
+        proportional_days = calculate_proportional_holidays_precise(fecha_ingreso, req.fecha_termino, es_ze, ze)
         pending_vacation_days = max(0.0, float(proportional_days) - float(req.dias_vacaciones_tomados))
         vacation_daily_rate = int(sueldo_base / 30)
         monto_vacaciones = int(pending_vacation_days * vacation_daily_rate)
