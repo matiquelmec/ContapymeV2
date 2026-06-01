@@ -145,6 +145,8 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   if (he100 > 0) habRow('Horas Extras 100%', he100)
   if (semanaCorrida > 0) habRow('Semana Corrida', semanaCorrida)
   if (liquidation.bono_extra > 0) habRow('Bono Extra', liquidation.bono_extra)
+  if (Number(snap.otros_haberes_imponibles || 0) > 0) habRow('Otros Haberes Imp.', Number(snap.otros_haberes_imponibles))
+  if (Number(snap.otros_haberes_no_imponibles || 0) > 0) habRow('Otros Haberes No Imp.', Number(snap.otros_haberes_no_imponibles))
   if (liquidation.asignacion_familiar > 0) habRow('Asignacion Familiar', liquidation.asignacion_familiar)
   habRow('Bono Colacion', liquidation.asignacion_colacion || 0)
   habRow('Bono Movilizacion', liquidation.asignacion_movilizacion || 0)
@@ -166,14 +168,16 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   const anticipo = Number(snap.anticipo || 0)
   const prestamo = Number(snap.prestamo || 0)
   const retencionJudicial = Number(snap.retencion_judicial || 0)
-  const desglosados = creditoCcaf + anticipo + prestamo + retencionJudicial
+  const variosDesc = Number(snap.otros_descuentos_varios || 0)
+  const desglosados = creditoCcaf + anticipo + prestamo + retencionJudicial + variosDesc
   if (desglosados > 0) {
     if (creditoCcaf > 0) desRow('Credito CCAF', creditoCcaf)
     if (anticipo > 0) desRow('Anticipo de Sueldo', anticipo)
     if (prestamo > 0) desRow('Prestamo', prestamo)
     if (retencionJudicial > 0) desRow('Retencion Judicial', retencionJudicial)
+    if (variosDesc > 0) desRow('Otros Descuentos', variosDesc)
     const resto = (liquidation.otros_descuentos || 0) - desglosados
-    if (resto > 0) desRow('Otros Descuentos', resto)
+    if (resto > 0) desRow('Descuentos Varios', resto)
   } else if (liquidation.otros_descuentos > 0) {
     desRow('Otros Descuentos', liquidation.otros_descuentos)
   }

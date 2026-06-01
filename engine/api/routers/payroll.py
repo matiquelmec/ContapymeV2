@@ -184,6 +184,27 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
             for row in (existing_liq_res.data or [])
         }
 
+        # ── Haberes/descuentos configurables del período (agregados por empleado) ─
+        custom_by_emp: dict = {}
+        try:
+            custom_res = db.table("payroll_custom_items") \
+                .select("employee_id, tipo, monto, es_imponible") \
+                .eq("organization_id", req.org_id) \
+                .eq("periodo", target_period_start) \
+                .execute()
+            for it in (custom_res.data or []):
+                eid = it.get("employee_id")
+                acc = custom_by_emp.setdefault(eid, {"haber_imp": 0, "haber_no_imp": 0, "descuento": 0})
+                monto = int(it.get("monto") or 0)
+                if it.get("tipo") == "descuento":
+                    acc["descuento"] += monto
+                elif it.get("es_imponible"):
+                    acc["haber_imp"] += monto
+                else:
+                    acc["haber_no_imp"] += monto
+        except Exception as e_custom:
+            logger.warning(f"No se pudieron cargar items personalizados: {e_custom}")
+
         # ── 5. Calcular y guardar liquidaciones ───────────────────────────────
         processed_count = 0
         skipped_closed_count = 0
@@ -301,6 +322,9 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 anticipo=int(emp_effective.get("descuento_anticipo") or 0),
                 prestamo=int(emp_effective.get("descuento_prestamo") or 0),
                 retencion_judicial=int(emp_effective.get("descuento_judicial") or 0),
+                otros_haberes_imponibles=custom_by_emp.get(emp["id"], {}).get("haber_imp", 0),
+                otros_haberes_no_imponibles=custom_by_emp.get(emp["id"], {}).get("haber_no_imp", 0),
+                otros_descuentos_varios=custom_by_emp.get(emp["id"], {}).get("descuento", 0),
                 horas_semanales=int(emp_effective.get("horas_semanales", 42)),
                 jornada_parcial=bool(emp_effective.get("jornada_parcial", False)),
                 bono_fijo=int(emp_effective.get("bono_fijo", 0)), # Pasar bono_fijo del Kardex

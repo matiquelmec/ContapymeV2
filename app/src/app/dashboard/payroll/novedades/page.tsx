@@ -1,8 +1,10 @@
 import { getActiveOrganizationId } from "@/actions/organizations";
 import { createClient } from "@/lib/supabase/server";
 import { getMedicalLeaves } from "@/actions/medical-leaves";
+import { getCustomItems } from "@/actions/payroll-custom-items";
 import NovedadesClient from "./novedades-client";
 import MedicalLeavesCard from "./medical-leaves-card";
+import CustomItemsCard from "./custom-items-card";
 import { Briefcase } from "lucide-react";
 
 export default async function NovedadesPage() {
@@ -31,6 +33,7 @@ export default async function NovedadesPage() {
     .order("apellido_paterno", { ascending: true });
 
   const medicalLeaves = await getMedicalLeaves(orgId);
+  const customItems = await getCustomItems(orgId);
 
   return (
     <div className="space-y-10 animate-in fade-in zoom-in duration-700">
@@ -56,6 +59,12 @@ export default async function NovedadesPage() {
         orgId={orgId}
         employees={employees || []}
         initialLeaves={medicalLeaves}
+      />
+
+      <CustomItemsCard
+        orgId={orgId}
+        employees={employees || []}
+        initialItems={customItems}
       />
     </div>
   );

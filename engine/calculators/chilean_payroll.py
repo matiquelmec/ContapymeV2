@@ -72,6 +72,9 @@ class EmployeeInput:
     horas_extra_100: int = 0                      # Horas extra al 100% (domingos/festivos)
     bono_extra: int = 0                          # Bonos no habituales
     bono_fijo: int = 0                           # Bonos fijos (recurrentes) de la ficha de empleado
+    # Haberes configurables por la empresa (conceptos definidos por el usuario)
+    otros_haberes_imponibles: int = 0            # Imponibles y tributables
+    otros_haberes_no_imponibles: int = 0         # No imponibles (Art. 41 CT)
     # Semana corrida (Art. 45 CT) — sobre remuneración variable
     tiene_semana_corrida: bool = False           # Derecho a semana corrida
     monto_variable: int = 0                      # Remuneración variable del mes (comisiones, etc.)
@@ -87,6 +90,7 @@ class EmployeeInput:
     anticipo: int = 0                            # Anticipo de sueldo
     prestamo: int = 0                            # Préstamo / cuota
     retencion_judicial: int = 0                  # Retención judicial / pensión de alimentos
+    otros_descuentos_varios: int = 0             # Descuentos configurables por la empresa
     mes_proceso: Optional[str] = None            # "YYYY-MM"
     es_zona_extrema: bool = False                # Para rebajas DL 889
     zona_extrema: str = ""                       # "MAGALLANES", "AYSEN", "ARICA", etc.
@@ -106,6 +110,8 @@ class LiquidacionResult:
     bono_extra: int = 0
     bono_fijo: int = 0
     semana_corrida: int = 0
+    otros_haberes_imponibles: int = 0
+    otros_haberes_no_imponibles: int = 0
     total_haberes_brutos: int = 0
     # ── Base imponible ─────────────────────────────────────────────────────────
     base_imponible_afp: int = 0
@@ -126,6 +132,7 @@ class LiquidacionResult:
     anticipo: int = 0                            # Anticipo de sueldo
     prestamo: int = 0                            # Préstamo / cuota
     retencion_judicial: int = 0                  # Retención judicial / alimentos
+    otros_descuentos_varios: int = 0             # Descuentos configurables por la empresa
     otros_descuentos: int = 0                    # Total descuentos no legales
     # ── Cargos empresa ─────────────────────────────────────────────────────────
     afc_empresa: int = 0
@@ -333,14 +340,15 @@ def obtener_grado_1a(mes_proceso: Optional[str]) -> int:
         return 535000
 
 
-def _otros_descuentos(emp: EmployeeInput) -> tuple[int, int, int, int, int]:
+def _otros_descuentos(emp: EmployeeInput) -> tuple[int, int, int, int, int, int]:
     """Calcula los descuentos no legales y su total. Compartido entre regímenes."""
     credito_ccaf = max(0, emp.credito_ccaf)
     anticipo = max(0, emp.anticipo)
     prestamo = max(0, emp.prestamo)
     retencion_judicial = max(0, emp.retencion_judicial)
-    total = credito_ccaf + anticipo + prestamo + retencion_judicial
-    return credito_ccaf, anticipo, prestamo, retencion_judicial, total
+    varios = max(0, emp.otros_descuentos_varios)
+    total = credito_ccaf + anticipo + prestamo + retencion_judicial + varios
+    return credito_ccaf, anticipo, prestamo, retencion_judicial, varios, total
 
 
 def _calcular_honorarios(
@@ -353,14 +361,23 @@ def _calcular_honorarios(
     de boletas de honorarios (Ley 21.133) sobre el honorario bruto y se
     descuentan los otros conceptos no legales (anticipos, préstamos, etc.).
     """
-    bruto = max(0, emp.sueldo_base) + max(0, emp.bono_extra) + max(0, emp.bono_fijo)
-    retencion = int(round(bruto * settings.retencion_honorarios_pct / 100.0))
+    haberes_imp = max(0, emp.otros_haberes_imponibles)
+    haberes_no_imp = max(0, emp.otros_haberes_no_imponibles)
+    bruto = (
+        max(0, emp.sueldo_base) + max(0, emp.bono_extra) + max(0, emp.bono_fijo)
+        + haberes_imp + haberes_no_imp
+    )
+    # La retención aplica sobre el honorario (no sobre haberes no imponibles).
+    base_retencion = bruto - haberes_no_imp
+    retencion = int(round(base_retencion * settings.retencion_honorarios_pct / 100.0))
 
-    credito_ccaf, anticipo, prestamo, retencion_judicial, otros = _otros_descuentos(emp)
+    credito_ccaf, anticipo, prestamo, retencion_judicial, varios, otros = _otros_descuentos(emp)
 
     res.sueldo_base = max(0, emp.sueldo_base)
     res.bono_extra = max(0, emp.bono_extra)
     res.bono_fijo = max(0, emp.bono_fijo)
+    res.otros_haberes_imponibles = haberes_imp
+    res.otros_haberes_no_imponibles = haberes_no_imp
     res.total_haberes_brutos = bruto
     res.retencion_honorarios = retencion
     res.total_descuentos_legales = retencion
@@ -368,6 +385,7 @@ def _calcular_honorarios(
     res.anticipo = anticipo
     res.prestamo = prestamo
     res.retencion_judicial = retencion_judicial
+    res.otros_descuentos_varios = varios
     res.otros_descuentos = otros
     res.sueldo_liquido = max(0, bruto - retencion - otros)
     return res
@@ -450,10 +468,14 @@ def calcular_liquidacion(
         dias_no_laborales = _domingos_en_periodo(emp.mes_proceso) + max(0, emp.festivos_en_periodo)
         semana_corrida = calcular_semana_corrida(emp.monto_variable, emp.dias_trabajados, dias_no_laborales)
 
+    # Haberes configurables por la empresa
+    otros_haberes_imp = max(0, emp.otros_haberes_imponibles)
+    otros_haberes_no_imp = max(0, emp.otros_haberes_no_imponibles)
+
     # Base bruta imponible (sin ingresos NO imponibles)
     base_bruta_imponible = (
         sueldo_base + gratificacion + horas_extra_monto
-        + emp.bono_extra + bono_fijo_monto + semana_corrida
+        + emp.bono_extra + bono_fijo_monto + semana_corrida + otros_haberes_imp
     )
 
     # Asignación familiar (No imponible)
@@ -472,7 +494,12 @@ def calcular_liquidacion(
     res.bono_extra = emp.bono_extra
     res.bono_fijo = bono_fijo_monto
     res.semana_corrida = semana_corrida
-    res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + viatico + asig_familiar
+    res.otros_haberes_imponibles = otros_haberes_imp
+    res.otros_haberes_no_imponibles = otros_haberes_no_imp
+    res.total_haberes_brutos = (
+        base_bruta_imponible + colacion + movilizacion + viatico
+        + asig_familiar + otros_haberes_no_imp
+    )
 
     # ── 2. BASES IMPONIBLES ────────────────────────────────────────────────────
 
@@ -589,11 +616,12 @@ def calcular_liquidacion(
     # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
     # Crédito CCAF, anticipos, préstamos y retenciones judiciales. Los retiene el
     # empleador del líquido; no afectan bases imponibles ni descuentos legales.
-    credito_ccaf, anticipo, prestamo, retencion_judicial, otros_descuentos = _otros_descuentos(emp)
+    credito_ccaf, anticipo, prestamo, retencion_judicial, varios, otros_descuentos = _otros_descuentos(emp)
     res.credito_ccaf = credito_ccaf
     res.anticipo = anticipo
     res.prestamo = prestamo
     res.retencion_judicial = retencion_judicial
+    res.otros_descuentos_varios = varios
     res.otros_descuentos = otros_descuentos
 
     # ── 5. SUELDO LÍQUIDO ─────────────────────────────────────────────────────
@@ -741,9 +769,12 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "semana_corrida": res.semana_corrida,
             "horas_extra_100_monto": res.horas_extra_100_monto,
             "asignacion_viatico": res.asignacion_viatico,
+            "otros_haberes_imponibles": res.otros_haberes_imponibles,
+            "otros_haberes_no_imponibles": res.otros_haberes_no_imponibles,
             "anticipo": res.anticipo,
             "prestamo": res.prestamo,
             "retencion_judicial": res.retencion_judicial,
+            "otros_descuentos_varios": res.otros_descuentos_varios,
             "retencion_honorarios": res.retencion_honorarios
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
