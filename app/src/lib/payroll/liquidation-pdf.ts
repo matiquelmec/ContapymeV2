@@ -77,6 +77,7 @@ function normalizeFilename(value: string) {
 export async function buildLiquidationPDFDocument({ liquidation, organization, settings }: PdfContext): Promise<jsPDF> {
   const doc = new jsPDF()
   const emp = liquidation.employees
+  const snap = liquidation.calculation_snapshot || {}
   const period = liquidation.periodo || 'N/A'
   const fullName = formatName(`${emp?.nombres || ''} ${emp?.apellido_paterno || ''} ${emp?.apellido_materno || ''}`)
 
@@ -134,9 +135,17 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
     doc.text(label, 115, yDes); doc.text(fCurrency(value || 0), 185, yDes, { align: 'right' }); yDes += 6
   }
 
+  const semanaCorrida = Number(snap.semana_corrida || 0)
+  const he100 = Number(snap.horas_extra_100_monto || 0)
+  const he50 = (liquidation.horas_extra_monto || 0) - he100
+
   habRow('Sueldo Base', liquidation.sueldo_base)
   habRow('Gratificacion Legal', liquidation.gratificacion || 0)
-  if (liquidation.horas_extra_monto > 0) habRow(`Horas Extras (${liquidation.horas_extra || 0} hrs)`, liquidation.horas_extra_monto)
+  if (he50 > 0) habRow('Horas Extras 50%', he50)
+  if (he100 > 0) habRow('Horas Extras 100%', he100)
+  if (semanaCorrida > 0) habRow('Semana Corrida', semanaCorrida)
+  if (liquidation.bono_extra > 0) habRow('Bono Extra', liquidation.bono_extra)
+  if (liquidation.asignacion_familiar > 0) habRow('Asignacion Familiar', liquidation.asignacion_familiar)
   habRow('Bono Colacion', liquidation.asignacion_colacion || 0)
   habRow('Bono Movilizacion', liquidation.asignacion_movilizacion || 0)
   if (liquidation.otros_haberes > 0) habRow('Otros Haberes', liquidation.otros_haberes)
@@ -145,7 +154,22 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   desRow(`Salud: ${liquidation.salud_code || ''}`, liquidation.salud || 0)
   desRow('Seguro Cesantia (AFC)', liquidation.afc_trabajador || 0)
   if (liquidation.impuesto_unico > 0) desRow('Impuesto Unico 2da Cat.', liquidation.impuesto_unico)
-  if (liquidation.otros_descuentos > 0) desRow('Otros Descuentos', liquidation.otros_descuentos)
+  // Otros descuentos desglosados (si hay snapshot); si no, una sola linea.
+  const creditoCcaf = Number(liquidation.credito_ccaf || snap.credito_ccaf || 0)
+  const anticipo = Number(snap.anticipo || 0)
+  const prestamo = Number(snap.prestamo || 0)
+  const retencionJudicial = Number(snap.retencion_judicial || 0)
+  const desglosados = creditoCcaf + anticipo + prestamo + retencionJudicial
+  if (desglosados > 0) {
+    if (creditoCcaf > 0) desRow('Credito CCAF', creditoCcaf)
+    if (anticipo > 0) desRow('Anticipo de Sueldo', anticipo)
+    if (prestamo > 0) desRow('Prestamo', prestamo)
+    if (retencionJudicial > 0) desRow('Retencion Judicial', retencionJudicial)
+    const resto = (liquidation.otros_descuentos || 0) - desglosados
+    if (resto > 0) desRow('Otros Descuentos', resto)
+  } else if (liquidation.otros_descuentos > 0) {
+    desRow('Otros Descuentos', liquidation.otros_descuentos)
+  }
 
   y = Math.max(yHab, yDes) + 2
   doc.setLineWidth(0.1); doc.line(20, y, 100, y); doc.line(110, y, 190, y)

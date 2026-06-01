@@ -35,6 +35,7 @@ import {
   VacationSummary
 } from '@/actions/vacations'
 import { buildVacationComprobantePDF, getVacationComprobanteFilename } from '@/lib/payroll/vacation-comprobante-pdf'
+import { countBusinessDays } from '@/lib/chile-holidays'
 
 interface EmployeeOption {
   id: string
@@ -123,27 +124,8 @@ export function VacationsClient({
       return
     }
 
-    const start = new Date(newRequest.fecha_inicio + 'T12:00:00')
-    const end = new Date(newRequest.fecha_fin + 'T12:00:00')
-    
-    if (end < start) {
-      setNewRequest(prev => ({ ...prev, dias_solicitados: 0 }))
-      return
-    }
-
-    // Cálculo básico de días hábiles o corridos
-    // Para simplificar, calculamos días hábiles de Lunes a Viernes
-    let count = 0
-    const curDate = new Date(start.getTime())
-    while (curDate <= end) {
-      const dayOfWeek = curDate.getDay()
-      // 0 = Domingo, 6 = Sábado
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++
-      }
-      curDate.setDate(curDate.getDate() + 1)
-    }
-
+    // Días hábiles de lunes a viernes, excluyendo feriados legales chilenos.
+    const count = countBusinessDays(newRequest.fecha_inicio, newRequest.fecha_fin)
     setNewRequest(prev => ({ ...prev, dias_solicitados: count }))
   }, [newRequest.fecha_inicio, newRequest.fecha_fin])
 
