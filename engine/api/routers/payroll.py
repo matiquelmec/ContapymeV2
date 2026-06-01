@@ -295,8 +295,13 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 dias_trabajados=int(emp_effective.get("dias_trabajados", 30)),
                 family_allowances=int(emp_effective.get("family_allowances", 0)),
                 afc_active=bool(emp_effective.get("afc_active", True)),
+                credito_ccaf=int(emp_effective.get("credito_ccaf") or 0),
                 horas_semanales=int(emp_effective.get("horas_semanales", 42)),
+                jornada_parcial=bool(emp_effective.get("jornada_parcial", False)),
                 bono_fijo=int(emp_effective.get("bono_fijo", 0)), # Pasar bono_fijo del Kardex
+                # Semana corrida (Art. 45 CT): base variable = bono_extra del mes (novedades)
+                tiene_semana_corrida=bool(emp_effective.get("tiene_semana_corrida", False)),
+                monto_variable=int(emp_effective.get("bono_extra", 0)),
                 mes_proceso=periodo_clean,
                 es_zona_extrema=es_zona_extrema,
                 zona_extrema=zona_extrema,
@@ -312,13 +317,9 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
 
             liq_data = to_db_dict(result, req.org_id, emp["id"], target_period_start)
             snapshot = liq_data.get("calculation_snapshot") or {}
-            credito_ccaf = int(emp_effective.get("credito_ccaf") or 0)
-            if credito_ccaf > 0:
-                liq_data["credito_ccaf"] = credito_ccaf
-                liq_data["otros_descuentos"] = int(liq_data.get("otros_descuentos") or 0) + credito_ccaf
-                liq_data["total_descuentos"] = int(liq_data.get("total_descuentos") or 0) + credito_ccaf
-                liq_data["sueldo_liquido"] = int(liq_data.get("sueldo_liquido") or 0) - credito_ccaf
-                snapshot["credito_ccaf"] = credito_ccaf
+            # credito_ccaf ya viene resuelto por el motor (otros_descuentos, total y líquido).
+            if result.credito_ccaf > 0:
+                snapshot["credito_ccaf"] = result.credito_ccaf
             movement_code = str(emp_effective.get("previred_movement_code") or "0")
             dias = int(emp_effective.get("dias_trabajados", 30))
             if movement_code in ("3", "6"):

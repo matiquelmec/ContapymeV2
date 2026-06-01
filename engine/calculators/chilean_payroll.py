@@ -68,11 +68,17 @@ class EmployeeInput:
     horas_extra: int = 0                         # Horas extra trabajadas
     bono_extra: int = 0                          # Bonos no habituales
     bono_fijo: int = 0                           # Bonos fijos (recurrentes) de la ficha de empleado
+    # Semana corrida (Art. 45 CT) — sobre remuneración variable
+    tiene_semana_corrida: bool = False           # Derecho a semana corrida
+    monto_variable: int = 0                      # Remuneración variable del mes (comisiones, etc.)
+    festivos_en_periodo: int = 0                 # Festivos legales del período (además de domingos)
     # Control
     dias_trabajados: int = 30                    # Para cálculo proporcional
     horas_semanales: int = 42                    # Jornada semanal (Chile 2026: 42h)
+    jornada_parcial: bool = False                # Jornada parcial (Art. 40 bis): prorratea piso mínimo
     family_allowances: int = 0                   # Número de cargas familiares
     afc_active: bool = True                      # Si aplica seguro de cesantía
+    credito_ccaf: int = 0                        # Crédito social CCAF (otro descuento, no legal)
     mes_proceso: Optional[str] = None            # "YYYY-MM"
     es_zona_extrema: bool = False                # Para rebajas DL 889
     zona_extrema: str = ""                       # "MAGALLANES", "AYSEN", "ARICA", etc.
@@ -89,6 +95,7 @@ class LiquidacionResult:
     horas_extra_monto: int = 0
     bono_extra: int = 0
     bono_fijo: int = 0
+    semana_corrida: int = 0
     total_haberes_brutos: int = 0
     # ── Base imponible ─────────────────────────────────────────────────────────
     base_imponible_afp: int = 0
@@ -103,6 +110,9 @@ class LiquidacionResult:
     afc_trabajador: int = 0                      # Seguro Cesantía (trabajador)
     impuesto_unico: int = 0                      # IRPF Segunda Categoría
     total_descuentos_legales: int = 0
+    # ── Otros descuentos (no legales) ──────────────────────────────────────────
+    credito_ccaf: int = 0                        # Crédito social CCAF
+    otros_descuentos: int = 0                    # Total descuentos no legales
     # ── Cargos empresa ─────────────────────────────────────────────────────────
     afc_empresa: int = 0
     sis_empresa: int = 0
@@ -182,6 +192,46 @@ def calcular_gratificacion_legal(sueldo_base: int, sueldo_minimo: int) -> int:
     tope_mensual = int((4.75 * sueldo_minimo) / 12)
     gratif = int(sueldo_base * 0.25)
     return min(gratif, tope_mensual)
+
+
+JORNADA_COMPLETA_HORAS = 44  # Jornada ordinaria máxima legal (Art. 22 CT), divisor del piso parcial
+
+
+def calcular_semana_corrida(monto_variable: int, dias_trabajados: int, dias_no_laborales: int) -> int:
+    """
+    Calcula el pago de semana corrida (Art. 45 CT) sobre la remuneración variable.
+
+    El trabajador con remuneración variable (comisiones, trato, etc.) tiene derecho
+    a que los días domingo y festivos se paguen según el promedio diario de lo
+    devengado en el período.
+
+    Fórmula: (remuneración_variable / días_trabajados) × (domingos + festivos del período)
+
+    Args:
+        monto_variable: Remuneración variable devengada en el período (CLP).
+        dias_trabajados: Días efectivamente trabajados en el período.
+        dias_no_laborales: Domingos + festivos legales del período.
+
+    Returns:
+        Monto de semana corrida en pesos CLP (imponible).
+    """
+    if monto_variable <= 0 or dias_trabajados <= 0 or dias_no_laborales <= 0:
+        return 0
+    promedio_diario = monto_variable / float(dias_trabajados)
+    return int(round(promedio_diario * dias_no_laborales))
+
+
+def _domingos_en_periodo(mes_proceso: Optional[str]) -> int:
+    """Cuenta los domingos del mes de proceso ("YYYY-MM"). Pura (sin I/O)."""
+    if not mes_proceso:
+        return 0
+    try:
+        anio = int(mes_proceso[:4])
+        mes = int(mes_proceso[5:7])
+        ndays = calendar.monthrange(anio, mes)[1]
+        return sum(1 for d in range(1, ndays + 1) if date(anio, mes, d).weekday() == 6)
+    except (ValueError, IndexError):
+        return 0
 
 
 def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 42) -> int:
@@ -307,11 +357,15 @@ def calcular_liquidacion(
     factor_dias = emp.dias_trabajados / 30.0
     
     sueldo_base = int(emp.sueldo_base * factor_dias)
-    
-    # Validación: no puede ser inferior al sueldo mínimo (si trabajó mes completo)
-    if emp.dias_trabajados == 30 and sueldo_base < settings.sueldo_minimo:
+
+    # Validación: no puede ser inferior al sueldo mínimo (si trabajó mes completo).
+    # En jornada parcial (Art. 40 bis) el piso se prorratea por la jornada pactada.
+    piso_minimo = settings.sueldo_minimo
+    if emp.jornada_parcial and emp.horas_semanales < JORNADA_COMPLETA_HORAS:
+        piso_minimo = int(settings.sueldo_minimo * emp.horas_semanales / JORNADA_COMPLETA_HORAS)
+    if emp.dias_trabajados == 30 and sueldo_base < piso_minimo:
         res.advertencias.append(
-            f"⚠️ Sueldo base ${sueldo_base:,} inferior al mínimo legal ${settings.sueldo_minimo:,}"
+            f"⚠️ Sueldo base ${sueldo_base:,} inferior al mínimo legal ${piso_minimo:,}"
         )
 
     gratificacion = 0
@@ -327,8 +381,17 @@ def calcular_liquidacion(
     # Bono fijo recurrente (proporcional a los días trabajados)
     bono_fijo_monto = int(emp.bono_fijo * factor_dias)
 
+    # Semana corrida (Art. 45 CT): pago de domingos/festivos sobre lo variable. Imponible.
+    semana_corrida = 0
+    if emp.tiene_semana_corrida:
+        dias_no_laborales = _domingos_en_periodo(emp.mes_proceso) + max(0, emp.festivos_en_periodo)
+        semana_corrida = calcular_semana_corrida(emp.monto_variable, emp.dias_trabajados, dias_no_laborales)
+
     # Base bruta imponible (sin ingresos NO imponibles)
-    base_bruta_imponible = sueldo_base + gratificacion + horas_extra_monto + emp.bono_extra + bono_fijo_monto
+    base_bruta_imponible = (
+        sueldo_base + gratificacion + horas_extra_monto
+        + emp.bono_extra + bono_fijo_monto + semana_corrida
+    )
 
     # Asignación familiar (No imponible)
     # Se calcula sobre la renta del mes ANTERIOR legalmente, pero aquí usamos la actual
@@ -343,6 +406,7 @@ def calcular_liquidacion(
     res.asignacion_familiar = asig_familiar
     res.bono_extra = emp.bono_extra
     res.bono_fijo = bono_fijo_monto
+    res.semana_corrida = semana_corrida
     res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + asig_familiar
 
     # ── 2. BASES IMPONIBLES ────────────────────────────────────────────────────
@@ -457,9 +521,16 @@ def calcular_liquidacion(
     res.sis_empresa = sis_empresa
     res.total_cargos_empresa = afc_empresa + sis_empresa
 
+    # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
+    # Crédito social CCAF: lo retiene el empleador del líquido y lo entera a la Caja.
+    # No afecta bases imponibles ni descuentos legales.
+    credito_ccaf = max(0, emp.credito_ccaf)
+    res.credito_ccaf = credito_ccaf
+    res.otros_descuentos = credito_ccaf
+
     # ── 5. SUELDO LÍQUIDO ─────────────────────────────────────────────────────
-    liquido = res.total_haberes_brutos - res.total_descuentos_legales
-    
+    liquido = res.total_haberes_brutos - res.total_descuentos_legales - res.otros_descuentos
+
     # PROTECCIÓN: El sueldo líquido no puede ser negativo. Si lo es,
     # se genera una advertencia (puede indicar un plan de Isapre desproporcionado
     # o muy pocos días trabajados). En producción, el empleador debe revisar.
@@ -579,7 +650,9 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
         "salud_total": res.salud_total,
         "afc_trabajador": res.afc_trabajador,
         "impuesto_unico": res.impuesto_unico,
-        "total_descuentos": res.total_descuentos_legales,
+        "credito_ccaf": res.credito_ccaf,
+        "otros_descuentos": res.otros_descuentos,
+        "total_descuentos": res.total_descuentos_legales + res.otros_descuentos,
         "afc_empresa": res.afc_empresa,
         "seguro_invalidez": res.sis_empresa,
         "sis_empresa": res.sis_empresa,       # Redundancia por compatibilidad
@@ -596,7 +669,8 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "es_zona_extrema": res.asignacion_zona_extrema > 0 or res.rebaja_zona_extrema > 0,
             "asignacion_zona_extrema": res.asignacion_zona_extrema,
             "impuesto_unico_sin_rebaja": res.impuesto_unico_sin_rebaja,
-            "rebaja_zona_extrema": res.rebaja_zona_extrema
+            "rebaja_zona_extrema": res.rebaja_zona_extrema,
+            "semana_corrida": res.semana_corrida
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }
