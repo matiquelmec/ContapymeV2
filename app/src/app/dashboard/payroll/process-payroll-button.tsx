@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   FileText, 
   Loader2, 
@@ -33,12 +34,13 @@ import {
 } from "@/components/ui/select"
 
 export function ProcessPayrollButton() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   
-  const now = new Date()
-  const [mes, setMes] = useState(String(now.getMonth() + 1).padStart(2, '0'))
-  const [ano, setAno] = useState(String(now.getFullYear()))
+  const chileDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  const [mes, setMes] = useState(String(chileDate.getMonth() + 1).padStart(2, '0'))
+  const [ano, setAno] = useState(String(chileDate.getFullYear()))
 
   async function handleProcess() {
     setLoading(true)
@@ -76,6 +78,13 @@ export function ProcessPayrollButton() {
             }
 
             setOpen(false)
+
+            // Redireccionar al periodo calculado para actualizar la vista
+            const params = new URLSearchParams(window.location.search)
+            params.set('year', ano)
+            params.set('month', mes)
+            router.push(`/dashboard/payroll?${params.toString()}`)
+            router.refresh()
         }
     } catch (err) {
         toast.error("Fallo crítico en el Motor Algorítmico.")
@@ -100,9 +109,9 @@ export function ProcessPayrollButton() {
   ]
 
   const anos = [
-    String(now.getFullYear() - 1),
-    String(now.getFullYear()),
-    String(now.getFullYear() + 1),
+    String(chileDate.getFullYear() - 1),
+    String(chileDate.getFullYear()),
+    String(chileDate.getFullYear() + 1),
   ]
 
   return (

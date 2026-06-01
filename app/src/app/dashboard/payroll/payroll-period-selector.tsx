@@ -15,11 +15,13 @@ export function PayrollPeriodSelector() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const currentYear = new Date().getFullYear()
-  const year = searchParams.get('year') ?? currentYear.toString()
-  const month = searchParams.get('month') ?? (new Date().getMonth() + 1).toString().padStart(2, '0')
+  // Normalizar la fecha actual a la zona horaria de Chile para evitar desfases de hidratación (UTC vs Local)
+  const chileDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  const currentYearVal = chileDate.getFullYear()
+  const year = searchParams.get('year') ?? currentYearVal.toString()
+  const month = searchParams.get('month') ?? (chileDate.getMonth() + 1).toString().padStart(2, '0')
 
-  const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString())
+  const years = Array.from({ length: 5 }, (_, i) => (currentYearVal - 2 + i).toString())
   const months = [
     { value: '01', label: 'Enero' },
     { value: '02', label: 'Febrero' },

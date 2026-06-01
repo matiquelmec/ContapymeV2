@@ -70,8 +70,11 @@ export default async function PayrollPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const params = await searchParams
-  const currentYear = new Date().getFullYear().toString()
-  const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0')
+  
+  // Normalizar la fecha actual a la zona horaria de Chile para evitar desfases de hidratación (UTC vs Local)
+  const chileDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }))
+  const currentYear = chileDate.getFullYear().toString()
+  const currentMonth = (chileDate.getMonth() + 1).toString().padStart(2, '0')
   
   const selectedYear = (params.year as string) || currentYear
   const selectedMonth = (params.month as string) || currentMonth
