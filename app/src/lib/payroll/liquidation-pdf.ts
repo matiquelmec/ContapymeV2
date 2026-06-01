@@ -148,12 +148,19 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   if (liquidation.asignacion_familiar > 0) habRow('Asignacion Familiar', liquidation.asignacion_familiar)
   habRow('Bono Colacion', liquidation.asignacion_colacion || 0)
   habRow('Bono Movilizacion', liquidation.asignacion_movilizacion || 0)
+  if (Number(snap.asignacion_viatico || 0) > 0) habRow('Viatico', Number(snap.asignacion_viatico))
   if (liquidation.otros_haberes > 0) habRow('Otros Haberes', liquidation.otros_haberes)
 
-  desRow(`AFP: ${liquidation.afp_code || ''}`, (liquidation.afp || 0) + (liquidation.afp_comision || 0))
-  desRow(`Salud: ${liquidation.salud_code || ''}`, liquidation.salud || 0)
-  desRow('Seguro Cesantia (AFC)', liquidation.afc_trabajador || 0)
-  if (liquidation.impuesto_unico > 0) desRow('Impuesto Unico 2da Cat.', liquidation.impuesto_unico)
+  const retencionHonorarios = Number(snap.retencion_honorarios || 0)
+  if (retencionHonorarios > 0) {
+    // Régimen de honorarios: solo retención de boletas.
+    desRow('Retencion Honorarios', retencionHonorarios)
+  } else {
+    desRow(`AFP: ${liquidation.afp_code || ''}`, (liquidation.afp || 0) + (liquidation.afp_comision || 0))
+    desRow(`Salud: ${liquidation.salud_code || ''}`, liquidation.salud || 0)
+    desRow('Seguro Cesantia (AFC)', liquidation.afc_trabajador || 0)
+    if (liquidation.impuesto_unico > 0) desRow('Impuesto Unico 2da Cat.', liquidation.impuesto_unico)
+  }
   // Otros descuentos desglosados (si hay snapshot); si no, una sola linea.
   const creditoCcaf = Number(liquidation.credito_ccaf || snap.credito_ccaf || 0)
   const anticipo = Number(snap.anticipo || 0)

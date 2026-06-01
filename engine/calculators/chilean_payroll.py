@@ -46,6 +46,8 @@ class PayrollSettings:
     afc_indefinido_empresa_pct: float = 2.4      # % empresa contrato indefinido
     afc_fijo_empresa_pct: float = 3.0            # % empresa contrato a plazo fijo
     uf_tope_afc: float = 126.6                   # UF tope imponible AFC (Ley 19.728)
+    # Honorarios
+    retencion_honorarios_pct: float = 15.25      # % retención boletas de honorarios (Ley 21.133, 2026)
     # Legales
     sueldo_minimo: int = 539_000                 # $CLP vigente desde enero 2026
     uf_valor: float = 38_000.0                   # Valor UF del día (se actualiza desde DB)
@@ -65,6 +67,7 @@ class EmployeeInput:
     gratificacion_legal: bool = True             # Si aplica gratificación art. 50 CT
     asignacion_movilizacion: int = 0
     asignacion_colacion: int = 0
+    asignacion_viatico: int = 0                  # Viático (no imponible, Art. 41 CT)
     horas_extra: int = 0                         # Horas extra al 50% (Art. 32 CT)
     horas_extra_100: int = 0                      # Horas extra al 100% (domingos/festivos)
     bono_extra: int = 0                          # Bonos no habituales
@@ -97,6 +100,7 @@ class LiquidacionResult:
     gratificacion: int = 0
     asignacion_movilizacion: int = 0
     asignacion_colacion: int = 0
+    asignacion_viatico: int = 0
     horas_extra_monto: int = 0                    # Total horas extra (50% + 100%)
     horas_extra_100_monto: int = 0               # Solo el tramo al 100%
     bono_extra: int = 0
@@ -115,6 +119,7 @@ class LiquidacionResult:
     salud_total: int = 0                         # Total descuento salud real
     afc_trabajador: int = 0                      # Seguro Cesantía (trabajador)
     impuesto_unico: int = 0                      # IRPF Segunda Categoría
+    retencion_honorarios: int = 0                # Retención boletas de honorarios
     total_descuentos_legales: int = 0
     # ── Otros descuentos (no legales) ──────────────────────────────────────────
     credito_ccaf: int = 0                        # Crédito social CCAF
@@ -328,6 +333,46 @@ def obtener_grado_1a(mes_proceso: Optional[str]) -> int:
         return 535000
 
 
+def _otros_descuentos(emp: EmployeeInput) -> tuple[int, int, int, int, int]:
+    """Calcula los descuentos no legales y su total. Compartido entre regímenes."""
+    credito_ccaf = max(0, emp.credito_ccaf)
+    anticipo = max(0, emp.anticipo)
+    prestamo = max(0, emp.prestamo)
+    retencion_judicial = max(0, emp.retencion_judicial)
+    total = credito_ccaf + anticipo + prestamo + retencion_judicial
+    return credito_ccaf, anticipo, prestamo, retencion_judicial, total
+
+
+def _calcular_honorarios(
+    emp: EmployeeInput, settings: PayrollSettings, res: LiquidacionResult
+) -> LiquidacionResult:
+    """
+    Liquidación para trabajador a honorarios.
+
+    No cotiza AFP/salud/AFC ni recibe gratificación. Se le aplica la retención
+    de boletas de honorarios (Ley 21.133) sobre el honorario bruto y se
+    descuentan los otros conceptos no legales (anticipos, préstamos, etc.).
+    """
+    bruto = max(0, emp.sueldo_base) + max(0, emp.bono_extra) + max(0, emp.bono_fijo)
+    retencion = int(round(bruto * settings.retencion_honorarios_pct / 100.0))
+
+    credito_ccaf, anticipo, prestamo, retencion_judicial, otros = _otros_descuentos(emp)
+
+    res.sueldo_base = max(0, emp.sueldo_base)
+    res.bono_extra = max(0, emp.bono_extra)
+    res.bono_fijo = max(0, emp.bono_fijo)
+    res.total_haberes_brutos = bruto
+    res.retencion_honorarios = retencion
+    res.total_descuentos_legales = retencion
+    res.credito_ccaf = credito_ccaf
+    res.anticipo = anticipo
+    res.prestamo = prestamo
+    res.retencion_judicial = retencion_judicial
+    res.otros_descuentos = otros
+    res.sueldo_liquido = max(0, bruto - retencion - otros)
+    return res
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. MOTOR PRINCIPAL DE LIQUIDACIÓN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -362,6 +407,10 @@ def calcular_liquidacion(
         dias_trabajados=emp.dias_trabajados,
     )
 
+    # ── HONORARIOS: sin cotizaciones; solo retención de boletas (Ley 21.133) ────
+    if emp.tipo_contrato == "honorarios":
+        return _calcular_honorarios(emp, settings, res)
+
     # ── 1. CÁLCULO DE HABERES ──────────────────────────────────────────────────
     
     # Proporcional si no se trabajó el mes completo
@@ -387,9 +436,10 @@ def calcular_liquidacion(
     horas_extra_100_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra_100, emp.horas_semanales, recargo=2.0)
     horas_extra_monto = horas_extra_50_monto + horas_extra_100_monto
 
-    # Colación y movilización: NO son imponibles (Art. 41 CT), se suman al final
+    # Colación, movilización y viáticos: NO son imponibles (Art. 41 CT), se suman al final
     colacion = emp.asignacion_colacion
     movilizacion = emp.asignacion_movilizacion
+    viatico = emp.asignacion_viatico
     
     # Bono fijo recurrente (proporcional a los días trabajados)
     bono_fijo_monto = int(emp.bono_fijo * factor_dias)
@@ -417,11 +467,12 @@ def calcular_liquidacion(
     res.horas_extra_100_monto = horas_extra_100_monto
     res.asignacion_colacion = colacion
     res.asignacion_movilizacion = movilizacion
+    res.asignacion_viatico = viatico
     res.asignacion_familiar = asig_familiar
     res.bono_extra = emp.bono_extra
     res.bono_fijo = bono_fijo_monto
     res.semana_corrida = semana_corrida
-    res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + asig_familiar
+    res.total_haberes_brutos = base_bruta_imponible + colacion + movilizacion + viatico + asig_familiar
 
     # ── 2. BASES IMPONIBLES ────────────────────────────────────────────────────
 
@@ -538,15 +589,12 @@ def calcular_liquidacion(
     # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
     # Crédito CCAF, anticipos, préstamos y retenciones judiciales. Los retiene el
     # empleador del líquido; no afectan bases imponibles ni descuentos legales.
-    credito_ccaf = max(0, emp.credito_ccaf)
-    anticipo = max(0, emp.anticipo)
-    prestamo = max(0, emp.prestamo)
-    retencion_judicial = max(0, emp.retencion_judicial)
+    credito_ccaf, anticipo, prestamo, retencion_judicial, otros_descuentos = _otros_descuentos(emp)
     res.credito_ccaf = credito_ccaf
     res.anticipo = anticipo
     res.prestamo = prestamo
     res.retencion_judicial = retencion_judicial
-    res.otros_descuentos = credito_ccaf + anticipo + prestamo + retencion_judicial
+    res.otros_descuentos = otros_descuentos
 
     # ── 5. SUELDO LÍQUIDO ─────────────────────────────────────────────────────
     liquido = res.total_haberes_brutos - res.total_descuentos_legales - res.otros_descuentos
@@ -692,9 +740,11 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "rebaja_zona_extrema": res.rebaja_zona_extrema,
             "semana_corrida": res.semana_corrida,
             "horas_extra_100_monto": res.horas_extra_100_monto,
+            "asignacion_viatico": res.asignacion_viatico,
             "anticipo": res.anticipo,
             "prestamo": res.prestamo,
-            "retencion_judicial": res.retencion_judicial
+            "retencion_judicial": res.retencion_judicial,
+            "retencion_honorarios": res.retencion_honorarios
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }

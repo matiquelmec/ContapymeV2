@@ -562,6 +562,15 @@ export function CreateEmployeeButton() {
                       </Label>
                       <Input id="asignacion_movilizacion" name="asignacion_movilizacion" type="number" defaultValue="0" className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
                     </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="asignacion_viatico" className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                         <div className="w-5 h-5 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                            <MapPin className="w-3 h-3 text-emerald-600" />
+                         </div>
+                         Asignación Viático Mensual ($)
+                      </Label>
+                      <Input id="asignacion_viatico" name="asignacion_viatico" type="number" defaultValue="0" className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -579,6 +588,7 @@ export function CreateEmployeeButton() {
                       <SelectItem value="indefinido" className="font-black text-[10px] uppercase">Indefinido</SelectItem>
                       <SelectItem value="plazo_fijo" className="font-black text-[10px] uppercase">Plazo Fijo</SelectItem>
                       <SelectItem value="por_obra" className="font-black text-[10px] uppercase">Por Obra/Faena</SelectItem>
+                      <SelectItem value="honorarios" className="font-black text-[10px] uppercase">Honorarios</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

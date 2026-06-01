@@ -33,6 +33,9 @@ TOPE_APV_UF = 600.0         # UF — Tope anual APV con beneficio tributario
 AFP_COTIZACION_OBLIGATORIA_PCT = 10.0   # % fondo obligatorio (DL 3500)
 SIS_PCT = 1.62                          # % Seguro Invalidez y Sobrevivencia (vigente 2026)
 SALUD_LEGAL_PCT = 7.0                   # % cotización obligatoria de salud
+# Retención de boletas de honorarios (Ley 21.133, alza gradual):
+# 2024=13.75 · 2025=14.5 · 2026=15.25 · 2027=16 · 2028=17
+RETENCION_HONORARIOS_PCT = 15.25       # % retención boletas de honorarios (2026)
 
 # Comisiones AFP (variables por administradora, vigentes 2025)
 AFP_COMISIONES = {

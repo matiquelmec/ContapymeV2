@@ -68,6 +68,7 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
   const [fechaIngreso, setFechaIngreso] = useState(employee.fecha_ingreso || new Date().toISOString().split('T')[0])
   const [colacion, setColacion] = useState(employee.asignacion_colacion?.toString() || "0")
   const [movilizacion, setMovilizacion] = useState(employee.asignacion_movilizacion?.toString() || "0")
+  const [viatico, setViatico] = useState(employee.asignacion_viatico?.toString() || "0")
   const [bonoFijo, setBonoFijo] = useState(employee.bono_fijo?.toString() || "0")
   const [saludSeleccionada, setSaludSeleccionada] = useState(employee.prevision_salud || "Fonasa")
   const [planSaludUf, setPlanSaludUf] = useState(employee.plan_salud_uf?.toString() || "0")
@@ -222,6 +223,7 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                         <SelectItem value="indefinido">Indefinido</SelectItem>
                         <SelectItem value="plazo_fijo">Plazo Fijo</SelectItem>
                         <SelectItem value="por_obra">Por Obra</SelectItem>
+                        <SelectItem value="honorarios">Honorarios</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -271,6 +273,15 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                                Asignación Movilización Mensual ($)
                             </Label>
                             <Input id="asignacion_movilizacion" name="asignacion_movilizacion" type="number" value={movilizacion} onChange={(e) => setMovilizacion(e.target.value)} className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
+                          </div>
+                          <div className="space-y-3">
+                            <Label htmlFor="asignacion_viatico" className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                               <div className="w-5 h-5 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                                  <MapPin className="w-3 h-3 text-emerald-600" />
+                               </div>
+                               Asignación Viático Mensual ($)
+                            </Label>
+                            <Input id="asignacion_viatico" name="asignacion_viatico" type="number" value={viatico} onChange={(e) => setViatico(e.target.value)} className="bg-slate-50/50 border-border rounded-2xl h-16 font-black font-mono text-base px-6 focus:ring-primary shadow-sm" />
                           </div>
                         </div>
                         <div className="space-y-2 pb-2">

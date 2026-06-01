@@ -290,6 +290,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 gratificacion_legal=bool(emp_effective.get("gratificacion_legal", True)),
                 asignacion_movilizacion=int(emp_effective.get("asignacion_movilizacion", 0)),
                 asignacion_colacion=int(emp_effective.get("asignacion_colacion", 0)),
+                asignacion_viatico=int(emp_effective.get("asignacion_viatico", 0)),
                 horas_extra=int(emp_effective.get("horas_extra_pendientes", 0)),
                 horas_extra_100=int(emp_effective.get("horas_extra_100_pendientes", 0)),
                 bono_extra=int(emp_effective.get("bono_extra", 0)),
