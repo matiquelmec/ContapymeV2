@@ -25,6 +25,22 @@ from typing import Optional
 from datetime import date
 import calendar
 
+# Fuente única de verdad de parámetros legales nacionales. Los defaults de
+# PayrollSettings se derivan de aquí para no divergir del SSoT.
+from .national_params import (
+    AFP_COTIZACION_OBLIGATORIA_PCT,
+    SIS_PCT,
+    SALUD_LEGAL_PCT,
+    TOPE_AFP_UF,
+    TOPE_SALUD_UF,
+    TOPE_AFC_UF,
+    AFC_INDEFINIDO_TRABAJADOR_PCT,
+    AFC_INDEFINIDO_EMPRESA_PCT,
+    AFC_FIJO_EMPRESA_PCT,
+    RETENCION_HONORARIOS_PCT,
+    SUELDO_MINIMO,
+)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. ESTRUCTURAS DE DATOS
@@ -32,24 +48,28 @@ import calendar
 
 @dataclass
 class PayrollSettings:
-    """Parámetros legales/previsionales configurables por organización."""
+    """Parámetros legales/previsionales configurables por organización.
+
+    Los valores por defecto provienen de national_params (fuente única). En el
+    flujo real, el router los sobrescribe con los del período desde la DB.
+    """
     # AFP
-    afp_tasa_cotizacion_pct: float = 10.0        # % obligatorio fondo (DL 3500)
+    afp_tasa_cotizacion_pct: float = AFP_COTIZACION_OBLIGATORIA_PCT  # % obligatorio fondo (DL 3500)
     afp_comision_pct: float = 1.27               # % comisión afiliado (variable por AFP)
-    afp_sis_pct: float = 1.49                    # % SIS pagado por empresa (licitación vigente)
-    uf_tope_afp: float = 84.3                    # UF tope imponible AFP (Sup. Pensiones 2025)
+    afp_sis_pct: float = SIS_PCT                  # % SIS pagado por empresa (licitación vigente)
+    uf_tope_afp: float = TOPE_AFP_UF             # UF tope imponible AFP (Sup. Pensiones)
     # Salud
-    salud_pct: float = 7.0                       # % salud obligatorio (FONASA base)
-    uf_tope_salud: float = 84.3                  # UF tope imponible salud (mismo que AFP)
+    salud_pct: float = SALUD_LEGAL_PCT           # % salud obligatorio (FONASA base)
+    uf_tope_salud: float = TOPE_SALUD_UF         # UF tope imponible salud (mismo que AFP)
     # AFC (Seguro Cesantía) — Ley 19.728
-    afc_indefinido_trabajador_pct: float = 0.6   # % trabajador contrato indefinido
-    afc_indefinido_empresa_pct: float = 2.4      # % empresa contrato indefinido
-    afc_fijo_empresa_pct: float = 3.0            # % empresa contrato a plazo fijo
-    uf_tope_afc: float = 126.6                   # UF tope imponible AFC (Ley 19.728)
+    afc_indefinido_trabajador_pct: float = AFC_INDEFINIDO_TRABAJADOR_PCT
+    afc_indefinido_empresa_pct: float = AFC_INDEFINIDO_EMPRESA_PCT
+    afc_fijo_empresa_pct: float = AFC_FIJO_EMPRESA_PCT
+    uf_tope_afc: float = TOPE_AFC_UF             # UF tope imponible AFC (Ley 19.728)
     # Honorarios
-    retencion_honorarios_pct: float = 15.25      # % retención boletas de honorarios (Ley 21.133, 2026)
+    retencion_honorarios_pct: float = RETENCION_HONORARIOS_PCT  # % retención boletas (Ley 21.133)
     # Legales
-    sueldo_minimo: int = 539_000                 # $CLP vigente desde enero 2026
+    sueldo_minimo: int = SUELDO_MINIMO           # $CLP — Ingreso Mínimo Mensual (national_params)
     uf_valor: float = 38_000.0                   # Valor UF del día (se actualiza desde DB)
 
 
@@ -155,24 +175,11 @@ class LiquidacionResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 2. TABLA DE IMPUESTO ÚNICO (SII — Circular 12 de 2024, vigente 2025)
-#    Tramos mensuales en UTM. Tasa marginal + rebaja en UTM.
+# 2. TABLA DE IMPUESTO ÚNICO (SII)
+#    Fuente única: national_params.TRAMOS_IMPUESTO_UNICO (no duplicar aquí).
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Tabla IRPF mensual 2025 (expresada en pesos CLP usando UTM = 67.294 ene-2025)
-# Estructura: (límite_inferior, límite_superior, tasa_marginal, rebaja_en_pesos)
-# Los límites se expresan como múltiplos de UTM. Se calculan dinámicamente.
-TRAMOS_IMPUESTO = [
-    # (factor_utm_inf, factor_utm_sup, tasa, factor_rebaja_utm)
-    (0,     13.5,  0.00,  0.000),
-    (13.5,  30.0,  0.04,  0.540),
-    (30.0,  50.0,  0.08,  1.740),
-    (50.0,  70.0,  0.135, 4.490),
-    (70.0,  90.0,  0.23,  11.140),
-    (90.0,  120.0, 0.304, 17.800),
-    (120.0, 310.0, 0.35,  23.320),
-    (310.0, float("inf"), 0.40, 38.820),
-]
+from .national_params import TRAMOS_IMPUESTO_UNICO as TRAMOS_IMPUESTO
 
 
 def calcular_impuesto_unico(renta_imponible: int, utm_valor: float) -> int:

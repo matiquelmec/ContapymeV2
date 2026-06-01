@@ -12,6 +12,7 @@ from core.database import get_supabase
 from core.payroll_legal_params import get_period_start, resolve_legal_payroll_params
 from core.payroll_status import closed_liquidation_statuses
 from core.utils.shared_utils import split_rut
+from calculators.national_params import get_tramo_asignacion
 
 router = APIRouter()
 
@@ -218,14 +219,7 @@ def build_previred_line(liq: dict, emp: dict, settings: dict, p_format: str, leg
     fields[16] = movement_to
 
     cargas = safe_int(emp.get("cargas_familiares") or emp.get("family_allowances"))
-    tramo = "D"
-    if cargas > 0:
-        if imponible <= 321928:
-            tramo = "A"
-        elif imponible <= 474999:
-            tramo = "B"
-        elif imponible <= 737023:
-            tramo = "C"
+    tramo = get_tramo_asignacion(imponible) if cargas > 0 else "D"
     fields[17] = tramo
     fields[18] = str(cargas)
     fields[19] = "0"

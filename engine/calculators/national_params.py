@@ -105,3 +105,18 @@ def get_asignacion_familiar(renta_imponible: int, num_cargas: int) -> int:
         if renta_imponible <= ASIGNACION_FAMILIAR[tramo]["tope_renta"]:
             return ASIGNACION_FAMILIAR[tramo]["monto"] * num_cargas
     return 0
+
+
+def get_tramo_asignacion(renta_imponible: int) -> str:
+    """
+    Letra del tramo de asignación familiar (A/B/C/D) según la renta imponible.
+    Usa los MISMOS topes que el monto, para que lo informado en Previred/LRE
+    coincida con lo pagado.
+    """
+    if renta_imponible <= ASIGNACION_FAMILIAR["tramo_a"]["tope_renta"]:
+        return "A"
+    if renta_imponible <= ASIGNACION_FAMILIAR["tramo_b"]["tope_renta"]:
+        return "B"
+    if renta_imponible <= ASIGNACION_FAMILIAR["tramo_c"]["tope_renta"]:
+        return "C"
+    return "D"

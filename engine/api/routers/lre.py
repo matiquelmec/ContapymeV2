@@ -22,6 +22,7 @@ from core.database import get_supabase
 from core.utils.shared_utils import clean_rut_simple as clean_rut
 from core.auth import verify_token
 from core.payroll_status import closed_liquidation_statuses
+from calculators.national_params import get_tramo_asignacion
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -377,15 +378,11 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             row["Nro cargas familiares legales autorizadas(1111)"] = str(safe_int(d.get("family_allowances", 0)))
             row["Nro días trabajados en el mes(1115)"] = str(dias_trab)
             
-            # Tramo asignación familiar (1114)
+            # Tramo asignación familiar (1114) — mismos topes que el monto (SSoT)
             fam_allowances = safe_int(d.get("family_allowances", 0))
             tramo = "D"
             if fam_allowances > 0:
-                renta_imp = safe_int(d.get("total_haberes_imponibles", 0))
-                if renta_imp <= 321928: tramo = "A"
-                elif renta_imp <= 474999: tramo = "B"
-                elif renta_imp <= 737023: tramo = "C"
-                else: tramo = "D"
+                tramo = get_tramo_asignacion(safe_int(d.get("total_haberes_imponibles", 0)))
             row["Tramo asignación familiar(1114)"] = tramo
 
             if es_subsidio_total:
