@@ -31,12 +31,44 @@ class DTESigner:
             pfx_data = f.read()
             
         private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
-            pfx_data, 
+            pfx_data,
             password.encode() if password else None,
             default_backend()
         )
         self.private_key = private_key
         self.certificate = certificate
+        self._assert_certificate_validity()
+
+    def _assert_certificate_validity(self):
+        """Valida que el certificado esté vigente.
+
+        Un certificado vencido/aún-no-válido es la causa #1 de que el SII
+        responda 'estado 10 Error Interno' al canjear el token, sin indicar
+        el motivo real. Aquí lo convertimos en un error claro y accionable.
+        """
+        from datetime import datetime, timezone
+        cert = self.certificate
+        try:
+            # cryptography >= 42 (tz-aware)
+            not_after = cert.not_valid_after_utc
+            not_before = cert.not_valid_before_utc
+            now = datetime.now(timezone.utc)
+        except AttributeError:
+            # Versiones antiguas (naive UTC)
+            not_after = cert.not_valid_after
+            not_before = cert.not_valid_before
+            now = datetime.utcnow()
+
+        if now > not_after:
+            raise Exception(
+                f"Certificado digital VENCIDO el {not_after:%d-%m-%Y}. "
+                f"El SII rechazará la autenticación (estado 10). "
+                f"Renueve el certificado en su proveedor (e-CertChile, Acepta, etc.) y vuelva a cargarlo en Configuración de Empresa > Facturación."
+            )
+        if now < not_before:
+            raise Exception(
+                f"El certificado digital aún no es válido (vigente desde {not_before:%d-%m-%Y}). Verifique la fecha del sistema o el certificado cargado."
+            )
 
     def sign_xml(self, xml_string: str, reference_id: str) -> str:
         """Firma el documento XML (DTE)."""

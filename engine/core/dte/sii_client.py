@@ -179,10 +179,12 @@ class SIIClient:
                             delay *= 2
                             continue
 
-                        # Registrar la respuesta completa en DEBUG y propagar una excepción corta.
+                        # Registrar la respuesta completa (WARNING para visibilidad sin DEBUG) y propagar excepción accionable.
                         resp_text = resp.text if hasattr(resp, 'text') else None
-                        logger.debug("SII get_token full response: %s", resp_text)
+                        logger.warning("SII get_token falló (estado %s, glosa %s). Respuesta completa: %s", estado, glosa, resp_text)
                         short_msg = f"Error al canjear Token: {estado} {glosa or ''}".strip()
+                        if estado == "10":
+                            short_msg += " — Causa habitual: certificado vencido/no habilitado, firma de semilla rechazada o ambiente (cert/prod) equivocado."
                         raise SIIError(short_msg, estado=estado, glosa=glosa, resp_text=resp_text)
 
                     token_nodes = inner_xml.xpath("//*[local-name()='TOKEN']")
@@ -397,10 +399,12 @@ class SIIClient:
                     delay *= 2
                     continue
 
-                # Log completo antes de elevar excepción (solo DEBUG guarda el body completo)
+                # Log completo (WARNING para visibilidad sin DEBUG) y excepción accionable.
                 resp_text = resp.text if hasattr(resp, 'text') else None
-                logger.debug("SII get_boleta_token full response: %s", resp_text)
+                logger.warning("SII get_boleta_token falló (estado %s, glosa %s). Respuesta completa: %s", estado, glosa, resp_text)
                 short_msg = f"Error al canjear Token de Boleta: {estado} {glosa or ''}".strip()
+                if estado == "10":
+                    short_msg += " — Causa habitual: certificado vencido/no habilitado, firma de semilla rechazada o ambiente (cert/prod) equivocado."
                 raise SIIError(short_msg, estado=estado, glosa=glosa, resp_text=resp_text)
             except Exception as e:
                 resp_text = None
