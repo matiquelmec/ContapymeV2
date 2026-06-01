@@ -23,30 +23,35 @@ def get_period_start(periodo: str) -> str:
     return f"{periodo_clean}-01"
 
 
-def resolve_economic_indicators(db: Any, period_start: str) -> Dict[str, float]:
-    uf_valor = 38000.0
-    utm_valor = 67294.0
+def _latest_indicator(db: Any, codigo: str, period_start: str, fallback: float) -> float:
+    """Último valor de un indicador (codigo) con fecha <= period_start.
 
+    Se consulta POR CODIGO. Una consulta conjunta con limit(2) era frágil: como
+    la UF se guarda a diario y la UTM una vez al mes, el límite podía traer dos
+    UF y ninguna UTM, dejando la UTM en su fallback stale.
+    """
     try:
-        ind_res = (
+        res = (
             db.table("economic_indicators")
-            .select("codigo, valor")
-            .in_("codigo", ["uf", "utm"])
+            .select("valor")
+            .eq("codigo", codigo)
             .lte("fecha", period_start)
             .order("fecha", desc=True)
-            .limit(2)
+            .limit(1)
             .execute()
         )
-
-        for ind in ind_res.data or []:
-            if ind["codigo"] == "uf":
-                uf_valor = float(ind["valor"])
-            elif ind["codigo"] == "utm":
-                utm_valor = float(ind["valor"])
+        if res.data:
+            return float(res.data[0]["valor"])
     except Exception as exc:
-        logger.warning("Fallo al obtener UF/UTM; usando fallback. error=%s", exc)
+        logger.warning("Fallo al obtener %s; usando fallback. error=%s", codigo, exc)
+    return fallback
 
-    return {"uf_valor": uf_valor, "utm_valor": utm_valor}
+
+def resolve_economic_indicators(db: Any, period_start: str) -> Dict[str, float]:
+    return {
+        "uf_valor": _latest_indicator(db, "uf", period_start, 38000.0),
+        "utm_valor": _latest_indicator(db, "utm", period_start, 67294.0),
+    }
 
 
 def resolve_legal_payroll_params(db: Any, period_start: str) -> Dict[str, Any]:
