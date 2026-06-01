@@ -9,9 +9,12 @@ class TestDatabaseIntegrity(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        # Configurar conexión usando el pooler con hostaddr en us-east-2 (Ohio)
+        # Configurar conexión usando el pooler con hostaddr en us-east-2 (Ohio).
+        # La credencial NUNCA se hardcodea: se lee del entorno.
         cls.project_ref = "mofkjgfrpfmtnktaepqi"
-        cls.password = "Matigol1234."
+        cls.password = os.getenv("SUPABASE_DB_PASSWORD") or os.getenv("DB_PASSWORD")
+        if not cls.password:
+            raise unittest.SkipTest("Falta SUPABASE_DB_PASSWORD en el entorno; se omite la prueba de integridad.")
         cls.user = f"postgres.{cls.project_ref}"
         cls.db_name = "postgres"
         cls.port = 6543

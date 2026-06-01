@@ -10,6 +10,8 @@
 
 # Scripts de depuración locales (pueden contener credenciales — NO commitear)
 scratch/
+archive/scratch_legacy/
+archive/engine_scratch_legacy/
 
 # Python
 __pycache__/

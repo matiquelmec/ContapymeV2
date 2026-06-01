@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 # Cargar .env de engine
 load_dotenv(dotenv_path="engine/.env")
 
-# URL de pooler de base de datos
-DATABASE_URL = "postgresql://postgres.mofkjgfrpfmtnktaepqi:Matigol1234.@aws-1-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require"
+# URL de pooler de base de datos (NUNCA hardcodear credenciales: leer de .env)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise SystemExit("Falta DATABASE_URL en el entorno (.env).")
 
 def migrate_historical_data():
     print("[*] Conectando a Supabase PostgreSQL via Pooler IPv4...")
