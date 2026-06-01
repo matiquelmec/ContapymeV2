@@ -8,6 +8,9 @@
 .env.*.local
 .env.production
 
+# Scripts de depuración locales (pueden contener credenciales — NO commitear)
+scratch/
+
 # Python
 __pycache__/
 **/__pycache__/
