@@ -62,19 +62,28 @@ export async function setActiveOrganization(orgId: string) {
 }
 
 export async function getActiveOrganizationId() {
-  const cookieStore = await cookies()
-  const activeOrgId = cookieStore.get('active_organization_id')?.value
-  
-  if (activeOrgId) return activeOrgId
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
-  // Fallback: get the first one if no cookie is set
-  const orgs = await getUserOrganizations()
-  if (orgs.length > 0) {
-    const defaultId = orgs[0].id
-    // We can't set cookies here in a "getter" that might be called during render
-    // but we can return it.
-    return defaultId
+  const cookieStore = await cookies()
+  const cookieOrgId = cookieStore.get('active_organization_id')?.value
+
+  // Validamos que la cookie apunte a una organización del usuario ACTUAL.
+  // Sin esto, una cookie de una sesión anterior (otra cuenta en el mismo
+  // navegador) se arrastra y el motor responde 403 "no pertenece".
+  if (cookieOrgId) {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('organization_id', cookieOrgId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (membership) return cookieOrgId
   }
 
-  return null
+  // Fallback: primera organización del usuario (auto-selección).
+  // No persistimos cookie aquí porque este getter se invoca durante el render.
+  const orgs = await getUserOrganizations()
+  return orgs.length > 0 ? orgs[0].id : null
 }

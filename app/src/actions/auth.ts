@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export async function signInWithEmail(formData: FormData) {
   const supabase = await createClient()
@@ -119,5 +120,8 @@ export async function requestPasswordReset(formData: FormData) {
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  // Limpiamos la empresa activa para que no se herede en la próxima sesión del navegador.
+  const cookieStore = await cookies()
+  cookieStore.delete('active_organization_id')
   return redirect('/')
 }
