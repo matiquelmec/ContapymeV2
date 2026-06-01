@@ -20,18 +20,21 @@ import {
   AlertTriangle,
   History,
   PlaneTakeoff,
-  BookOpen
+  BookOpen,
+  FileText
 } from 'lucide-react'
-import { 
-  VacationRequest, 
-  createVacationRequest, 
+import {
+  VacationRequest,
+  createVacationRequest,
   createVacationAdjustment,
-  updateVacationStatus, 
-  getEmployeeVacationSummary, 
+  updateVacationStatus,
+  getEmployeeVacationSummary,
   getEmployeeVacationLedger,
+  getVacationComprobanteData,
   VacationLedgerEntry,
   VacationSummary
 } from '@/actions/vacations'
+import { buildVacationComprobantePDF, getVacationComprobanteFilename } from '@/lib/payroll/vacation-comprobante-pdf'
 
 interface EmployeeOption {
   id: string
@@ -84,6 +87,7 @@ export function VacationsClient({
   const [submitting, setSubmitting] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [comprobanteId, setComprobanteId] = useState<string | null>(null)
 
   // Cargar estadísticas y ledger cuando se selecciona un empleado
   useEffect(() => {
@@ -276,6 +280,25 @@ export function VacationsClient({
       toast.error('Error al registrar el ajuste')
     } finally {
       setAdjusting(false)
+    }
+  }
+
+  const handleComprobante = async (requestId: string) => {
+    setComprobanteId(requestId)
+    try {
+      const res = await getVacationComprobanteData(activeOrgId, requestId)
+      if (!res.success || !res.data) {
+        toast.error(res.error || 'No se pudo generar el comprobante')
+        return
+      }
+      const doc = buildVacationComprobantePDF(res.data)
+      doc.save(getVacationComprobanteFilename(res.data))
+      toast.success('Comprobante de feriado generado')
+    } catch (err) {
+      console.error(err)
+      toast.error('Error al generar el comprobante')
+    } finally {
+      setComprobanteId(null)
     }
   }
 
@@ -615,15 +638,27 @@ export function VacationsClient({
                                   </Button>
                                 </>
                               ) : req.status === 'approved' ? (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleStatusChange(req.id, 'cancelled')}
-                                  disabled={updatingId === req.id || isPending}
-                                  className="text-slate-600 hover:text-slate-700 hover:bg-slate-100 font-black uppercase text-[9px] tracking-wider rounded-xl h-8 px-3"
-                                >
-                                  Cancelar
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleComprobante(req.id)}
+                                    disabled={comprobanteId === req.id}
+                                    className="border-primary/30 text-primary hover:bg-primary/5 font-black uppercase text-[9px] tracking-wider rounded-xl h-8 px-3 gap-1"
+                                  >
+                                    {comprobanteId === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+                                    Comprobante
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleStatusChange(req.id, 'cancelled')}
+                                    disabled={updatingId === req.id || isPending}
+                                    className="text-slate-600 hover:text-slate-700 hover:bg-slate-100 font-black uppercase text-[9px] tracking-wider rounded-xl h-8 px-3"
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </>
                               ) : (
                                 <span className="text-[10px] text-muted-foreground/30 font-bold uppercase italic">—</span>
                               )}

@@ -278,3 +278,106 @@ export async function updateVacationStatus(
   revalidatePath('/dashboard/payroll/vacations')
   return { success: true }
 }
+
+export interface VacationComprobanteData {
+  request: {
+    id: string
+    fecha_inicio: string
+    fecha_fin: string
+    dias_solicitados: number
+    comentarios?: string
+  }
+  employee: {
+    nombres: string
+    apellido_paterno: string
+    apellido_materno?: string
+    rut: string
+    cargo?: string
+    fecha_ingreso?: string
+  }
+  organization: {
+    nombre: string
+    rut_empresa?: string
+    direccion?: string
+    comuna?: string
+    region?: string
+  }
+  rep_legal_nombre?: string
+  rep_legal_rut?: string
+}
+
+/**
+ * Reúne todos los datos necesarios para emitir el Comprobante de Feriado
+ * Legal (Art. 74 CT) de una solicitud de vacaciones aprobada.
+ */
+export async function getVacationComprobanteData(
+  orgId: string,
+  requestId: string
+): Promise<{ success: boolean; data?: VacationComprobanteData; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: request, error: reqError } = await supabase
+    .from('vacation_requests')
+    .select(`
+      id, fecha_inicio, fecha_fin, dias_solicitados, comentarios, status, employee_id,
+      employees ( nombres, apellido_paterno, apellido_materno, rut, cargo, fecha_ingreso )
+    `)
+    .eq('id', requestId)
+    .eq('organization_id', orgId)
+    .single()
+
+  if (reqError || !request) {
+    return { success: false, error: reqError?.message || 'Solicitud no encontrada.' }
+  }
+
+  if (request.status !== 'approved') {
+    return { success: false, error: 'Solo se emite comprobante de feriados aprobados.' }
+  }
+
+  const employee = (request as any).employees
+  if (!employee) {
+    return { success: false, error: 'No se encontró el colaborador asociado.' }
+  }
+
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('nombre, rut_empresa, direccion, comuna, region')
+    .eq('id', orgId)
+    .single()
+
+  const { data: settings } = await supabase
+    .from('organization_payroll_settings')
+    .select('rep_legal_nombre, rep_legal_rut')
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
+  return {
+    success: true,
+    data: {
+      request: {
+        id: request.id,
+        fecha_inicio: request.fecha_inicio,
+        fecha_fin: request.fecha_fin,
+        dias_solicitados: Number(request.dias_solicitados),
+        comentarios: request.comentarios,
+      },
+      employee: {
+        nombres: employee.nombres,
+        apellido_paterno: employee.apellido_paterno,
+        apellido_materno: employee.apellido_materno,
+        rut: employee.rut,
+        cargo: employee.cargo,
+        fecha_ingreso: employee.fecha_ingreso,
+      },
+      organization: {
+        nombre: organization?.nombre || 'Empresa',
+        rut_empresa: organization?.rut_empresa,
+        direccion: organization?.direccion,
+        comuna: organization?.comuna,
+        region: organization?.region,
+      },
+      rep_legal_nombre: settings?.rep_legal_nombre || undefined,
+      rep_legal_rut: settings?.rep_legal_rut || undefined,
+    },
+  }
+}
