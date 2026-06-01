@@ -37,10 +37,10 @@ DEFAULT_HEALTH_CONFIGS = [
 DEFAULT_SETTINGS = {
     "afp_configs": DEFAULT_AFP_CONFIGS,
     "health_configs": DEFAULT_HEALTH_CONFIGS,
-    # Topes Imponibles (Fuente: Superintendencia de Pensiones, vigente 2025)
-    "uf_tope_afp": 84.3,              # UF — Tope imponible AFP y Salud
-    "uf_tope_salud": 84.3,            # UF — Mismo tope para salud (DL 3500)
-    "uf_tope_afc": 126.6,             # UF — Tope Seguro de Cesantía (Ley 19.728)
+    # Topes Imponibles (Fuente: Superintendencia de Pensiones, vigente 2026)
+    "uf_tope_afp": 90.0,              # UF — Tope imponible AFP y Salud
+    "uf_tope_salud": 90.0,            # UF — Mismo tope para salud (DL 3500)
+    "uf_tope_afc": 135.2,             # UF — Tope Seguro de Cesantía (Ley 19.728)
     # Sueldo Mínimo (Ley vigente)
     "sueldo_minimo": 539000,
     # Asignación Familiar (Montos por carga, vigentes 2025)

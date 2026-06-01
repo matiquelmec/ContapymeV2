@@ -24,10 +24,10 @@ import { toast } from "sonner";
 // Parámetros legales estándar chilenos (2025/2026)
 const DEFAULT_LEGAL_PARAMS = {
   sueldo_minimo: 539000,
-  tope_afp_uf: 84.3,
-  tope_afc_uf: 126.6,
-  uf_valor: 38000,
-  utm_valor: 67294
+  tope_afp_uf: 90.0,
+  tope_afc_uf: 135.2,
+  uf_valor: 40120,
+  utm_valor: 69889
 };
 
 const DEFAULT_AFPS = [

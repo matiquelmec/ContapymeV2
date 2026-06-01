@@ -20,18 +20,18 @@ FUENTES OFICIALES:
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. TOPES IMPONIBLES (Actualizados anualmente por la Sup. de Pensiones)
-#    Fuente: Circular SP, vigente desde enero 2025
+#    Fuente: Circular SP, vigente desde febrero 2026
 # ═══════════════════════════════════════════════════════════════════════════════
-TOPE_AFP_UF = 84.3          # UF — Tope imponible para AFP y Salud
-TOPE_SALUD_UF = 84.3        # UF — Mismo tope (DL 3500, Art. 16)
-TOPE_AFC_UF = 126.6         # UF — Tope Seguro de Cesantía (Ley 19.728, Art. 5)
+TOPE_AFP_UF = 90.0          # UF — Tope imponible para AFP y Salud
+TOPE_SALUD_UF = 90.0        # UF — Mismo tope (DL 3500, Art. 16)
+TOPE_AFC_UF = 135.2         # UF — Tope Seguro de Cesantía (Ley 19.728, Art. 5)
 TOPE_APV_UF = 600.0         # UF — Tope anual APV con beneficio tributario
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 2. TASAS PREVISIONALES (Vigentes desde julio 2024)
+# 2. TASAS PREVISIONALES (Vigentes desde abril 2026)
 # ═══════════════════════════════════════════════════════════════════════════════
 AFP_COTIZACION_OBLIGATORIA_PCT = 10.0   # % fondo obligatorio (DL 3500)
-SIS_PCT = 1.49                          # % Seguro Invalidez y Sobrevivencia
+SIS_PCT = 1.62                          # % Seguro Invalidez y Sobrevivencia (vigente 2026)
 SALUD_LEGAL_PCT = 7.0                   # % cotización obligatoria de salud
 
 # Comisiones AFP (variables por administradora, vigentes 2025)

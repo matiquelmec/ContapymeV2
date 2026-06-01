@@ -4,10 +4,10 @@ const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || "http://localhost:8000"
 
 const FALLBACK = {
   sueldo_minimo: 539000,
-  tope_afp_uf: 84.3,
-  tope_salud_uf: 84.3,
-  tope_afc_uf: 126.6,
-  sis_pct: 1.49,
+  tope_afp_uf: 90.0,
+  tope_salud_uf: 90.0,
+  tope_afc_uf: 135.2,
+  sis_pct: 1.62,
   afc_indefinido_trabajador_pct: 0.6,
   afc_indefinido_empresa_pct: 2.4,
   afc_fijo_empresa_pct: 3.0,

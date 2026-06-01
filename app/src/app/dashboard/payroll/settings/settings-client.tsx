@@ -32,10 +32,10 @@ import { toast } from "sonner";
 // Se muestran aquí solo para referencia del usuario.
 // ═══════════════════════════════════════════════════════════════════════════════
 const NATIONAL_PARAMS = {
-  tope_afp_uf: 84.3,
-  tope_salud_uf: 84.3,
-  tope_afc_uf: 126.6,
-  sis_pct: 1.49,
+  tope_afp_uf: 90.0,
+  tope_salud_uf: 90.0,
+  tope_afc_uf: 135.2,
+  sis_pct: 1.62,
   sueldo_minimo: 539000,
   afp_cotizacion_pct: 10.0,
   salud_legal_pct: 7.0,
