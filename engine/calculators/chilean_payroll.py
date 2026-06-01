@@ -65,7 +65,8 @@ class EmployeeInput:
     gratificacion_legal: bool = True             # Si aplica gratificación art. 50 CT
     asignacion_movilizacion: int = 0
     asignacion_colacion: int = 0
-    horas_extra: int = 0                         # Horas extra trabajadas
+    horas_extra: int = 0                         # Horas extra al 50% (Art. 32 CT)
+    horas_extra_100: int = 0                      # Horas extra al 100% (domingos/festivos)
     bono_extra: int = 0                          # Bonos no habituales
     bono_fijo: int = 0                           # Bonos fijos (recurrentes) de la ficha de empleado
     # Semana corrida (Art. 45 CT) — sobre remuneración variable
@@ -78,7 +79,11 @@ class EmployeeInput:
     jornada_parcial: bool = False                # Jornada parcial (Art. 40 bis): prorratea piso mínimo
     family_allowances: int = 0                   # Número de cargas familiares
     afc_active: bool = True                      # Si aplica seguro de cesantía
-    credito_ccaf: int = 0                        # Crédito social CCAF (otro descuento, no legal)
+    # Otros descuentos (no legales)
+    credito_ccaf: int = 0                        # Crédito social CCAF
+    anticipo: int = 0                            # Anticipo de sueldo
+    prestamo: int = 0                            # Préstamo / cuota
+    retencion_judicial: int = 0                  # Retención judicial / pensión de alimentos
     mes_proceso: Optional[str] = None            # "YYYY-MM"
     es_zona_extrema: bool = False                # Para rebajas DL 889
     zona_extrema: str = ""                       # "MAGALLANES", "AYSEN", "ARICA", etc.
@@ -92,7 +97,8 @@ class LiquidacionResult:
     gratificacion: int = 0
     asignacion_movilizacion: int = 0
     asignacion_colacion: int = 0
-    horas_extra_monto: int = 0
+    horas_extra_monto: int = 0                    # Total horas extra (50% + 100%)
+    horas_extra_100_monto: int = 0               # Solo el tramo al 100%
     bono_extra: int = 0
     bono_fijo: int = 0
     semana_corrida: int = 0
@@ -112,6 +118,9 @@ class LiquidacionResult:
     total_descuentos_legales: int = 0
     # ── Otros descuentos (no legales) ──────────────────────────────────────────
     credito_ccaf: int = 0                        # Crédito social CCAF
+    anticipo: int = 0                            # Anticipo de sueldo
+    prestamo: int = 0                            # Préstamo / cuota
+    retencion_judicial: int = 0                  # Retención judicial / alimentos
     otros_descuentos: int = 0                    # Total descuentos no legales
     # ── Cargos empresa ─────────────────────────────────────────────────────────
     afc_empresa: int = 0
@@ -234,21 +243,23 @@ def _domingos_en_periodo(mes_proceso: Optional[str]) -> int:
         return 0
 
 
-def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 42) -> int:
+def calcular_hora_extra(sueldo_base: int, horas: int, horas_semanales: int = 42, recargo: float = 1.5) -> int:
     """
     Calcula el valor de horas extras (Art. 32 CT).
-    Fórmula oficial Dirección del Trabajo: (Sueldo / 30) * 7 / Horas_Semanales * 1.5
+    Fórmula oficial Dirección del Trabajo: (Sueldo / 30) * 7 / Horas_Semanales * recargo
+
+    Args:
+        recargo: Factor de recargo. 1.5 = 50% (ordinario), 2.0 = 100% (domingos/festivos).
     """
     if horas <= 0 or horas_semanales <= 0:
         return 0
-    
+
     # Sueldo semanal = sueldo / 30 * 7
     sueldo_semanal = (sueldo_base / 30.0) * 7.0
     # Valor hora ordinaria
     valor_hora_ordinaria = sueldo_semanal / float(horas_semanales)
-    
-    # Recargo legal del 50%
-    valor_hora_extra = valor_hora_ordinaria * 1.50
+
+    valor_hora_extra = valor_hora_ordinaria * recargo
     return int(round(valor_hora_extra * horas))
 
 
@@ -372,8 +383,10 @@ def calcular_liquidacion(
     if emp.gratificacion_legal:
         gratificacion = int(calcular_gratificacion_legal(emp.sueldo_base, settings.sueldo_minimo) * factor_dias)
 
-    horas_extra_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra, emp.horas_semanales)
-    
+    horas_extra_50_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra, emp.horas_semanales, recargo=1.5)
+    horas_extra_100_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra_100, emp.horas_semanales, recargo=2.0)
+    horas_extra_monto = horas_extra_50_monto + horas_extra_100_monto
+
     # Colación y movilización: NO son imponibles (Art. 41 CT), se suman al final
     colacion = emp.asignacion_colacion
     movilizacion = emp.asignacion_movilizacion
@@ -401,6 +414,7 @@ def calcular_liquidacion(
     res.sueldo_base = sueldo_base
     res.gratificacion = gratificacion
     res.horas_extra_monto = horas_extra_monto
+    res.horas_extra_100_monto = horas_extra_100_monto
     res.asignacion_colacion = colacion
     res.asignacion_movilizacion = movilizacion
     res.asignacion_familiar = asig_familiar
@@ -522,11 +536,17 @@ def calcular_liquidacion(
     res.total_cargos_empresa = afc_empresa + sis_empresa
 
     # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
-    # Crédito social CCAF: lo retiene el empleador del líquido y lo entera a la Caja.
-    # No afecta bases imponibles ni descuentos legales.
+    # Crédito CCAF, anticipos, préstamos y retenciones judiciales. Los retiene el
+    # empleador del líquido; no afectan bases imponibles ni descuentos legales.
     credito_ccaf = max(0, emp.credito_ccaf)
+    anticipo = max(0, emp.anticipo)
+    prestamo = max(0, emp.prestamo)
+    retencion_judicial = max(0, emp.retencion_judicial)
     res.credito_ccaf = credito_ccaf
-    res.otros_descuentos = credito_ccaf
+    res.anticipo = anticipo
+    res.prestamo = prestamo
+    res.retencion_judicial = retencion_judicial
+    res.otros_descuentos = credito_ccaf + anticipo + prestamo + retencion_judicial
 
     # ── 5. SUELDO LÍQUIDO ─────────────────────────────────────────────────────
     liquido = res.total_haberes_brutos - res.total_descuentos_legales - res.otros_descuentos
@@ -670,7 +690,11 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "asignacion_zona_extrema": res.asignacion_zona_extrema,
             "impuesto_unico_sin_rebaja": res.impuesto_unico_sin_rebaja,
             "rebaja_zona_extrema": res.rebaja_zona_extrema,
-            "semana_corrida": res.semana_corrida
+            "semana_corrida": res.semana_corrida,
+            "horas_extra_100_monto": res.horas_extra_100_monto,
+            "anticipo": res.anticipo,
+            "prestamo": res.prestamo,
+            "retencion_judicial": res.retencion_judicial
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }
