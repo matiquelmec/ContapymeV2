@@ -174,6 +174,7 @@ async def _fetch_and_process_news():
 
     # 3. Filtrado Inteligente (Deduplicación rápida y relevancia local)
     candidates = []
+    seen_uf = False
     for raw in news_pool:
         url = raw.get("link")
         headline = raw.get("headline", "")
@@ -187,6 +188,13 @@ async def _fetch_and_process_news():
         if norm_headline in existing_titles:
             logger.info(f"[News Worker] ⏭️ Omitiendo (Título similar ya existe): {headline[:50]}...")
             continue
+
+        # Evitar múltiples noticias redundantes sobre el valor de la UF en la misma corrida
+        if "uf" in norm_headline or "unidad de fomento" in norm_headline:
+            if seen_uf:
+                logger.info(f"[News Worker] ⏭️ Omitiendo (Ya procesamos un artículo de la UF en este ciclo): {headline[:50]}...")
+                continue
+            seen_uf = True
 
         # Blindaje de Sustancia: Si el contenido es demasiado corto, está vacío o viene con puntos suspensivos (truncado), no califica para noticia premium
         content_text = raw.get("content", "").strip()
