@@ -52,8 +52,11 @@ export function ProcessPayrollButton() {
         if (!result.success && result.error) {
             toast.error(result.error || "Error en el procesamiento de haberes.")
         } else {
+            const skipped = result.skipped_closed_count || 0
             toast.success(`Cálculo finalizado: ${result.count} liquidaciones generadas para ${mes}/${ano}.`, {
-                description: "Los registros han sido inyectados en la base de datos central.",
+                description: skipped > 0
+                    ? `${skipped} liquidaciones aprobadas o cerradas no fueron reprocesadas.`
+                    : "Los borradores han sido actualizados en la base de datos central.",
                 icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
             })
 

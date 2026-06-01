@@ -21,6 +21,7 @@ interface EmployeeRow {
   dias_trabajados?: number;
   horas_extra_pendientes?: number;
   bono_extra?: number;
+  previred_movement_code?: "0" | "3" | "6";
 }
 
 export default function NovedadesClient({
@@ -42,10 +43,11 @@ export default function NovedadesClient({
       dias_trabajados: emp.dias_trabajados !== undefined ? emp.dias_trabajados : 30,
       horas_extra_pendientes: emp.horas_extra_pendientes || 0,
       bono_extra: emp.bono_extra || 0,
+      previred_movement_code: (emp.previred_movement_code || "0") as "0" | "3" | "6",
     }))
   );
 
-  const handleInputChange = (index: number, field: keyof EmployeeRow, value: number) => {
+  const handleInputChange = (index: number, field: keyof EmployeeRow, value: number | "0" | "3" | "6") => {
     const updated = [...employees];
     updated[index] = {
       ...updated[index],
@@ -62,6 +64,7 @@ export default function NovedadesClient({
         dias_trabajados: emp.dias_trabajados ?? 30,
         horas_extra_pendientes: emp.horas_extra_pendientes ?? 0,
         bono_extra: emp.bono_extra ?? 0,
+        previred_movement_code: (emp.previred_movement_code || "0") as "0" | "3" | "6",
       }));
 
       const res = await saveNovedadesBulk(payload);
@@ -123,6 +126,7 @@ export default function NovedadesClient({
                     <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6">Empleado</TableHead>
                     <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6 text-center w-[150px]">Días Trabajados</TableHead>
                     <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6 text-center w-[150px]">Horas Extra</TableHead>
+                    <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6 text-center w-[180px]">Tipo Novedad</TableHead>
                     <TableHead className="text-foreground font-black uppercase text-[10px] tracking-[0.3em] px-10 py-6 text-center w-[200px]">Bono Extra ($)</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -146,6 +150,19 @@ export default function NovedadesClient({
                           }
                           className="w-20 text-center font-mono font-bold rounded-lg border-border mx-auto"
                         />
+                      </TableCell>
+                      <TableCell className="px-10 py-4 text-center">
+                        <select
+                          value={emp.previred_movement_code ?? "0"}
+                          onChange={(e) =>
+                            handleInputChange(index, "previred_movement_code", (e.target.value as "0" | "3" | "6"))
+                          }
+                          className="w-40 text-center font-mono font-bold rounded-lg border border-border bg-white h-10 px-2"
+                        >
+                          <option value="0">Sin novedad</option>
+                          <option value="3">Licencia/Subsidio</option>
+                          <option value="6">Accidente</option>
+                        </select>
                       </TableCell>
                       <TableCell className="px-10 py-4 text-center">
                         <Input

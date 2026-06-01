@@ -50,6 +50,7 @@ export function CreateEmployeeButton() {
   const [comuna, setComuna] = useState("")
   const [region, setRegion] = useState("")
   const [numeroCargas, setNumeroCargas] = useState(0)
+  const [esZonaExtrema, setEsZonaExtrema] = useState(false)
   const [afcActivo, setAfcActivo] = useState(true)
   const [saludSeleccionada, setSaludSeleccionada] = useState("Fonasa")
   const [planSaludUf, setPlanSaludUf] = useState("0")
@@ -305,6 +306,12 @@ export function CreateEmployeeButton() {
                     <Input id="cargo" name="cargo" placeholder="Ej: Vendedor" required value={cargo || ""} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCargo(e.target.value)} className="bg-white border-border rounded-xl h-12 font-black uppercase text-xs focus:ring-primary shadow-sm" />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="centro_costo" className="text-[10px] font-bold text-muted-foreground">CENTRO DE COSTO</Label>
+                    <Input id="centro_costo" name="centro_costo" placeholder="Ej: OPERACIONES" className="bg-white border-border rounded-xl h-12 font-black uppercase text-xs focus:ring-primary shadow-sm" />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                    <div className="space-y-2">
@@ -322,6 +329,10 @@ export function CreateEmployeeButton() {
                    <div className="space-y-2">
                       <Label htmlFor="nacionalidad" className="text-[10px] font-black text-muted-foreground">NACIONALIDAD</Label>
                       <Input id="nacionalidad" name="nacionalidad" value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="h-10 bg-white border-border text-[10px] font-bold uppercase" />
+                   </div>
+                   <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                     <Label htmlFor="extranjero" className="text-[10px] font-black text-muted-foreground uppercase">Extranjero</Label>
+                     <Checkbox id="extranjero" name="extranjero" className="w-5 h-5 rounded-md border-primary/30" />
                    </div>
                    <div className="space-y-2">
                        <Label htmlFor="sexo" className="text-[10px] font-black text-muted-foreground">SEXO</Label>
@@ -690,6 +701,22 @@ export function CreateEmployeeButton() {
                        </div>
                    </div>
 
+                   <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                       <Label className="text-[9px] font-black text-slate-400 uppercase">TRAMO ASIGNACIÓN</Label>
+                       <Select name="tramo_asignacion" defaultValue="AUTO">
+                         <SelectTrigger className="h-10 rounded-xl font-black uppercase text-[10px]">
+                           <SelectValue placeholder="Automático" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="AUTO">Automático por renta</SelectItem>
+                           <SelectItem value="A">Tramo A</SelectItem>
+                           <SelectItem value="B">Tramo B</SelectItem>
+                           <SelectItem value="C">Tramo C</SelectItem>
+                           <SelectItem value="D">Tramo D</SelectItem>
+                         </SelectContent>
+                       </Select>
+                   </div>
+
                    <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center overflow-hidden relative">
                        <div className="flex items-center justify-between">
                             <Label htmlFor="afc_active" className="text-[9px] font-black text-slate-400 uppercase">Seguro Cesantía (AFC)</Label>
@@ -705,6 +732,42 @@ export function CreateEmployeeButton() {
                            Cálculo porcentual automático según contrato.
                        </p>
                    </div>
+                   <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                       <div className="flex items-center justify-between">
+                            <Label htmlFor="jornada_parcial" className="text-[9px] font-black text-slate-400 uppercase">Jornada parcial</Label>
+                            <Checkbox id="jornada_parcial" name="jornada_parcial" className="w-5 h-5 rounded-md border-primary/30" />
+                       </div>
+                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <Label htmlFor="tiene_semana_corrida" className="text-[9px] font-black text-slate-400 uppercase">Semana corrida</Label>
+                            <Checkbox id="tiene_semana_corrida" name="tiene_semana_corrida" className="w-5 h-5 rounded-md border-primary/30" />
+                       </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <Label htmlFor="es_zona_extrema" className="text-[9px] font-black text-slate-400 uppercase">Zona extrema</Label>
+                    <Checkbox
+                      id="es_zona_extrema"
+                      name="es_zona_extrema"
+                      checked={esZonaExtrema}
+                      onCheckedChange={(val) => setEsZonaExtrema(!!val)}
+                      className="w-5 h-5 rounded-md border-primary/30"
+                    />
+                  </div>
+                  <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                    <Label className="text-[9px] font-black text-slate-400 uppercase">Zona</Label>
+                    <Select name="zona_extrema" defaultValue="MAGALLANES">
+                      <SelectTrigger className="h-10 rounded-xl font-black uppercase text-[10px]" disabled={!esZonaExtrema}>
+                        <SelectValue placeholder="Seleccione zona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["ARICA", "TARAPACA", "AYSEN", "MAGALLANES", "CHILOE", "PALENA"].map((zona) => (
+                          <SelectItem key={zona} value={zona}>{zona}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex items-start space-x-4 bg-primary/5 p-5 rounded-[1.5rem] border border-primary/10 group">
@@ -715,6 +778,42 @@ export function CreateEmployeeButton() {
                     Cálculo de Gratificación Legal Automática <br/>
                     <span className="text-primary opacity-60">(Art. 50 Código del Trabajo — Tope 4.75 IMM)</span>
                   </Label>
+                </div>
+              </div>
+
+              <div className="space-y-6 bg-slate-50 p-8 rounded-[2rem] border border-slate-200">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                  <CreditCard className="w-3 h-3 text-primary" /> BANCO Y DATOS PREVISIONALES ADICIONALES
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="banco_transferencia" className="text-[9px] font-black text-slate-400 uppercase">Banco</Label>
+                    <Input id="banco_transferencia" name="banco_transferencia" className="h-11 rounded-xl font-black uppercase text-[10px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black text-slate-400 uppercase">Tipo cuenta</Label>
+                    <Select name="tipo_cuenta" defaultValue="vista">
+                      <SelectTrigger className="h-11 rounded-xl font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="corriente">Corriente</SelectItem>
+                        <SelectItem value="vista">Vista</SelectItem>
+                        <SelectItem value="ahorro">Ahorro</SelectItem>
+                        <SelectItem value="rut">Cuenta RUT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cuenta_transferencia" className="text-[9px] font-black text-slate-400 uppercase">Nro. cuenta</Label>
+                    <Input id="cuenta_transferencia" name="cuenta_transferencia" className="h-11 rounded-xl font-black text-[10px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fun_isapre" className="text-[9px] font-black text-slate-400 uppercase">FUN / contrato Isapre</Label>
+                    <Input id="fun_isapre" name="fun_isapre" className="h-11 rounded-xl font-black uppercase text-[10px]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="credito_ccaf" className="text-[9px] font-black text-slate-400 uppercase">Crédito CCAF ($)</Label>
+                    <Input id="credito_ccaf" name="credito_ccaf" type="number" min="0" defaultValue="0" className="h-11 rounded-xl font-black font-mono text-[10px]" />
+                  </div>
                 </div>
               </div>
 

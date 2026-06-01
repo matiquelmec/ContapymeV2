@@ -346,6 +346,7 @@ export default function LiquidationDetailPage() {
   }
 
   const emp = liquidation.employees
+  const canSendEmail = ['aprobada', 'finalizada', 'pagada'].includes(String(liquidation.status || ''))
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -385,7 +386,7 @@ export default function LiquidationDetailPage() {
           <Button
             className="rounded-2xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-[10px] h-12 px-6 shadow-xl shadow-primary/20"
             onClick={handleSendEmail}
-            disabled={sendingEmail}
+            disabled={sendingEmail || !canSendEmail}
           >
             <Mail className="w-4 h-4 mr-2" /> {sendingEmail ? 'Enviando...' : 'Enviar por Correo'}
           </Button>

@@ -351,7 +351,8 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
   const totalNeto = liquidations.reduce((acc, l) => acc + Number(l.sueldo_liquido), 0)
   const totalDescuentos = liquidations.reduce((acc, l) => acc + Number(l.total_descuentos), 0)
   const totalCosto = liquidations.reduce((acc, l) => acc + Number(l.total_haberes_brutos), 0)
-  const approvedLiquidationsCount = liquidations.filter((liq) => liq.status === 'aprobada').length
+  const closedStatuses = ['aprobada', 'finalizada', 'pagada']
+  const approvedLiquidationsCount = liquidations.filter((liq) => closedStatuses.includes(liq.status)).length
   const draftLiquidationsCount = liquidations.filter((liq) => liq.status === 'borrador').length
 
   return (
@@ -423,11 +424,11 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
                   <div className="flex items-center justify-end gap-3">
                     <span className={cn(
                       "inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black shadow-xl uppercase tracking-[0.2em] transition-all",
-                      liq.status === 'aprobada' 
+                      closedStatuses.includes(liq.status)
                         ? "bg-emerald-600 text-white shadow-emerald-600/20" 
                         : "bg-amber-600 text-white shadow-amber-600/20"
                     )}>
-                      {liq.status === 'aprobada' ? (
+                      {closedStatuses.includes(liq.status) ? (
                         <CheckCircle2 className="w-3 h-3 mr-2" />
                       ) : (
                         <RefreshCcw className="w-3 h-3 mr-2 animate-spin-slow" />

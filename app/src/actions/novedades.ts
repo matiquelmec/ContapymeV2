@@ -9,6 +9,7 @@ export async function saveNovedadesBulk(
     dias_trabajados: number;
     horas_extra_pendientes: number;
     bono_extra: number;
+    previred_movement_code: "0" | "3" | "6";
   }[]
 ) {
   try {
@@ -22,6 +23,7 @@ export async function saveNovedadesBulk(
           dias_trabajados: nov.dias_trabajados,
           horas_extra_pendientes: nov.horas_extra_pendientes,
           bono_extra: nov.bono_extra,
+          previred_movement_code: nov.previred_movement_code,
         })
         .eq("id", nov.employee_id)
     );

@@ -64,6 +64,7 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
   const [sueldoBase, setSueldoBase] = useState(employee.sueldo_base?.toString() || "0")
   const [afcActivo, setAfcActivo] = useState(!!employee.afc_active)
   const [numeroCargas, setNumeroCargas] = useState(employee.family_allowances || 0)
+  const [esZonaExtrema, setEsZonaExtrema] = useState(!!employee.es_zona_extrema)
   const [fechaIngreso, setFechaIngreso] = useState(employee.fecha_ingreso || new Date().toISOString().split('T')[0])
   const [colacion, setColacion] = useState(employee.asignacion_colacion?.toString() || "0")
   const [movilizacion, setMovilizacion] = useState(employee.asignacion_movilizacion?.toString() || "0")
@@ -177,6 +178,28 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                         <Input name="phone" defaultValue={employee.phone} className="h-14 rounded-2xl font-bold text-sm bg-slate-50/50 border-slate-200 focus:bg-white transition-all shadow-sm" />
                     </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-dashed border-slate-200">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nacionalidad</Label>
+                    <Input name="nacionalidad" defaultValue={employee.nacionalidad || "Chilena"} className="h-12 rounded-xl font-black uppercase text-xs" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Estado civil</Label>
+                    <Select name="estado_civil" defaultValue={employee.estado_civil || "Soltero(a)"}>
+                      <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Soltero(a)">Soltero(a)</SelectItem>
+                        <SelectItem value="Casado(a)">Casado(a)</SelectItem>
+                        <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
+                        <SelectItem value="Viudo(a)">Viudo(a)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                    <Label htmlFor="edit_extranjero" className="text-[10px] font-black text-slate-400 uppercase">Extranjero</Label>
+                    <Checkbox id="edit_extranjero" name="extranjero" defaultChecked={!!employee.extranjero} />
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="contract" forceMount className="space-y-8 animate-in fade-in slide-in-from-bottom-2 data-[state=inactive]:hidden">
@@ -184,6 +207,10 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                    <div className="space-y-3">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cargo / Posición</Label>
                     <Input name="cargo" defaultValue={employee.cargo} className="h-12 rounded-xl font-black text-xs" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Centro de costo</Label>
+                    <Input name="centro_costo" defaultValue={employee.centro_costo || ""} className="h-12 rounded-xl font-black uppercase text-xs" />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Tipo de Contrato</Label>
@@ -202,6 +229,16 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Fecha de Ingreso</Label>
                   <Input type="date" name="fecha_ingreso" value={fechaIngreso} onChange={(e) => setFechaIngreso(e.target.value)} className="h-12 rounded-xl font-black text-xs" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                    <Label htmlFor="edit_jornada_parcial" className="text-[10px] font-black text-slate-400 uppercase">Jornada parcial</Label>
+                    <Checkbox id="edit_jornada_parcial" name="jornada_parcial" defaultChecked={!!employee.jornada_parcial} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                    <Label htmlFor="edit_tiene_semana_corrida" className="text-[10px] font-black text-slate-400 uppercase">Semana corrida</Label>
+                    <Checkbox id="edit_tiene_semana_corrida" name="tiene_semana_corrida" defaultChecked={!!employee.tiene_semana_corrida} />
+                  </div>
                 </div>
               </TabsContent>
 
@@ -327,6 +364,89 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                          {saludSeleccionada === "Fonasa" && (
                            <input type="hidden" name="plan_salud_uf" value="0" />
                          )}
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-dashed border-slate-200">
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Cargas familiares</Label>
+                             <Input
+                               name="family_allowances"
+                               type="number"
+                               min="0"
+                               max="10"
+                               value={numeroCargas}
+                               onChange={(e) => setNumeroCargas(parseInt(e.target.value) || 0)}
+                               className="h-12 rounded-xl font-black font-mono text-sm"
+                             />
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Tramo asignación</Label>
+                             <Select name="tramo_asignacion" defaultValue={employee.tramo_asignacion || "AUTO"}>
+                               <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="AUTO">Automático por renta</SelectItem>
+                                 <SelectItem value="A">Tramo A</SelectItem>
+                                 <SelectItem value="B">Tramo B</SelectItem>
+                                 <SelectItem value="C">Tramo C</SelectItem>
+                                 <SelectItem value="D">Tramo D</SelectItem>
+                               </SelectContent>
+                             </Select>
+                           </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                           <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                             <Label htmlFor="edit_es_zona_extrema" className="text-[10px] font-black text-slate-400 uppercase">Zona extrema</Label>
+                             <Checkbox
+                               id="edit_es_zona_extrema"
+                               name="es_zona_extrema"
+                               checked={esZonaExtrema}
+                               onCheckedChange={(val) => setEsZonaExtrema(!!val)}
+                             />
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Zona</Label>
+                             <Select name="zona_extrema" defaultValue={employee.zona_extrema || "MAGALLANES"}>
+                               <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]" disabled={!esZonaExtrema}>
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 {["ARICA", "TARAPACA", "AYSEN", "MAGALLANES", "CHILOE", "PALENA"].map((zona) => (
+                                   <SelectItem key={zona} value={zona}>{zona}</SelectItem>
+                                 ))}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-dashed border-slate-200">
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Banco</Label>
+                             <Input name="banco_transferencia" defaultValue={employee.banco_transferencia || ""} className="h-12 rounded-xl font-black uppercase text-xs" />
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Tipo cuenta</Label>
+                             <Select name="tipo_cuenta" defaultValue={employee.tipo_cuenta || "vista"}>
+                               <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]"><SelectValue /></SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="corriente">Corriente</SelectItem>
+                                 <SelectItem value="vista">Vista</SelectItem>
+                                 <SelectItem value="ahorro">Ahorro</SelectItem>
+                                 <SelectItem value="rut">Cuenta RUT</SelectItem>
+                               </SelectContent>
+                             </Select>
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Nro. cuenta</Label>
+                             <Input name="cuenta_transferencia" defaultValue={employee.cuenta_transferencia || ""} className="h-12 rounded-xl font-black text-xs" />
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">FUN / contrato Isapre</Label>
+                             <Input name="fun_isapre" defaultValue={employee.fun_isapre || ""} className="h-12 rounded-xl font-black uppercase text-xs" />
+                           </div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] font-black text-slate-400 uppercase">Crédito CCAF ($)</Label>
+                             <Input name="credito_ccaf" type="number" min="0" defaultValue={employee.credito_ccaf || 0} className="h-12 rounded-xl font-black font-mono text-xs" />
+                           </div>
+                         </div>
                       </div>
                    </div>
                 </div>

@@ -43,6 +43,7 @@ export async function processPayroll(period?: string) {
     return { 
       success: true, 
       count: payrollData.processed_count,
+      skipped_closed_count: payrollData.skipped_closed_count || 0,
       indicadores_estimados: payrollData.indicadores_estimados || false,
       uf_usada: payrollData.uf_usada,
       utm_usada: payrollData.utm_usada,

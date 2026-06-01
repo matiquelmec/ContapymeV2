@@ -54,7 +54,11 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
     afp_configs: [],
     health_configs: [],
     mutual_code: 'ACHS',
+    tasa_mutual: 0.93,
     caja_compensacion_code: '',
+    dias_vacaciones_anuales: 15,
+    es_zona_extrema: false,
+    zona_extrema: '',
     rep_legal_nombre: '',
     rep_legal_rut: '',
     rep_legal_cargo: 'GERENTE GENERAL'
@@ -69,7 +73,11 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
         afp_configs: [],
         health_configs: [],
         mutual_code: 'ACHS',
+        tasa_mutual: 0.93,
         caja_compensacion_code: '',
+        dias_vacaciones_anuales: 15,
+        es_zona_extrema: false,
+        zona_extrema: '',
         rep_legal_nombre: '',
         rep_legal_rut: '',
         rep_legal_cargo: 'GERENTE GENERAL'
@@ -299,6 +307,45 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                     className="h-14 bg-white border-border rounded-2xl font-black uppercase text-xs focus:ring-primary/20 shadow-sm px-6"
                     onChange={(e) => setForm({...form, caja_compensacion_code: e.target.value})}
                   />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TASA MUTUAL (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    max="100"
+                    value={form.tasa_mutual ?? 0.93}
+                    className="h-14 bg-white border-border rounded-2xl font-black text-xs focus:ring-primary/20 shadow-sm px-6"
+                    onChange={(e) => setForm({...form, tasa_mutual: parseFloat(e.target.value) || 0})}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">DIAS VACACIONES ANUALES</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      max="30"
+                      value={form.dias_vacaciones_anuales ?? 15}
+                      className="h-14 bg-white border-border rounded-2xl font-black text-xs focus:ring-primary/20 shadow-sm px-6"
+                      onChange={(e) => setForm({...form, dias_vacaciones_anuales: parseFloat(e.target.value) || 15})}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">ZONA EXTREMA EMPRESA</Label>
+                    <select
+                      className="flex h-14 w-full rounded-2xl border border-border bg-white px-6 py-2 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                      value={form.zona_extrema || ''}
+                      onChange={(e) => setForm({...form, zona_extrema: e.target.value, es_zona_extrema: e.target.value !== ''})}
+                    >
+                      <option value="">SIN ZONA ESPECIAL</option>
+                      {["ARICA", "TARAPACA", "AYSEN", "MAGALLANES", "CHILOE", "PALENA"].map((zona) => (
+                        <option key={zona} value={zona}>{zona}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </CardContent>
             </Card>

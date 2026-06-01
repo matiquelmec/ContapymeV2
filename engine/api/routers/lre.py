@@ -21,6 +21,7 @@ import logging
 from core.database import get_supabase
 from core.utils.shared_utils import clean_rut_simple as clean_rut
 from core.auth import verify_token
+from core.payroll_status import closed_liquidation_statuses
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -155,10 +156,14 @@ async def generate_lre(req: LREGenerateRequest, current_user: dict = Depends(ver
             .select("*, employees(*)") \
             .eq("organization_id", org_id) \
             .eq("periodo", periodo_std) \
+            .in_("status", closed_liquidation_statuses()) \
             .execute()
         liqs = liq_res.data
         if not liqs:
-            raise HTTPException(status_code=404, detail="No hay liquidaciones generadas para este periodo.")
+            raise HTTPException(
+                status_code=404,
+                detail="No hay liquidaciones aprobadas o cerradas para generar el LRE de este periodo."
+            )
 
         # 2. Calcular totales del libro
         t_haberes, t_descuentos, t_liquido = 0, 0, 0
@@ -191,11 +196,19 @@ async def generate_lre(req: LREGenerateRequest, current_user: dict = Depends(ver
             db.table("payroll_book_details").delete().in_("payroll_book_id", b_ids).execute()
             db.table("payroll_books").delete().in_("id", b_ids).execute()
 
+        seq_res = db.table("payroll_books") \
+            .select("book_number") \
+            .eq("organization_id", org_id) \
+            .order("book_number", desc=True) \
+            .limit(1) \
+            .execute()
+        next_book_number = safe_int(seq_res.data[0].get("book_number")) + 1 if seq_res.data else 1
+
         # 5. Crear encabezado del libro
         new_book = db.table("payroll_books").insert({
             "organization_id": org_id,
             "periodo": periodo_std,
-            "book_number": 1,
+            "book_number": next_book_number,
             "company_name": req.company_name,
             "company_rut": req.company_rut,
             "status": "approved",
@@ -308,9 +321,11 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             .execute()
         liq_map = {l["employee_id"]: l for l in liq_res.data}
 
-        # Cargar empleados para tramos y sueldos base nominales
+        # Cargar empleados para sueldos base nominales. El tramo familiar se calcula
+        # desde la renta imponible porque employees.tramo_asignacion no existe en el
+        # esquema actual.
         emp_res = db.table("employees") \
-            .select("id, tramo_asignacion, family_allowances, es_zona_extrema, zona_extrema, sueldo_base, afp") \
+            .select("id, family_allowances, sueldo_base, afp") \
             .eq("organization_id", org_id) \
             .execute()
         emp_map = {e["id"]: e for e in emp_res.data}
@@ -366,13 +381,11 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             fam_allowances = safe_int(d.get("family_allowances", 0))
             tramo = "D"
             if fam_allowances > 0:
-                tramo = emp_ref.get("tramo_asignacion") or ""
-                if tramo not in ["A", "B", "C", "D"]:
-                    renta_imp = safe_int(d.get("total_haberes_imponibles", 0))
-                    if renta_imp <= 321928: tramo = "A"
-                    elif renta_imp <= 474999: tramo = "B"
-                    elif renta_imp <= 737023: tramo = "C"
-                    else: tramo = "D"
+                renta_imp = safe_int(d.get("total_haberes_imponibles", 0))
+                if renta_imp <= 321928: tramo = "A"
+                elif renta_imp <= 474999: tramo = "B"
+                elif renta_imp <= 737023: tramo = "C"
+                else: tramo = "D"
             row["Tramo asignación familiar(1114)"] = tramo
 
             if es_subsidio_total:
@@ -753,4 +766,3 @@ async def export_lre_excel(book_id: str, current_user: dict = Depends(verify_tok
     except Exception as e:
         logger.error(f"Error generando Excel LRE: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
-

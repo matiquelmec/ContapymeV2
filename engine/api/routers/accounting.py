@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from core.database import get_supabase
 from core.auth import verify_token, verify_org_role
+from core.payroll_status import closed_liquidation_statuses
 from core.logger import log_activity
 
 router = APIRouter()
@@ -421,11 +422,12 @@ async def generate_from_payroll(
         res = db.table("liquidations").select("*") \
             .eq("organization_id", req.organization_id) \
             .eq("periodo", req.periodo) \
+            .in_("status", closed_liquidation_statuses()) \
             .execute()
         
         liquidations = res.data or []
         if not liquidations:
-            return {"success": True, "entries_created": 0, "message": "No hay liquidaciones."}
+            return {"success": True, "entries_created": 0, "message": "No hay liquidaciones aprobadas o cerradas."}
 
         # Totales para el asiento agrupado
         t_haberes = 0
@@ -1585,4 +1587,3 @@ async def export_lce_mayor_xml(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { cleanRUT } from '@/lib/utils/rut'
 
+const CLOSED_LIQUIDATION_STATUSES = ['aprobada', 'finalizada', 'pagada']
+
 export async function createEmployee(formData: FormData) {
   const supabase = await createClient()
 
@@ -20,6 +22,7 @@ export async function createEmployee(formData: FormData) {
   // En un entorno de producción estricto, aquí validaríamos con 'validateRUT()'.
   if (cleanedRut.length < 2) return { success: false, error: 'RUT inválido.' }
 
+  const tramoAsignacion = formData.get('tramo_asignacion') as string || ''
   const newEmployee = {
     organization_id: activeOrgId,
     rut: cleanedRut,
@@ -27,6 +30,7 @@ export async function createEmployee(formData: FormData) {
     apellido_paterno: formData.get('apellido_paterno') as string,
     apellido_materno: formData.get('apellido_materno') as string,
     cargo: formData.get('cargo') as string,
+    centro_costo: formData.get('centro_costo') as string || '',
     tipo_contrato: formData.get('tipo_contrato') as string || 'indefinido',
     sueldo_base: parseInt(formData.get('sueldo_base') as string || '0', 10),
     gratificacion_legal: formData.get('gratificacion_legal') === 'on',
@@ -38,6 +42,7 @@ export async function createEmployee(formData: FormData) {
     horas_semanales: parseInt(formData.get('horas_semanales') as string || '44', 10),
     horario_detalle: formData.get('horario_detalle') as string || '',
     nacionalidad: formData.get('nacionalidad') as string || 'Chilena',
+    extranjero: formData.get('extranjero') === 'on',
     sexo: formData.get('sexo') as string || 'Masculino',
     estado_civil: formData.get('estado_civil') as string || 'Soltero(a)',
     birth_date: formData.get('birth_date') as string || null,
@@ -45,6 +50,16 @@ export async function createEmployee(formData: FormData) {
     city: formData.get('city') as string || '',
     region: formData.get('region') as string || '',
     family_allowances: parseInt(formData.get('family_allowances') as string || '0', 10),
+    tramo_asignacion: tramoAsignacion && tramoAsignacion !== 'AUTO' ? tramoAsignacion : null,
+    jornada_parcial: formData.get('jornada_parcial') === 'on',
+    tiene_semana_corrida: formData.get('tiene_semana_corrida') === 'on',
+    es_zona_extrema: formData.get('es_zona_extrema') === 'on',
+    zona_extrema: formData.get('zona_extrema') as string || null,
+    fun_isapre: formData.get('fun_isapre') as string || '',
+    credito_ccaf: parseInt(formData.get('credito_ccaf') as string || '0', 10),
+    banco_transferencia: formData.get('banco_transferencia') as string || '',
+    tipo_cuenta: formData.get('tipo_cuenta') as string || '',
+    cuenta_transferencia: formData.get('cuenta_transferencia') as string || '',
     afc_active: formData.get('afc_active') === 'on',
     asignacion_colacion: parseInt(formData.get('asignacion_colacion') as string || '0', 10),
     asignacion_movilizacion: parseInt(formData.get('asignacion_movilizacion') as string || '0', 10),
@@ -104,17 +119,34 @@ export async function updateEmployee(formData: FormData) {
   if (!id) return { success: false, error: 'ID de empleado no especificado.' }
 
   // 2. Extraer datos (Solo los editables en el formulario)
+  const tramoAsignacion = formData.get('tramo_asignacion') as string || ''
   const updatedData = {
     nombres: formData.get('nombres') as string,
     apellido_paterno: formData.get('apellido_paterno') as string,
     apellido_materno: formData.get('apellido_materno') as string,
     cargo: formData.get('cargo') as string,
+    centro_costo: formData.get('centro_costo') as string || '',
     tipo_contrato: formData.get('tipo_contrato') as string,
     sueldo_base: parseInt(formData.get('sueldo_base') as string || '0', 10),
     afp: formData.get('afp') as string,
     prevision_salud: formData.get('prevision_salud') as string,
     plan_salud_uf: parseFloat(formData.get('plan_salud_uf') as string || '0'),
     fecha_ingreso: formData.get('fecha_ingreso') as string,
+    family_allowances: parseInt(formData.get('family_allowances') as string || '0', 10),
+    tramo_asignacion: tramoAsignacion && tramoAsignacion !== 'AUTO' ? tramoAsignacion : null,
+    jornada_parcial: formData.get('jornada_parcial') === 'on',
+    tiene_semana_corrida: formData.get('tiene_semana_corrida') === 'on',
+    es_zona_extrema: formData.get('es_zona_extrema') === 'on',
+    zona_extrema: formData.get('zona_extrema') as string || null,
+    extranjero: formData.get('extranjero') === 'on',
+    nacionalidad: formData.get('nacionalidad') as string || 'Chilena',
+    estado_civil: formData.get('estado_civil') as string || 'Soltero(a)',
+    afc_active: formData.get('afc_active') === 'on',
+    fun_isapre: formData.get('fun_isapre') as string || '',
+    credito_ccaf: parseInt(formData.get('credito_ccaf') as string || '0', 10),
+    banco_transferencia: formData.get('banco_transferencia') as string || '',
+    tipo_cuenta: formData.get('tipo_cuenta') as string || '',
+    cuenta_transferencia: formData.get('cuenta_transferencia') as string || '',
     asignacion_colacion: parseInt(formData.get('asignacion_colacion') as string || '0', 10),
     asignacion_movilizacion: parseInt(formData.get('asignacion_movilizacion') as string || '0', 10),
     bono_fijo: parseInt(formData.get('bono_fijo') as string || '0', 10),
@@ -153,11 +185,11 @@ export async function deleteEmployee(employeeId: string) {
       .select('id')
       .eq('employee_id', employeeId)
       .eq('organization_id', activeOrgId)
-      .eq('status', 'aprobada')
+      .in('status', CLOSED_LIQUIDATION_STATUSES)
       .limit(1)
 
     if (approvedLiquidations && approvedLiquidations.length > 0) {
-      return { success: false, error: 'No se puede eliminar un empleado con liquidaciones aprobadas.' }
+      return { success: false, error: 'No se puede eliminar un empleado con liquidaciones aprobadas o cerradas.' }
     }
 
     // A. Eliminar Liquidaciones
@@ -205,8 +237,8 @@ export async function deleteLiquidation(liquidationId: string) {
 
   if (fetchError) return { success: false, error: fetchError.message }
 
-  if (liquidation?.status === 'aprobada') {
-    return { success: false, error: 'Una liquidacion aprobada no puede eliminarse. Debe quedar como registro cerrado.' }
+  if (CLOSED_LIQUIDATION_STATUSES.includes(liquidation?.status)) {
+    return { success: false, error: 'Una liquidacion aprobada o cerrada no puede eliminarse. Debe quedar como registro cerrado.' }
   }
 
   const { error } = await supabase
@@ -223,8 +255,8 @@ export async function deleteLiquidation(liquidationId: string) {
 export async function updateLiquidationStatus(liquidationId: string, newStatus: string, signature_base64?: string) {
   const supabase = await createClient()
 
-  if (newStatus !== 'aprobada') {
-    return { success: false, error: 'No se permite revertir una liquidacion aprobada a borrador.' }
+  if (!CLOSED_LIQUIDATION_STATUSES.includes(newStatus)) {
+    return { success: false, error: 'No se permite revertir una liquidacion cerrada a borrador.' }
   }
 
   const { data: liquidation, error: fetchError } = await supabase
@@ -235,8 +267,8 @@ export async function updateLiquidationStatus(liquidationId: string, newStatus: 
 
   if (fetchError) return { success: false, error: fetchError.message }
 
-  if (liquidation?.status === 'aprobada') {
-    return { success: false, error: 'La liquidacion ya se encuentra aprobada.' }
+  if (CLOSED_LIQUIDATION_STATUSES.includes(liquidation?.status)) {
+    return { success: false, error: 'La liquidacion ya se encuentra aprobada o cerrada.' }
   }
 
   const { error } = await supabase

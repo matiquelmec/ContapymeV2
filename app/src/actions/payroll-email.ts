@@ -98,7 +98,7 @@ export async function sendPayrollLiquidationsByEmailAction(params: {
           )
         `)
         .eq('organization_id', params.organizationId)
-        .eq('status', 'aprobada')
+        .in('status', ['aprobada', 'finalizada', 'pagada'])
         .gte('periodo', dateStart)
         .lte('periodo', dateEnd)
         .order('created_at', { ascending: false }),
@@ -116,7 +116,7 @@ export async function sendPayrollLiquidationsByEmailAction(params: {
 
     if (liqError) return failedResult(liqError.message)
     if (!liquidations || liquidations.length === 0) {
-      return failedResult('No hay liquidaciones aprobadas para enviar en el periodo seleccionado.')
+      return failedResult('No hay liquidaciones aprobadas o cerradas para enviar en el periodo seleccionado.')
     }
 
     const { transporter, from } = getSmtpConfig()
@@ -233,6 +233,10 @@ export async function sendSinglePayrollLiquidationEmailAction(
       return { success: false, message: liqError?.message || 'No se encontró la liquidación.' }
     }
 
+    if (!['aprobada', 'finalizada', 'pagada'].includes(String(liquidation.status || ''))) {
+      return { success: false, message: 'Solo se pueden enviar liquidaciones aprobadas o cerradas.' }
+    }
+
     const employee = (liquidation as any).employees
     const employeeName = formatEmployeeName(employee) || 'Empleado sin nombre'
     const email = String(employee?.email || '').trim().toLowerCase()
@@ -302,4 +306,3 @@ export async function sendSinglePayrollLiquidationEmailAction(
     return { success: false, message: error?.message || 'Error al enviar el correo.' }
   }
 }
-
