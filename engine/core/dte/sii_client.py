@@ -139,7 +139,7 @@ class SIIClient:
 </SOAP-ENV:Envelope>"""
 
         import asyncio
-        max_retries = 5
+        max_retries = 2  # reducido: estado 10/11 suele ser determinista; no martillar el getToken del SII (evita throttling por abuso)
         delay = 1.0
 
         for attempt in range(max_retries):
@@ -360,7 +360,7 @@ class SIIClient:
         """
         url = f"{self.boleta_auth}/boleta.electronica.token"
         headers = {"accept": "application/xml", "Content-Type": "application/xml"}
-        max_retries = 5
+        max_retries = 2  # reducido: estado 10/11 suele ser determinista; no martillar el getToken del SII (evita throttling por abuso)
         delay = 1.0
 
         for attempt in range(max_retries):
