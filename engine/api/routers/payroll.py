@@ -27,6 +27,14 @@ from core.payroll_legal_params import (
 )
 from calculators.national_params import (
     get_afp_comision,
+    SUELDO_MINIMO,
+    TOPE_AFP_UF,
+    TOPE_SALUD_UF,
+    TOPE_AFC_UF,
+    SIS_PCT,
+    AFC_INDEFINIDO_TRABAJADOR_PCT,
+    AFC_INDEFINIDO_EMPRESA_PCT,
+    AFC_FIJO_EMPRESA_PCT,
 )
 import logging
 
