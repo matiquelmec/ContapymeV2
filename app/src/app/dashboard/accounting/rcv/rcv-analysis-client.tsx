@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Truck, Users, TrendingUp, TrendingDown, BarChart3,
-  Activity, FolderOpen, Download, ChevronUp, ChevronDown, Loader2
+  Activity, FolderOpen, Download, ChevronUp, ChevronDown, Loader2, ShieldCheck
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getRCVDashboardData } from "@/actions/rcv";
@@ -443,7 +443,6 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                     </CardContent>
                   </Card>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-4 pt-2" suppressHydrationWarning>
                   <Button
                     variant="outline"
@@ -454,15 +453,34 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                     <Download className="w-4 h-4 mr-3" />
                     DATA EXPORT CSV
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 sm:flex-none border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
-                    onClick={() => handleCentralize('purchases')}
-                    disabled={isCentralizing || !selectedPeriodo}
-                  >
-                    {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
-                    CENTRALIZAR EN CONTABILIDAD
-                  </Button>
+                  {selectedPeriodo ? (
+                    <div className="flex flex-col gap-2 flex-1 sm:flex-none">
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
+                        onClick={() => handleCentralize('purchases')}
+                        disabled={isCentralizing}
+                      >
+                        {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
+                        FORZAR RE-CENTRALIZACIÓN
+                      </Button>
+                      <span className="text-[9px] text-muted-foreground font-semibold px-2">
+                        * Use esta opción solo para reconstruir manualmente los asientos de este mes.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 bg-blue-50/50 border border-blue-100 rounded-2xl px-6 py-4 shadow-sm flex-1 sm:flex-none max-w-md">
+                      <ShieldCheck className="w-5 h-5 text-blue-600 animate-pulse mt-0.5 flex-shrink-0" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 leading-normal">
+                          Centralización Inteligente y Automatizada Activa
+                        </span>
+                        <span className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                          El sistema procesa y genera automáticamente los asientos en el Libro Diario al importar los archivos del SII. Realiza validaciones de integridad en tiempo real (Partida Doble) y previene la duplicidad de documentos de manera inteligente.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     className="flex-1 sm:flex-none border-2 border-border/60 bg-white text-foreground hover:bg-muted/50 font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
@@ -553,7 +571,6 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                     </CardContent>
                   </Card>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-4 pt-2" suppressHydrationWarning>
                   <Button
                     variant="outline"
@@ -563,15 +580,34 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                     <Download className="w-4 h-4 mr-3" />
                     DATA EXPORT CSV
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 sm:flex-none border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
-                    onClick={() => handleCentralize('sales')}
-                    disabled={isCentralizing || !selectedPeriodo}
-                  >
-                    {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
-                    CENTRALIZAR EN CONTABILIDAD
-                  </Button>
+                  {selectedPeriodo ? (
+                    <div className="flex flex-col gap-2 flex-1 sm:flex-none">
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 border-amber-500/20 bg-amber-50/50 text-amber-700 hover:bg-amber-600 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
+                        onClick={() => handleCentralize('sales')}
+                        disabled={isCentralizing}
+                      >
+                        {isCentralizing ? <Loader2 className="w-4 h-4 mr-3 animate-spin" /> : <Activity className="w-4 h-4 mr-3" />}
+                        FORZAR RE-CENTRALIZACIÓN
+                      </Button>
+                      <span className="text-[9px] text-muted-foreground font-semibold px-2">
+                        * Use esta opción solo para reconstruir manualmente los asientos de este mes.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 bg-blue-50/50 border border-blue-100 rounded-2xl px-6 py-4 shadow-sm flex-1 sm:flex-none max-w-md">
+                      <ShieldCheck className="w-5 h-5 text-blue-600 animate-pulse mt-0.5 flex-shrink-0" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 leading-normal">
+                          Centralización Inteligente y Automatizada Activa
+                        </span>
+                        <span className="text-[10px] text-blue-700 leading-relaxed font-medium">
+                          El sistema procesa y genera automáticamente los asientos en el Libro Diario al importar los archivos del SII. Realiza validaciones de integridad en tiempo real (Partida Doble) y previene la duplicidad de documentos de manera inteligente.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     className="flex-1 sm:flex-none border-2 border-border/60 bg-white text-foreground hover:bg-muted/50 font-black uppercase text-[10px] tracking-widest rounded-[1.5rem] px-8 h-14 shadow-lg active:scale-95 transition-all"
