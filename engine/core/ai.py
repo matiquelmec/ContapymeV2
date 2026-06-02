@@ -81,6 +81,29 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
                 )
                 payload["model"] = fallback_model
                 response = await client.post(GROQ_URL, json=payload, headers=headers)
+                
+                # Si el modelo de respaldo también da Rate Limit (ej. por minuto TPM)
+                if response.status_code == 429:
+                    try:
+                        err_data = response.json()
+                        err_msg = err_data.get("error", {}).get("message", "")
+                    except:
+                        err_msg = ""
+                        
+                    wait_seconds = 10.0
+                    if "try again in" in err_msg:
+                        try:
+                            # Extraer segundos del mensaje de error, p.ej. "Please try again in 9.86s."
+                            parts = err_msg.split("try again in")
+                            if len(parts) > 1:
+                                time_part = parts[1].strip().split("s")[0]
+                                wait_seconds = float(time_part) + 1.5  # Margen extra seguro
+                        except Exception as parse_ex:
+                            logger.warning(f"[AI] No se pudo parsear el tiempo de espera recomendado: {parse_ex}")
+                            
+                    logger.warning(f"[AI] ⏱️ Límite por minuto (TPM) alcanzado en modelo de respaldo. Esperando {wait_seconds}s para reintentar...")
+                    await asyncio.sleep(wait_seconds)
+                    response = await client.post(GROQ_URL, json=payload, headers=headers)
             
             if response.status_code == 200:
                 result = response.json()
