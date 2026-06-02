@@ -172,8 +172,9 @@ async def _fetch_and_process_news():
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener datos existentes: {e}")
         existing_urls, existing_titles = [], []
 
-    # 3. Filtrado Inteligente (Deduplicación rápida y relevancia local)
-    candidates = []
+    # 3. Filtrado Inteligente (Deduplicación rápida y relevancia local con priorización de nicho)
+    financial_candidates = []
+    regional_candidates = []
     seen_uf = False
     for raw in news_pool:
         url = raw.get("link")
@@ -204,7 +205,11 @@ async def _fetch_and_process_news():
 
         # 4. Escudo Regional y de Nicho (Estrategia Híbrida Experta)
         region_keywords = ["magallanes", "punta arenas", "natales", "porvenir", "williams", "tierra del fuego", "antártica"]
-        financial_keywords = ["sii", "ipc", "dólar", "dolar", "impuesto", "finanzas", "economía", "hacienda", "pib", "tasa", "empleo", "dt", "trabajo"]
+        financial_keywords = [
+            "sii", "ipc", "dólar", "dolar", "impuesto", "finanzas", "economía", "hacienda", 
+            "pib", "tasa", "empleo", "dt", "trabajo", "laboral", "renta", "previsional", 
+            "cotización", "previred", "vacante", "postula", "contrata", "sercotec", "corfo"
+        ]
         
         is_regional = any(k in norm_headline for k in region_keywords)
         is_financial = any(k in norm_headline for k in financial_keywords)
@@ -219,8 +224,23 @@ async def _fetch_and_process_news():
             if not is_regional and not is_financial:
                 continue
 
-        candidates.append(raw)
-        if len(candidates) >= 4: break # Límite de 4 noticias por ciclo para mantener calidad
+        if is_financial:
+            financial_candidates.append(raw)
+        else:
+            regional_candidates.append(raw)
+
+    # 4. Seleccionar candidatos respetando cuotas (Máximo 4 noticias en total: priorizando 2 financieras/laborales)
+    candidates = []
+    # Tomar hasta 2 financieras/laborales
+    candidates.extend(financial_candidates[:2])
+    # Completar con regionales (hasta 4)
+    needed_regional = 4 - len(candidates)
+    candidates.extend(regional_candidates[:needed_regional])
+    # Si aún queda espacio, rellenar con las financieras/laborales restantes
+    if len(candidates) < 4:
+        remaining_financial = financial_candidates[2:]
+        needed_more = 4 - len(candidates)
+        candidates.extend(remaining_financial[:needed_more])
 
     if not candidates:
         logger.info("[News Worker] 💤 No hay noticias nuevas que cumplan los criterios de calidad.")
