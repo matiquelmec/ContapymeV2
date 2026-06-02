@@ -72,6 +72,16 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
             }
             response = await client.post(GROQ_URL, json=payload, headers=headers)
             
+            # Si el modelo principal falla (Rate Limit 429, etc.), intentamos con el de respaldo (llama-3.1-8b-instant)
+            if response.status_code != 200:
+                fallback_model = "llama-3.1-8b-instant"
+                logger.warning(
+                    f"[AI] ⚠️ Error en Groq ({response.status_code}) usando {payload.get('model')}. "
+                    f"Reintentando con el modelo de respaldo: {fallback_model}..."
+                )
+                payload["model"] = fallback_model
+                response = await client.post(GROQ_URL, json=payload, headers=headers)
+            
             if response.status_code == 200:
                 result = response.json()
                 content_raw = result.get("choices", [{}])[0].get("message", {}).get("content", "{}")
