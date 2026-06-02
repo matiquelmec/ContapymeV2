@@ -286,15 +286,19 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       {state.periodos.length > 0 && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-6 rounded-[2.5rem] border border-border shadow-2xl" suppressHydrationWarning>
           <div className="flex items-center gap-4" suppressHydrationWarning>
-             <div className="p-3 bg-muted/50 rounded-2xl border border-border shadow-sm" suppressHydrationWarning>
-                <Activity className="w-6 h-6 text-primary" />
+             <div className="p-3 bg-muted/50 rounded-2xl border border-border shadow-sm relative" suppressHydrationWarning>
+                {state.loading ? (
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                ) : (
+                  <Activity className="w-6 h-6 text-primary" />
+                )}
              </div>
              <div suppressHydrationWarning>
                 <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1 block" suppressHydrationWarning>
-                   Inteligencia Temporal
+                   {state.loading ? "Actualizando Datos..." : "Inteligencia Temporal"}
                 </span>
                 <span className="text-sm text-foreground font-black uppercase tracking-tight" suppressHydrationWarning>
-                  Selector de dataset RCV
+                  {state.loading ? "Cargando período seleccionado" : "Selector de dataset RCV"}
                 </span>
              </div>
           </div>
