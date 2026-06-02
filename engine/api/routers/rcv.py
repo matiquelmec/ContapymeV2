@@ -2,7 +2,7 @@ import csv
 import time
 import uuid
 from io import StringIO
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks
 from core.database import get_supabase
 from core.auth import verify_token, verify_org_role
 from core.logger import log_activity, log_system_error
@@ -126,6 +126,7 @@ async def import_purchases(
     periodo: str, 
     force: bool = False, 
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
@@ -239,6 +240,17 @@ async def import_purchases(
         res_suma = len([r for r in records if r.get("es_suma")])
         res_resta = len(records) - res_suma
         
+        if background_tasks:
+            try:
+                from api.routers.accounting import generate_from_rcv, GenerateFromRCVRequest
+                background_tasks.add_task(
+                    generate_from_rcv,
+                    GenerateFromRCVRequest(organization_id=organization_id, periodo=periodo, type="purchases"),
+                    current_user
+                )
+            except Exception as e_bg:
+                print(f"[BG_CENTRALIZATION_TRIGGER_ERROR] purchases: {e_bg}")
+
         return {
             "success": True, 
             "inserted": len(records),
@@ -253,6 +265,7 @@ async def import_sales(
     periodo: str, 
     force: bool = False, 
     file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
@@ -364,6 +377,17 @@ async def import_sales(
         
         res_suma = len([r for r in records if r.get("es_suma")])
         res_resta = len(records) - res_suma
+
+        if background_tasks:
+            try:
+                from api.routers.accounting import generate_from_rcv, GenerateFromRCVRequest
+                background_tasks.add_task(
+                    generate_from_rcv,
+                    GenerateFromRCVRequest(organization_id=organization_id, periodo=periodo, type="sales"),
+                    current_user
+                )
+            except Exception as e_bg:
+                print(f"[BG_CENTRALIZATION_TRIGGER_ERROR] sales: {e_bg}")
 
         return {
             "success": True, 

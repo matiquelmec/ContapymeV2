@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useDeferredValue, memo, useTransition } from "react";
+import { useEffect, useState, useMemo, useDeferredValue, memo, useTransition, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -210,10 +210,19 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       }
     };
 
+  const isFirstFetch = useRef(true);
+
   useEffect(() => {
-    if (!mounted) {
-      setMounted(true);
-      return; 
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    // Si tenemos datos iniciales y es el primer render cliente, omitimos fetch redundante
+    if (initialData && isFirstFetch.current) {
+      isFirstFetch.current = false;
+      return;
     }
 
     let isCancelled = false;
@@ -245,7 +254,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
 
     fetchData();
     return () => { isCancelled = true; };
-  }, [organizationId, selectedPeriodo]);
+  }, [organizationId, selectedPeriodo, mounted, initialData]);
 
   const vendorChartData = useMemo(() => deferredVendors.slice(0, 10), [deferredVendors]);
   const customerChartData = useMemo(() => deferredCustomers.slice(0, 10), [deferredCustomers]);
