@@ -174,6 +174,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
   const [showCustomersTable, setShowCustomersTable] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
 
     const [isCentralizing, setIsCentralizing] = useState(false);
   
@@ -229,27 +230,34 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
 
     async function fetchData() {
       // Si el cliente cambia el periodo, mostramos el loading local
+      setIsLoading(true);
       startTransition(() => {
         setState(prev => ({ ...prev, loading: true }));
       });
 
-      const data = await getRCVDashboardData(organizationId, selectedPeriodo || undefined);
-      
-      if (isCancelled) return;
+      try {
+        const data = await getRCVDashboardData(organizationId, selectedPeriodo || undefined);
+        
+        if (isCancelled) return;
 
-      startTransition(() => {
-        setState({
-          periodos: data.periods,
-          vendors: data.vendors,
-          customers: data.customers,
-          summary: data.summary,
-          loading: false
+        startTransition(() => {
+          setState({
+            periodos: data.periods,
+            vendors: data.vendors,
+            customers: data.customers,
+            summary: data.summary,
+            loading: false
+          });
         });
-      });
 
-      setTimeout(() => {
-        if (!isCancelled) setShowCharts(true);
-      }, 300);
+        setTimeout(() => {
+          if (!isCancelled) setShowCharts(true);
+        }, 300);
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
     }
 
     fetchData();
@@ -286,21 +294,21 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       {state.periodos.length > 0 && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-6 rounded-[2.5rem] border border-border shadow-2xl" suppressHydrationWarning>
           <div className="flex items-center gap-4" suppressHydrationWarning>
-             <div className="p-3 bg-muted/50 rounded-2xl border border-border shadow-sm relative" suppressHydrationWarning>
-                {state.loading ? (
-                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                ) : (
-                  <Activity className="w-6 h-6 text-primary" />
-                )}
-             </div>
-             <div suppressHydrationWarning>
-                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1 block" suppressHydrationWarning>
-                   {state.loading ? "Actualizando Datos..." : "Inteligencia Temporal"}
-                </span>
-                <span className="text-sm text-foreground font-black uppercase tracking-tight" suppressHydrationWarning>
-                  {state.loading ? "Cargando período seleccionado" : "Selector de dataset RCV"}
-                </span>
-             </div>
+              <div className="p-3 bg-muted/50 rounded-2xl border border-border shadow-sm relative" suppressHydrationWarning>
+                 {isLoading ? (
+                   <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                 ) : (
+                   <Activity className="w-6 h-6 text-primary" />
+                 )}
+              </div>
+              <div suppressHydrationWarning>
+                 <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1 block" suppressHydrationWarning>
+                    {isLoading ? "Actualizando Datos..." : "Inteligencia Temporal"}
+                 </span>
+                 <span className="text-sm text-foreground font-black uppercase tracking-tight" suppressHydrationWarning>
+                   {isLoading ? "Cargando período seleccionado" : "Selector de dataset RCV"}
+                 </span>
+              </div>
           </div>
           <div className="flex gap-2 p-2 bg-muted/30 rounded-[2rem] border border-border overflow-x-auto" suppressHydrationWarning>
             <button
@@ -332,7 +340,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       )}
 
       {/* ---- KPIs ---- */}
-      {state.loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-pulse" suppressHydrationWarning>
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-32 bg-card rounded-[2.5rem] border-2 border-border/50" suppressHydrationWarning />
@@ -388,7 +396,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       )}
 
       {/* ---- TABS ANÁLISIS ---- */}
-      {state.loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse" suppressHydrationWarning>
           <div className="h-[400px] bg-card rounded-[2.5rem] border-2 border-border/50" suppressHydrationWarning />
           <div className="h-[400px] bg-card rounded-[2.5rem] border-2 border-border/50" suppressHydrationWarning />
