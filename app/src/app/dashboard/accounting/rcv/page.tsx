@@ -28,10 +28,16 @@ function AnalysisSkeleton() {
 }
 
 
-export default async function RCVPage() {
+export default async function RCVPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ periodo?: string }> | { periodo?: string }
+}) {
   const organizationId = await getActiveOrganizationId();
+  const resolvedParams = searchParams ? await searchParams : {};
+  const initialSelectedPeriodo = resolvedParams?.periodo || "";
   // Pre-fetch inicial de datos en el servidor
-  const initialData = await getRCVDashboardData(organizationId);
+  const initialData = await getRCVDashboardData(organizationId, initialSelectedPeriodo || undefined);
 
   return (
     <div className="space-y-12 p-8">
@@ -71,6 +77,7 @@ export default async function RCVPage() {
             key={organizationId}
             organizationId={organizationId} 
             initialData={initialData} 
+            initialSelectedPeriodo={initialSelectedPeriodo}
           />
         </Suspense>
       </section>

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Truck, Users, TrendingUp, TrendingDown, BarChart3,
   Activity, FolderOpen, Download, ChevronUp, ChevronDown, Loader2, ShieldCheck,
-  Search, X, Calendar
+  Search, X, type LucideIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getRCVDashboardData } from "@/actions/rcv";
@@ -54,15 +54,10 @@ interface RCVSummary {
   monto_ventas: number;
   monto_calculado_compras: number;
   monto_calculado_ventas: number;
+  balance_neto?: number;
   proveedores_unicos: number;
   clientes_unicos: number;
   balance: number;
-}
-
-interface Periodo {
-  periodo: string;
-  docs_compras: number;
-  docs_ventas: number;
 }
 
 interface DashboardState {
@@ -134,7 +129,19 @@ const EntityRow = memo(({ entity, index, type }: { entity: TopEntity, index: num
 });
 EntityRow.displayName = 'EntityRow';
 
-const KPICard = memo(({ label, value, sub, subValue, icon: Icon, color, borderColor, bgIcon, mounted }: any) => (
+interface KPICardProps {
+  label: string;
+  value: string;
+  sub: string;
+  subValue: string;
+  icon: LucideIcon;
+  color: string;
+  borderColor: string;
+  bgIcon: string;
+  mounted: boolean;
+}
+
+const KPICard = memo(({ label, value, sub, subValue, icon: Icon, color, borderColor, bgIcon, mounted }: KPICardProps) => (
   <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`}>
     <CardHeader className="p-6 pb-2">
       <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] flex items-center gap-2">
@@ -160,16 +167,17 @@ KPICard.displayName = 'KPICard';
 interface RCVAnalysisProps {
   organizationId: string;
   initialData?: {
-    vendors: any[];
-    customers: any[];
-    summary: any;
-    periods: any[];
+    vendors: TopEntity[];
+    customers: TopEntity[];
+    summary: RCVSummary | null;
+    periods: string[];
   }
+  initialSelectedPeriodo?: string;
 }
 
-export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisProps) {
-  // Iniciar siempre en el periodo más reciente (que ya viene ordenado del servidor)
-  const [selectedPeriodo, setSelectedPeriodo] = useState<string>("");
+export function RCVAnalysisClient({ organizationId, initialData, initialSelectedPeriodo = "" }: RCVAnalysisProps) {
+  // El periodo inicial puede venir desde el historial (?periodo=YYYY-MM-01).
+  const [selectedPeriodo, setSelectedPeriodo] = useState<string>(initialSelectedPeriodo);
   const [state, setState] = useState<DashboardState>({
     periodos: initialData?.periods || [],
     summary: initialData?.summary || null,
@@ -181,7 +189,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
   const [showVendorsTable, setShowVendorsTable] = useState(false);
   const [showCustomersTable, setShowCustomersTable] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState("");
 
@@ -222,7 +230,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
         } else {
           toast.error(res.error || "Error al centralizar.");
         }
-      } catch (err) {
+      } catch {
         toast.error("Error de conexión con el motor contable.");
       } finally {
         setIsCentralizing(false);
@@ -234,6 +242,10 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setSelectedPeriodo(initialSelectedPeriodo);
+  }, [initialSelectedPeriodo]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -284,6 +296,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
 
   const vendorChartData = useMemo(() => deferredVendors.slice(0, 10), [deferredVendors]);
   const customerChartData = useMemo(() => deferredCustomers.slice(0, 10), [deferredCustomers]);
+  const balanceNeto = deferredSummary ? (deferredSummary.balance_neto ?? deferredSummary.balance ?? 0) : 0;
   const periodoLabel = useMemo(() => selectedPeriodo ? formatPeriodo(selectedPeriodo) : "Todos los períodos", [selectedPeriodo]);
 
   // ELIMINADO: if (!mounted) return null; - Esto causa doble renderizado masivo.
@@ -355,7 +368,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border border-border shadow-2xl max-h-[250px] overflow-y-auto">
                   <SelectItem value="all" className="text-[10px] font-black uppercase tracking-wider rounded-xl">
-                    VISIÓN GLOBAL
+                    TODOS LOS PERIODOS
                   </SelectItem>
                   {filteredPeriodos.map((p) => (
                     <SelectItem key={p} value={p} className="text-[10px] font-black uppercase tracking-wider rounded-xl">
@@ -377,7 +390,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                     : "bg-transparent text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border"
                 }`}
               >
-                GLOBAL
+                TODOS
               </button>
               {filteredPeriodos.slice(0, 4).map((p) => (
                 <button
@@ -400,13 +413,13 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
 
       {/* ---- KPIs ---- */}
       {isLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-pulse" suppressHydrationWarning>
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 animate-pulse" suppressHydrationWarning>
+          {[...Array(5)].map((_, i) => (
             <div key={i} className="h-32 bg-card rounded-[2.5rem] border-2 border-border/50" suppressHydrationWarning />
           ))}
         </div>
       ) : deferredSummary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6" suppressHydrationWarning>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6" suppressHydrationWarning>
           <KPICard
             label="Base Compras"
             value={formatCLP(deferredSummary.monto_calculado_compras)}
@@ -427,6 +440,17 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
             color="text-emerald-600"
             borderColor="border-emerald-500"
             bgIcon="bg-emerald-50 text-emerald-700"
+            mounted={mounted}
+          />
+          <KPICard
+            label="Resultado Neto"
+            value={formatCLP(balanceNeto)}
+            sub="Ventas - Compras"
+            subValue={balanceNeto >= 0 ? "Margen" : "Brecha"}
+            icon={BarChart3}
+            color={balanceNeto >= 0 ? "text-emerald-600" : "text-rose-600"}
+            borderColor={balanceNeto >= 0 ? "border-emerald-500" : "border-rose-500"}
+            bgIcon={balanceNeto >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}
             mounted={mounted}
           />
           <KPICard

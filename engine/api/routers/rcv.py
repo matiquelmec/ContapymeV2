@@ -1,4 +1,5 @@
 import csv
+import os
 import time
 import uuid
 from io import StringIO
@@ -119,6 +120,100 @@ def _to_int(val: any) -> int:
     s = str(val).strip().split(',')[0].replace(".", "").replace("$", "").replace(" ", "")
     try: return int(s)
     except: return 0
+
+def _normalize_period(periodo: Optional[str]) -> Optional[str]:
+    if not periodo:
+        return None
+    periodo = str(periodo).strip()
+    if len(periodo) == 6 and periodo.isdigit():
+        return f"{periodo[:4]}-{periodo[4:]}-01"
+    if len(periodo) == 7:
+        return f"{periodo}-01"
+    return periodo
+
+def _signed_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+def _build_rcv_summary(purchases: List[Dict[str, Any]], sales: List[Dict[str, Any]]) -> Dict[str, Any]:
+    total_purch = sum(abs(_signed_int(r.get("monto_total"))) for r in purchases)
+    total_sales = sum(abs(_signed_int(r.get("monto_total"))) for r in sales)
+    mc_purch = sum(_signed_int(r.get("monto_calculado")) for r in purchases)
+    mc_sales = sum(_signed_int(r.get("monto_calculado")) for r in sales)
+
+    return {
+        "total_docs_compras": len(purchases),
+        "total_docs_ventas": len(sales),
+        "monto_compras": total_purch,
+        "monto_ventas": total_sales,
+        "volumen_compras": total_purch,
+        "volumen_ventas": total_sales,
+        "monto_calculado_compras": mc_purch,
+        "monto_calculado_ventas": mc_sales,
+        "base_neta_compras": mc_purch,
+        "base_neta_ventas": mc_sales,
+        "proveedores_unicos": len(set(r.get("rut_emisor") for r in purchases if r.get("rut_emisor"))),
+        "clientes_unicos": len(set(r.get("rut_receptor") for r in sales if r.get("rut_receptor"))),
+        "balance": mc_sales - mc_purch,
+        "balance_neto": mc_sales - mc_purch,
+    }
+
+def _history_from_supabase(db, organization_id: str, limit: int) -> List[Dict[str, Any]]:
+    imports_res = db.table("rcv_imports") \
+        .select("id, periodo, tipo, file_name, total_docs, failed_docs, created_at") \
+        .eq("organization_id", organization_id) \
+        .order("periodo", desc=True) \
+        .order("created_at", desc=True) \
+        .limit(limit) \
+        .execute()
+
+    imports = imports_res.data or []
+    if not imports:
+        return []
+
+    import_ids = [imp["id"] for imp in imports]
+    purchase_res = db.table("purchase_records") \
+        .select("id, import_id, monto_total, monto_calculado, journal_entry_id") \
+        .eq("organization_id", organization_id) \
+        .in_("import_id", import_ids) \
+        .limit(10000) \
+        .execute()
+    sales_res = db.table("sales_records") \
+        .select("id, import_id, monto_total, monto_calculado, journal_entry_id") \
+        .eq("organization_id", organization_id) \
+        .in_("import_id", import_ids) \
+        .limit(10000) \
+        .execute()
+
+    docs_by_import: Dict[str, List[Dict[str, Any]]] = {}
+    for doc in (purchase_res.data or []) + (sales_res.data or []):
+        docs_by_import.setdefault(doc.get("import_id"), []).append(doc)
+
+    history = []
+    for imp in imports:
+        docs = docs_by_import.get(imp["id"], [])
+        monto_total = sum(abs(_signed_int(d.get("monto_total"))) for d in docs)
+        monto_calculado = sum(_signed_int(d.get("monto_calculado")) for d in docs)
+        docs_con_asiento = len([d for d in docs if d.get("journal_entry_id")])
+        docs_sin_asiento = len([
+            d for d in docs
+            if not d.get("journal_entry_id") and _signed_int(d.get("monto_total")) != 0
+        ])
+        history.append({
+            **imp,
+            "periodo": str(imp.get("periodo") or ""),
+            "created_at": str(imp.get("created_at") or ""),
+            "docs_fisicos": len(docs),
+            "monto_total": monto_total,
+            "monto_calculado": monto_calculado,
+            "docs_con_asiento": docs_con_asiento,
+            "docs_sin_asiento": docs_sin_asiento,
+            "lote_vacio": len(docs) == 0 and _signed_int(imp.get("total_docs")) == 0,
+        })
+
+    return history
 
 @router.post("/import-purchases")
 async def import_purchases(
@@ -405,6 +500,7 @@ async def get_top_vendors(
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
+    periodo = _normalize_period(periodo)
     cache_key = f"vendors_{organization_id}_{periodo}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -434,9 +530,23 @@ async def get_top_vendors(
     vendors = {}
     for r in data:
         rut = r["rut_emisor"]
-        if rut not in vendors: vendors[rut] = {"rut": rut, "nombre": r["razon_social_emisor"], "monto_calculado": 0, "count": 0}
-        vendors[rut]["monto_calculado"] += r.get("monto_calculado", 0)
+        if rut not in vendors:
+            vendors[rut] = {
+                "rut": rut,
+                "nombre": r["razon_social_emisor"],
+                "total": 0,
+                "monto_calculado": 0,
+                "count": 0,
+                "count_suma": 0,
+                "count_resta": 0,
+            }
+        vendors[rut]["total"] += abs(_signed_int(r.get("monto_total")))
+        vendors[rut]["monto_calculado"] += _signed_int(r.get("monto_calculado"))
         vendors[rut]["count"] += 1
+        if r.get("es_suma", True):
+            vendors[rut]["count_suma"] += 1
+        else:
+            vendors[rut]["count_resta"] += 1
     
     result = []
     for v in sorted(vendors.values(), key=lambda x: abs(x["monto_calculado"]), reverse=True):
@@ -454,6 +564,7 @@ async def get_top_customers(
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
+    periodo = _normalize_period(periodo)
     cache_key = f"customers_{organization_id}_{periodo}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -483,9 +594,23 @@ async def get_top_customers(
     customers = {}
     for r in data:
         rut = r["rut_receptor"]
-        if rut not in customers: customers[rut] = {"rut": rut, "nombre": r["razon_social_receptor"], "monto_calculado": 0, "count": 0}
-        customers[rut]["monto_calculado"] += r.get("monto_calculado", 0)
+        if rut not in customers:
+            customers[rut] = {
+                "rut": rut,
+                "nombre": r["razon_social_receptor"],
+                "total": 0,
+                "monto_calculado": 0,
+                "count": 0,
+                "count_suma": 0,
+                "count_resta": 0,
+            }
+        customers[rut]["total"] += abs(_signed_int(r.get("monto_total")))
+        customers[rut]["monto_calculado"] += _signed_int(r.get("monto_calculado"))
         customers[rut]["count"] += 1
+        if r.get("es_suma", True):
+            customers[rut]["count_suma"] += 1
+        else:
+            customers[rut]["count_resta"] += 1
     
     result = []
     for c in sorted(customers.values(), key=lambda x: abs(x["monto_calculado"]), reverse=True):
@@ -502,6 +627,7 @@ async def get_rcv_summary(
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
+    periodo = _normalize_period(periodo)
     cache_key = f"summary_{organization_id}_{periodo}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
@@ -561,15 +687,95 @@ async def get_rcv_summary(
         "total_docs_ventas": len(sales),
         "monto_compras": total_purch,
         "monto_ventas": total_sales,
+        "volumen_compras": total_purch,
+        "volumen_ventas": total_sales,
         "monto_calculado_compras": mc_purch,
         "monto_calculado_ventas": mc_sales,
+        "base_neta_compras": mc_purch,
+        "base_neta_ventas": mc_sales,
         "proveedores_unicos": unique_vendors,
         "clientes_unicos": unique_customers,
-        "balance": mc_sales - abs(mc_purch),
+        "balance": mc_sales - mc_purch,
+        "balance_neto": mc_sales - mc_purch,
         "is_global": periodo is None
     }
     _set_rcv_cache(cache_key, result)
     return result
+
+@router.get("/history")
+async def get_rcv_history(
+    organization_id: str,
+    limit: int = 30,
+    current_user: dict = Depends(verify_token)
+):
+    """
+    Historial de lotes RCV, incluyendo cargas vacias y estado de centralizacion.
+    """
+    await verify_org_role(organization_id, auth=current_user)
+
+    if not os.getenv("DATABASE_URL"):
+        return _history_from_supabase(get_supabase(), organization_id, limit)
+
+    conn = get_pg_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                WITH docs AS (
+                  SELECT
+                    id,
+                    organization_id,
+                    import_id,
+                    'purchases'::text AS tipo,
+                    monto_total,
+                    monto_calculado,
+                    journal_entry_id
+                  FROM public.purchase_records
+                  WHERE organization_id = %s
+                  UNION ALL
+                  SELECT
+                    id,
+                    organization_id,
+                    import_id,
+                    'sales'::text AS tipo,
+                    monto_total,
+                    monto_calculado,
+                    journal_entry_id
+                  FROM public.sales_records
+                  WHERE organization_id = %s
+                )
+                SELECT
+                  ri.id::text,
+                  ri.periodo::text,
+                  ri.tipo,
+                  ri.file_name,
+                  ri.total_docs,
+                  ri.failed_docs,
+                  ri.created_at::text,
+                  COALESCE(COUNT(d.id), 0)::int AS docs_fisicos,
+                  COALESCE(SUM(ABS(COALESCE(d.monto_total, 0))), 0)::bigint AS monto_total,
+                  COALESCE(SUM(COALESCE(d.monto_calculado, 0)), 0)::bigint AS monto_calculado,
+                  COALESCE(COUNT(d.id) FILTER (WHERE d.journal_entry_id IS NOT NULL), 0)::int AS docs_con_asiento,
+                  COALESCE(COUNT(d.id) FILTER (
+                    WHERE d.journal_entry_id IS NULL
+                      AND COALESCE(d.monto_total, 0) <> 0
+                  ), 0)::int AS docs_sin_asiento,
+                  (COALESCE(COUNT(d.id), 0) = 0 AND COALESCE(ri.total_docs, 0) = 0)::boolean AS lote_vacio
+                FROM public.rcv_imports ri
+                LEFT JOIN docs d
+                  ON d.import_id = ri.id
+                 AND d.tipo = ri.tipo
+                WHERE ri.organization_id = %s
+                GROUP BY ri.id
+                ORDER BY ri.periodo DESC, ri.created_at DESC
+                LIMIT %s
+                """,
+                (organization_id, organization_id, organization_id, limit),
+            )
+            cols = [desc[0] for desc in cur.description]
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+    finally:
+        conn.close()
 
 @router.get("/periodos")
 async def get_available_periods(
@@ -583,6 +789,9 @@ async def get_available_periods(
     await verify_org_role(organization_id, auth=current_user)
     
     try:
+        if not os.getenv("DATABASE_URL"):
+            raise RuntimeError("DATABASE_URL not configured; using Supabase fallback")
+
         conn = get_pg_connection()
         try:
             with conn.cursor() as cur:
@@ -604,7 +813,8 @@ async def get_available_periods(
         finally:
             conn.close()
     except Exception as e:
-        print(f"[RCV_CONFIG] Error obteniendo periodos mediante PG SQL direct: {e}")
+        if os.getenv("DATABASE_URL"):
+            print(f"[RCV_CONFIG] Error obteniendo periodos mediante PG SQL direct: {e}")
         # Fallback por si hay algún problema con la conexión de base de datos
         db = get_supabase()
         p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).limit(10000).execute()
