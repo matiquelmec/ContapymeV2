@@ -215,6 +215,43 @@ def _history_from_supabase(db, organization_id: str, limit: int) -> List[Dict[st
 
     return history
 
+def _fetch_all_org_rows(db, table: str, select_cols: str, organization_id: str, page_size: int = 1000) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    start = 0
+
+    while True:
+        end = start + page_size - 1
+        res = db.table(table) \
+            .select(select_cols) \
+            .eq("organization_id", organization_id) \
+            .range(start, end) \
+            .execute()
+        batch = res.data or []
+        rows.extend(batch)
+        if len(batch) < page_size:
+            break
+        start += page_size
+
+    return rows
+
+def _fetch_rcv_records(
+    db,
+    table: str,
+    select_cols: str,
+    organization_id: str,
+    periodo: Optional[str],
+    imp_ids: List[str],
+) -> List[Dict[str, Any]]:
+    if not periodo:
+        return _fetch_all_org_rows(db, table, select_cols, organization_id)
+
+    query = db.table(table).select(select_cols).eq("organization_id", organization_id)
+    if imp_ids:
+        query = query.or_(f"periodo.eq.{periodo},import_id.in.({','.join(imp_ids)})")
+    else:
+        query = query.eq("periodo", periodo)
+    return query.limit(10000).execute().data or []
+
 @router.post("/import-purchases")
 async def import_purchases(
     organization_id: str, 
@@ -525,6 +562,13 @@ async def get_top_vendors(
         
     res = query.execute()
     data = res.data or []
+    if not periodo:
+        data = _fetch_all_org_rows(
+            db,
+            "purchase_records",
+            "rut_emisor, razon_social_emisor, monto_total, monto_calculado, es_suma",
+            organization_id,
+        )
     
     total_calc_global = sum(abs(r.get("monto_calculado", 0)) for r in data)
     vendors = {}
@@ -589,6 +633,13 @@ async def get_top_customers(
         
     res = query.execute()
     data = res.data or []
+    if not periodo:
+        data = _fetch_all_org_rows(
+            db,
+            "sales_records",
+            "rut_receptor, razon_social_receptor, monto_total, monto_calculado, es_suma",
+            organization_id,
+        )
     
     total_calc_global = sum(abs(r.get("monto_calculado", 0)) for r in data)
     customers = {}
@@ -652,6 +703,13 @@ async def get_rcv_summary(
         
     p_res = pq.execute()
     purchases = p_res.data or []
+    if not periodo:
+        purchases = _fetch_all_org_rows(
+            db,
+            "purchase_records",
+            "monto_total, monto_calculado, rut_emisor",
+            organization_id,
+        )
     
     # 3. Obtener Ventas
     sq = db.table("sales_records").select("monto_total, monto_calculado, rut_receptor").eq("organization_id", organization_id)
@@ -665,6 +723,13 @@ async def get_rcv_summary(
         
     s_res = sq.execute()
     sales = s_res.data or []
+    if not periodo:
+        sales = _fetch_all_org_rows(
+            db,
+            "sales_records",
+            "monto_total, monto_calculado, rut_receptor",
+            organization_id,
+        )
     
     # Debug para el desarrollador
     print(f"DEBUG Analysis: Org={organization_id}, Periodo={periodo}, Purchases={len(purchases)}, Sales={len(sales)}")
@@ -817,11 +882,11 @@ async def get_available_periods(
             print(f"[RCV_CONFIG] Error obteniendo periodos mediante PG SQL direct: {e}")
         # Fallback por si hay algún problema con la conexión de base de datos
         db = get_supabase()
-        p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).limit(10000).execute()
-        s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).limit(10000).execute()
+        purchase_periods = _fetch_all_org_rows(db, "purchase_records", "periodo", organization_id)
+        sales_periods = _fetch_all_org_rows(db, "sales_records", "periodo", organization_id)
         
-        p_data = list(set([r["periodo"] for r in (p_res.data or []) if r.get("periodo")]))
-        s_data = list(set([r["periodo"] for r in (s_res.data or []) if r.get("periodo")]))
+        p_data = list(set([r["periodo"] for r in purchase_periods if r.get("periodo")]))
+        s_data = list(set([r["periodo"] for r in sales_periods if r.get("periodo")]))
         
         periods = sorted(list(set(p_data + s_data)), reverse=True)
         return periods
