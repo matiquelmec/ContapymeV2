@@ -7,13 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Truck, Users, TrendingUp, TrendingDown, BarChart3,
-  Activity, FolderOpen, Download, ChevronUp, ChevronDown, Loader2, ShieldCheck
+  Activity, FolderOpen, Download, ChevronUp, ChevronDown, Loader2, ShieldCheck,
+  Search, X, Calendar
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getRCVDashboardData } from "@/actions/rcv";
 import { generateAccountingFromRCV } from "@/actions/accounting";
 import { formatCLP, formatPeriodo } from "@/lib/rcv-utils";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 // Carga dinámica de gráficos para evitar bloqueo de hidratación (SSR: False)
 const AnalysisBarChart = dynamic(() => import("./rcv-charts").then(mod => mod.AnalysisBarChart), { 
@@ -175,6 +183,16 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
   const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
+  const [filterQuery, setFilterQuery] = useState("");
+
+  const filteredPeriodos = useMemo(() => {
+    if (!filterQuery) return state.periodos;
+    const q = filterQuery.toLowerCase().trim();
+    return state.periodos.filter((p) => {
+      const formatted = formatPeriodo(p).toLowerCase();
+      return formatted.includes(q) || p.includes(q);
+    });
+  }, [state.periodos, filterQuery]);
 
     const [isCentralizing, setIsCentralizing] = useState(false);
   
@@ -292,7 +310,7 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
       
       {/* ---- SELECTOR DE PERÍODO ---- */}
       {state.periodos.length > 0 && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-6 rounded-[2.5rem] border border-border shadow-2xl" suppressHydrationWarning>
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-card p-6 rounded-[2.5rem] border border-border shadow-2xl" suppressHydrationWarning>
           <div className="flex items-center gap-4" suppressHydrationWarning>
               <div className="p-3 bg-muted/50 rounded-2xl border border-border shadow-sm relative" suppressHydrationWarning>
                  {isLoading ? (
@@ -310,31 +328,72 @@ export function RCVAnalysisClient({ organizationId, initialData }: RCVAnalysisPr
                  </span>
               </div>
           </div>
-          <div className="flex gap-2 p-2 bg-muted/30 rounded-[2rem] border border-border overflow-x-auto" suppressHydrationWarning>
-            <button
-              onClick={() => setSelectedPeriodo("")}
-              className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                selectedPeriodo === ""
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100"
-                  : "bg-transparent text-muted-foreground hover:bg-white hover:text-foreground"
-              }`}
-            >
-              VISIÓN GLOBAL
-            </button>
-            {state.periodos.map((p) => (
+          
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 p-2 bg-muted/30 rounded-[2rem] border border-border" suppressHydrationWarning>
+            {/* Buscador inteligente */}
+            <div className="relative flex items-center bg-card rounded-2xl border border-border px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all h-10 w-full sm:w-44 md:w-52 shadow-sm" suppressHydrationWarning>
+              <Search className="w-3.5 h-3.5 text-muted-foreground mr-2 shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar mes o año..."
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-wider placeholder:text-muted-foreground/80 w-full text-foreground"
+              />
+              {filterQuery && (
+                <button onClick={() => setFilterQuery("")} className="hover:text-foreground text-muted-foreground shrink-0 ml-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown de períodos */}
+            <div className="w-full sm:w-auto shrink-0" suppressHydrationWarning>
+              <Select value={selectedPeriodo || "all"} onValueChange={(val) => setSelectedPeriodo(val === "all" || !val ? "" : val)}>
+                <SelectTrigger className="w-full sm:w-[200px] h-10 bg-card rounded-2xl font-black border border-border hover:border-primary/50 text-[10px] uppercase tracking-widest px-4 shadow-sm hover:scale-[1.01] transition-all">
+                  <SelectValue placeholder="Otros periodos..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border border-border shadow-2xl max-h-[250px] overflow-y-auto">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase tracking-wider rounded-xl">
+                    VISIÓN GLOBAL
+                  </SelectItem>
+                  {filteredPeriodos.map((p) => (
+                    <SelectItem key={p} value={p} className="text-[10px] font-black uppercase tracking-wider rounded-xl">
+                      {formatPeriodo(p)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Accesos directos rápidos (últimos 4 periodos coincidentes) */}
+            <div className="flex gap-2 items-center overflow-x-auto w-full sm:w-auto" suppressHydrationWarning>
+              <div className="h-6 w-px bg-border hidden sm:block mx-1" />
               <button
-                key={p}
-                onClick={() => setSelectedPeriodo(p)}
-                className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  selectedPeriodo === p
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100"
-                    : "bg-transparent text-muted-foreground hover:bg-white hover:text-foreground"
+                onClick={() => setSelectedPeriodo("")}
+                className={`px-5 py-2 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                  selectedPeriodo === ""
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100 font-bold"
+                    : "bg-transparent text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border"
                 }`}
-                suppressHydrationWarning
               >
-                {formatPeriodo(p)}
+                GLOBAL
               </button>
-            ))}
+              {filteredPeriodos.slice(0, 4).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setSelectedPeriodo(p)}
+                  className={`px-5 py-2 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                    selectedPeriodo === p
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100 font-bold"
+                      : "bg-transparent text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border"
+                  }`}
+                  suppressHydrationWarning
+                >
+                  {formatPeriodo(p)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
