@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from core.database import get_supabase
+from core.database import get_supabase, get_pg_connection
 from core.auth import verify_token, verify_org_role
 from core.payroll_status import closed_liquidation_statuses
 from core.logger import log_activity
@@ -767,71 +767,75 @@ async def get_trial_balance(
         details={"start_date": start_date, "end_date": end_date}
     )
     
-    db = get_supabase()
     try:
-        # 1. Obtener TODO el Plan de Cuentas para asegurar integridad
-        acc_res = db.table("chart_of_accounts") \
-            .select("codigo, nombre, naturaleza, tipo") \
-            .eq("organization_id", organization_id) \
-            .execute()
+        conn = get_pg_connection()
+        cur = conn.cursor()
         
-        catalog = {a["codigo"]: a for a in acc_res.data}
+        # 1. Obtener TODO el Plan de Cuentas para asegurar integridad
+        cur.execute("""
+            SELECT codigo, nombre, naturaleza, tipo
+            FROM public.chart_of_accounts
+            WHERE organization_id = %s;
+        """, (organization_id,))
+        accounts = cur.fetchall()
+        
         accounts_data: Dict[str, Dict[str, Any]] = {}
-
-        # Inicializar catálogo
-        for code, info in catalog.items():
+        for row in accounts:
+            code = row[0]
             accounts_data[code] = {
                 "codigo": code,
-                "nombre": info["nombre"],
-                "naturaleza": info["naturaleza"].lower(),
+                "nombre": row[1],
+                "naturaleza": row[2].lower() if row[2] else "deudora",
                 "saldo_anterior": 0,
                 "debe": 0,
                 "haber": 0,
                 "saldo_deudor": 0,
                 "saldo_acreedor": 0
             }
-
-        # 2. CÁLCULO DE SALDO ANTERIOR (Optimizado: Omitimos organization_id en select de relación)
-        prev_res = db.table("journal_entry_lines") \
-            .select("chart_of_accounts(codigo), monto, tipo, journal_entries!inner(fecha)") \
-            .eq("journal_entries.organization_id", organization_id) \
-            .lt("journal_entries.fecha", start_date) \
-            .execute()
-        
-        for m in (prev_res.data or []):
-            coa = m.get("chart_of_accounts")
-            if not coa: continue
-            code = coa.get("codigo")
-            if code not in accounts_data: continue
             
-            monto = int(m["monto"])
+        # 2. CÁLCULO DE SALDO ANTERIOR (Evitamos límite de 1000 filas de PostgREST usando Raw SQL)
+        cur.execute("""
+            SELECT coa.codigo, jel.monto, jel.tipo
+            FROM public.journal_entry_lines jel
+            JOIN public.journal_entries je ON jel.entry_id = je.id
+            JOIN public.chart_of_accounts coa ON jel.account_id = coa.id
+            WHERE je.organization_id = %s AND je.fecha < %s;
+        """, (organization_id, start_date))
+        prev_lines = cur.fetchall()
+        
+        for code, monto_val, tipo in prev_lines:
+            if code not in accounts_data:
+                continue
+            monto = int(monto_val)
             nature = accounts_data[code]["naturaleza"]
             
-            if (m["tipo"] == "debe" and nature == "deudora") or (m["tipo"] == "haber" and nature == "acreedora"):
+            if (tipo == "debe" and nature == "deudora") or (tipo == "haber" and nature == "acreedora"):
                 accounts_data[code]["saldo_anterior"] += monto
             else:
                 accounts_data[code]["saldo_anterior"] -= monto
-
-        # 3. MOVIMIENTOS DEL PERIODO (Optimizado: Omitimos organization_id en select de relación)
-        period_res = db.table("journal_entry_lines") \
-            .select("chart_of_accounts(codigo), monto, tipo, journal_entries!inner(fecha)") \
-            .eq("journal_entries.organization_id", organization_id) \
-            .gte("journal_entries.fecha", start_date) \
-            .lte("journal_entries.fecha", end_date) \
-            .execute()
+                
+        # 3. MOVIMIENTOS DEL PERIODO (Evitamos límite de 1000 filas de PostgREST usando Raw SQL)
+        cur.execute("""
+            SELECT coa.codigo, jel.monto, jel.tipo
+            FROM public.journal_entry_lines jel
+            JOIN public.journal_entries je ON jel.entry_id = je.id
+            JOIN public.chart_of_accounts coa ON jel.account_id = coa.id
+            WHERE je.organization_id = %s AND je.fecha >= %s AND je.fecha <= %s;
+        """, (organization_id, start_date, end_date))
+        period_lines = cur.fetchall()
         
-        for m in (period_res.data or []):
-            coa = m.get("chart_of_accounts")
-            if not coa: continue
-            code = coa.get("codigo")
-            if code not in accounts_data: continue
-            
-            monto = int(m["monto"])
-            if m["tipo"] == "debe":
+        for code, monto_val, tipo in period_lines:
+            if code not in accounts_data:
+                continue
+            monto = int(monto_val)
+            if tipo == "debe":
                 accounts_data[code]["debe"] += monto
             else:
                 accounts_data[code]["haber"] += monto
-
+                
+        cur.close()
+        conn.close()
+        
         # 4. CONSOLIDACIÓN FINAL
         result = []
         for code in sorted(accounts_data.keys()):
@@ -876,52 +880,72 @@ async def get_ledger(
         details={"account_code": account_code, "start_date": start_date, "end_date": end_date}
     )
     
-    db = get_supabase()
     account_code = account_code.strip()
-    
     print(f"[AUDITORÍA] Solicitando Mayor para cuenta: {account_code} en Org: {organization_id}")
     
     try:
+        conn = get_pg_connection()
+        cur = conn.cursor()
+        
         # 1. Info de la cuenta
-        acc_res = db.table("chart_of_accounts").select("nombre, naturaleza").eq("organization_id", organization_id).eq("codigo", account_code).execute()
-        if not acc_res.data: 
+        cur.execute("""
+            SELECT nombre, naturaleza 
+            FROM public.chart_of_accounts 
+            WHERE organization_id = %s AND codigo = %s;
+        """, (organization_id, account_code))
+        acc_info = cur.fetchone()
+        if not acc_info: 
             print(f"[AUDITORÍA] ! Cuenta {account_code} no encontrada.")
+            cur.close()
+            conn.close()
             return None
             
-        info = acc_res.data[0]
-        nature = info.get("naturaleza", "deudora").lower()
+        name, naturaleza = acc_info
+        nature = naturaleza.lower() if naturaleza else "deudora"
 
         # 2. CÁLCULO DE SALDO ANTERIOR (Auditoría Histórica)
         saldo_inicial = 0
         if start_date and start_date.strip():
-            prev_query = db.table("journal_entry_lines") \
-                .select("monto, tipo, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, organization_id)") \
-                .eq("chart_of_accounts.codigo", account_code) \
-                .eq("journal_entries.organization_id", organization_id) \
-                .lt("journal_entries.fecha", start_date) \
-                .execute()
+            cur.execute("""
+                SELECT jel.monto, jel.tipo
+                FROM public.journal_entry_lines jel
+                JOIN public.journal_entries je ON jel.entry_id = je.id
+                JOIN public.chart_of_accounts coa ON jel.account_id = coa.id
+                WHERE coa.codigo = %s AND je.organization_id = %s AND je.fecha < %s;
+            """, (account_code, organization_id, start_date))
+            prev_lines = cur.fetchall()
             
-            for m in (prev_query.data or []):
-                monto = int(m.get("monto", 0))
-                # Si es Deudora: Debe suma, Haber resta. Si es Acreedora: Haber suma, Debe resta.
-                es_suma = (m.get("tipo") == "debe" and nature == "deudora") or (m.get("tipo") == "haber" and nature == "acreedora")
+            for monto_val, tipo in prev_lines:
+                monto = int(monto_val)
+                es_suma = (tipo == "debe" and nature == "deudora") or (tipo == "haber" and nature == "acreedora")
                 saldo_inicial += monto if es_suma else -monto
 
         # 3. Obtener movimientos del periodo actual
-        query = db.table("journal_entry_lines") \
-            .select("*, chart_of_accounts!inner(codigo), journal_entries!inner(fecha, glosa, organization_id, event_id, accounting_events(event_type))") \
-            .eq("chart_of_accounts.codigo", account_code) \
-            .eq("journal_entries.organization_id", organization_id)
-        
+        query = """
+            SELECT 
+                jel.id, jel.entry_id, jel.tipo, jel.monto, je.fecha, je.glosa, ae.event_type
+            FROM public.journal_entry_lines jel
+            JOIN public.journal_entries je ON jel.entry_id = je.id
+            JOIN public.chart_of_accounts coa ON jel.account_id = coa.id
+            LEFT JOIN public.accounting_events ae ON je.event_id = ae.id
+            WHERE coa.codigo = %s AND je.organization_id = %s
+        """
+        params = [account_code, organization_id]
         if start_date and start_date.strip():
-            query = query.gte("journal_entries.fecha", start_date)
+            query += " AND je.fecha >= %s"
+            params.append(start_date)
         if end_date and end_date.strip():
-            query = query.lte("journal_entries.fecha", end_date)
+            query += " AND je.fecha <= %s"
+            params.append(end_date)
             
-        res = query.order("fecha", foreign_table="journal_entries", desc=False).execute()
-        raw_moves = res.data or []
+        query += " ORDER BY je.fecha ASC, jel.created_at ASC;"
+        cur.execute(query, params)
+        rows = cur.fetchall()
         
-        print(f"[AUDITORÍA] ✅ Se encontraron {len(raw_moves)} movimientos + Saldo Anterior de ${saldo_inicial}")
+        cur.close()
+        conn.close()
+        
+        print(f"[AUDITORÍA] ✅ Se encontraron {len(rows)} movimientos + Saldo Anterior de ${saldo_inicial}")
 
         # 4. Procesar movimientos y calcular saldo acumulado
         movements = []
@@ -929,14 +953,12 @@ async def get_ledger(
         total_debe = 0
         total_haber = 0
 
-        for m in raw_moves:
-            je = m.get("journal_entries")
-            if isinstance(je, list) and je: je = je[0]
-            if not je: continue
+        for r in rows:
+            jel_id, entry_id, tipo, monto_val, fecha, glosa, event_type = r
             
-            monto = int(m.get("monto", 0))
-            debe = monto if m.get("tipo") == "debe" else 0
-            haber = 0 if m.get("tipo") == "debe" else monto
+            monto = int(monto_val)
+            debe = monto if tipo == "debe" else 0
+            haber = 0 if tipo == "debe" else monto
             
             total_debe += debe
             total_haber += haber
@@ -946,24 +968,21 @@ async def get_ledger(
             else:
                 saldo_acumulado += (haber - debe)
                 
-            ae = je.get("accounting_events")
-            if isinstance(ae, list) and ae:
-                ae = ae[0]
-            event_type = ae.get("event_type") if ae else None
-
+            fecha_str = fecha.isoformat() if hasattr(fecha, 'isoformat') else str(fecha)
+            
             movements.append({
-                "fecha": je.get("fecha"),
-                "glosa": je.get("glosa", "S/G"),
-                "numero_asiento": str(m.get("entry_id") or m.get("journal_entry_id") or "")[:8].upper() if (m.get("entry_id") or m.get("journal_entry_id")) else "S/N",
+                "fecha": fecha_str,
+                "glosa": glosa or "S/G",
+                "numero_asiento": str(entry_id)[:8].upper() if entry_id else "S/N",
                 "source_type": event_type,
                 "debe": debe,
                 "haber": haber,
                 "saldo": saldo_acumulado
             })
-
+            
         return {
             "account_code": account_code,
-            "account_name": info["nombre"],
+            "account_name": name,
             "naturaleza": nature,
             "saldo_anterior": saldo_inicial,
             "movements": movements,

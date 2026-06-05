@@ -4,8 +4,14 @@ import { JournalClient } from './journal-client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-export default async function JournalPage() {
+export default async function JournalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ periodo?: string }> | { periodo?: string }
+}) {
   const supabase = await createClient()
+  const resolvedParams = await searchParams
+  const selectedPeriodo = resolvedParams?.periodo || ""
 
   // 1. Obtener organización activa real
   const { getActiveOrganizationId } = await import('@/actions/organizations')
@@ -15,8 +21,19 @@ export default async function JournalPage() {
     return <div className="p-8 text-center text-muted-foreground font-medium italic underline decoration-primary/30 underline-offset-8">Seleccione una empresa en el encabezado para ver el Libro Diario.</div>
   }
 
-  // 2. Obtener asientos contables desde la VISTA ENRIQUECIDA (calcula el total en DB)
-  const { data: entries, error } = await supabase
+  // 2. Obtener periodos únicos con asientos para la organización
+  const { data: rawDates } = await supabase
+    .from('journal_entries')
+    .select('fecha')
+    .eq('organization_id', activeOrgId)
+    .order('fecha', { ascending: false })
+
+  const availablePeriods = Array.from(
+    new Set((rawDates || []).map((d: any) => d.fecha ? d.fecha.slice(0, 7) : ''))
+  ).filter(p => p !== '') as string[]
+
+  // 3. Obtener asientos contables desde la VISTA ENRIQUECIDA (con o sin filtro de periodo)
+  let query = supabase
     .from('journal_entries_enriched')
     .select(`
       id,
@@ -27,11 +44,24 @@ export default async function JournalPage() {
     `)
     .eq('organization_id', activeOrgId)
     .order('fecha', { ascending: false })
-    .limit(100)
+
+  if (selectedPeriodo && selectedPeriodo !== 'all') {
+    const start = `${selectedPeriodo}-01`
+    const [year, month] = selectedPeriodo.split('-')
+    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate()
+    const end = `${selectedPeriodo}-${String(lastDay).padStart(2, '0')}`
+    query = query.gte('fecha', start).lte('fecha', end)
+  } else {
+    query = query.limit(100)
+  }
+
+  const { data: entries, error } = await query
 
   if (error) {
     console.error("Error fetching journal entries from enriched view:", error)
   }
+
+  console.log("FECHAS DE ASIENTOS EN SERVER COMPONENT:", (entries || []).slice(0, 5).map(e => ({ id: e.id, fecha: e.fecha })))
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-10" suppressHydrationWarning={true}>
@@ -66,7 +96,12 @@ export default async function JournalPage() {
 
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" suppressHydrationWarning={true} />
 
-      <JournalClient key={activeOrgId} entries={entries || []} />
+      <JournalClient 
+        key={activeOrgId} 
+        entries={entries || []} 
+        availablePeriods={availablePeriods}
+        selectedPeriodo={selectedPeriodo}
+      />
     </div>
   )
 }

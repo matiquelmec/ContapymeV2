@@ -30,3 +30,15 @@ def get_supabase() -> Client:
         _supabase_client = create_client(url, key)
 
     return _supabase_client
+
+
+def get_pg_connection():
+    """
+    Devuelve una conexión de psycopg2 directa a la base de datos PostgreSQL,
+    reutilizando DATABASE_URL del entorno. Útil para evadir el límite de 1000 filas de PostgREST.
+    """
+    import psycopg2
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError("DATABASE_URL no está definida en el entorno (.env).")
+    return psycopg2.connect(db_url)
