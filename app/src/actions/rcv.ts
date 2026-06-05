@@ -113,7 +113,7 @@ export async function getRCVSummary(organizationId: string, periodo?: string) {
 export async function getAvailablePeriodos(organizationId: string) {
   try {
     const response = await engineFetch(
-      `/api/v1/rcv/periodos?organization_id=${organizationId}`,
+      `/api/v1/rcv/periodos?organization_id=${organizationId}&_t=${Date.now()}`,
       { cache: 'no-store' }
     )
     if (!response.ok) return []
