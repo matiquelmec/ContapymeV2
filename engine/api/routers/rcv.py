@@ -607,8 +607,8 @@ async def get_available_periods(
         print(f"[RCV_CONFIG] Error obteniendo periodos mediante PG SQL direct: {e}")
         # Fallback por si hay algún problema con la conexión de base de datos
         db = get_supabase()
-        p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).execute()
-        s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).execute()
+        p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).limit(10000).execute()
+        s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).limit(10000).execute()
         
         p_data = list(set([r["periodo"] for r in (p_res.data or []) if r.get("periodo")]))
         s_data = list(set([r["periodo"] for r in (s_res.data or []) if r.get("periodo")]))
