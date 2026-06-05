@@ -3,7 +3,7 @@ import time
 import uuid
 from io import StringIO
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, BackgroundTasks
-from core.database import get_supabase
+from core.database import get_supabase, get_pg_connection
 from core.auth import verify_token, verify_org_role
 from core.logger import log_activity, log_system_error
 from typing import Optional, List, Dict, Any
@@ -581,16 +581,37 @@ async def get_available_periods(
     Filtra periodos 'fantasma' que solo existen en la bitácora de importación.
     """
     await verify_org_role(organization_id, auth=current_user)
-    db = get_supabase()
-    p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).execute()
-    s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).execute()
     
-    # Extraemos periodos únicos de las tablas de documentos reales
-    p_data = list(set([r["periodo"] for r in (p_res.data or []) if r.get("periodo")]))
-    s_data = list(set([r["periodo"] for r in (s_res.data or []) if r.get("periodo")]))
-    
-    # Unificamos y ordenamos
-    periods = sorted(list(set(p_data + s_data)), reverse=True)
-    
-    print(f"[RCV_CONFIG] Periodos reales encontrados para {organization_id}: {len(periods)}")
-    return periods
+    try:
+        conn = get_pg_connection()
+        try:
+            with conn.cursor() as cur:
+                query = """
+                    SELECT DISTINCT periodo FROM (
+                        SELECT periodo FROM public.purchase_records WHERE organization_id = %s
+                        UNION
+                        SELECT periodo FROM public.sales_records WHERE organization_id = %s
+                    ) AS combined_periods
+                    WHERE periodo IS NOT NULL
+                    ORDER BY periodo DESC;
+                """
+                cur.execute(query, (organization_id, organization_id))
+                rows = cur.fetchall()
+                periods = [row[0] for row in rows]
+                
+                print(f"[RCV_CONFIG] Periodos reales encontrados para {organization_id} (SQL): {len(periods)}")
+                return periods
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"[RCV_CONFIG] Error obteniendo periodos mediante PG SQL direct: {e}")
+        # Fallback por si hay algún problema con la conexión de base de datos
+        db = get_supabase()
+        p_res = db.table("purchase_records").select("periodo").eq("organization_id", organization_id).execute()
+        s_res = db.table("sales_records").select("periodo").eq("organization_id", organization_id).execute()
+        
+        p_data = list(set([r["periodo"] for r in (p_res.data or []) if r.get("periodo")]))
+        s_data = list(set([r["periodo"] for r in (s_res.data or []) if r.get("periodo")]))
+        
+        periods = sorted(list(set(p_data + s_data)), reverse=True)
+        return periods
