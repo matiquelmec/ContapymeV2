@@ -24,6 +24,8 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: DATABASE_URL
+        sync: false
       - key: SUPABASE_URL
         sync: false  # Se configura manualmente en el dashboard
       - key: SUPABASE_SERVICE_KEY

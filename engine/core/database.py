@@ -5,8 +5,13 @@ Usa service_role key para operaciones administrativas (bypasa RLS).
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Cargar .env buscando de forma robusta en la raíz del proyecto
+ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env")
+load_dotenv()  # Fallback
+
 
 _supabase_client: Client | None = None
 
