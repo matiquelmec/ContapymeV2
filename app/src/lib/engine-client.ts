@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || "http://localhost:8000";
+const ENGINE_URL = process.env.ENGINE_URL || process.env.NEXT_PUBLIC_ENGINE_URL || "http://localhost:8000";
 
 /**
  * Cliente de red para el Motor Python (Engine).
