@@ -174,14 +174,14 @@ export async function getTreasuryDashboardData(organizationId: string | null): P
       .from("v_cuentas_por_pagar")
       .select("id, folio, rut_emisor, razon_social_emisor, fecha_docto, monto_total, monto_pagado, monto_pendiente, payment_status")
       .eq("organization_id", organizationId)
-      .order("fecha_docto", { ascending: true })
-      .limit(80),
+      .order("fecha_docto", { ascending: false })
+      .limit(500),
     supabase
       .from("v_cuentas_por_cobrar")
       .select("id, folio, rut_receptor, razon_social_receptor, fecha_docto, monto_total, monto_cobrado, monto_pendiente, payment_status")
       .eq("organization_id", organizationId)
-      .order("fecha_docto", { ascending: true })
-      .limit(80),
+      .order("fecha_docto", { ascending: false })
+      .limit(500),
     supabase
       .from("treasury_payments")
       .select("id, tipo, monto, fecha_pago, referencia, notas, journal_entry_id, created_at, payment_methods(nombre, tipo)")
