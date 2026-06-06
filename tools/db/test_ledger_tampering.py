@@ -5,8 +5,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "scratch"))
-from apply_migration_19 import _connect
+
+def _connect(db_url: str):
+    import psycopg2
+    return psycopg2.connect(db_url)
 
 def calculate_python_hash(row) -> str:
     """Calcula el hash de integridad en Python idéntico a PostgreSQL."""

@@ -56,10 +56,11 @@ export async function importRCVAction(
 export async function getTopVendors(
   organizationId: string,
   periodo?: string,
+  year?: number,
   limit: number = 10
 ) {
   try {
-    const url = `/api/v1/rcv/analysis/top-vendors?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
+    const url = `/api/v1/rcv/analysis/top-vendors?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}${year ? `&year=${year}` : ''}&_t=${Date.now()}`
     
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
@@ -74,10 +75,11 @@ export async function getTopVendors(
 export async function getTopCustomers(
   organizationId: string,
   periodo?: string,
+  year?: number,
   limit: number = 10
 ) {
   try {
-    const url = `/api/v1/rcv/analysis/top-customers?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
+    const url = `/api/v1/rcv/analysis/top-customers?organization_id=${organizationId}&limit=${limit}${periodo ? `&periodo=${periodo}` : ''}${year ? `&year=${year}` : ''}&_t=${Date.now()}`
 
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return []
@@ -93,9 +95,9 @@ export async function getTopCustomers(
 // ==========================================
 
 /** KPIs del período: montos compras/ventas, proveedores/clientes únicos, balance */
-export async function getRCVSummary(organizationId: string, periodo?: string) {
+export async function getRCVSummary(organizationId: string, periodo?: string, year?: number) {
   try {
-    const url = `/api/v1/rcv/analysis/summary?organization_id=${organizationId}${periodo ? `&periodo=${periodo}` : ''}&_t=${Date.now()}`
+    const url = `/api/v1/rcv/analysis/summary?organization_id=${organizationId}${periodo ? `&periodo=${periodo}` : ''}${year ? `&year=${year}` : ''}&_t=${Date.now()}`
 
     const response = await engineFetch(url, { cache: 'no-store' })
     if (!response.ok) return null
@@ -144,12 +146,13 @@ export async function getRCVHistory(organizationId: string, limit: number = 30) 
 // CONSOLIDADO (PARA RENDIMIENTO)
 // ==========================================
 
-export async function getRCVDashboardData(organizationId: string, periodo?: string) {
+export async function getRCVDashboardData(organizationId: string, periodo?: string, year?: number) {
   try {
+    const activePeriodo = year ? undefined : periodo;
     const [vendors, customers, summary, periods] = await Promise.all([
-      getTopVendors(organizationId, periodo),
-      getTopCustomers(organizationId, periodo),
-      getRCVSummary(organizationId, periodo),
+      getTopVendors(organizationId, activePeriodo, year),
+      getTopCustomers(organizationId, activePeriodo, year),
+      getRCVSummary(organizationId, activePeriodo, year),
       getAvailablePeriodos(organizationId)
     ]);
 

@@ -173,11 +173,13 @@ interface RCVAnalysisProps {
     periods: string[];
   }
   initialSelectedPeriodo?: string;
+  initialSelectedYear?: string;
 }
 
-export function RCVAnalysisClient({ organizationId, initialData, initialSelectedPeriodo = "" }: RCVAnalysisProps) {
+export function RCVAnalysisClient({ organizationId, initialData, initialSelectedPeriodo = "", initialSelectedYear = "" }: RCVAnalysisProps) {
   // El periodo inicial puede venir desde el historial (?periodo=YYYY-MM-01).
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>(initialSelectedPeriodo);
+  const [selectedYear, setSelectedYear] = useState<string>(initialSelectedYear);
   const [state, setState] = useState<DashboardState>({
     periodos: initialData?.periods || [],
     summary: initialData?.summary || null,
@@ -201,6 +203,12 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
       return formatted.includes(q) || p.includes(q);
     });
   }, [state.periodos, filterQuery]);
+
+  const availableYears = useMemo(() => {
+    return Array.from(
+      new Set(state.periodos.map((p) => String(p).slice(0, 4)).filter(Boolean))
+    ).sort((a, b) => b.localeCompare(a));
+  }, [state.periodos]);
 
     const [isCentralizing, setIsCentralizing] = useState(false);
   
@@ -245,7 +253,13 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
 
   useEffect(() => {
     setSelectedPeriodo(initialSelectedPeriodo);
+    if (initialSelectedPeriodo) setSelectedYear("");
   }, [initialSelectedPeriodo]);
+
+  useEffect(() => {
+    setSelectedYear(initialSelectedYear);
+    if (initialSelectedYear) setSelectedPeriodo("");
+  }, [initialSelectedYear]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -266,7 +280,11 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
       });
 
       try {
-        const data = await getRCVDashboardData(organizationId, selectedPeriodo || undefined);
+        const data = await getRCVDashboardData(
+          organizationId,
+          selectedYear ? undefined : selectedPeriodo || undefined,
+          selectedYear ? Number(selectedYear) : undefined
+        );
         
         if (isCancelled) return;
 
@@ -292,12 +310,12 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
 
     fetchData();
     return () => { isCancelled = true; };
-  }, [organizationId, selectedPeriodo, mounted, initialData]);
+  }, [organizationId, selectedPeriodo, selectedYear, mounted, initialData]);
 
   const vendorChartData = useMemo(() => deferredVendors.slice(0, 10), [deferredVendors]);
   const customerChartData = useMemo(() => deferredCustomers.slice(0, 10), [deferredCustomers]);
   const balanceNeto = deferredSummary ? (deferredSummary.balance_neto ?? deferredSummary.balance ?? 0) : 0;
-  const periodoLabel = useMemo(() => selectedPeriodo ? formatPeriodo(selectedPeriodo) : "Todos los períodos", [selectedPeriodo]);
+  const periodoLabel = useMemo(() => selectedYear ? `Año ${selectedYear}` : selectedPeriodo ? formatPeriodo(selectedPeriodo) : "Todos los períodos", [selectedPeriodo, selectedYear]);
 
   // ELIMINADO: if (!mounted) return null; - Esto causa doble renderizado masivo.
   // En su lugar, usamos el estado inicial de DashboardState que ya tiene loading: true.
@@ -362,7 +380,10 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
 
             {/* Dropdown de períodos */}
             <div className="w-full sm:w-auto shrink-0" suppressHydrationWarning>
-              <Select value={selectedPeriodo || "all"} onValueChange={(val) => setSelectedPeriodo(val === "all" || !val ? "" : val)}>
+              <Select value={selectedPeriodo || "all"} onValueChange={(val) => {
+                setSelectedPeriodo(val === "all" || !val ? "" : val);
+                setSelectedYear("");
+              }}>
                 <SelectTrigger className="w-full sm:w-[200px] h-10 bg-card rounded-2xl font-black border border-border hover:border-primary/50 text-[10px] uppercase tracking-widest px-4 shadow-sm hover:scale-[1.01] transition-all">
                   <SelectValue placeholder="Otros periodos..." />
                 </SelectTrigger>
@@ -380,12 +401,36 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
             </div>
 
             {/* Accesos directos rápidos (últimos 4 periodos coincidentes) */}
+            <div className="w-full sm:w-auto shrink-0" suppressHydrationWarning>
+              <Select value={selectedYear || "all"} onValueChange={(val) => {
+                setSelectedYear(val === "all" || !val ? "" : val);
+                setSelectedPeriodo("");
+              }}>
+                <SelectTrigger className="w-full sm:w-[140px] h-10 bg-card rounded-2xl font-black border border-border hover:border-primary/50 text-[10px] uppercase tracking-widest px-4 shadow-sm hover:scale-[1.01] transition-all">
+                  <SelectValue placeholder="Año" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border border-border shadow-2xl max-h-[250px] overflow-y-auto">
+                  <SelectItem value="all" className="text-[10px] font-black uppercase tracking-wider rounded-xl">
+                    TODOS LOS AÑOS
+                  </SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year} className="text-[10px] font-black uppercase tracking-wider rounded-xl">
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex gap-2 items-center overflow-x-auto w-full sm:w-auto" suppressHydrationWarning>
               <div className="h-6 w-px bg-border hidden sm:block mx-1" />
               <button
-                onClick={() => setSelectedPeriodo("")}
+                onClick={() => {
+                  setSelectedPeriodo("");
+                  setSelectedYear("");
+                }}
                 className={`px-5 py-2 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                  selectedPeriodo === ""
+                  selectedPeriodo === "" && selectedYear === ""
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100 font-bold"
                     : "bg-transparent text-muted-foreground hover:bg-card hover:text-foreground border border-transparent hover:border-border"
                 }`}
@@ -395,7 +440,10 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
               {filteredPeriodos.slice(0, 4).map((p) => (
                 <button
                   key={p}
-                  onClick={() => setSelectedPeriodo(p)}
+                  onClick={() => {
+                    setSelectedPeriodo(p);
+                    setSelectedYear("");
+                  }}
                   className={`px-5 py-2 h-10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                     selectedPeriodo === p
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-100 font-bold"

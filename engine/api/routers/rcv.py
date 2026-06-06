@@ -252,6 +252,40 @@ def _fetch_rcv_records(
         query = query.eq("periodo", periodo)
     return query.limit(10000).execute().data or []
 
+def _year_bounds(year: Optional[int]) -> tuple[Optional[str], Optional[str]]:
+    if not year:
+        return None, None
+    return f"{year}-01-01", f"{year}-12-31"
+
+def _fetch_year_records(
+    db,
+    table: str,
+    select_cols: str,
+    organization_id: str,
+    year: int,
+    page_size: int = 1000,
+) -> List[Dict[str, Any]]:
+    start_period, end_period = _year_bounds(year)
+    rows: List[Dict[str, Any]] = []
+    start = 0
+
+    while True:
+        end = start + page_size - 1
+        res = db.table(table) \
+            .select(select_cols) \
+            .eq("organization_id", organization_id) \
+            .gte("periodo", start_period) \
+            .lte("periodo", end_period) \
+            .range(start, end) \
+            .execute()
+        batch = res.data or []
+        rows.extend(batch)
+        if len(batch) < page_size:
+            break
+        start += page_size
+
+    return rows
+
 @router.post("/import-purchases")
 async def import_purchases(
     organization_id: str, 
@@ -533,12 +567,15 @@ async def import_sales(
 async def get_top_vendors(
     organization_id: str, 
     periodo: Optional[str] = None, 
+    year: Optional[int] = None,
     limit: int = 10,
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
     periodo = _normalize_period(periodo)
-    cache_key = f"vendors_{organization_id}_{periodo}_{limit}"
+    if year:
+        periodo = None
+    cache_key = f"vendors_{organization_id}_{periodo}_{year}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
     
@@ -568,6 +605,14 @@ async def get_top_vendors(
             "purchase_records",
             "rut_emisor, razon_social_emisor, monto_total, monto_calculado, es_suma",
             organization_id,
+        )
+    if year:
+        data = _fetch_year_records(
+            db,
+            "purchase_records",
+            "rut_emisor, razon_social_emisor, monto_total, monto_calculado, es_suma",
+            organization_id,
+            year,
         )
     
     total_calc_global = sum(abs(r.get("monto_calculado", 0)) for r in data)
@@ -604,12 +649,15 @@ async def get_top_vendors(
 async def get_top_customers(
     organization_id: str, 
     periodo: Optional[str] = None, 
+    year: Optional[int] = None,
     limit: int = 10,
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
     periodo = _normalize_period(periodo)
-    cache_key = f"customers_{organization_id}_{periodo}_{limit}"
+    if year:
+        periodo = None
+    cache_key = f"customers_{organization_id}_{periodo}_{year}_{limit}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
     
@@ -639,6 +687,14 @@ async def get_top_customers(
             "sales_records",
             "rut_receptor, razon_social_receptor, monto_total, monto_calculado, es_suma",
             organization_id,
+        )
+    if year:
+        data = _fetch_year_records(
+            db,
+            "sales_records",
+            "rut_receptor, razon_social_receptor, monto_total, monto_calculado, es_suma",
+            organization_id,
+            year,
         )
     
     total_calc_global = sum(abs(r.get("monto_calculado", 0)) for r in data)
@@ -675,11 +731,14 @@ async def get_top_customers(
 async def get_rcv_summary(
     organization_id: str, 
     periodo: Optional[str] = None,
+    year: Optional[int] = None,
     current_user: dict = Depends(verify_token)
 ):
     await verify_org_role(organization_id, auth=current_user)
     periodo = _normalize_period(periodo)
-    cache_key = f"summary_{organization_id}_{periodo}"
+    if year:
+        periodo = None
+    cache_key = f"summary_{organization_id}_{periodo}_{year}"
     cached = _get_rcv_cache(cache_key)
     if cached: return cached
     
@@ -710,6 +769,14 @@ async def get_rcv_summary(
             "monto_total, monto_calculado, rut_emisor",
             organization_id,
         )
+    if year:
+        purchases = _fetch_year_records(
+            db,
+            "purchase_records",
+            "monto_total, monto_calculado, rut_emisor",
+            organization_id,
+            year,
+        )
     
     # 3. Obtener Ventas
     sq = db.table("sales_records").select("monto_total, monto_calculado, rut_receptor").eq("organization_id", organization_id)
@@ -729,6 +796,14 @@ async def get_rcv_summary(
             "sales_records",
             "monto_total, monto_calculado, rut_receptor",
             organization_id,
+        )
+    if year:
+        sales = _fetch_year_records(
+            db,
+            "sales_records",
+            "monto_total, monto_calculado, rut_receptor",
+            organization_id,
+            year,
         )
     
     # Debug para el desarrollador
