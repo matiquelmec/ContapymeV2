@@ -99,7 +99,7 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
         toast.error("Error al refrescar la vista materializada: " + syncRes.error);
       }
 
-      const result = await getBalancesFromMaterializedView(organizationId);
+      const result = await getTrialBalance(organizationId, dates.start, dates.end);
       setData(result);
 
       // Fetch organization details for the PDF
@@ -381,10 +381,10 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
   };
 
   useEffect(() => {
-    if (mounted && organizationId) {
+    if (mounted && organizationId && dates.start && dates.end) {
       fetchData();
     }
-  }, [organizationId, mounted]);
+  }, [organizationId, mounted, dates.start, dates.end]);
 
   const handleDeleteReport = async (reportId: string, filePath: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar este reporte certificado? Esta acción no se puede deshacer.")) {
