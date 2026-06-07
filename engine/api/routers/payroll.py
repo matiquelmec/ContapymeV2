@@ -352,10 +352,31 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
             movement_code = str(emp_effective.get("previred_movement_code") or "0")
             dias = int(emp_effective.get("dias_trabajados", 30))
             if movement_code in ("3", "6"):
-                last_day = calendar.monthrange(year_part, month_part)[1]
-                start_day = 1 if dias <= 0 else min(dias + 1, last_day)
-                movement_from = f"{start_day:02d}{month_part:02d}{year_part}"
-                movement_to = f"{last_day:02d}{month_part:02d}{year_part}"
+                movement_from = ""
+                movement_to = ""
+                try:
+                    ml_res = db.table("medical_leaves") \
+                        .select("fecha_inicio, fecha_fin") \
+                        .eq("organization_id", req.org_id) \
+                        .eq("employee_id", emp["id"]) \
+                        .eq("periodo", target_period_start) \
+                        .limit(1) \
+                        .execute()
+                    if ml_res.data:
+                        ml_data = ml_res.data[0]
+                        fi = datetime.strptime(ml_data["fecha_inicio"], "%Y-%m-%d")
+                        ff = datetime.strptime(ml_data["fecha_fin"], "%Y-%m-%d")
+                        movement_from = fi.strftime("%d%m%Y")
+                        movement_to = ff.strftime("%d%m%Y")
+                except Exception as e_ml:
+                    logger.warning(f"Error al buscar licencia médica en DB: {e_ml}")
+
+                if not movement_from or not movement_to:
+                    last_day = calendar.monthrange(year_part, month_part)[1]
+                    start_day = 1 if dias <= 0 else min(dias + 1, last_day)
+                    movement_from = f"{start_day:02d}{month_part:02d}{year_part}"
+                    movement_to = f"{last_day:02d}{month_part:02d}{year_part}"
+
                 snapshot["movement_from"] = movement_from
                 snapshot["movement_to"] = movement_to
             snapshot["movement_code"] = movement_code
