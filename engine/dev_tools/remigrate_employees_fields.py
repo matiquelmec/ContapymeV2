@@ -15,8 +15,11 @@ Uso:
 import os
 import sqlite3
 import sys
+from dotenv import load_dotenv
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "engine"))
+sys.path.append(r"c:\Users\Matías Riquelme\Desktop\Proyectos documentados\Contapymepuq\engine")
+load_dotenv(r"c:\Users\Matías Riquelme\Desktop\Proyectos documentados\Contapymepuq\.env")
+
 from core.database import get_supabase  # noqa: E402
 
 SQLITE_DB_PATH = r"C:\Users\Matías Riquelme\Desktop\SistemaRemuneraciones_Export\database\remuneraciones.db"

@@ -68,8 +68,31 @@ def calcular_datos_anuales(liquidations: list) -> list:
         
         d = datos_por_trab[emp_id]
         d["meses"] += 1
-        d["renta_imponible"] += int(liq.get("total_haberes_brutos", 0) - liq.get("asignacion_colacion", 0) - liq.get("asignacion_movilizacion", 0) - liq.get("asignacion_familiar", 0))
-        d["renta_no_imponible"] += int(liq.get("asignacion_colacion", 0) + liq.get("asignacion_movilizacion", 0) + liq.get("asignacion_familiar", 0))
+        
+        snapshot = liq.get("calculation_snapshot") or {}
+        semana_corrida = int(snapshot.get("semana_corrida") or 0)
+        otros_hab_imp = int(snapshot.get("otros_haberes_imponibles") or 0)
+        
+        if "sueldo_base" not in liq:
+            colacion = int(liq.get("asignacion_colacion") or liq.get("bono_colacion") or 0)
+            movilizacion = int(liq.get("asignacion_movilizacion") or liq.get("bono_movilizacion") or 0)
+            asig_familiar = int(liq.get("asignacion_familiar") or 0)
+            viaticos = int(snapshot.get("asignacion_viatico") or 0)
+            otros_no_imp = int(snapshot.get("otros_haberes_no_imponibles") or 0)
+            r_imp = int(liq.get("total_haberes_brutos", 0) - colacion - movilizacion - asig_familiar - viaticos - otros_no_imp)
+        else:
+            r_imp = int(
+                liq.get("sueldo_base", 0) +
+                liq.get("gratificacion", 0) +
+                liq.get("horas_extra_monto", 0) +
+                liq.get("bono_extra", 0) +
+                semana_corrida +
+                otros_hab_imp
+            )
+        r_no_imp = int(liq.get("total_haberes_brutos", 0) - r_imp)
+        
+        d["renta_imponible"] += r_imp
+        d["renta_no_imponible"] += r_no_imp
         
         # Descuentos
         d["cotiz_afp"] += int(liq.get("afp", 0) + liq.get("afp_comision", 0))

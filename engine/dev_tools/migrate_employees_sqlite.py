@@ -1,6 +1,11 @@
 import sqlite3
 import os
 import sys
+from dotenv import load_dotenv
+
+sys.path.append(r"c:\Users\Matías Riquelme\Desktop\Proyectos documentados\Contapymepuq\engine")
+load_dotenv(r"c:\Users\Matías Riquelme\Desktop\Proyectos documentados\Contapymepuq\.env")
+
 from core.database import get_supabase
 
 # Configuración

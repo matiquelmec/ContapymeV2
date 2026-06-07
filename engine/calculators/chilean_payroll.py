@@ -441,7 +441,7 @@ def calcular_liquidacion(
     # Proporcional si no se trabajó el mes completo
     factor_dias = emp.dias_trabajados / 30.0
     
-    sueldo_base = int(emp.sueldo_base * factor_dias)
+    sueldo_base = int(round(emp.sueldo_base * factor_dias))
 
     # Validación: no puede ser inferior al sueldo mínimo (si trabajó mes completo).
     # En jornada parcial (Art. 40 bis) el piso se prorratea por la jornada pactada.
@@ -453,21 +453,13 @@ def calcular_liquidacion(
             f"⚠️ Sueldo base ${sueldo_base:,} inferior al mínimo legal ${piso_minimo:,}"
         )
 
-    gratificacion = 0
-    if emp.gratificacion_legal:
-        gratificacion = int(calcular_gratificacion_legal(emp.sueldo_base, settings.sueldo_minimo) * factor_dias)
-
+    # 1. Calcular otros haberes imponibles (horas extras, bonos, semana corrida) que van en la base de gratificación
     horas_extra_50_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra, emp.horas_semanales, recargo=1.5)
     horas_extra_100_monto = calcular_hora_extra(emp.sueldo_base, emp.horas_extra_100, emp.horas_semanales, recargo=2.0)
     horas_extra_monto = horas_extra_50_monto + horas_extra_100_monto
 
-    # Colación, movilización y viáticos: NO son imponibles (Art. 41 CT), se suman al final
-    colacion = emp.asignacion_colacion
-    movilizacion = emp.asignacion_movilizacion
-    viatico = emp.asignacion_viatico
-    
     # Bono fijo recurrente (proporcional a los días trabajados)
-    bono_fijo_monto = int(emp.bono_fijo * factor_dias)
+    bono_fijo_monto = int(round(emp.bono_fijo * factor_dias))
 
     # Semana corrida (Art. 45 CT): pago de domingos/festivos sobre lo variable. Imponible.
     semana_corrida = 0
@@ -475,15 +467,30 @@ def calcular_liquidacion(
         dias_no_laborales = _domingos_en_periodo(emp.mes_proceso) + max(0, emp.festivos_en_periodo)
         semana_corrida = calcular_semana_corrida(emp.monto_variable, emp.dias_trabajados, dias_no_laborales)
 
-    # Haberes configurables por la empresa
+    # Haberes imponibles configurables por la empresa
     otros_haberes_imp = max(0, emp.otros_haberes_imponibles)
+
+    # 2. Calcular la base de Gratificación Legal (Suma de imponibles antes de gratificación)
+    base_para_grat = (
+        sueldo_base + horas_extra_monto + emp.bono_extra + bono_fijo_monto + semana_corrida + otros_haberes_imp
+    )
+
+    gratificacion = 0
+    if emp.gratificacion_legal:
+        gratif_calculada = int(base_para_grat * 0.25)
+        # Proratear el tope mensual por los días trabajados
+        tope_mensual_prop = int(((4.75 * settings.sueldo_minimo) / 12) * factor_dias)
+        gratificacion = min(gratif_calculada, tope_mensual_prop)
+
+    # Colación, movilización y viáticos: NO son imponibles (Art. 41 CT), se suman al final
+    colacion = emp.asignacion_colacion
+    movilizacion = emp.asignacion_movilizacion
+    viatico = emp.asignacion_viatico
+    
     otros_haberes_no_imp = max(0, emp.otros_haberes_no_imponibles)
 
     # Base bruta imponible (sin ingresos NO imponibles)
-    base_bruta_imponible = (
-        sueldo_base + gratificacion + horas_extra_monto
-        + emp.bono_extra + bono_fijo_monto + semana_corrida + otros_haberes_imp
-    )
+    base_bruta_imponible = base_para_grat + gratificacion
 
     # Asignación familiar (No imponible)
     # Se calcula sobre la renta del mes ANTERIOR legalmente, pero aquí usamos la actual

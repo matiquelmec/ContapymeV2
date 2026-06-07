@@ -435,12 +435,20 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
                 row["Total líquido(5501)"] = "0"
             else:
                 # ── SECCIÓN 2000: HABERES ──
+                snapshot = liq_ref.get("calculation_snapshot") or {}
+                semana_corrida = safe_int(snapshot.get("semana_corrida", 0))
+                viatico = safe_int(snapshot.get("asignacion_viatico", 0))
+                otros_no_imp = safe_int(snapshot.get("otros_haberes_no_imponibles", 0))
+
                 row["Sueldo(2101)"] = str(safe_int(d.get("sueldo_base", 0)))
                 row["Sobresueldo(2102)"] = str(safe_int(d.get("sobresueldo", 0)))
+                row["Semana corrida(2104)"] = str(semana_corrida)
                 row["Gratificación(2106)"] = str(safe_int(d.get("gratificacion_legal", 0)))
                 row["Bonos u otras remun. fijas mensuales(2111)"] = str(safe_int(d.get("bono_extra", 0)))
                 row["Colación(2301)"] = str(safe_int(d.get("colacion", 0)))
                 row["Movilización(2302)"] = str(safe_int(d.get("movilizacion", 0)))
+                row["Viáticos(2303)"] = str(viatico)
+                row["Otros ingresos no constitutivos de renta(2204)"] = str(otros_no_imp)
                 row["Asignación familiar legal(2311)"] = str(safe_int(d.get("asig_familiar", 0)))
 
                 # ── SECCIÓN 3000: DESCUENTOS ──
@@ -466,7 +474,7 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
                 colacion = safe_int(d.get("colacion", 0))
                 movilizacion = safe_int(d.get("movilizacion", 0))
                 asig_fam = safe_int(d.get("asig_familiar", 0))
-                no_imponible = colacion + movilizacion + asig_fam
+                no_imponible = colacion + movilizacion + asig_fam + viatico + otros_no_imp
                 
                 descuento_afp = safe_int(d.get("descuento_afp_total", 0))
                 descuento_salud = safe_int(d.get("descuento_salud", 0))
