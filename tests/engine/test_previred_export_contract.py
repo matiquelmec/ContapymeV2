@@ -170,3 +170,26 @@ def test_previred_afc_is_calculated_from_contract_type():
     fields = line.split(";")
     assert fields[100] == "0"
     assert fields[101] == "16170"
+
+
+def test_previred_region_resolution():
+    liq = _base_liq()
+    emp = _base_emp()
+    
+    # 1. Por defecto sin region ni zona extrema
+    line = build_previred_line(liq, emp, _settings(), "052026", {"sueldo_minimo": 539000})
+    fields = line.split(";")
+    assert fields[94] == "13"  # RM
+    
+    # 2. Con zona extrema en el empleado (Magallanes -> 12)
+    emp["zona_extrema"] = "MAGALLANES"
+    line = build_previred_line(liq, emp, _settings(), "052026", {"sueldo_minimo": 539000})
+    fields = line.split(";")
+    assert fields[94] == "12"
+    
+    # 3. Con region de la empresa (Region de Los Lagos -> X -> 10)
+    emp["zona_extrema"] = ""
+    line = build_previred_line(liq, emp, _settings(), "052026", {"sueldo_minimo": 539000}, org_region="X")
+    fields = line.split(";")
+    assert fields[94] == "10"
+

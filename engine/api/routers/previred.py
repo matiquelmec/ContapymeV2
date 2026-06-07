@@ -69,6 +69,30 @@ CCAF_MAP = {
 }
 
 
+_REGION_ROMANA = {
+    "I": "01", "II": "02", "III": "03", "IV": "04", "V": "05",
+    "VI": "06", "VII": "07", "VIII": "08", "IX": "09", "X": "10",
+    "XI": "11", "XII": "12", "XIII": "13", "XIV": "14", "XV": "15", "XVI": "16",
+    "RM": "13",
+}
+_ZONA_EXTREMA_REGION = {
+    "ARICA": "15", "TARAPACA": "01", "AYSEN": "11",
+    "MAGALLANES": "12", "CHILOE": "10", "PALENA": "10",
+}
+
+
+def _cod_region(emp: dict, org_region: str = "") -> str:
+    zona = str(emp.get("zona_extrema") or "").upper().strip()
+    if zona in _ZONA_EXTREMA_REGION:
+        return _ZONA_EXTREMA_REGION[zona]
+    reg = str(org_region or "").upper().strip()
+    if reg in _REGION_ROMANA:
+        return _REGION_ROMANA[reg]
+    if reg.isdigit():
+        return reg.zfill(2)
+    return "13"
+
+
 def safe_int(value, default: int = 0) -> int:
     if value is None or value == "":
         return default
@@ -152,7 +176,7 @@ def _safe_bool(value) -> bool:
     return str(value).strip().lower() in ("1", "true", "t", "yes", "si")
 
 
-def build_previred_line(liq: dict, emp: dict, settings: dict, p_format: str, legal_params: dict) -> str:
+def build_previred_line(liq: dict, emp: dict, settings: dict, p_format: str, legal_params: dict, org_region: str = "") -> str:
     mutual_code, ccaf_code = _resolve_mutual_ccaf(settings)
     raw_mutual = (settings.get("mutual_code") or "ACHS").upper()
     es_isl = "ISL" in raw_mutual or "INSTITUTO DE SEGURIDAD LABORAL" in raw_mutual
@@ -366,7 +390,7 @@ def build_previred_line(liq: dict, emp: dict, settings: dict, p_format: str, leg
     fields[91] = str(rima_valor) if movement_code in ("3", "6") else "0"
     fields[92] = "2" if bool(emp.get("jornada_parcial")) else "1"
     fields[93] = str(int((imponible + rima_valor) * 0.009)) if not es_sip else "0"
-    fields[94] = "0"
+    fields[94] = _cod_region(emp, org_region)
 
     tiene_mutual_privada = (mutual_code != "0") and (not es_sip)
     tasa_m = safe_float(settings.get("tasa_mutual"), 0.93) / 100
@@ -408,6 +432,16 @@ async def export_previred(
         settings = (settings_res.data or [{}])[0]
         legal_params = resolve_legal_payroll_params(db, get_period_start(periodo))
 
+        org_res = (
+            db.table("organizations")
+            .select("region")
+            .eq("id", organization_id)
+            .limit(1)
+            .execute()
+        )
+        org_data = (org_res.data or [{}])[0]
+        org_region = org_data.get("region") or ""
+
         result = (
             db.table("liquidations")
             .select("*, employees(*)")
@@ -431,7 +465,7 @@ async def export_previred(
             if tipo_contrato == "honorarios":
                 omitidos_honorarios += 1
                 continue
-            output.write(build_previred_line(liq, emp, settings, p_format, legal_params) + "\n")
+            output.write(build_previred_line(liq, emp, settings, p_format, legal_params, org_region) + "\n")
 
         content = output.getvalue()
         output.close()
