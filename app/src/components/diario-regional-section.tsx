@@ -289,7 +289,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   )}
 
                   {/* Panel de Análisis de Mercado (Slingshot) */}
-                  <GlobalMarketPanel indicators={indicators} />
+                  {/* <GlobalMarketPanel indicators={indicators} /> */}
                </div>
 
                {/* 🏛️ COLUMNA DERECHA: WIDGETS & PUBLICIDAD (Ancho: 3/12 en desktop) */}
