@@ -232,7 +232,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                                   Analizar <ArrowRight className="h-2.5 w-2.5" />
                                 </button>
                                 <span className="italic uppercase tracking-widest font-mono" suppressHydrationWarning>
-                                  {new Date(news.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit'})}
+                                   {new Date(news.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric'})}
                                 </span>
                              </div>
                            </div>
