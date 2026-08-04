@@ -29,46 +29,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
 
   const [lastSync, setLastSync] = useState<Date | null>(() => getLatestTimestamp(indicators))
 
-  // Simulación de fluctuación de mercado en tiempo real para dar dinamismo a la cinta (Dólar, Euro, IPSA, Cobre, WTI)
-  useEffect(() => {
-    const ticksInterval = setInterval(() => {
-      setLiveIndicators(prev => 
-        prev.map(ind => {
-          // UF y UTM son estables por definición diaria/mensual, pero los mercados fluctúan
-          if (['dolar', 'euro', 'libra_cobre', 'wti', 'ipsa', 'sp500', 'oro'].includes(ind.codigo)) {
-            const valNum = Number(ind.valor)
-            let delta = 0
-            
-            if (ind.codigo === 'dolar' || ind.codigo === 'euro') {
-              delta = (Math.random() - 0.5) * 0.95 // Cambios de hasta 0.95 pesos
-            } else if (ind.codigo === 'libra_cobre') {
-              delta = (Math.random() - 0.5) * 0.008 // Cambios de centavos de dólar
-            } else if (ind.codigo === 'wti' || ind.codigo === 'oro') {
-              delta = (Math.random() - 0.5) * 0.15 // Cambios de centavos de crudo / oz de oro
-            } else if (ind.codigo === 'ipsa' || ind.codigo === 'sp500') {
-              delta = (Math.random() - 0.5) * 3 // Cambios en puntos de bolsa
-            }
-
-            // Activar destello de actualización en el ticker
-            setUpdatedCodes(prev => ({ ...prev, [ind.codigo]: true }))
-            setTimeout(() => {
-              setUpdatedCodes(prev => ({ ...prev, [ind.codigo]: false }))
-            }, 1200)
-
-
-            return {
-              ...ind,
-              valor: valNum + delta
-            }
-          }
-          return ind
-        })
-      )
-    }, 5000) // Actualización visual cada 5 segundos
-
-    return () => clearInterval(ticksInterval)
-  }, [])
-
+  // Sincronizar indicadores recibidos de Supabase
   useEffect(() => {
     setLiveIndicators(indicators)
   }, [indicators])
