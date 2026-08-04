@@ -130,14 +130,21 @@ export async function getLatestIndicators() {
     const { data, error } = await supabase
       .from('economic_indicators')
       .select('*')
-      .order('codigo')
+      .order('updated_at', { ascending: false })
     
     if (error) {
       console.error('[DATABASE ERROR] Fallo al obtener indicadores:', error.message)
       return { success: false, error: 'No se pudieron obtener indicadores.', data: [] }
     }
 
-    const indicators = (data as any[]) || []
+    // Deduplicar para garantizar que cada indicador corresponda a su última cotización en tiempo real
+    const latestByCode = new Map<string, any>()
+    for (const ind of (data as any[] || [])) {
+      if (!latestByCode.has(ind.codigo)) {
+        latestByCode.set(ind.codigo, ind)
+      }
+    }
+    const indicators = Array.from(latestByCode.values())
 
     // Verificar si los datos están desactualizados
     let shouldSync = false
