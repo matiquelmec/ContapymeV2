@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { 
   Globe, 
   Target, 
@@ -66,7 +67,7 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
     { symbol: 'WTI', name: 'Petróleo WTI', price: 78.4, change: -0.25, isCommodity: true },
   ])
 
-  // Sincronizar con los indicadores reales que vienen de las props al cargar o al actualizarse en DB
+  // Sincronizar con los indicadores iniciales
   useEffect(() => {
     setSimulatedAssets([
       { symbol: 'USD/CLP', name: 'Dólar Observado', price: getIndValue('dolar', 932.45), change: 0.38 },
@@ -77,26 +78,45 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
     ])
   }, [indicators])
 
-  // Simulación de fluctuación de ticks financieros autónoma
+  // 📡 Suscripción a Supabase Realtime Broadcast / Postgres Changes en Vivo
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSimulatedAssets(prev => 
-        prev.map(asset => {
-          const delta = (Math.random() - 0.5) * 0.08
-          const newPrice = asset.price * (1 + delta / 100)
-          return {
-            ...asset,
-            price: newPrice,
-            change: asset.change + delta / 5
-          }
-        })
-      )
-      setPulse(true)
-      const t = setTimeout(() => setPulse(false), 600)
-      return () => clearTimeout(t)
-    }, 4000)
+    const supabase = createClient()
+    const channel = supabase
+      .channel('realtime_indicators_stream')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'economic_indicators' },
+        (payload) => {
+          const newRow = payload.new as any
+          if (!newRow || !newRow.codigo) return
 
-    return () => clearInterval(interval)
+          setPulse(true)
+          setTimeout(() => setPulse(false), 800)
+
+          setSimulatedAssets((prev) =>
+            prev.map((asset) => {
+              if (
+                (newRow.codigo === 'dolar' && asset.symbol === 'USD/CLP') ||
+                (newRow.codigo === 'sp500' && asset.symbol === 'S&P 500') ||
+                (newRow.codigo === 'libra_cobre' && asset.symbol === 'COBRE') ||
+                (newRow.codigo === 'oro' && asset.symbol === 'ORO') ||
+                (newRow.codigo === 'wti' && asset.symbol === 'WTI')
+              ) {
+                const oldPrice = asset.price
+                const newPrice = Number(newRow.valor)
+                const changePct = oldPrice > 0 ? ((newPrice - oldPrice) / oldPrice) * 100 : asset.change
+                return { ...asset, price: newPrice, change: changePct }
+              }
+              return asset
+            })
+          )
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   // Decodificar la telemetría inteligente inyectada en unidad_medida
