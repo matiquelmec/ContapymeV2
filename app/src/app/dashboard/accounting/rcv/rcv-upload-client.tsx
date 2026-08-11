@@ -296,9 +296,9 @@ export function RCVUploadClient({ organizationId, onImportSuccess }: UploadClien
             <TrendingUp className="w-6 h-6 text-primary" />
           </div>
           <div className="flex flex-col">
-            <Label htmlFor="periodo-picker" className="text-foreground text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 block">
+            <span className="text-foreground text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 block">
               Período Tributario Activo
-            </Label>
+            </span>
             <span className="text-[11px] text-muted-foreground font-bold italic tracking-wide">
               Mapeo de asientos contables RCV → Libro Diario
             </span>
