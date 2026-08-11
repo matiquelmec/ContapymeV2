@@ -32,7 +32,7 @@ def test_accounting_events_lifecycle():
     
     # 5. Crear un asiento ficticio asociado al evento
     # Para crear el asiento necesitamos cuentas reales. Obtenemos dos cuentas reales.
-    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).limit(2).execute()
+    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).eq("acepta_movimiento", True).limit(2).execute()
     assert len(coa_res.data) >= 2, "Se necesitan al menos 2 cuentas contables para crear el asiento de prueba"
     
     acc_debe = coa_res.data[0]["id"]

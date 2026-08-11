@@ -10,7 +10,7 @@ def test_materialized_view_balances():
     org_id = org_res.data[0]["id"]
     
     # 2. Obtener cuentas contables
-    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).limit(2).execute()
+    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).eq("acepta_movimiento", True).limit(2).execute()
     assert len(coa_res.data) >= 2, "Se necesitan al menos 2 cuentas contables para las pruebas."
     acc_debe = coa_res.data[0]["id"]
     acc_haber = coa_res.data[1]["id"]

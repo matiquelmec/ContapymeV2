@@ -27,6 +27,7 @@ def test_treasury_flow():
         db.table("chart_of_accounts")
         .select("id")
         .eq("organization_id", org_id)
+        .eq("acepta_movimiento", True)
         .limit(2)
         .execute()
     )

@@ -36,7 +36,7 @@ def test_accounting_periods_integrity():
         .execute()
         
     # Obtener cuentas contables para las transacciones
-    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).limit(2).execute()
+    coa_res = db.table("chart_of_accounts").select("id").eq("organization_id", org_id).eq("acepta_movimiento", True).limit(2).execute()
     assert len(coa_res.data) >= 2, "Se necesitan al menos 2 cuentas contables para las pruebas."
     acc_debe = coa_res.data[0]["id"]
     acc_haber = coa_res.data[1]["id"]
