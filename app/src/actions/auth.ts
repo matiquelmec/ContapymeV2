@@ -20,8 +20,9 @@ export async function signInWithEmail(formData: FormData) {
     } else if (error.message) {
       msg = error.message // Podría ser Invalid login credentials etc, pero lo mostramos para saber qué pasa
     }
+    const emailParam = email ? `&email=${encodeURIComponent(email)}` : ''
     const nextParam = nextPath ? `&next=${encodeURIComponent(nextPath)}` : ''
-    return redirect('/login?error=' + encodeURIComponent(msg) + nextParam)
+    return redirect('/login?error=' + encodeURIComponent(msg) + emailParam + nextParam)
   }
 
   // Check if user has completed onboarding

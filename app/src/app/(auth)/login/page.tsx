@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string; success?: string; next?: string }>
+  searchParams: Promise<{ error?: string; success?: string; next?: string; email?: string }>
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -20,6 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const error = params.error
   const success = params.success
   const next = params.next
+  const initialEmail = params.email || ''
 
   return (
     <div className="w-full max-w-md">
@@ -59,6 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 id="email"
                 name="email"
                 type="email"
+                defaultValue={initialEmail}
                 placeholder="contador@empresa.cl"
                 required
                 className="h-11 bg-background border-input focus:ring-primary focus:border-primary transition-all"
