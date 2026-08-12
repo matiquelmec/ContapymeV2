@@ -245,7 +245,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
 
                {/* 🏆 COLUMNA CENTRAL: NOTICIA HERO & SLINGSHOT (Ancho: 6/12 en desktop) */}
                <div className="lg:col-span-6 space-y-8 order-1 lg:order-2 px-0 lg:px-4">
-                  {/* Noticia Principal (Hero) */}
+                  {/* Noticia Principal (Hero - Estilo Patagonia Times) */}
                   {heroNews ? (
                     <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
                       <div className="group cursor-pointer space-y-4">
@@ -255,24 +255,49 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                               alt={heroNews.title} 
                               className="object-cover transition-transform duration-1000 group-hover:scale-[1.03] w-full h-full absolute inset-0"
                             />
-                           <div className="absolute inset-x-0 top-0 p-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="bg-white/90 backdrop-blur-xl px-4 py-2 rounded-full border border-primary/20 shadow-lg flex items-center gap-2">
-                                 <BadgeCheck className="h-4 w-4 text-primary" />
-                                 <span className="text-[10px] font-black uppercase tracking-widest text-primary">Contenido Verificado</span>
+                           <div className="absolute inset-x-0 top-0 p-6 flex justify-between items-center">
+                              <div className="bg-rose-600/90 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-rose-400/30 shadow-lg flex items-center gap-2">
+                                 <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                                 <span className="text-[9px] font-black uppercase tracking-widest text-white">Última Hora • Magallanes</span>
+                              </div>
+                              <div className="bg-white/90 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-2">
+                                 <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                                 <span className="text-[9px] font-black uppercase tracking-widest text-primary">Verificado</span>
                               </div>
                            </div>
-                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
-                           <div className="absolute bottom-6 left-6 right-6 p-2 space-y-3 max-w-[90%]">
-                              <span className="text-[9px] font-black tracking-widest text-primary-foreground italic px-3 py-1 border border-primary/50 rounded-lg bg-primary/95 backdrop-blur-xl shadow-lg uppercase">{heroNews.category}</span>
-                              <h3 className="text-lg sm:text-2xl font-black leading-tight italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-3">
+                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+                           <div className="absolute bottom-6 left-6 right-6 p-2 space-y-3 max-w-[95%]">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black tracking-widest text-primary-foreground italic px-3 py-1 border border-primary/50 rounded-lg bg-primary/95 backdrop-blur-xl shadow-lg uppercase">{heroNews.category}</span>
+                                <span className="text-[9px] font-black tracking-widest text-white/80 italic px-3 py-1 border border-white/20 rounded-lg bg-black/40 backdrop-blur-xl uppercase">3 min lectura</span>
+                              </div>
+                              <h3 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-3">
                                  {heroNews.title}
                               </h3>
-                              <div className="flex items-center gap-3 text-[9px] font-black text-white/70 uppercase tracking-widest italic" suppressHydrationWarning>
-                                 <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> Diario Punta Arenas</span>
-                                 <span className="w-1 h-1 rounded-full bg-white/20" />
-                                 <span suppressHydrationWarning>{new Date(heroNews.published_at).toLocaleDateString('es-CL')}</span>
+                              <div className="flex items-center justify-between text-[10px] font-black text-white/80 uppercase tracking-widest italic pt-1" suppressHydrationWarning>
+                                 <span>{heroNews.source_name || "Prensa Magallanes"}</span>
+                                 <span>{new Date(heroNews.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: 'long', year: 'numeric'})}</span>
                               </div>
                            </div>
+                        </div>
+                        
+                        {/* Botonera de Análisis IA Pyme en Hero */}
+                        <div className="flex items-center justify-between p-4 bg-primary/[0.04] border border-primary/15 rounded-2xl">
+                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
+                            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                            <span>Análisis de Impacto Pyme con IA</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAnalyzedNews(heroNews);
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest bg-primary hover:shadow-lg rounded-xl h-8 px-4"
+                          >
+                            Analizar Noticia →
+                          </Button>
                         </div>
                       </div>
                     </Link>

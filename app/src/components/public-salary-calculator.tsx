@@ -553,6 +553,92 @@ function CalculatorContent() {
               </div>
             </div>
 
+            {/* Gráfico de Dona Interactivo de Distribución */}
+            <div className="bg-white/80 backdrop-blur-md border border-neutral-200/60 rounded-[2rem] p-6 sm:p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> Distribución del Sueldo Bruto ({formatCLP(result.totalHaberesBrutos)})
+                </h4>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full uppercase tracking-widest">
+                  Líquido: {((result.sueldoLiquido / (result.totalHaberesBrutos || 1)) * 100).toFixed(0)}%
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-8">
+                {/* SVG Donut */}
+                <div className="relative w-44 h-44 shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="16" fill="transparent" />
+                    {(() => {
+                      const total = result.totalHaberesBrutos || 1;
+                      const items = [
+                        { val: result.sueldoLiquido, color: "#10b981" },
+                        { val: result.afp + result.afpComision, color: "#3b82f6" },
+                        { val: result.saludTotal, color: "#6366f1" },
+                        { val: result.afcTrabajador, color: "#ec4899" },
+                        { val: result.impuestoUnico, color: "#f97316" }
+                      ].filter(i => i.val > 0);
+
+                      let cumulative = 0;
+                      const C = 251.327; // 2 * PI * 40
+
+                      return items.map((item, idx) => {
+                        const pct = item.val / total;
+                        const dash = pct * C;
+                        const offset = C - cumulative * C;
+                        cumulative += pct;
+                        return (
+                          <circle
+                            key={idx}
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            stroke={item.color}
+                            strokeWidth="16"
+                            strokeDasharray={`${dash} ${C - dash}`}
+                            strokeDashoffset={offset}
+                            fill="transparent"
+                            className="transition-all duration-700 hover:opacity-80"
+                          />
+                        );
+                      });
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Bolsillo</span>
+                    <span className="text-base font-black text-slate-900 tracking-tight">
+                      {formatCLP(result.sueldoLiquido)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Leyenda con Porcentajes */}
+                <div className="flex-1 w-full space-y-2.5">
+                  {[
+                    { label: "Sueldo Líquido", val: result.sueldoLiquido, color: "#10b981", bg: "bg-emerald-500" },
+                    { label: `AFP (${afpCode})`, val: result.afp + result.afpComision, color: "#3b82f6", bg: "bg-blue-500" },
+                    { label: `Salud (${saludCode})`, val: result.saludTotal, color: "#6366f1", bg: "bg-indigo-500" },
+                    { label: "Seguro Cesantía (AFC)", val: result.afcTrabajador, color: "#ec4899", bg: "bg-pink-500" },
+                    { label: "Impuesto Único", val: result.impuestoUnico, color: "#f97316", bg: "bg-orange-500" }
+                  ].filter(i => i.val > 0).map((item, idx) => {
+                    const pct = ((item.val / (result.totalHaberesBrutos || 1)) * 100).toFixed(1);
+                    return (
+                      <div key={idx} className="flex items-center justify-between text-xs font-semibold">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-3 h-3 rounded-full shrink-0`} style={{ backgroundColor: item.color }} />
+                          <span className="text-slate-600 font-bold">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-slate-400 text-[11px]">{pct}%</span>
+                          <span className="font-mono font-bold text-slate-900">{formatCLP(item.val)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* Ficha Contable Detallada */}
             <div className="bg-white/80 backdrop-blur-md border border-neutral-200/60 rounded-[2rem] p-6 sm:p-8 space-y-5">
               
