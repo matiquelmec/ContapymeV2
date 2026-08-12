@@ -7,6 +7,7 @@ import { PublicNav } from "@/components/public-nav";
 import { MarketTicker } from "@/components/market-ticker";
 import { getLatestIndicators } from "@/actions/indicators";
 import { FacturinChat } from "@/components/facturin-chat";
+import { WhatsAppIcon, InstagramIcon } from "@/components/social-icons";
 
 export default async function PublicLayout({
   children,
@@ -95,15 +96,15 @@ export default async function PublicLayout({
               </div>
             </div>
 
-            {/* Columna 3: Módulos & Soluciones */}
+            {/* Columna 3: Soluciones Pyme */}
             <div className="space-y-4">
               <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-primary pl-2.5">Soluciones Pyme</h4>
               <ul className="space-y-2 text-xs font-semibold text-slate-400">
+                <li><Link href="/crear-empresa" className="hover:text-emerald-400 font-bold transition-colors">Creación de Empresas ($35.000)</Link></li>
                 <li><Link href="/software" className="hover:text-primary transition-colors">ERP Contable & IFRS</Link></li>
                 <li><Link href="/dashboard/payroll" className="hover:text-primary transition-colors">Nómina & Ley 40 Horas</Link></li>
                 <li><Link href="/dashboard/payroll/lre" className="hover:text-primary transition-colors">Libro Remuneraciones (LRE)</Link></li>
                 <li><Link href="/dashboard/accounting/rcv" className="hover:text-primary transition-colors">Registro RCV & F29 SII</Link></li>
-                <li><Link href="/dashboard/treasury" className="hover:text-primary transition-colors">Tesorería & Flujo Caja</Link></li>
               </ul>
             </div>
 
@@ -118,10 +119,20 @@ export default async function PublicLayout({
               </ul>
             </div>
 
-            {/* Columna 5: Transparencia & Legal */}
+            {/* Columna 5: Redes Sociales & Garantía */}
             <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-indigo-500 pl-2.5">Legal & Garantía</h4>
-              <ul className="space-y-2 text-xs font-semibold text-slate-400">
+              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-indigo-500 pl-2.5">Redes Sociales & Legal</h4>
+              <ul className="space-y-2.5 text-xs font-semibold text-slate-400">
+                <li>
+                  <a href="https://wa.me/56920000000" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-emerald-400 transition-colors">
+                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" /> WhatsApp Directo
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.instagram.com/contapymepuq" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-pink-400 transition-colors">
+                    <InstagramIcon className="w-4 h-4 text-pink-400 fill-current" /> Instagram @contapymepuq
+                  </a>
+                </li>
                 <li><Link href="/privacidad" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>
                 <li><Link href="/terminos" className="hover:text-primary transition-colors">Términos de Servicio</Link></li>
                 <li><Link href="/verify/check" className="hover:text-primary transition-colors">Portal de Verificación Pública</Link></li>
