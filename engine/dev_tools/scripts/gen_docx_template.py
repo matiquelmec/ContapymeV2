@@ -13,7 +13,7 @@ def create_contract_template():
     font.size = Pt(11)
 
     # Título
-    title = doc.add_paragraph('CONTRATO DE TRABAJO')
+    title = doc.add_paragraph('{{TITULO_DOCUMENTO}}')
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title.runs[0].bold = True
     title.runs[0].font.size = Pt(14)

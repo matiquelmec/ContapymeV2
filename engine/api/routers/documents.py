@@ -84,10 +84,15 @@ async def generate_document(
             clausula_gratificacion = "LA GRATIFICACIÓN NO ESTÁ PACTADA BAJO LA MODALIDAD LEGAL DEL ARTÍCULO 47."
 
         tipo_con = emp.get('tipo_contrato', 'indefinido')
-        if tipo_con == 'plazo_fijo' and emp.get('fecha_termino'):
-            duracion_texto = f"EL PRESENTE CONTRATO TENDRÁ UNA DURACIÓN HASTA EL DÍA {format_date_cl(emp.get('fecha_termino')).upper()}."
+        if tipo_con == 'honorarios':
+            duracion_texto = "DE PRESTACIÓN DE SERVICIOS PROFESIONALES CIVIL E INDEPENDIENTE"
+            titulo_documento = "CONTRATO DE PRESTACIÓN DE SERVICIOS A HONORARIOS"
+        elif tipo_con == 'plazo_fijo' and emp.get('fecha_termino'):
+            duracion_texto = f"A PLAZO FIJO, HASTA EL DÍA {format_date_cl(emp.get('fecha_termino')).upper()}"
+            titulo_documento = "CONTRATO DE TRABAJO A PLAZO FIJO"
         else:
-            duracion_texto = "EL PRESENTE CONTRATO TENDRÁ UNA DURACIÓN INDEFINIDA."
+            duracion_texto = "INDEFINIDO"
+            titulo_documento = "CONTRATO DE TRABAJO INDEFINIDO"
 
         fecha_legal = format_date_cl(date.today())
 
@@ -96,6 +101,7 @@ async def generate_document(
 
         # 4. Contexto para la plantilla
         context = {
+            'TITULO_DOCUMENTO': titulo_documento,
             'EMPRESA_NOMBRE': safe_upper(org.get('nombre'), 'EMPRESA NO REGISTRADA'),
             'EMPRESA_RUT': clean_rut(org.get('rut_empresa', '')),
             'EMPRESA_DIRECCION': safe_upper(org.get('direccion', 'DIRECCION NO REGISTRADA')),
