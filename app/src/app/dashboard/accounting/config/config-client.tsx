@@ -116,11 +116,13 @@ const PayrollFields = ({ config, handleChange }: { config: AccountConfig, handle
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-primary pl-4 py-1 block">Gasto: Sueldos Brutos</Label>
       <div className="space-y-4">
         <Input 
+          id="expense_salary_code" name="expense_salary_code"
           placeholder="Cód. IFRS" value={config.expense_salary_code || ''} 
           onChange={(e) => handleChange(config.id, 'expense_salary_code', e.target.value)}
           className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl"
         />
         <Input 
+          id="expense_salary_name" name="expense_salary_name"
           placeholder="Nombre Cuenta" value={config.expense_salary_name || ''} 
           onChange={(e) => handleChange(config.id, 'expense_salary_name', e.target.value)}
           className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl"
@@ -131,11 +133,13 @@ const PayrollFields = ({ config, handleChange }: { config: AccountConfig, handle
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-amber-500 pl-4 py-1 block">Gasto: Leyes Sociales (Empresa)</Label>
       <div className="space-y-4">
         <Input 
+          id="expense_social_code" name="expense_social_code"
           placeholder="Cód. IFRS" value={config.expense_social_code || ''} 
           onChange={(e) => handleChange(config.id, 'expense_social_code', e.target.value)}
           className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl"
         />
         <Input 
+          id="expense_social_name" name="expense_social_name"
           placeholder="Nombre Cuenta" value={config.expense_social_name || ''} 
           onChange={(e) => handleChange(config.id, 'expense_social_name', e.target.value)}
           className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl"
@@ -145,18 +149,18 @@ const PayrollFields = ({ config, handleChange }: { config: AccountConfig, handle
     <div className="space-y-5 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-muted/5 rounded-[2rem] border border-border">
       <div className="space-y-4">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">AFP por Pagar</Label>
-        <Input value={config.liability_afp_code || ''} onChange={(e) => handleChange(config.id, 'liability_afp_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
-        <Input value={config.liability_afp_name || ''} onChange={(e) => handleChange(config.id, 'liability_afp_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
+        <Input id="liability_afp_code" name="liability_afp_code" value={config.liability_afp_code || ''} onChange={(e) => handleChange(config.id, 'liability_afp_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
+        <Input id="liability_afp_name" name="liability_afp_name" value={config.liability_afp_name || ''} onChange={(e) => handleChange(config.id, 'liability_afp_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
       </div>
       <div className="space-y-4">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">Salud por Pagar</Label>
-        <Input value={config.liability_salud_code || ''} onChange={(e) => handleChange(config.id, 'liability_salud_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
-        <Input value={config.liability_salud_name || ''} onChange={(e) => handleChange(config.id, 'liability_salud_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
+        <Input id="liability_salud_code" name="liability_salud_code" value={config.liability_salud_code || ''} onChange={(e) => handleChange(config.id, 'liability_salud_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
+        <Input id="liability_salud_name" name="liability_salud_name" value={config.liability_salud_name || ''} onChange={(e) => handleChange(config.id, 'liability_salud_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
       </div>
       <div className="space-y-4">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">AFC por Pagar</Label>
-        <Input value={config.liability_afc_code || ''} onChange={(e) => handleChange(config.id, 'liability_afc_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
-        <Input value={config.liability_afc_name || ''} onChange={(e) => handleChange(config.id, 'liability_afc_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
+        <Input id="liability_afc_code" name="liability_afc_code" value={config.liability_afc_code || ''} onChange={(e) => handleChange(config.id, 'liability_afc_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono" placeholder="Código"/>
+        <Input id="liability_afc_name" name="liability_afc_name" value={config.liability_afc_name || ''} onChange={(e) => handleChange(config.id, 'liability_afc_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase" placeholder="Nombre"/>
       </div>
     </div>
   </>
@@ -167,30 +171,30 @@ const F29Fields = ({ config, handleChange }: { config: AccountConfig, handleChan
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-rose-500 pl-4 py-1 block">Pasivo: IVA Débito Fiscal</Label>
       <div className="space-y-4">
-        <Input value={config.tax_iva_debito_code || ''} onChange={(e) => handleChange(config.id, 'tax_iva_debito_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código"/>
-        <Input value={config.tax_iva_debito_name || ''} onChange={(e) => handleChange(config.id, 'tax_iva_debito_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre"/>
+        <Input id="tax_iva_debito_code" name="tax_iva_debito_code" value={config.tax_iva_debito_code || ''} onChange={(e) => handleChange(config.id, 'tax_iva_debito_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código"/>
+        <Input id="tax_iva_debito_name" name="tax_iva_debito_name" value={config.tax_iva_debito_name || ''} onChange={(e) => handleChange(config.id, 'tax_iva_debito_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre"/>
       </div>
     </div>
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-emerald-500 pl-4 py-1 block">Activo: IVA Crédito Fiscal</Label>
       <div className="space-y-4">
-        <Input value={config.tax_iva_credito_code || ''} onChange={(e) => handleChange(config.id, 'tax_iva_credito_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código"/>
-        <Input value={config.tax_iva_credito_name || ''} onChange={(e) => handleChange(config.id, 'tax_iva_credito_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre"/>
+        <Input id="tax_iva_credito_code" name="tax_iva_credito_code" value={config.tax_iva_credito_code || ''} onChange={(e) => handleChange(config.id, 'tax_iva_credito_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código"/>
+        <Input id="tax_iva_credito_name" name="tax_iva_credito_name" value={config.tax_iva_credito_name || ''} onChange={(e) => handleChange(config.id, 'tax_iva_credito_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre"/>
       </div>
     </div>
     <div className="space-y-5 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-muted/5 rounded-[2rem] border border-border">
       <div className="space-y-3">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">Activo: PPM Pagado</Label>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <Input value={config.tax_ppm_code || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
-          <Input value={config.tax_ppm_name || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
+          <Input id="tax_ppm_code" name="tax_ppm_code" value={config.tax_ppm_code || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
+          <Input id="tax_ppm_name" name="tax_ppm_name" value={config.tax_ppm_name || ''} onChange={(e) => handleChange(config.id, 'tax_ppm_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
         </div>
       </div>
       <div className="space-y-3">
         <Label className="text-[9px] font-black uppercase tracking-widest opacity-60">Pasivo: F29 por Pagar</Label>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <Input value={config.tax_f29_payable_code || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
-          <Input value={config.tax_f29_payable_name || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
+          <Input id="tax_f29_payable_code" name="tax_f29_payable_code" value={config.tax_f29_payable_code || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_code', e.target.value)} className="bg-white border-border h-12 rounded-xl text-xs font-black font-mono flex-1"/>
+          <Input id="tax_f29_payable_name" name="tax_f29_payable_name" value={config.tax_f29_payable_name || ''} onChange={(e) => handleChange(config.id, 'tax_f29_payable_name', e.target.value)} className="bg-white border-border h-12 rounded-xl text-[10px] font-black uppercase flex-[2]"/>
         </div>
       </div>
     </div>
@@ -202,15 +206,15 @@ const AssetFields = ({ config, handleChange }: { config: AccountConfig, handleCh
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-emerald-500 pl-4 py-1 block">Gasto: Depreciación del Ejercicio</Label>
       <div className="space-y-4">
-        <Input value={config.asset_depreciation_expense_code || ''} onChange={(e) => handleChange(config.id, 'asset_depreciation_expense_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código (ej: 5.1.03.001)"/>
-        <Input value={config.asset_depreciation_expense_name || ''} onChange={(e) => handleChange(config.id, 'asset_depreciation_expense_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre Cuenta"/>
+        <Input id="asset_depreciation_expense_code" name="asset_depreciation_expense_code" value={config.asset_depreciation_expense_code || ''} onChange={(e) => handleChange(config.id, 'asset_depreciation_expense_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código (ej: 5.1.03.001)"/>
+        <Input id="asset_depreciation_expense_name" name="asset_depreciation_expense_name" value={config.asset_depreciation_expense_name || ''} onChange={(e) => handleChange(config.id, 'asset_depreciation_expense_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre Cuenta"/>
       </div>
     </div>
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-amber-500 pl-4 py-1 block">Contra-Activo: Depreciación Acumulada</Label>
       <div className="space-y-4">
-        <Input value={config.asset_accumulated_depreciation_code || ''} onChange={(e) => handleChange(config.id, 'asset_accumulated_depreciation_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código (ej: 1.1.05.001)"/>
-        <Input value={config.asset_accumulated_depreciation_name || ''} onChange={(e) => handleChange(config.id, 'asset_accumulated_depreciation_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre Cuenta"/>
+        <Input id="asset_accumulated_depreciation_code" name="asset_accumulated_depreciation_code" value={config.asset_accumulated_depreciation_code || ''} onChange={(e) => handleChange(config.id, 'asset_accumulated_depreciation_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl" placeholder="Código (ej: 1.1.05.001)"/>
+        <Input id="asset_accumulated_depreciation_name" name="asset_accumulated_depreciation_name" value={config.asset_accumulated_depreciation_name || ''} onChange={(e) => handleChange(config.id, 'asset_accumulated_depreciation_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl" placeholder="Nombre Cuenta"/>
       </div>
     </div>
   </>
@@ -221,15 +225,15 @@ const GenericFields = ({ config, handleChange }: { config: AccountConfig, handle
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-primary pl-4 py-1 block">Cuenta de Impuesto (IVA)</Label>
       <div className="space-y-4">
-        <Input placeholder="Cód. IFRS" value={config.tax_account_code} onChange={(e) => handleChange(config.id, 'tax_account_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl shadow-sm"/>
-        <Input placeholder="Nombre" value={config.tax_account_name} onChange={(e) => handleChange(config.id, 'tax_account_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl shadow-sm"/>
+        <Input id="tax_account_code" name="tax_account_code" placeholder="Cód. IFRS" value={config.tax_account_code} onChange={(e) => handleChange(config.id, 'tax_account_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl shadow-sm"/>
+        <Input id="tax_account_name" name="tax_account_name" placeholder="Nombre" value={config.tax_account_name} onChange={(e) => handleChange(config.id, 'tax_account_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl shadow-sm"/>
       </div>
     </div>
     <div className="space-y-5">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-amber-500 pl-4 py-1 block">Contrapartida ({config.transaction_type === 'purchases' ? 'Gasto' : 'Ingreso'})</Label>
       <div className="space-y-4">
-        <Input placeholder="Cód. IFRS" value={config.revenue_account_code} onChange={(e) => handleChange(config.id, 'revenue_account_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl shadow-sm"/>
-        <Input placeholder="Nombre" value={config.revenue_account_name} onChange={(e) => handleChange(config.id, 'revenue_account_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl shadow-sm"/>
+        <Input id="revenue_account_code" name="revenue_account_code" placeholder="Cód. IFRS" value={config.revenue_account_code} onChange={(e) => handleChange(config.id, 'revenue_account_code', e.target.value)} className="bg-muted/10 border-2 border-border font-black font-mono h-14 rounded-3xl shadow-sm"/>
+        <Input id="revenue_account_name" name="revenue_account_name" placeholder="Nombre" value={config.revenue_account_name} onChange={(e) => handleChange(config.id, 'revenue_account_name', e.target.value)} className="bg-muted/10 border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl shadow-sm"/>
       </div>
     </div>
     <div className="space-y-5 md:col-span-2 bg-muted/5 p-6 rounded-[2rem] border border-border">

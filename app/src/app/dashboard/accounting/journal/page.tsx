@@ -82,6 +82,8 @@ export default async function JournalPage({
           <div className="relative w-full sm:w-80" suppressHydrationWarning={true}>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" />
             <Input
+              id="journalSearchInput"
+              name="journalSearchInput"
               type="search"
               placeholder="Ej. Pago Proveedores, Folio..."
               className="pl-12 bg-white border-border text-foreground font-black h-14 rounded-full shadow-lg focus:ring-primary focus:border-primary transition-all text-sm uppercase tracking-widest hover:border-primary/50"
