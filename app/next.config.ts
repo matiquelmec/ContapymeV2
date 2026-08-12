@@ -23,6 +23,59 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      // 1. Tributario & RCV
+      { source: '/registro-rcv', destination: '/dashboard/accounting/rcv' },
+      { source: '/tributario/registro-rcv', destination: '/dashboard/accounting/rcv' },
+      { source: '/facturacion-dte', destination: '/dashboard/billing' },
+      { source: '/tributario/facturacion-dte', destination: '/dashboard/billing' },
+      { source: '/contabilidad-f29', destination: '/dashboard/accounting' },
+      { source: '/tributario/contabilidad-f29', destination: '/dashboard/accounting' },
+      { source: '/analisis-f29', destination: '/dashboard/accounting/f29-comparative' },
+      { source: '/tributario/analisis-f29', destination: '/dashboard/accounting/f29-comparative' },
+
+      // 2. Contabilidad Financiera
+      { source: '/plan-de-cuentas', destination: '/dashboard/accounting/chart-of-accounts' },
+      { source: '/contabilidad/plan-de-cuentas', destination: '/dashboard/accounting/chart-of-accounts' },
+      { source: '/libro-diario', destination: '/dashboard/accounting/journal' },
+      { source: '/contabilidad/libro-diario', destination: '/dashboard/accounting/journal' },
+      { source: '/libro-mayor', destination: '/dashboard/accounting/ledger' },
+      { source: '/contabilidad/libro-mayor', destination: '/dashboard/accounting/ledger' },
+      { source: '/balance-de-comprobacion', destination: '/dashboard/accounting/trial-balance' },
+      { source: '/contabilidad/balance-de-comprobacion', destination: '/dashboard/accounting/trial-balance' },
+      { source: '/cierre-de-periodos', destination: '/dashboard/accounting/periods' },
+      { source: '/contabilidad/cierre-de-periodos', destination: '/dashboard/accounting/periods' },
+      { source: '/reportes-financieros', destination: '/dashboard/accounting/reports' },
+      { source: '/contabilidad/reportes-financieros', destination: '/dashboard/accounting/reports' },
+      { source: '/configuracion-de-cuentas', destination: '/dashboard/accounting/config' },
+      { source: '/contabilidad/configuracion-de-cuentas', destination: '/dashboard/accounting/config' },
+
+      // 3. Tesorería & Conciliación
+      { source: '/tesoreria', destination: '/dashboard/treasury' },
+      { source: '/conciliacion-bancaria', destination: '/dashboard/reconciliation' },
+
+      // 4. Recursos Humanos (RRHH)
+      { source: '/remuneraciones', destination: '/dashboard/payroll' },
+      { source: '/rrhh/remuneraciones', destination: '/dashboard/payroll' },
+      { source: '/gestion-de-vacaciones', destination: '/dashboard/payroll/vacations' },
+      { source: '/rrhh/gestion-de-vacaciones', destination: '/dashboard/payroll/vacations' },
+      { source: '/contratos', destination: '/dashboard/payroll/contracts' },
+      { source: '/rrhh/contratos', destination: '/dashboard/payroll/contracts' },
+      { source: '/finiquitos', destination: '/dashboard/payroll/terminations' },
+      { source: '/rrhh/finiquitos', destination: '/dashboard/payroll/terminations' },
+      { source: '/libro-lre', destination: '/dashboard/payroll/lre' },
+      { source: '/rrhh/libro-lre', destination: '/dashboard/payroll/lre' },
+      { source: '/configuracion-previsional', destination: '/dashboard/payroll/settings' },
+      { source: '/rrhh/configuracion-previsional', destination: '/dashboard/payroll/settings' },
+
+      // 5. Activos Fijos
+      { source: '/activos-fijos', destination: '/dashboard/assets' },
+
+      // 6. Administración B2B
+      { source: '/configuracion-empresa', destination: '/dashboard/settings' },
+    ];
+  },
   async headers() {
     return [
       {

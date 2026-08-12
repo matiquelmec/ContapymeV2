@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { navigationGroups } from './sidebar'
 import { Button } from '@/components/ui/button'
 
 export function MobileSidebar() {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
 
   return (
     <>
@@ -62,17 +64,25 @@ export function MobileSidebar() {
                       {group.title}
                     </h4>
                     <div className="space-y-1">
-                      {group.items.map((item) => (
-                        <Link
-                          key={item.name}
-                          href={item.href}
-                          onClick={() => setIsOpen(false)}
-                          className="flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all group"
-                        >
-                          <item.icon className="h-5 w-5 opacity-60 group-hover:opacity-100" />
-                          <span>{item.name}</span>
-                        </Link>
-                      ))}
+                      {group.items.map((item) => {
+                        const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            prefetch={true}
+                            onClick={() => setIsOpen(false)}
+                            className={`flex items-center gap-4 rounded-xl px-4 py-3 text-sm font-bold transition-all group ${
+                              isActive 
+                                ? 'bg-primary text-primary-foreground shadow-md' 
+                                : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                            }`}
+                          >
+                            <item.icon className={`h-5 w-5 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`} />
+                            <span>{item.name}</span>
+                          </Link>
+                        )
+                      })}
                     </div>
                   </div>
                 ))}
