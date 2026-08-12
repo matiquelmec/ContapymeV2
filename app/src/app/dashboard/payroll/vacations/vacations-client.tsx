@@ -323,7 +323,7 @@ export function VacationsClient({
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Seleccione un Colaborador</label>
             <div className="relative w-full">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-              <select
+              <select id="field_selectedemployeeid" name="field_selectedemployeeid"
                 value={selectedEmployeeId}
                 onChange={(e) => setSelectedEmployeeId(e.target.value)}
                 className="pl-12 h-14 w-full rounded-3xl border-2 border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
@@ -398,7 +398,7 @@ export function VacationsClient({
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Fecha de Inicio</label>
                     <div className="relative">
                       <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                      <Input
+                      <Input id="field_newrequest_fecha_inicio" name="field_newrequest_fecha_inicio"
                         type="date"
                         required
                         value={newRequest.fecha_inicio}
@@ -412,7 +412,7 @@ export function VacationsClient({
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Fecha de Término</label>
                     <div className="relative">
                       <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                      <Input
+                      <Input id="field_newrequest_fecha_fin" name="field_newrequest_fecha_fin"
                         type="date"
                         required
                         value={newRequest.fecha_fin}
@@ -443,7 +443,7 @@ export function VacationsClient({
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Comentarios</label>
-                    <textarea
+                    <textarea id="field_ej_viaje_familiar_descanso_ley" name="field_ej_viaje_familiar_descanso_ley"
                       placeholder="Ej. Viaje familiar, descanso ley..."
                       value={newRequest.comentarios}
                       onChange={(e) => setNewRequest(prev => ({ ...prev, comentarios: e.target.value }))}
@@ -487,7 +487,7 @@ export function VacationsClient({
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Fecha efectiva</label>
-                    <Input
+                    <Input id="field_adjustment_fecha" name="field_adjustment_fecha"
                       type="date"
                       required
                       value={adjustment.fecha}
@@ -498,7 +498,7 @@ export function VacationsClient({
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Días a ajustar</label>
-                    <Input
+                    <Input id="field_ej_12_5_o_3" name="field_ej_12_5_o_3"
                       type="number"
                       required
                       step="0.5"
@@ -511,7 +511,7 @@ export function VacationsClient({
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Motivo</label>
-                    <select
+                    <select id="field_adjustment_motivo" name="field_adjustment_motivo"
                       value={adjustment.motivo}
                       onChange={(e) => setAdjustment(prev => ({ ...prev, motivo: e.target.value }))}
                       className="h-14 w-full rounded-3xl border-2 border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
@@ -526,7 +526,7 @@ export function VacationsClient({
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Comentario obligatorio</label>
-                    <textarea
+                    <textarea id="field_ej_saldo_informado_por_planilla_hist_rica_al_migrar" name="field_ej_saldo_informado_por_planilla_hist_rica_al_migrar"
                       required
                       placeholder="Ej. Saldo informado por planilla histórica al migrar..."
                       value={adjustment.comentarios}

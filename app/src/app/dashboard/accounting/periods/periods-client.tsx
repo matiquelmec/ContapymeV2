@@ -77,7 +77,7 @@ export function PeriodsClient({ initialPeriods, activeOrgId, activeOrgName }: Pe
         {/* SELECTOR DE AÑO */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Año Fiscal:</span>
-          <select
+          <select id="field_year" name="field_year"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
             className="h-10 rounded-xl border border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary"

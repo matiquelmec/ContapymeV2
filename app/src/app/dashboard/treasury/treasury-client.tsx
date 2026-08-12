@@ -514,7 +514,7 @@ export function TreasuryClient({
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Medio de pago</Label>
-              <Select value={paymentMethodId} onValueChange={(value) => setPaymentMethodId(value || "")} disabled={!hasPaymentMethods}>
+              <Select id="field_paymentmethodid" name="field_paymentmethodid" value={paymentMethodId} onValueChange={(value) => setPaymentMethodId(value || "")} disabled={!hasPaymentMethods}>
                 <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold">
                   <SelectValue placeholder="Seleccione medio" />
                 </SelectTrigger>
@@ -534,7 +534,7 @@ export function TreasuryClient({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Monto</Label>
-                <Input
+                <Input id="field_amount" name="field_amount"
                   type="number"
                   min="1"
                   max={selectedDocument?.balance || undefined}
@@ -545,7 +545,7 @@ export function TreasuryClient({
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Fecha</Label>
-                <Input
+                <Input id="field_paymentdate" name="field_paymentdate"
                   type="date"
                   value={paymentDate}
                   onChange={(event) => setPaymentDate(event.target.value)}
@@ -556,7 +556,7 @@ export function TreasuryClient({
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Referencia</Label>
-              <Input
+              <Input id="field_reference" name="field_reference"
                 value={reference}
                 onChange={(event) => setReference(event.target.value)}
                 placeholder="Transferencia, cheque, comprobante"
@@ -566,7 +566,7 @@ export function TreasuryClient({
 
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Notas</Label>
-              <Textarea
+              <Textarea id="field_notes" name="field_notes"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 className="rounded-xl bg-white min-h-20 text-xs font-bold"
@@ -611,7 +611,7 @@ export function TreasuryClient({
               <CardContent className="p-5 space-y-5">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nombre</Label>
-                  <Input
+                  <Input id="field_newmethodname" name="field_newmethodname"
                     value={newMethodName}
                     onChange={(event) => setNewMethodName(event.target.value)}
                     placeholder="Transferencia BCI, Caja, Cheque"
@@ -622,7 +622,7 @@ export function TreasuryClient({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tipo</Label>
-                    <Select value={newMethodType} onValueChange={(value) => setNewMethodType((value || "transferencia") as typeof newMethodType)}>
+                    <Select id="field_newmethodtype" name="field_newmethodtype" value={newMethodType} onValueChange={(value) => setNewMethodType((value || "transferencia") as typeof newMethodType)}>
                       <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold">
                         <SelectValue />
                       </SelectTrigger>
@@ -638,7 +638,7 @@ export function TreasuryClient({
 
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Banco opcional</Label>
-                    <Select value={newMethodBankAccountId} onValueChange={(value) => setNewMethodBankAccountId(value || "")}>
+                    <Select id="field_newmethodbankaccountid" name="field_newmethodbankaccountid" value={newMethodBankAccountId} onValueChange={(value) => setNewMethodBankAccountId(value || "")}>
                       <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold">
                         <SelectValue placeholder="Sin banco" />
                       </SelectTrigger>
@@ -655,7 +655,7 @@ export function TreasuryClient({
 
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cuenta contable</Label>
-                  <Select value={newMethodAccountId} onValueChange={(value) => setNewMethodAccountId(value || "")}>
+                  <Select id="field_newmethodaccountid" name="field_newmethodaccountid" value={newMethodAccountId} onValueChange={(value) => setNewMethodAccountId(value || "")}>
                     <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold">
                       <SelectValue placeholder="Seleccione cuenta" />
                     </SelectTrigger>

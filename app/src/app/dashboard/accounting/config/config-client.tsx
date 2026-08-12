@@ -239,8 +239,8 @@ const GenericFields = ({ config, handleChange }: { config: AccountConfig, handle
     <div className="space-y-5 md:col-span-2 bg-muted/5 p-6 rounded-[2rem] border border-border">
       <Label className="text-[10px] font-black uppercase tracking-wider sm:tracking-[0.2em] text-foreground/60 border-l-4 border-emerald-500 pl-4 py-1 block mb-4">Control de Entidad ({config.transaction_type === 'purchases' ? 'Proveedores' : 'Clientes'})</Label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <Input placeholder="Código" value={config.asset_account_code} onChange={(e) => handleChange(config.id, 'asset_account_code', e.target.value)} className="bg-white border-2 border-border font-black font-mono h-14 rounded-3xl"/>
-        <Input placeholder="Nombre Institucional" value={config.asset_account_name} onChange={(e) => handleChange(config.id, 'asset_account_name', e.target.value)} className="bg-white border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl md:col-span-2"/>
+        <Input id="field_c_digo" name="field_c_digo" placeholder="Código" value={config.asset_account_code} onChange={(e) => handleChange(config.id, 'asset_account_code', e.target.value)} className="bg-white border-2 border-border font-black font-mono h-14 rounded-3xl"/>
+        <Input id="field_nombre_institucional" name="field_nombre_institucional" placeholder="Nombre Institucional" value={config.asset_account_name} onChange={(e) => handleChange(config.id, 'asset_account_name', e.target.value)} className="bg-white border-2 border-border font-black uppercase text-[11px] h-14 rounded-3xl md:col-span-2"/>
       </div>
     </div>
   </>
@@ -526,7 +526,7 @@ export function ConfigClient({
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="account" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Cuenta Específica (Nivel 4)</Label>
-                    <Select 
+                    <Select id="config_client_select_1" name="config_client_select_1" 
                       onValueChange={(val: string | null) => setNewRule({...newRule, account_id: val || ""})}
                     >
                       <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl pl-6 font-black text-xs uppercase">
@@ -644,7 +644,7 @@ export function ConfigClient({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Institución</Label>
-                      <Input 
+                      <Input id="field_ej_santander" name="field_ej_santander" 
                         placeholder="Ej: Santander"
                         value={newBank.bank_name}
                         onChange={(e) => setNewBank({...newBank, bank_name: e.target.value})}
@@ -653,7 +653,7 @@ export function ConfigClient({
                     </div>
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tipo</Label>
-                      <Select 
+                      <Select id="field_newbank_account_type" name="field_newbank_account_type" 
                         value={newBank.account_type}
                         onValueChange={(val: string | null) => setNewBank({...newBank, account_type: val || "corriente"})}
                       >
@@ -670,7 +670,7 @@ export function ConfigClient({
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Número de Cuenta</Label>
-                    <Input 
+                    <Input id="field_000_1234567_8" name="field_000_1234567_8" 
                       placeholder="000-1234567-8"
                       value={newBank.account_number}
                       onChange={(e) => setNewBank({...newBank, account_number: e.target.value})}
@@ -679,7 +679,7 @@ export function ConfigClient({
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vincular a Cuenta Contable (Libro Diario)</Label>
-                    <Select 
+                    <Select id="config_client_select_1" name="config_client_select_1" 
                       onValueChange={(val: string | null) => setNewBank({...newBank, chart_account_id: val || ""})}
                     >
                       <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl pl-6 font-black text-xs uppercase">

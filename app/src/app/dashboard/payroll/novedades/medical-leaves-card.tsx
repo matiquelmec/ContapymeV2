@@ -122,7 +122,7 @@ export default function MedicalLeavesCard({ orgId, employees, initialLeaves }: M
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
           <div className="space-y-1 lg:col-span-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Colaborador</label>
-            <select
+            <select id="field_form_employee_id" name="field_form_employee_id"
               value={form.employee_id}
               onChange={(e) => setForm((p) => ({ ...p, employee_id: e.target.value }))}
               className="h-12 w-full rounded-2xl border-2 border-border bg-card px-3 font-bold uppercase text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -138,7 +138,7 @@ export default function MedicalLeavesCard({ orgId, employees, initialLeaves }: M
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tipo</label>
-            <select
+            <select id="field_form_tipo" name="field_form_tipo"
               value={form.tipo}
               onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value as MedicalLeaveType }))}
               className="h-12 w-full rounded-2xl border-2 border-border bg-card px-3 font-bold uppercase text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -151,7 +151,7 @@ export default function MedicalLeavesCard({ orgId, employees, initialLeaves }: M
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Folio</label>
-            <Input
+            <Input id="field_form_folio" name="field_form_folio"
               value={form.folio}
               onChange={(e) => setForm((p) => ({ ...p, folio: e.target.value }))}
               placeholder="N° licencia"
@@ -161,7 +161,7 @@ export default function MedicalLeavesCard({ orgId, employees, initialLeaves }: M
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Desde</label>
-            <Input
+            <Input id="field_form_fecha_inicio" name="field_form_fecha_inicio"
               type="date"
               required
               value={form.fecha_inicio}
@@ -172,7 +172,7 @@ export default function MedicalLeavesCard({ orgId, employees, initialLeaves }: M
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Hasta</label>
-            <Input
+            <Input id="field_form_fecha_fin" name="field_form_fecha_fin"
               type="date"
               required
               value={form.fecha_fin}

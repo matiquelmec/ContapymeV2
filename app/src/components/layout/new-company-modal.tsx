@@ -105,37 +105,37 @@ export function NewCompanyModal({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>RUT Empresa</Label>
-                <Input required placeholder="76.123.456-0" value={formData.rut} onChange={handleRutChange} maxLength={12} className="h-12 bg-muted/50 font-mono" />
+                <Input id="field_76_123_456_0" name="field_76_123_456_0" required placeholder="76.123.456-0" value={formData.rut} onChange={handleRutChange} maxLength={12} className="h-12 bg-muted/50 font-mono" />
               </div>
               <div className="space-y-2">
                 <Label>Razón Social</Label>
-                <Input required placeholder="Inversiones B2B SpA" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} className="h-12 bg-muted/50" />
+                <Input id="field_inversiones_b2b_spa" name="field_inversiones_b2b_spa" required placeholder="Inversiones B2B SpA" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} className="h-12 bg-muted/50" />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Giro / Actividad Económica</Label>
-              <Input required placeholder="Servicios Financieros y Contables" value={formData.giro} onChange={e => setFormData({...formData, giro: e.target.value})} className="h-12 bg-muted/50" />
+              <Input id="field_servicios_financieros_y_contables" name="field_servicios_financieros_y_contables" required placeholder="Servicios Financieros y Contables" value={formData.giro} onChange={e => setFormData({...formData, giro: e.target.value})} className="h-12 bg-muted/50" />
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Dirección</Label>
-                <Input required placeholder="Av. Apoquindo 4501" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} className="h-12 bg-muted/50" />
+                <Input id="field_av_apoquindo_4501" name="field_av_apoquindo_4501" required placeholder="Av. Apoquindo 4501" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} className="h-12 bg-muted/50" />
               </div>
               <div className="space-y-2">
                 <Label>Comuna</Label>
-                <Input required placeholder="Las Condes" value={formData.comuna} onChange={e => setFormData({...formData, comuna: e.target.value})} className="h-12 bg-muted/50" />
+                <Input id="field_las_condes" name="field_las_condes" required placeholder="Las Condes" value={formData.comuna} onChange={e => setFormData({...formData, comuna: e.target.value})} className="h-12 bg-muted/50" />
               </div>
               <div className="space-y-2">
                 <Label>Región</Label>
-                <Input required placeholder="Metropolitana" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} className="h-12 bg-muted/50" />
+                <Input id="field_metropolitana" name="field_metropolitana" required placeholder="Metropolitana" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} className="h-12 bg-muted/50" />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Régimen Tributario Oficial</Label>
-              <Select value={formData.regimen} onValueChange={(val) => setFormData({...formData, regimen: val || 'pro_pyme'})}>
+              <Select id="field_formdata_regimen" name="field_formdata_regimen" value={formData.regimen} onValueChange={(val) => setFormData({...formData, regimen: val || 'pro_pyme'})}>
                 <SelectTrigger className="w-full h-12 bg-muted/50">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
@@ -154,11 +154,11 @@ export function NewCompanyModal({
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Nombre Completo</Label>
-                    <Input placeholder="Juan Pérez" value={formData.repLegalNombre} onChange={e => setFormData({...formData, repLegalNombre: e.target.value})} className="h-10 bg-muted/30" />
+                    <Input id="field_juan_p_rez" name="field_juan_p_rez" placeholder="Juan Pérez" value={formData.repLegalNombre} onChange={e => setFormData({...formData, repLegalNombre: e.target.value})} className="h-10 bg-muted/30" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">RUT Personal</Label>
-                    <Input placeholder="12.345.678-9" value={formData.repLegalRut} onChange={handleRepRutChange} maxLength={12} className="h-10 bg-muted/30 font-mono" />
+                    <Input id="field_12_345_678_9" name="field_12_345_678_9" placeholder="12.345.678-9" value={formData.repLegalRut} onChange={handleRepRutChange} maxLength={12} className="h-10 bg-muted/30 font-mono" />
                   </div>
                </div>
             </div>

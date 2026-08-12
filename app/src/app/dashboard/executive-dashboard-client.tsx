@@ -247,7 +247,7 @@ export function ExecutiveDashboardClient({ activeOrgId }: { activeOrgId: string 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <select
+          <select id="field_targetyear" name="field_targetyear"
             value={targetYear}
             onChange={(e) => setTargetYear(Number(e.target.value))}
             className="h-12 bg-white border border-border text-foreground rounded-2xl px-5 text-sm font-black uppercase tracking-wider outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"

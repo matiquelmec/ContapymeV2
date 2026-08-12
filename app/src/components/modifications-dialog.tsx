@@ -235,11 +235,11 @@ export function ModificationsDialog({ employeeId, employeeName, organizationId, 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2 text-left">
                     <Label className="text-[9px] font-black uppercase tracking-widest ml-1 text-slate-500">Fecha Efectiva</Label>
-                    <Input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className="h-14 rounded-2xl border-slate-200 font-bold" />
+                    <Input id="field_effectivedate" name="field_effectivedate" type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} className="h-14 rounded-2xl border-slate-200 font-bold" />
                   </div>
                   <div className="space-y-2 text-left">
                     <Label className="text-[9px] font-black uppercase tracking-widest ml-1 text-slate-500">Motivo de Anexo</Label>
-                    <Input placeholder="Ej: Cambio de condiciones" value={reason} onChange={e => setReason(e.target.value)} className="h-14 rounded-2xl border-slate-200 italic" />
+                    <Input id="field_ej_cambio_de_condiciones" name="field_ej_cambio_de_condiciones" placeholder="Ej: Cambio de condiciones" value={reason} onChange={e => setReason(e.target.value)} className="h-14 rounded-2xl border-slate-200 italic" />
                   </div>
                 </div>
 
@@ -247,28 +247,28 @@ export function ModificationsDialog({ employeeId, employeeName, organizationId, 
                   {selectedFields.includes('salary') && (
                     <div className="space-y-2 text-left animate-in zoom-in-95 duration-300">
                       <Label className="text-[10px] font-black text-indigo-600 uppercase">Nuevo Sueldo Base</Label>
-                      <Input type="number" value={newSalary} onChange={e => setNewSalary(e.target.value)} className="h-14 rounded-2xl border-indigo-100 text-lg font-black text-slate-700" />
+                      <Input id="field_newsalary" name="field_newsalary" type="number" value={newSalary} onChange={e => setNewSalary(e.target.value)} className="h-14 rounded-2xl border-indigo-100 text-lg font-black text-slate-700" />
                       <span className="text-[9px] text-slate-400 italic block">Anterior: ${currentData?.sueldo_base?.toLocaleString()}</span>
                     </div>
                   )}
                   {selectedFields.includes('hours') && (
                     <div className="space-y-2 text-left animate-in zoom-in-95 duration-300">
                       <Label className="text-[10px] font-black text-indigo-600 uppercase">Nuevas Horas Semanales</Label>
-                      <Input type="number" value={newHours} onChange={e => setNewHours(e.target.value)} className="h-14 rounded-2xl border-indigo-100" />
+                      <Input id="field_newhours" name="field_newhours" type="number" value={newHours} onChange={e => setNewHours(e.target.value)} className="h-14 rounded-2xl border-indigo-100" />
                       <span className="text-[9px] text-slate-400 italic block">Anterior: {currentData?.horas_semanales}h</span>
                     </div>
                   )}
                   {selectedFields.includes('position') && (
                     <div className="space-y-2 text-left animate-in zoom-in-95 duration-300 col-span-2">
                       <Label className="text-[10px] font-black text-indigo-600 uppercase">Nuevo Cargo</Label>
-                      <Input value={newPosition} onChange={e => setNewPosition(e.target.value)} className="h-14 rounded-2xl border-indigo-100 uppercase font-bold" />
+                      <Input id="field_newposition" name="field_newposition" value={newPosition} onChange={e => setNewPosition(e.target.value)} className="h-14 rounded-2xl border-indigo-100 uppercase font-bold" />
                       <span className="text-[9px] text-slate-400 italic block">Anterior: {currentData?.cargo}</span>
                     </div>
                   )}
                   {selectedFields.includes('type') && (
                     <div className="space-y-2 text-left animate-in zoom-in-95 duration-300 col-span-2">
                       <Label className="text-[10px] font-black text-indigo-600 uppercase">Nuevo Tipo de Contrato</Label>
-                      <select
+                      <select id="field_newtype" name="field_newtype"
                         value={newType}
                         onChange={e => setNewType(e.target.value)}
                         className="flex h-14 w-full rounded-2xl border border-indigo-100 bg-white px-4 py-2 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
@@ -283,7 +283,7 @@ export function ModificationsDialog({ employeeId, employeeName, organizationId, 
                   {selectedFields.includes('custom') && (
                     <div className="space-y-2 text-left animate-in zoom-in-95 duration-300 col-span-2">
                       <Label className="text-[10px] font-black text-indigo-600 uppercase">Redacción de Cláusula Personalizada</Label>
-                      <textarea
+                      <textarea id="field_customclause" name="field_customclause"
                         value={customClause}
                         onChange={e => setCustomClause(e.target.value)}
                         placeholder="Escriba aquí la modificación legal exactamente como desea que aparezca..."

@@ -137,7 +137,7 @@ export function AdminNewsClient({ initialNews }: AdminNewsClientProps) {
           {/* Campo de búsqueda */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
+            <Input id="field_buscar_por_t_tulo_contenido_o_fuente" name="field_buscar_por_t_tulo_contenido_o_fuente"
               type="text"
               placeholder="Buscar por título, contenido o fuente..."
               value={searchTerm}

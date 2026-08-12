@@ -295,7 +295,7 @@ export function ReconciliationClient({
                            <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-3">
                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Institución</Label>
-                               <Input 
+                               <Input id="field_ej_santander" name="field_ej_santander" 
                                  placeholder="Ej: Santander"
                                  value={newBank.bank_name}
                                  onChange={(e) => setNewBank({...newBank, bank_name: e.target.value})}
@@ -304,7 +304,7 @@ export function ReconciliationClient({
                              </div>
                              <div className="space-y-3">
                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tipo</Label>
-                               <Select 
+                               <Select id="field_newbank_account_type" name="field_newbank_account_type" 
                                  value={newBank.account_type}
                                  onValueChange={(val: string | null) => setNewBank({...newBank, account_type: val || "corriente"})}
                                >
@@ -321,7 +321,7 @@ export function ReconciliationClient({
                            </div>
                            <div className="space-y-3">
                              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Número de Cuenta</Label>
-                             <Input 
+                             <Input id="field_000_1234567_8" name="field_000_1234567_8" 
                                placeholder="000-1234567-8"
                                value={newBank.account_number}
                                onChange={(e) => setNewBank({...newBank, account_number: e.target.value})}
@@ -330,7 +330,7 @@ export function ReconciliationClient({
                            </div>
                            <div className="space-y-3">
                              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vincular a Cuenta Contable (Libro Diario)</Label>
-                             <Select 
+                             <Select id="reconciliation_client_select_1" name="reconciliation_client_select_1" 
                                onValueChange={(val: string | null) => setNewBank({...newBank, chart_account_id: val || ""})}
                              >
                                <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl px-6 font-black text-xs uppercase">
@@ -371,7 +371,7 @@ export function ReconciliationClient({
             <div className="flex flex-col md:flex-row gap-6 items-stretch md:items-end">
                 <div className="w-full md:w-80">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 block">Cuenta Bancaria Activa</label>
-                    <Select value={selectedBankAccountId} onValueChange={(val) => setSelectedBankAccountId(val || '')}>
+                    <Select id="field_selectedbankaccountid" name="field_selectedbankaccountid" value={selectedBankAccountId} onValueChange={(val) => setSelectedBankAccountId(val || '')}>
                         <SelectTrigger className="h-14 rounded-2xl bg-card border-border shadow-md font-black uppercase text-xs">
                             <SelectValue placeholder="Seleccione una cuenta..." />
                         </SelectTrigger>
@@ -402,7 +402,7 @@ export function ReconciliationClient({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Institución</Label>
-                          <Input 
+                          <Input id="field_ej_santander" name="field_ej_santander" 
                             placeholder="Ej: Santander"
                             value={newBank.bank_name}
                             onChange={(e) => setNewBank({...newBank, bank_name: e.target.value})}
@@ -411,7 +411,7 @@ export function ReconciliationClient({
                         </div>
                         <div className="space-y-3">
                           <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Tipo</Label>
-                          <Select 
+                          <Select id="field_newbank_account_type" name="field_newbank_account_type" 
                             value={newBank.account_type}
                             onValueChange={(val: string | null) => setNewBank({...newBank, account_type: val || "corriente"})}
                           >
@@ -428,7 +428,7 @@ export function ReconciliationClient({
                       </div>
                       <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Número de Cuenta</Label>
-                        <Input 
+                        <Input id="field_000_1234567_8" name="field_000_1234567_8" 
                           placeholder="000-1234567-8"
                           value={newBank.account_number}
                           onChange={(e) => setNewBank({...newBank, account_number: e.target.value})}
@@ -437,7 +437,7 @@ export function ReconciliationClient({
                       </div>
                       <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Vincular a Cuenta Contable (Libro Diario)</Label>
-                        <Select 
+                        <Select id="reconciliation_client_select_1" name="reconciliation_client_select_1" 
                           onValueChange={(val: string | null) => setNewBank({...newBank, chart_account_id: val || ""})}
                         >
                           <SelectTrigger className="bg-muted/10 border-2 border-border h-12 rounded-2xl px-6 font-black text-xs uppercase">

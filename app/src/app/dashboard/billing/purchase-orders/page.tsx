@@ -198,7 +198,7 @@ export default function PurchaseOrdersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-slate-400">RUT Cliente / Proveedor</label>
-                  <Input 
+                  <Input id="field_rut" name="field_rut" 
                     value={rut} 
                     onChange={e => setRut(e.target.value)} 
                     placeholder="76.123.456-K"
@@ -208,7 +208,7 @@ export default function PurchaseOrdersPage() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-400">Razón Social</label>
-                  <Input 
+                  <Input id="field_nombre" name="field_nombre" 
                     value={nombre} 
                     onChange={e => setNombre(e.target.value)} 
                     placeholder="Comercial Austral SpA"
@@ -223,7 +223,7 @@ export default function PurchaseOrdersPage() {
                 <label className="text-xs font-semibold text-slate-300">Ítems de la Orden de Compra</label>
                 {items.map((it, idx) => (
                   <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
-                    <Input 
+                    <Input id="field_descripci_n_producto_servicio" name="field_descripci_n_producto_servicio" 
                       placeholder="Descripción producto/servicio" 
                       value={it.descripcion}
                       onChange={e => {
@@ -234,7 +234,7 @@ export default function PurchaseOrdersPage() {
                       className="col-span-6 bg-slate-900 border-slate-800 text-xs text-slate-200"
                       required
                     />
-                    <Input 
+                    <Input id="field_cant" name="field_cant" 
                       type="number"
                       placeholder="Cant" 
                       value={it.cantidad}
@@ -246,7 +246,7 @@ export default function PurchaseOrdersPage() {
                       className="col-span-2 bg-slate-900 border-slate-800 text-xs text-slate-200"
                       required
                     />
-                    <Input 
+                    <Input id="field_precio_clp" name="field_precio_clp" 
                       type="number"
                       placeholder="Precio CLP" 
                       value={it.precio_unitario}

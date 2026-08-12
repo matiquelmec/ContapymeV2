@@ -101,7 +101,7 @@ export function JournalClient({
           <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">Filtrar por Período Contable</span>
         </div>
         <div className="w-full sm:w-64">
-          <Select value={selectedPeriodo || 'all'} onValueChange={handlePeriodoChange}>
+          <Select id="field_selectedperiodo_all" name="field_selectedperiodo_all" value={selectedPeriodo || 'all'} onValueChange={handlePeriodoChange}>
             <SelectTrigger className="w-full h-12 bg-white rounded-full font-black border-2 border-border/80 hover:border-primary/50 text-xs uppercase tracking-widest px-6 shadow-sm">
               <SelectValue placeholder="Todos los periodos (100 Recientes)" />
             </SelectTrigger>

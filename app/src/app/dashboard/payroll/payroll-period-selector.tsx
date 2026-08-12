@@ -85,7 +85,7 @@ export function PayrollPeriodSelector() {
 
       <div className="h-6 w-[1px] bg-border/60 mx-1" />
 
-      <Select value={month} onValueChange={(val) => val && updatePeriod(String(year), val)}>
+      <Select id="field_month" name="field_month" value={month} onValueChange={(val) => val && updatePeriod(String(year), val)}>
         <SelectTrigger className="w-[140px] h-10 border-none bg-transparent hover:bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-tight transition-colors">
           <SelectValue placeholder="Mes" />
         </SelectTrigger>
@@ -98,7 +98,7 @@ export function PayrollPeriodSelector() {
         </SelectContent>
       </Select>
 
-      <Select value={year} onValueChange={(val) => val && updatePeriod(val, String(month))}>
+      <Select id="field_year" name="field_year" value={year} onValueChange={(val) => val && updatePeriod(val, String(month))}>
         <SelectTrigger className="w-[100px] h-10 border-none bg-transparent hover:bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-tight transition-colors">
           <SelectValue placeholder="Año" />
         </SelectTrigger>

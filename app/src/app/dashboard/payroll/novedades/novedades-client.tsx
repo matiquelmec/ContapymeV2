@@ -156,7 +156,7 @@ export default function NovedadesClient({
                         {emp.nombres} {emp.apellido_paterno} {emp.apellido_materno}
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_dias_trabajados_30" name="field_emp_dias_trabajados_30"
                           type="number"
                           min="0"
                           max="31"
@@ -168,7 +168,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <select
+                        <select id="field_emp_previred_movement_code_0" name="field_emp_previred_movement_code_0"
                           value={emp.previred_movement_code ?? "0"}
                           onChange={(e) =>
                             handleInputChange(index, "previred_movement_code", (e.target.value as "0" | "3" | "6"))
@@ -181,7 +181,7 @@ export default function NovedadesClient({
                         </select>
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_horas_extra_pendientes_0" name="field_emp_horas_extra_pendientes_0"
                           type="number"
                           min="0"
                           value={emp.horas_extra_pendientes ?? 0}
@@ -192,7 +192,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_horas_extra_100_pendientes_0" name="field_emp_horas_extra_100_pendientes_0"
                           type="number"
                           min="0"
                           value={emp.horas_extra_100_pendientes ?? 0}
@@ -203,7 +203,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_bono_extra_0" name="field_emp_bono_extra_0"
                           type="number"
                           min="0"
                           value={emp.bono_extra ?? 0}
@@ -214,7 +214,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_descuento_anticipo_0" name="field_emp_descuento_anticipo_0"
                           type="number"
                           min="0"
                           value={emp.descuento_anticipo ?? 0}
@@ -225,7 +225,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_descuento_prestamo_0" name="field_emp_descuento_prestamo_0"
                           type="number"
                           min="0"
                           value={emp.descuento_prestamo ?? 0}
@@ -236,7 +236,7 @@ export default function NovedadesClient({
                         />
                       </TableCell>
                       <TableCell className="px-4 py-4 text-center">
-                        <Input
+                        <Input id="field_emp_descuento_judicial_0" name="field_emp_descuento_judicial_0"
                           type="number"
                           min="0"
                           value={emp.descuento_judicial ?? 0}

@@ -107,7 +107,7 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
           <div className="flex items-center gap-3 bg-muted/10 border-2 border-border rounded-full px-6 py-2 shadow-sm h-14 flex-1 lg:flex-none hover:border-primary/50 transition-colors">
             <Calendar className="h-5 w-5 text-primary" />
-            <select 
+            <select id="field_year" name="field_year" 
               className="bg-transparent border-0 text-xs font-black uppercase tracking-widest focus:ring-0 outline-none text-foreground w-full"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
@@ -120,7 +120,7 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
 
           <div className="flex items-center gap-3 bg-muted/10 border-2 border-border rounded-3xl px-6 py-2 shadow-sm h-14 flex-1 lg:flex-none hover:border-primary/50 transition-colors">
             <Filter className="h-5 w-5 text-primary" />
-            <select 
+            <select id="field_month" name="field_month" 
               className="bg-transparent border-0 text-xs font-black uppercase tracking-widest focus:ring-0 outline-none pr-4 text-foreground w-full"
               value={month || ""}
               onChange={(e) => setMonth(e.target.value ? parseInt(e.target.value) : undefined)}

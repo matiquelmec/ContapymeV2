@@ -125,7 +125,7 @@ Audita tus exenciones y automatiza tu contabilidad inmutable en segundos en Cont
             </div>
             
             <div className="space-y-2">
-              <input 
+              <input id="field_revenue" name="field_revenue" 
                 type="range" 
                 min={10000000} 
                 max={500000000} 

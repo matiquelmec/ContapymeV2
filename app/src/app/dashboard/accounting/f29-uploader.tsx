@@ -69,7 +69,7 @@ export function F29Uploader({ activeOrgId }: { activeOrgId: string }) {
         <div className="flex flex-col md:flex-row gap-8 items-stretch">
           <div className="space-y-3 flex-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">PERÍODO TRIBUTARIO</span>
-            <Select value={periodo} onValueChange={(val) => setPeriodo(val || '2026-03-01')}>
+            <Select id="field_periodo" name="field_periodo" value={periodo} onValueChange={(val) => setPeriodo(val || '2026-03-01')}>
               <SelectTrigger className="h-16 bg-white border-2 border-border/50 text-foreground font-black text-sm uppercase tracking-widest rounded-3xl shadow-sm focus:ring-primary/20 px-6">
                 <SelectValue placeholder="Selecciona Mes" />
               </SelectTrigger>
@@ -84,7 +84,7 @@ export function F29Uploader({ activeOrgId }: { activeOrgId: string }) {
           
           <div className="flex-[2] relative group">
             <div className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all duration-300 h-full flex flex-col items-center justify-center cursor-pointer min-h-[160px] ${file ? 'border-primary bg-primary/5' : 'border-border/60 bg-muted/5 hover:bg-muted/10 hover:border-primary/50'}`}>
-              <input 
+              <input id="f29_uploader_input_1" name="f29_uploader_input_1" 
                 type="file" 
                 accept="application/pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}

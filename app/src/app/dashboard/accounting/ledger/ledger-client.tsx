@@ -180,7 +180,7 @@ export default function LedgerClient({ organizationId, accounts, orgName, orgRut
         <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
           <div className="flex items-center gap-3 bg-muted/10 border-2 border-border rounded-[2rem] px-5 py-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 hover:border-primary/50 transition-all w-full md:w-auto h-14">
             <Search className="h-5 w-5 text-muted-foreground/50 shrink-0" />
-            <select 
+            <select id="field_selectedaccount" name="field_selectedaccount" 
               className="bg-transparent border-0 text-xs font-black uppercase tracking-widest focus:ring-0 outline-none w-full text-foreground cursor-pointer"
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}

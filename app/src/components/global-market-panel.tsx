@@ -449,7 +449,7 @@ export function GlobalMarketPanel({ indicators = [] }: GlobalMarketPanelProps) {
         {/* Selector de Activo en vez de Régimen simulado */}
         <div className="flex items-center gap-1 bg-zinc-50 border border-zinc-200/60 p-1.5 rounded-xl shrink-0 w-full sm:w-auto justify-between sm:justify-start">
           <Sliders className="h-3.5 w-3.5 text-zinc-400" />
-          <select 
+          <select id="field_selectedasset" name="field_selectedasset" 
             value={selectedAsset}
             onChange={(e) => {
               setSelectedAsset(e.target.value)

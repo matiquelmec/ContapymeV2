@@ -64,7 +64,7 @@ export function Header() {
         <MobileSidebar />
         {/* Company Switcher Dinámico */}
         <div className="w-full max-w-[200px] sm:max-w-80">
-          <Select 
+          <Select id="field_activeorgid" name="field_activeorgid" 
             value={activeOrgId} 
             onValueChange={handleOrgChange}
           >

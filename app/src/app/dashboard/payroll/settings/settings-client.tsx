@@ -182,7 +182,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:bg-white hover:border-primary/20 shadow-sm relative overflow-hidden">
                   <div className="md:col-span-2 space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE DE INSTITUCIÓN</Label>
-                    <Input 
+                    <Input id="field_ej_afp_capital" name="field_ej_afp_capital" 
                       placeholder="Ej: AFP Capital" 
                       value={afp.name} 
                       className="h-12 bg-white border-border rounded-xl font-black uppercase text-[11px] tracking-tight focus:ring-primary/20 shadow-sm"
@@ -195,7 +195,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">COMISIÓN (%)</Label>
-                    <Input 
+                    <Input id="field_afp_commission_pct" name="field_afp_commission_pct" 
                       type="number" 
                       step="0.01" 
                       value={afp.commission_pct} 
@@ -250,7 +250,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 bg-muted/5 border-2 border-border/50 rounded-[2rem] items-end group transition-all hover:border-blue-200 hover:bg-white shadow-sm">
                   <div className="md:col-span-2 space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE DE ENTIDAD SALUD</Label>
-                    <Input 
+                    <Input id="field_ej_consalud" name="field_ej_consalud" 
                       placeholder="Ej: Consalud" 
                       value={h.name} 
                       className="h-12 bg-white border-border rounded-xl font-black uppercase text-[11px] tracking-tight focus:ring-blue-200 shadow-sm"
@@ -287,7 +287,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
               <CardContent className="p-10 space-y-8">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">MUTUALIDAD DE SEGURIDAD</Label>
-                  <select 
+                  <select id="field_form_mutual_code" name="field_form_mutual_code" 
                     className="flex h-14 w-full rounded-2xl border border-border bg-white px-6 py-2 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.5rem center', backgroundSize: '1rem' }}
                     value={form.mutual_code}
@@ -301,7 +301,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CAJA DE COMPENSACIÓN (C.C.A.F)</Label>
-                  <Input 
+                  <Input id="field_ej_los_andes_araucana" name="field_ej_los_andes_araucana" 
                     placeholder="Ej: LOS ANDES, ARAUCANA" 
                     value={form.caja_compensacion_code} 
                     className="h-14 bg-white border-border rounded-2xl font-black uppercase text-xs focus:ring-primary/20 shadow-sm px-6"
@@ -310,7 +310,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">TASA MUTUAL (%)</Label>
-                  <Input
+                  <Input id="field_form_tasa_mutual_0_93" name="field_form_tasa_mutual_0_93"
                     type="number"
                     step="0.001"
                     min="0"
@@ -323,7 +323,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">DIAS VACACIONES ANUALES</Label>
-                    <Input
+                    <Input id="field_form_dias_vacaciones_anuales_15" name="field_form_dias_vacaciones_anuales_15"
                       type="number"
                       step="0.01"
                       min="1"
@@ -335,7 +335,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">ZONA EXTREMA EMPRESA</Label>
-                    <select
+                    <select id="field_form_zona_extrema" name="field_form_zona_extrema"
                       className="flex h-14 w-full rounded-2xl border border-border bg-white px-6 py-2 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                       value={form.zona_extrema || ''}
                       onChange={(e) => setForm({...form, zona_extrema: e.target.value, es_zona_extrema: e.target.value !== ''})}
@@ -361,7 +361,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
               <CardContent className="p-10 space-y-8">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">NOMBRE COMPLETO (IDENTIDAD)</Label>
-                  <Input 
+                  <Input id="field_form_rep_legal_nombre" name="field_form_rep_legal_nombre" 
                     value={form.rep_legal_nombre} 
                     className="h-14 bg-white border-border rounded-2xl font-black uppercase text-xs focus:ring-blue-200 shadow-sm px-6"
                     onChange={(e) => setForm({...form, rep_legal_nombre: e.target.value})}
@@ -370,7 +370,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">RUT CORPORATIVO</Label>
-                    <Input 
+                    <Input id="field_12_345_678_9" name="field_12_345_678_9" 
                       placeholder="12.345.678-9" 
                       value={form.rep_legal_rut} 
                       className="h-14 bg-white border-border rounded-2xl font-black text-xs focus:ring-blue-200 shadow-sm px-6"
@@ -379,7 +379,7 @@ export default function SettingsClient({ organizationId, initialSettings }: { or
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CARGO INSTITUCIONAL</Label>
-                    <Input 
+                    <Input id="field_form_rep_legal_cargo" name="field_form_rep_legal_cargo" 
                       value={form.rep_legal_cargo} 
                       className="h-14 bg-white border-border rounded-2xl font-black uppercase text-[10px] tracking-tight focus:ring-blue-200 shadow-sm px-6 italic"
                       onChange={(e) => setForm({...form, rep_legal_cargo: e.target.value})}

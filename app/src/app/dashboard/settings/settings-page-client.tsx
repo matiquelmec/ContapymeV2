@@ -766,7 +766,7 @@ export default function SettingsPageClient({
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-muted/20 p-3 sm:p-4 rounded-[1.5rem] sm:rounded-[2rem] border-2 border-border/50 shadow-inner w-full lg:w-auto">
                   <div className="space-y-1 pr-0 sm:pr-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-border/50">
                      <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">AMBIENTE</Label>
-                     <Select value={cafEnv} onValueChange={(val: any) => val && setCafEnv(val)}>
+                     <Select id="field_cafenv" name="field_cafenv" value={cafEnv} onValueChange={(val: any) => val && setCafEnv(val)}>
                         <SelectTrigger className="h-10 w-full sm:w-32 rounded-xl border-none bg-white font-black uppercase text-[10px] tracking-widest shadow-sm">
                            <SelectValue />
                         </SelectTrigger>
@@ -1008,7 +1008,7 @@ export default function SettingsPageClient({
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ROL ASIGNADO</Label>
-                    <Select 
+                    <Select id="field_inviteform_role" name="field_inviteform_role" 
                       value={inviteForm.role} 
                       onValueChange={(val) => val && setInviteForm({ ...inviteForm, role: val })}
                     >

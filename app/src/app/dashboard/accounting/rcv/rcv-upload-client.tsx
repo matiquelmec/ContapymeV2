@@ -76,7 +76,7 @@ const DropZone = ({
           onClick={() => inputRef.current?.click()}
         >
           <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]" />
-          <input
+          <input id="rcv_upload_client_input_1" name="rcv_upload_client_input_1"
             ref={inputRef}
             type="file"
             accept=".csv"

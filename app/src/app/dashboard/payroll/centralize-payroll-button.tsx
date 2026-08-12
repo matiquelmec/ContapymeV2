@@ -125,7 +125,7 @@ export function CentralizePayrollButton() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Mes</label>
-                        <Select value={mes} onValueChange={(val) => setMes(val || "")}>
+                        <Select id="field_mes" name="field_mes" value={mes} onValueChange={(val) => setMes(val || "")}>
                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold uppercase text-xs w-full">
                                 <SelectValue />
                             </SelectTrigger>
@@ -138,7 +138,7 @@ export function CentralizePayrollButton() {
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Año Fiscal</label>
-                        <Select value={ano} onValueChange={(val) => setAno(val || "")}>
+                        <Select id="field_ano" name="field_ano" value={ano} onValueChange={(val) => setAno(val || "")}>
                             <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200 font-bold uppercase text-xs w-full">
                                 <SelectValue />
                             </SelectTrigger>

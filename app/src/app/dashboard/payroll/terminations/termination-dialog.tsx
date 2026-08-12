@@ -164,7 +164,7 @@ export function TerminationDialog({
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
                     <UserCircle className="w-3.5 h-3.5 text-rose-500/40" /> Colaborador Asignado
                 </Label>
-                <Select 
+                <Select id="termination_dialog_select_1" name="termination_dialog_select_1" 
                   onValueChange={(v) => setFormData({...formData, employee_id: v || ''})}
                   value={formData.employee_id}
                 >
@@ -191,7 +191,7 @@ export function TerminationDialog({
                       <CalendarIcon className="w-3.5 h-3.5 text-rose-500/40" /> Fecha de Egreso
                   </Label>
                   <div className="relative group">
-                    <Input 
+                    <Input id="field_formdata_fecha_termino" name="field_formdata_fecha_termino" 
                         type="date" 
                         className="h-14 bg-muted/10 border-border/40 hover:border-rose-500/30 rounded-2xl font-black text-sm focus:ring-rose-500 focus:bg-white px-8 transition-all shadow-sm"
                         value={formData.fecha_termino}
@@ -204,7 +204,7 @@ export function TerminationDialog({
                   <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
                       <Gavel className="w-3.5 h-3.5 text-rose-500/40" /> Causal Aplicada
                   </Label>
-                  <Select 
+                  <Select id="termination_dialog_select_1" name="termination_dialog_select_1" 
                     onValueChange={(v) => setFormData({...formData, causal_despido: v || ''})}
                     value={formData.causal_despido}
                   >
@@ -231,7 +231,7 @@ export function TerminationDialog({
                   
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Vacaciones Tomadas (Días)</Label>
-                    <Input 
+                    <Input id="field_formdata_dias_vacaciones_tomados" name="field_formdata_dias_vacaciones_tomados" 
                       type="number" 
                       step="0.5"
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
@@ -242,7 +242,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Horas Extras ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_pending_overtime_amount" name="field_formdata_pending_overtime_amount" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.pending_overtime_amount}
@@ -252,7 +252,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Otros Bonos Finiquito ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_other_bonuses" name="field_formdata_other_bonuses" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.other_bonuses}
@@ -262,7 +262,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Asignación de Colación ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_asignacion_colacion" name="field_formdata_asignacion_colacion" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.asignacion_colacion}
@@ -272,7 +272,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Asignación de Movilización ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_asignacion_movilizacion" name="field_formdata_asignacion_movilizacion" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.asignacion_movilizacion}
@@ -282,7 +282,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Viáticos / Otras Asig. ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_viaticos" name="field_formdata_viaticos" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.viaticos}
@@ -297,7 +297,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Préstamo CCAF ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_prestamo_ccaf" name="field_formdata_prestamo_ccaf" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.prestamo_ccaf}
@@ -307,7 +307,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Anticipos de Sueldo ($)</Label>
-                    <Input 
+                    <Input id="field_formdata_anticipo_sueldo" name="field_formdata_anticipo_sueldo" 
                       type="number" 
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
                       value={formData.anticipo_sueldo}
@@ -317,7 +317,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Banco Destinatario</Label>
-                    <Input 
+                    <Input id="field_ej_banco_estado" name="field_ej_banco_estado" 
                       type="text" 
                       placeholder="Ej: Banco Estado"
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"
@@ -328,7 +328,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Tipo de Cuenta</Label>
-                    <Select 
+                    <Select id="termination_dialog_select_1" name="termination_dialog_select_1" 
                       onValueChange={(v) => setFormData({...formData, tipo_cuenta: v || ''})}
                       value={formData.tipo_cuenta}
                     >
@@ -346,7 +346,7 @@ export function TerminationDialog({
 
                   <div className="space-y-3">
                     <Label className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-widest">Número de Cuenta</Label>
-                    <Input 
+                    <Input id="field_ej_12345678" name="field_ej_12345678" 
                       type="text" 
                       placeholder="Ej: 12345678"
                       className="h-12 bg-muted/5 border-border/40 rounded-xl font-bold text-xs"

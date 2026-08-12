@@ -429,7 +429,7 @@ export default function ChartOfAccountsClient({
             />
           </div>
           
-          <Select value={filterTipo} onValueChange={(val) => val && setFilterTipo(val)}>
+          <Select id="field_filtertipo" name="field_filtertipo" value={filterTipo} onValueChange={(val) => val && setFilterTipo(val)}>
             <SelectTrigger className="w-full md:w-[200px] bg-muted/10 border-2 border-border h-14 rounded-3xl font-black text-xs uppercase tracking-widest shadow-sm hover:border-primary/50 transition-all px-6">
               <div className="flex items-center gap-3">
                 <Filter className="h-5 w-5 text-muted-foreground/50" />
@@ -446,7 +446,7 @@ export default function ChartOfAccountsClient({
             </SelectContent>
           </Select>
 
-          <Select value={filterNivel} onValueChange={(val) => val && setFilterNivel(val)}>
+          <Select id="field_filternivel" name="field_filternivel" value={filterNivel} onValueChange={(val) => val && setFilterNivel(val)}>
             <SelectTrigger className="w-full md:w-[200px] bg-muted/10 border-2 border-border h-14 rounded-3xl font-black text-xs uppercase tracking-widest shadow-sm hover:border-primary/50 transition-all px-6">
               <div className="flex items-center gap-3">
                 <Layers className="h-5 w-5 text-muted-foreground/50" />
@@ -497,7 +497,7 @@ export default function ChartOfAccountsClient({
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="tipo" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Clase</Label>
-              <Select 
+              <Select id="field_newaccount_tipo" name="field_newaccount_tipo" 
                 value={newAccount.tipo}
                 onValueChange={(val) => val && setNewAccount({...newAccount, tipo: val})}
               >
@@ -515,7 +515,7 @@ export default function ChartOfAccountsClient({
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="nivel" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nivel</Label>
-              <Select 
+              <Select id="field_string_newaccount_nivel" name="field_string_newaccount_nivel" 
                 value={String(newAccount.nivel)}
                 onValueChange={(val) => val && setNewAccount({...newAccount, nivel: Number(val), acepta_movimiento: val === "4"})}
               >

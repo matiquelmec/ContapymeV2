@@ -153,7 +153,7 @@ export default function SalaryCalculatorPage() {
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground font-black text-sm">
                     $
                   </div>
-                  <input
+                  <input id="field_targetliquido" name="field_targetliquido"
                     type="number"
                     className="flex h-12 w-full rounded-xl border border-border bg-white pl-8 pr-4 py-2 text-sm font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={targetLiquido}
@@ -166,7 +166,7 @@ export default function SalaryCalculatorPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Periodo Fiscal</label>
-                  <input
+                  <input id="field_periodo" name="field_periodo"
                     type="month"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={periodo}
@@ -175,7 +175,7 @@ export default function SalaryCalculatorPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Tipo de Contrato</label>
-                  <select
+                  <select id="field_tipocontrato" name="field_tipocontrato"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={tipoContrato}
                     onChange={(e) => setTipoContrato(e.target.value)}
@@ -189,7 +189,7 @@ export default function SalaryCalculatorPage() {
               {/* Gratificación */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
+                  <input id="page_input_1" name="page_input_1"
                     type="checkbox"
                     checked={gratificacionLegal}
                     onChange={(e) => setGratificacionLegal(e.target.checked)}
@@ -202,7 +202,7 @@ export default function SalaryCalculatorPage() {
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
+                  <input id="page_input_1" name="page_input_1"
                     type="checkbox"
                     checked={esZonaExtrema}
                     onChange={(e) => setEsZonaExtrema(e.target.checked)}
@@ -218,7 +218,7 @@ export default function SalaryCalculatorPage() {
               {esZonaExtrema && (
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Zona</label>
-                  <select
+                  <select id="field_zonaextrema" name="field_zonaextrema"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={zonaExtrema}
                     onChange={(e) => setZonaExtrema(e.target.value)}
@@ -233,7 +233,7 @@ export default function SalaryCalculatorPage() {
               {/* AFP Previsión */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Administradora de Fondos de Pensiones (AFP)</label>
-                <select
+                <select id="field_afpcode" name="field_afpcode"
                   className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   value={afpCode}
                   onChange={(e) => setAfpCode(e.target.value)}
@@ -250,7 +250,7 @@ export default function SalaryCalculatorPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Sistema de Salud</label>
-                  <select
+                  <select id="field_saludcode" name="field_saludcode"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={saludCode}
                     onChange={(e) => {
@@ -264,7 +264,7 @@ export default function SalaryCalculatorPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Plan Salud (UF)</label>
-                  <input
+                  <input id="field_plansaluduf" name="field_plansaluduf"
                     type="number"
                     step="0.01"
                     disabled={saludCode === "FONASA"}
@@ -279,7 +279,7 @@ export default function SalaryCalculatorPage() {
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Asig. Movilización ($)</label>
-                  <input
+                  <input id="field_asignacionmovilizacion" name="field_asignacionmovilizacion"
                     type="number"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={asignacionMovilizacion}
@@ -288,7 +288,7 @@ export default function SalaryCalculatorPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Asig. Colación ($)</label>
-                  <input
+                  <input id="field_asignacioncolacion" name="field_asignacioncolacion"
                     type="number"
                     className="flex h-12 w-full rounded-xl border border-border bg-white px-4 py-2 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     value={asignacionColacion}

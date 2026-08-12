@@ -105,7 +105,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <div className="space-y-1 lg:col-span-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Colaborador</label>
-            <select
+            <select id="field_form_employee_id" name="field_form_employee_id"
               value={form.employee_id}
               onChange={(e) => setForm((p) => ({ ...p, employee_id: e.target.value }))}
               className="h-12 w-full rounded-2xl border-2 border-border bg-card px-3 font-bold uppercase text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -121,7 +121,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Período</label>
-            <Input
+            <Input id="field_form_periodo" name="field_form_periodo"
               type="month"
               required
               value={form.periodo}
@@ -132,7 +132,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tipo</label>
-            <select
+            <select id="field_form_tipo" name="field_form_tipo"
               value={form.tipo}
               onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value as CustomItemTipo }))}
               className="h-12 w-full rounded-2xl border-2 border-border bg-card px-3 font-bold uppercase text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -144,7 +144,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Nombre</label>
-            <Input
+            <Input id="field_form_nombre" name="field_form_nombre"
               value={form.nombre}
               onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
               placeholder="Ej. Bono producción"
@@ -154,7 +154,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
 
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Monto ($)</label>
-            <Input
+            <Input id="field_form_monto" name="field_form_monto"
               type="number"
               min="0"
               value={form.monto}
@@ -165,7 +165,7 @@ export default function CustomItemsCard({ orgId, employees, initialItems }: Cust
 
           {form.tipo === "haber" && (
             <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 h-12">
-              <input
+              <input id="custom_items_card_input_1" name="custom_items_card_input_1"
                 type="checkbox"
                 checked={form.es_imponible}
                 onChange={(e) => setForm((p) => ({ ...p, es_imponible: e.target.checked }))}

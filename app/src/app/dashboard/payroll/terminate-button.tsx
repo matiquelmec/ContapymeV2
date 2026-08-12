@@ -152,7 +152,7 @@ export function TerminateEmployeeButton({
               <Label htmlFor="causal" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 flex items-center gap-2 ml-1">
                 <Gavel className="w-3.5 h-3.5 text-rose-500/50" /> Causal Aplicada
               </Label>
-              <Select value={causal} onValueChange={(v) => setCausal(v || '')}>
+              <Select id="field_causal" name="field_causal" value={causal} onValueChange={(v) => setCausal(v || '')}>
                 <SelectTrigger className="bg-muted/10 border-border/40 hover:border-rose-500/30 rounded-2xl h-14 font-black uppercase text-[10px] tracking-tight focus:ring-rose-500 transition-all shadow-sm px-6">
                   <SelectValue placeholder="Seleccione causal" />
                 </SelectTrigger>

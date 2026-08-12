@@ -414,7 +414,7 @@ export function DTEPreviewDialog({ open, onOpenChange, dte, initialTab = 'visual
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <div className="relative flex-1">
                                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                            <input 
+                                            <input id="field_emailinput" name="field_emailinput" 
                                                 type="email" 
                                                 value={emailInput}
                                                 onChange={(e) => setEmailInput(e.target.value)}

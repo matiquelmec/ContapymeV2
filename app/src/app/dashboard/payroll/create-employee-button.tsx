@@ -418,7 +418,7 @@ export function CreateEmployeeButton() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-dashed border-slate-100">
                              <div className="space-y-3">
                                 <Label className="text-[9px] font-black text-slate-400 uppercase">HORAS TOTALES</Label>
-                                <Input 
+                                <Input id="field_targethoras" name="field_targethoras" 
                                     type="number" 
                                     value={targetHoras} 
                                     onChange={(e) => setTargetHoras(parseInt(e.target.value) || 0)}
@@ -428,7 +428,7 @@ export function CreateEmployeeButton() {
                              <div className="space-y-3">
                                 <Label className="text-[9px] font-black text-slate-400 uppercase">DÍAS A DISTRIBUIR (MAX 6)</Label>
                                 <div className="flex gap-2">
-                                    <Input 
+                                    <Input id="field_targetdias" name="field_targetdias" 
                                         type="number" 
                                         min="1" 
                                         max="6" 
@@ -452,15 +452,15 @@ export function CreateEmployeeButton() {
                         <div className="space-y-3">
                             <Label className="text-[9px] font-black text-slate-400 uppercase ml-1">HORARIO</Label>
                             <div className="flex items-center gap-2">
-                                <Input type="time" value={horaEntrada || "00:00"} onChange={(e) => setHoraEntrada(e.target.value)} className="h-12 rounded-xl font-black text-xs text-center p-0" />
+                                <Input id="field_horaentrada_00_00" name="field_horaentrada_00_00" type="time" value={horaEntrada || "00:00"} onChange={(e) => setHoraEntrada(e.target.value)} className="h-12 rounded-xl font-black text-xs text-center p-0" />
                                 <span className="text-slate-300 font-bold">A</span>
-                                <Input type="time" value={horaSalida || "00:00"} onChange={(e) => setHoraSalida(e.target.value)} className="h-12 rounded-xl font-black text-xs text-center p-0" />
+                                <Input id="field_horasalida_00_00" name="field_horasalida_00_00" type="time" value={horaSalida || "00:00"} onChange={(e) => setHoraSalida(e.target.value)} className="h-12 rounded-xl font-black text-xs text-center p-0" />
                             </div>
                         </div>
 
                         <div className="space-y-3">
                             <Label className="text-[9px] font-black text-slate-400 uppercase ml-1">COLACIÓN (MIN)</Label>
-                            <Input type="number" step="15" value={colacionMinutos || 0} onChange={(e) => setColacionMinutos(parseInt(e.target.value) || 0)} className="h-12 rounded-xl font-black text-xs text-center" />
+                            <Input id="field_colacionminutos_0" name="field_colacionminutos_0" type="number" step="15" value={colacionMinutos || 0} onChange={(e) => setColacionMinutos(parseInt(e.target.value) || 0)} className="h-12 rounded-xl font-black text-xs text-center" />
                         </div>
 
                         <div className="space-y-3 text-center bg-white p-3 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group">

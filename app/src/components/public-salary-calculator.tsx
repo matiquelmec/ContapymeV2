@@ -386,7 +386,7 @@ function CalculatorContent() {
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Sueldo Líquido Objetivo</label>
           <div className="relative">
             <span className="absolute left-3.5 inset-y-0 flex items-center text-xs font-black text-slate-400">$</span>
-            <input
+            <input id="field_targetliquido" name="field_targetliquido"
               type="number"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white pl-8 pr-4 text-xs font-black tracking-tight outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={targetLiquido}
@@ -399,7 +399,7 @@ function CalculatorContent() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Contrato</label>
-            <select
+            <select id="field_tipocontrato" name="field_tipocontrato"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={tipoContrato}
               onChange={(e) => setTipoContrato(e.target.value)}
@@ -410,7 +410,7 @@ function CalculatorContent() {
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Previsión AFP</label>
-            <select
+            <select id="field_afpcode" name="field_afpcode"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={afpCode}
               onChange={(e) => setAfpCode(e.target.value)}
@@ -426,7 +426,7 @@ function CalculatorContent() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Salud</label>
-            <select
+            <select id="field_saludcode" name="field_saludcode"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={saludCode}
               onChange={(e) => {
@@ -515,7 +515,7 @@ function CalculatorContent() {
         {esZonaExtrema && (
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Zona</label>
-            <select
+            <select id="field_zonaextrema" name="field_zonaextrema"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={zonaExtrema}
               onChange={(e) => setZonaExtrema(e.target.value)}

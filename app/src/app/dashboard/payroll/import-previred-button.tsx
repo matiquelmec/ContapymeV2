@@ -138,7 +138,7 @@ export function ImportPreviredPDFButton() {
               }`}
               onClick={onButtonClick}
             >
-              <input 
+              <input id="import_previred_button_input_1" name="import_previred_button_input_1" 
                 ref={fileInputRef}
                 type="file" 
                 className="hidden" 

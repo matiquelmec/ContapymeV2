@@ -261,7 +261,7 @@ export function BillingClient({ organizationId, initialData, stats }: BillingCli
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input 
+                    <Input id="field_buscar_por_rut_folio_o_raz_n_social" name="field_buscar_por_rut_folio_o_raz_n_social" 
                         placeholder="Buscar por RUT, Folio o Razón Social..." 
                         className="pl-10 rounded-2xl border-border/50 bg-card/50 backdrop-blur-sm focus-visible:ring-primary/20 h-11"
                         value={searchTerm}

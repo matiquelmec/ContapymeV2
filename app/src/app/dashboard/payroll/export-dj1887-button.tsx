@@ -119,7 +119,7 @@ export function ExportDJ1887Button() {
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                 Año Comercial / Periodo Fiscal
               </label>
-              <Select value={selectedYear} onValueChange={(val) => setSelectedYear(val || '')}>
+              <Select id="field_selectedyear" name="field_selectedyear" value={selectedYear} onValueChange={(val) => setSelectedYear(val || '')}>
                 <SelectTrigger className="h-12 w-full rounded-xl border border-border bg-white px-4 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none">
                   <SelectValue placeholder="Seleccione año" />
                 </SelectTrigger>

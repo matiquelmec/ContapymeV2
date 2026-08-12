@@ -298,7 +298,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                     <div className="flex flex-col md:grid md:grid-cols-12 gap-6 md:gap-8">
                         <div className="md:col-span-4 space-y-3">
                             <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Tipo de Documento</Label>
-                            <Select value={tipoDte} onValueChange={(v) => v && setTipoDte(v)}>
+                            <Select id="field_tipodte" name="field_tipodte" value={tipoDte} onValueChange={(v) => v && setTipoDte(v)}>
                                 <SelectTrigger className="w-full rounded-2xl h-14 border-slate-200 bg-white shadow-sm font-bold text-slate-700 px-6">
                                     <SelectValue placeholder="Seleccione Tipo" />
                                 </SelectTrigger>
@@ -324,7 +324,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                         {validateRUT(receptor.rut) && <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Válido</span>}
                                     </div>
                                     <div className="relative">
-                                        <Input 
+                                        <Input id="field_77_123_456_k" name="field_77_123_456_k" 
                                             placeholder="77.123.456-K" 
                                             className={cn(
                                                 "rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white font-mono",
@@ -338,7 +338,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 </div>
                                 <div className="md:col-span-8 space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Razón Social</Label>
-                                    <Input 
+                                    <Input id="field_nombre_completo_o_raz_n_social" name="field_nombre_completo_o_raz_n_social" 
                                         placeholder="Nombre completo o Razón Social" 
                                         className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white font-bold"
                                         value={receptor.razon_social}
@@ -347,7 +347,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 </div>
                                 <div className="md:col-span-4 space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Giro Comercial</Label>
-                                    <Input 
+                                    <Input id="field_giro_ej_venta_al_por_menor" name="field_giro_ej_venta_al_por_menor" 
                                         placeholder="Giro (ej: Venta al por menor)" 
                                         className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
                                         value={receptor.giro}
@@ -356,7 +356,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 </div>
                                 <div className="md:col-span-5 space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Dirección Comercial</Label>
-                                    <Input 
+                                    <Input id="field_ej_av_espa_a_1230" name="field_ej_av_espa_a_1230" 
                                         placeholder="Ej: Av. España 1230" 
                                         className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
                                         value={receptor.direccion}
@@ -365,7 +365,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                 </div>
                                 <div className="md:col-span-3 space-y-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-tight text-slate-400 pl-1">Comuna</Label>
-                                    <Input 
+                                    <Input id="field_ej_punta_arenas" name="field_ej_punta_arenas" 
                                         placeholder="Ej: Punta Arenas" 
                                         className="rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white text-xs font-bold"
                                         value={receptor.comuna}
@@ -405,14 +405,14 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                     {items.map((item) => (
                                         <TableRow key={item.id} className="hover:bg-slate-50/30">
                                             <TableCell className="py-4 pl-8">
-                                                <Input 
+                                                <Input id="field_item_product_name" name="field_item_product_name" 
                                                     value={item.product_name}
                                                     onChange={e => updateItem(item.id, 'product_name', e.target.value)}
                                                     className="rounded-xl h-11 border-transparent bg-transparent hover:bg-white focus:bg-white font-bold text-sm"
                                                 />
                                             </TableCell>
                                             <TableCell className="py-4">
-                                                <Input 
+                                                <Input id="field_item_quantity" name="field_item_quantity" 
                                                     type="number"
                                                     value={item.quantity || ''}
                                                     onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value))}
@@ -420,7 +420,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                                 />
                                             </TableCell>
                                             <TableCell className="py-4">
-                                                <Input 
+                                                <Input id="field_item_unit_price" name="field_item_unit_price" 
                                                     type="number"
                                                     value={item.unit_price || ''}
                                                     onChange={e => updateItem(item.id, 'unit_price', parseInt(e.target.value))}

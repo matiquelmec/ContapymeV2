@@ -382,7 +382,7 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
 
             {/* Dropdown de períodos */}
             <div className="w-full sm:w-auto shrink-0" suppressHydrationWarning>
-              <Select value={selectedPeriodo || "all"} onValueChange={(val) => {
+              <Select id="field_selectedperiodo_all" name="field_selectedperiodo_all" value={selectedPeriodo || "all"} onValueChange={(val) => {
                 setSelectedPeriodo(val === "all" || !val ? "" : val);
                 setSelectedYear("");
               }}>
@@ -404,7 +404,7 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
 
             {/* Accesos directos rápidos (últimos 4 periodos coincidentes) */}
             <div className="w-full sm:w-auto shrink-0" suppressHydrationWarning>
-              <Select value={selectedYear || "all"} onValueChange={(val) => {
+              <Select id="field_selectedyear_all" name="field_selectedyear_all" value={selectedYear || "all"} onValueChange={(val) => {
                 setSelectedYear(val === "all" || !val ? "" : val);
                 setSelectedPeriodo("");
               }}>
