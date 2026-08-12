@@ -420,6 +420,8 @@ export default function ChartOfAccountsClient({
           <div className="relative flex-1 w-full">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" />
             <Input
+              id="chartSearchTerm"
+              name="chartSearchTerm"
               placeholder="Ej. '1.1.01.001' o 'Banco Estado'..."
               className="pl-14 bg-muted/10 border-2 border-border text-foreground font-black h-14 rounded-3xl shadow-sm focus:ring-primary focus:border-primary transition-all text-sm uppercase tracking-wide hover:border-primary/50"
               value={searchTerm}
@@ -476,6 +478,7 @@ export default function ChartOfAccountsClient({
               <Label htmlFor="codigo" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</Label>
               <Input 
                 id="codigo" 
+                name="codigo"
                 value={newAccount.codigo}
                 onChange={handleCodeChange}
                 className="col-span-3 h-11 bg-muted/30 border-border font-black font-mono tracking-tighter" 
@@ -486,6 +489,7 @@ export default function ChartOfAccountsClient({
               <Label htmlFor="nombre" className="text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nombre</Label>
               <Input 
                 id="nombre" 
+                name="nombre"
                 value={newAccount.nombre}
                 onChange={(e) => setNewAccount({...newAccount, nombre: e.target.value})}
                 className="col-span-3 h-11 bg-muted/30 border-border font-black uppercase text-xs"
