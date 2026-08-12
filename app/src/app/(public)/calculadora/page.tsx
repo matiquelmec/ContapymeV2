@@ -3,9 +3,23 @@ import { Calculator, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Calculadora de Sueldo Líquido a Base y Costo Empleador",
-  description: "Simula el sueldo base imponible, retenciones de leyes sociales chilenas y costo real de contratación para Magallanes y zonas extremas.",
-  keywords: ["calculadora de sueldo", "sueldo liquido a base", "costo contratacion chile", "leyes sociales punta arenas", "zona franca beneficio tributario", "dl 889"],
+  title: "Calculadora de Sueldo Líquido a Bruto Chile 2026",
+  description: "Calcula de forma exacta tu sueldo líquido, bruto, retenciones de AFP, Salud, AFC, Impuesto Único y beneficios de Zona Extrema (Magallanes - DL 889). Simulador contable gratuito.",
+  keywords: [
+    "calculadora de sueldo",
+    "calculadora sueldo liquido chile",
+    "calcular sueldo bruto chile",
+    "sueldo liquido a bruto",
+    "simulador sueldo punta arenas",
+    "descuentos afp isapre afc chile",
+    "impuesto unico segunda categoria",
+    "beneficio dl 889 magallanes"
+  ],
+  openGraph: {
+    title: "Calculadora de Sueldo Líquido y Costo Empleador Chile",
+    description: "Simula el sueldo bruto, líquido y costo real de contratación en Chile y Magallanes.",
+    url: "https://contapymepuq.cl/calculadora",
+  },
 };
 
 export default async function CalculadoraPublicaPage() {

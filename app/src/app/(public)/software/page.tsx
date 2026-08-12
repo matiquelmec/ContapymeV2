@@ -15,6 +15,25 @@ import {
 } from "lucide-react";
 import { AISandbox } from "@/components/ai-sandbox";
 import { TaxCalculator } from "@/components/tax-calculator";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Software Contable, ERP & Remuneraciones en Punta Arenas",
+  description: "Sistema de gestión contable IFRS, emisión de facturación electrónica SII, libro de remuneraciones LRE y conciliación bancaria para Pymes en Magallanes y Chile.",
+  keywords: [
+    "software contable chile",
+    "software remuneraciones punta arenas",
+    "erp contable magallanes",
+    "facturacion electronica sii",
+    "libro remuneraciones electronico dt",
+    "contador punta arenas software"
+  ],
+  openGraph: {
+    title: "Software Contable & Remuneraciones LRE - Contapymepuq",
+    description: "Gestión contable IFRS, facturación SII y liquidaciones masivas en Punta Arenas.",
+    url: "https://contapymepuq.cl/software",
+  },
+};
 
 export default function SoftwarePage() {
   return (

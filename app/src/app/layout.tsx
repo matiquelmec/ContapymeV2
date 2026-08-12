@@ -13,45 +13,64 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { Providers } from "@/components/providers";
+import { JsonLdSchema } from "@/components/json-ld";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://contapymepuq.cl"),
   title: {
-    default: "Contapymepuq | Inteligencia Contable y Regional",
+    default: "Contapymepuq | Software Contable, Nómina & Noticias en Punta Arenas",
     template: "%s | Contapymepuq"
   },
-  description: "La plataforma líder en Punta Arenas para la gestión contable inteligente y noticias regionales en tiempo real. Grado institucional para PyMEs de Magallanes.",
-  keywords: ["contabilidad", "punta arenas", "magallanes", "pyme", "gestión financiera", "diario regional", "inteligencia artificial"],
+  description: "Plataforma integral en Punta Arenas para contabilidad IFRS, remuneraciones (LRE DT), facturación electrónica SII, calculadora de sueldo y diario regional de Magallanes.",
+  keywords: [
+    "calculadora de sueldos",
+    "calculadora sueldo liquido chile",
+    "contador en punta arenas",
+    "servicios de contabilidad punta arenas",
+    "diario punta arenas",
+    "noticias punta arenas magallanes",
+    "software contable chile",
+    "remuneraciones lre dt",
+    "facturacion electronica sii",
+    "pyme magallanes"
+  ],
   authors: [{ name: "Contapymepuq Team" }],
   creator: "Contapymepuq",
   publisher: "Contapymepuq",
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   openGraph: {
     type: "website",
     locale: "es_CL",
-    url: "https://www.contapymepuq.cl",
+    url: "https://contapymepuq.cl",
     siteName: "Contapymepuq",
-    title: "Contapymepuq | Inteligencia Contable y Regional",
-    description: "Gestión contable de vanguardia y noticias regionales para Magallanes.",
+    title: "Contapymepuq | Software Contable, Nómina & Noticias en Punta Arenas",
+    description: "Estudio contable digital, simulador de sueldos y noticias regionales en tiempo real para Magallanes.",
     images: [
       {
-        url: "https://www.contapymepuq.cl/og-image.png",
+        url: "https://contapymepuq.cl/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Contapymepuq Dashboard",
+        alt: "Contapymepuq SaaS Contable Magallanes",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contapymepuq | Inteligencia Contable y Regional",
-    description: "Gestión contable avanzada para Punta Arenas.",
-    images: ["https://www.contapymepuq.cl/og-image.png"],
+    title: "Contapymepuq | Contabilidad & Sueldos en Punta Arenas",
+    description: "Gestión contable avanzada y remuneraciones para la Región de Magallanes.",
+    images: ["https://contapymepuq.cl/og-image.png"],
   },
 };
-
-import { Providers } from "@/components/providers";
 
 export default function RootLayout({
   children,
@@ -64,6 +83,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <JsonLdSchema />
         <Providers>
           {children}
         </Providers>

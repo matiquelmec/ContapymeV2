@@ -7,6 +7,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MarketTicker } from "@/components/market-ticker";
 import { getLatestIndicators } from "@/actions/indicators";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Diario Regional de Noticias de Punta Arenas y Magallanes",
+  description: "Noticias de última hora, economía, finanzas, inversión y actualidad de la Región de Magallanes y la Antártica Chilena. Prensa local independiente.",
+  keywords: [
+    "diario punta arenas",
+    "noticias punta arenas magallanes",
+    "diario regional magallanes",
+    "prensa punta arenas",
+    "economia magallanes",
+    "inversion punta arenas"
+  ],
+  openGraph: {
+    title: "Diario Regional Magallanes | Contapymepuq Noticias",
+    description: "Información económica, empresarial y noticias de última hora en Punta Arenas.",
+    url: "https://contapymepuq.cl/noticias",
+  },
+};
+
 export const revalidate = 600; // Refrescar noticias cada 10 min
 
 export default async function NewsArchivePage() {
