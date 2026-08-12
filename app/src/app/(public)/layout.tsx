@@ -129,17 +129,14 @@ export default async function PublicLayout({
             </div>
           </div>
 
-          {/* Sub-Footer Infobar */}
+          {/* Sub-Footer Infobar (Limpio y Sin Redundancias) */}
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">
             <div>
-              © {new Date().getFullYear()} CONTAPYMEPUQ. Punta Arenas, Región de Magallanes y Antártica Chilena.
+              © {new Date().getFullYear()} CONTAPYMEPUQ. Punta Arenas, Magallanes y Antártica Chilena. Todos los derechos reservados.
             </div>
-            <div className="flex items-center gap-4 text-slate-400">
-              <Link href="/privacidad" className="hover:text-primary transition-colors">Privacidad</Link>
-              <span className="text-slate-700">•</span>
-              <Link href="/terminos" className="hover:text-primary transition-colors">Términos</Link>
-              <span className="text-slate-700">•</span>
-              <Link href="/contacto" className="hover:text-primary transition-colors">Contacto</Link>
+            <div className="flex items-center gap-2.5 text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 text-[10px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Sistemas SII, LRE & Motor FastAPI Operativos al 100%</span>
             </div>
           </div>
         </div>
