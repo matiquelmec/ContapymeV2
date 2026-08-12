@@ -49,7 +49,26 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
       docSubtitle = `REGISTRO OFICIAL CERTIFICADO — ${org.nombre}`
     }
   } 
-  // B. Verificación de Feriado Legal / Vacaciones (vac-...)
+  // B. Verificación de Finiquito de Trabajo (fin-...)
+  else if (cleanId.startsWith('fin-')) {
+    const rawId = cleanId.replace('fin-', '')
+    const { data: terms } = await supabase
+      .from('employee_terminations')
+      .select('*, employees(*), organizations(*)')
+      .or(`id.ilike.${rawId}%`)
+      .limit(1)
+
+    const term = terms && terms.length > 0 ? terms[0] : null
+    if (term) {
+      docType = 'termination' as any
+      emp = term.employees
+      org = term.organizations
+      docTitle = 'Finiquito de Trabajo Acreditado'
+      docSubtitle = `CAUSAL: ${term.causal_despido?.toUpperCase()}`
+      totalLiquido = Number(term.total_finiquito || 0)
+    }
+  }
+  // C. Verificación de Feriado Legal / Vacaciones (vac-...)
   else if (cleanId.startsWith('vac-')) {
     docType = 'vacation'
     docTitle = 'Comprobante de Feriado Legal (Vacaciones)'

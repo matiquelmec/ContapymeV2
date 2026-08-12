@@ -491,7 +491,7 @@ async def download_docx(
                     
                     # --- GENERAR QR DE VERIFICACIÓN ---
                     try:
-                        verify_url = f"https://contapymepuq.cl/verify/{emp.get('rut', 'ID')}"
+                        verify_url = f"https://contapymepuq.cl/verify/fin-{term['id'][:12]}"
                         qr_api_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={verify_url}"
                         qr_response = requests.get(qr_api_url)
                         if qr_response.status_code == 200:
