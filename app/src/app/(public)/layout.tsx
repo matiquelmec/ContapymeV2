@@ -124,13 +124,13 @@ export default async function PublicLayout({
               <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-indigo-500 pl-2.5">Redes Sociales & Legal</h4>
               <ul className="space-y-2.5 text-xs font-semibold text-slate-400">
                 <li>
-                  <a href="https://wa.me/56920000000" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-emerald-400 transition-colors">
-                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" /> WhatsApp Directo
+                  <a href="https://wa.me/56944444565" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-emerald-400 transition-colors">
+                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" /> WhatsApp +56 9 4444 4565
                   </a>
                 </li>
                 <li>
-                  <a href="https://www.instagram.com/contapymepuq" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-pink-400 transition-colors">
-                    <InstagramIcon className="w-4 h-4 text-pink-400 fill-current" /> Instagram @contapymepuq
+                  <a href="https://www.instagram.com/contapyme.puq" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-pink-400 transition-colors">
+                    <InstagramIcon className="w-4 h-4 text-pink-400 fill-current" /> Instagram @contapyme.puq
                   </a>
                 </li>
                 <li><Link href="/privacidad" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>

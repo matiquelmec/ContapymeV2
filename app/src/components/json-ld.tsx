@@ -30,7 +30,7 @@ export function JsonLdSchema() {
     ],
     "priceRange": "$$",
     "openingHours": "Mo-Fr 08:30-18:30",
-    "telephone": "+56-61-200000"
+    "telephone": "+56-9-44444565"
   };
 
   const webAppSchema = {

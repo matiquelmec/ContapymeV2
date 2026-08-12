@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin, Zap } from "lucide-react";
 import { ContactForm } from "@/components/contact-form";
+import { WhatsAppIcon, InstagramIcon } from "@/components/social-icons";
 
 export default function ContactoPage() {
   return (
@@ -34,8 +35,28 @@ export default function ContactoPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
+                <a href="https://wa.me/56944444565" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
                   <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl border border-emerald-500/20 shadow-sm shrink-0">
+                    <WhatsAppIcon className="h-5 w-5 fill-current" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">WhatsApp Directo</span>
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-600">+56 9 4444 4565</span>
+                  </div>
+                </a>
+
+                <a href="https://www.instagram.com/contapyme.puq" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
+                  <div className="p-3.5 bg-pink-500/10 text-pink-600 rounded-2xl border border-pink-500/20 shadow-sm shrink-0">
+                    <InstagramIcon className="h-5 w-5 fill-current" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Instagram Oficial</span>
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-600">@contapyme.puq</span>
+                  </div>
+                </a>
+
+                <div className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
+                  <div className="p-3.5 bg-primary/10 text-primary rounded-2xl border border-primary/20 shadow-sm shrink-0">
                     <Zap className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">

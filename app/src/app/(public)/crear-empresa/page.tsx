@@ -34,8 +34,8 @@ export const metadata: Metadata = {
 };
 
 export default function CrearEmpresaPage() {
-  const whatsappUrl = "https://wa.me/56920000000?text=" + encodeURIComponent("¡Hola! Me interesa formalizar mi empresa por $35.000 en Contapymepuq. Quisiera más información.");
-  const instagramUrl = "https://www.instagram.com/contapymepuq";
+  const whatsappUrl = "https://wa.me/56944444565?text=" + encodeURIComponent("¡Hola! Me interesa formalizar mi empresa por $35.000 en Contapymepuq. Quisiera más información.");
+  const instagramUrl = "https://www.instagram.com/contapyme.puq";
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
