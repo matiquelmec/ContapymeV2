@@ -101,7 +101,8 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   doc.setTextColor(0, 0, 0)
 
   doc.setFontSize(16); doc.setFont('helvetica', 'bold')
-  doc.text('LIQUIDACION DE SUELDO', 105, 52, { align: 'center' })
+  const isHonorariosDoc = Number(snap.retencion_honorarios || 0) > 0 || (liquidation.tipo_contrato || snap.tipo_contrato) === 'honorarios'
+  doc.text(isHonorariosDoc ? 'LIQUIDACION DE HONORARIOS' : 'LIQUIDACION DE SUELDO', 105, 52, { align: 'center' })
   doc.setFontSize(12)
   doc.text(period.toUpperCase(), 105, 59, { align: 'center' })
 

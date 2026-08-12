@@ -146,9 +146,13 @@ export default function LiquidationDetailPage() {
     doc.text(`FOLIO N° ${liquidation.folio_number || ''}`, 190, 20, { align: 'right' })
     doc.setTextColor(0, 0, 0)
 
-    // Título
+    // Título y tipo de régimen
+    const snap = liquidation.calculation_snapshot || {}
+    const retencionHonorarios = Number(snap.retencion_honorarios || 0)
+    const isHonorarios = (liquidation.tipo_contrato || snap.tipo_contrato) === 'honorarios' || retencionHonorarios > 0
+
     doc.setFontSize(16); doc.setFont('helvetica', 'bold')
-    doc.text('LIQUIDACIÓN DE SUELDO', 105, 52, { align: 'center' })
+    doc.text(isHonorarios ? 'LIQUIDACIÓN DE HONORARIOS' : 'LIQUIDACIÓN DE SUELDO', 105, 52, { align: 'center' })
     doc.setFontSize(12)
     doc.text(period.toUpperCase(), 105, 59, { align: 'center' })
 
@@ -191,11 +195,27 @@ export default function LiquidationDetailPage() {
     habRow('Bono Movilización', liquidation.asignacion_movilizacion || 0)
     if (liquidation.otros_haberes > 0) habRow('Otros Haberes', liquidation.otros_haberes)
 
-    desRow(`AFP: ${liquidation.afp_code}`, (liquidation.afp || 0) + (liquidation.afp_comision || 0))
-    desRow(`Salud: ${liquidation.salud_code}`, liquidation.salud || 0)
-    desRow('Seguro Cesantía (AFC)', liquidation.afc_trabajador || 0)
-    if (liquidation.impuesto_unico > 0) desRow('Impuesto Único 2da Cat.', liquidation.impuesto_unico)
-    if (liquidation.otros_descuentos > 0) desRow('Otros Descuentos', liquidation.otros_descuentos)
+    if (retencionHonorarios > 0) {
+      desRow('Retención Honorarios', retencionHonorarios)
+    }
+    if (((liquidation.afp || 0) + (liquidation.afp_comision || 0)) > 0) {
+      desRow(`AFP: ${liquidation.afp_code}`, (liquidation.afp || 0) + (liquidation.afp_comision || 0))
+    }
+    if ((liquidation.salud || 0) > 0) {
+      desRow(`Salud: ${liquidation.salud_code}`, liquidation.salud || 0)
+    }
+    if ((liquidation.afc_trabajador || 0) > 0) {
+      desRow('Seguro Cesantía (AFC)', liquidation.afc_trabajador || 0)
+    }
+    if (liquidation.impuesto_unico > 0) {
+      desRow('Impuesto Único 2da Cat.', liquidation.impuesto_unico)
+    }
+    if (liquidation.credito_ccaf > 0) {
+      desRow('Crédito CCAF', liquidation.credito_ccaf)
+    }
+    if (liquidation.otros_descuentos > 0) {
+      desRow('Otros Descuentos', liquidation.otros_descuentos)
+    }
 
     // Totales
     y = Math.max(yHab, yDes) + 2
@@ -511,10 +531,27 @@ export default function LiquidationDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-3">
-                <ItemDetail label={`AFP (${liquidation.afp_code})`} value={fCurrency((liquidation.afp || 0) + (liquidation.afp_comision || 0))} danger />
-                <ItemDetail label={`Salud (${liquidation.salud_code})`} value={fCurrency(liquidation.salud)} danger />
-                <ItemDetail label="Seguro de Cesantía (AFC)" value={fCurrency(liquidation.afc_trabajador)} danger />
-                <ItemDetail label="Impuesto Único Segunda Cat." value={fCurrency(liquidation.impuesto_unico)} danger />
+                {Number(liquidation.calculation_snapshot?.retencion_honorarios || 0) > 0 && (
+                  <ItemDetail label="Retención Honorarios de Ley (15.25%)" value={fCurrency(Number(liquidation.calculation_snapshot.retencion_honorarios))} danger />
+                )}
+                {((liquidation.afp || 0) + (liquidation.afp_comision || 0)) > 0 && (
+                  <ItemDetail label={`AFP (${liquidation.afp_code})`} value={fCurrency((liquidation.afp || 0) + (liquidation.afp_comision || 0))} danger />
+                )}
+                {(liquidation.salud || 0) > 0 && (
+                  <ItemDetail label={`Salud (${liquidation.salud_code})`} value={fCurrency(liquidation.salud)} danger />
+                )}
+                {(liquidation.afc_trabajador || 0) > 0 && (
+                  <ItemDetail label="Seguro de Cesantía (AFC)" value={fCurrency(liquidation.afc_trabajador)} danger />
+                )}
+                {liquidation.impuesto_unico > 0 && (
+                  <ItemDetail label="Impuesto Único Segunda Cat." value={fCurrency(liquidation.impuesto_unico)} danger />
+                )}
+                {liquidation.credito_ccaf > 0 && (
+                  <ItemDetail label="Crédito CCAF" value={fCurrency(liquidation.credito_ccaf)} danger />
+                )}
+                {liquidation.otros_descuentos > 0 && (
+                  <ItemDetail label="Otros Descuentos" value={fCurrency(liquidation.otros_descuentos)} danger />
+                )}
                 <div className="pt-3 border-t border-border flex justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest text-rose-700">Total Deducciones</span>
                   <span className="font-black text-rose-700">-{fCurrency(liquidation.total_descuentos)}</span>
