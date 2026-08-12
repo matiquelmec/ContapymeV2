@@ -280,25 +280,6 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                               </div>
                            </div>
                         </div>
-                        
-                        {/* Botonera de Análisis IA Pyme en Hero */}
-                        <div className="flex items-center justify-between p-4 bg-primary/[0.04] border border-primary/15 rounded-2xl">
-                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
-                            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                            <span>Análisis de Impacto Pyme con IA</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setAnalyzedNews(heroNews);
-                            }}
-                            className="text-[10px] font-black uppercase tracking-widest bg-primary hover:shadow-lg rounded-xl h-8 px-4"
-                          >
-                            Analizar Noticia →
-                          </Button>
-                        </div>
                       </div>
                     </Link>
                   ) : (
