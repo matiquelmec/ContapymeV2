@@ -95,13 +95,16 @@ Contapymepuq/
 
 ---
 
-## ✨ Características Principales (Features)
+## ✨ Características Principales (Features v9.5)
 
-*   **🔒 Multi-Tenant Nivel Dios**: Todas las tablas transaccionales están blindadas con políticas de Seguridad a Nivel de Fila (RLS) mediante la función `private.is_org_member(organization_id)`.
-*   **🔗 Blockchain-like Ledger**: Encadenamiento inmutable de facturas mediante hash SHA-256 en la tabla `dte_issued`.
-*   **🧮 Chilean Payroll Core**: Cálculo preciso de tramos de asignación familiar chilenos, cotizaciones previsionales y topes en UF actualizados.
-*   **🏦 Conciliación Bancaria Avanzada**: Sincronización inmutable del estado de reconciliación en tiempo real mediante triggers y funciones nativas PostgreSQL.
-*   **📰 Diario Descentralizado**: Motor agregador de noticias regionales (`regional_news`) integrado con SEO avanzado y slugs inmutables.
+*   **🔒 Multi-Tenant Nivel Dios**: Todas las tablas transaccionales están blindadas con Políticas de Seguridad a Nivel de Fila (RLS) en PostgreSQL (`private.is_org_member`).
+*   **🌐 Portal Público de Verificación Criptográfica (`/verify/[id]`)**: Autenticación inmutable pública de Liquidaciones, Vacaciones, Contratos, Finiquitos y Balances de 8 Columnas sin requerir inicio de sesión.
+*   **📜 Estándar Legal de Contratos (10 Cláusulas - 2026)**: Plantilla jurídica de grado corporativo adaptada a la Ley 21.561 (40 Horas), Ley Karin 21.643, Ley 17.336 (Propiedad Intelectual) y Ley 19.628 (Protección de Datos).
+*   **💼 Diferenciación Dinámica de Tipos de Contrato**: Lógica diferenciada para contratos Indefinidos, Plazo Fijo, Honorarios (Retención 15.25%), Obra o Faena, Part-Time 30h y Teletrabajo (Ley 21.220).
+*   **🏦 Tesorería & Flujo de Caja 360°**: Cobros RCV, pagos a proveedores y nómina con centralización contable automática en Libro Diario y pruebas de estrés de conciliación bancaria.
+*   **🔗 Blockchain-like Ledger & Sello SHA-256**: Encadenamiento inmutable de DTEs e inserción de sello digital con código QR de verificación en documentos.
+*   **🧮 Motor de Remuneraciones Magallanes**: Cálculo preciso de cotizaciones previsionales, Impuesto Único de Segunda Categoría, asignación por zona extrema (20 días de vacaciones) y topes UF/UTM actualizados.
+*   **📰 Diario Informativo Regional**: Motor agregador de noticias de la Región de Magallanes (`regional_news`) integrado con SEO avanzado y slugs inmutables.
 
 ---
 
