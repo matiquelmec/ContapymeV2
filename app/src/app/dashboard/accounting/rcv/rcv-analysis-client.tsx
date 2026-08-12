@@ -365,6 +365,8 @@ export function RCVAnalysisClient({ organizationId, initialData, initialSelected
             <div className="relative flex items-center bg-card rounded-2xl border border-border px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all h-10 w-full sm:w-44 md:w-52 shadow-sm" suppressHydrationWarning>
               <Search className="w-3.5 h-3.5 text-muted-foreground mr-2 shrink-0" />
               <input
+                id="filterQuery"
+                name="filterQuery"
                 type="text"
                 placeholder="Buscar mes o año..."
                 value={filterQuery}

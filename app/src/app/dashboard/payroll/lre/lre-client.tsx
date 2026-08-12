@@ -169,8 +169,10 @@ export default function LREClient({
               </div>
               <div className="flex flex-col md:flex-row items-stretch md:items-end gap-6 w-full md:w-auto">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">PERIODO FISCAL</label>
+                  <label htmlFor="selectedMonth" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">PERIODO FISCAL</label>
                   <input 
+                    id="selectedMonth"
+                    name="selectedMonth"
                     type="month" 
                     className="flex h-12 w-full md:w-48 rounded-xl border border-border bg-white px-4 py-2 text-xs font-black uppercase tracking-tight shadow-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                     value={selectedMonth}

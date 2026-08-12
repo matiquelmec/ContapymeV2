@@ -197,6 +197,8 @@ export default function LedgerClient({ organizationId, accounts, orgName, orgRut
           <div className="flex items-center gap-3 bg-muted/10 border-2 border-border rounded-[2rem] px-5 py-2 shadow-sm hover:border-primary/50 transition-all w-full md:w-auto h-14 shrink-0">
             <Calendar className="h-5 w-5 text-muted-foreground/50 shrink-0" />
             <input 
+              id="startDate"
+              name="startDate"
               type="date"
               className="bg-transparent border-0 text-[11px] font-black uppercase focus:ring-0 outline-none w-28 text-foreground"
               value={startDate}
@@ -204,6 +206,8 @@ export default function LedgerClient({ organizationId, accounts, orgName, orgRut
             />
             <span className="text-muted-foreground/30 font-black">—</span>
             <input 
+              id="endDate"
+              name="endDate"
               type="date"
               className="bg-transparent border-0 text-[11px] font-black uppercase focus:ring-0 outline-none w-28 text-foreground"
               value={endDate}
