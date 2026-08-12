@@ -27,33 +27,46 @@ export default async function PublicLayout({
       <MarketTicker indicators={indicators} />
 
       {/* ===== HEADER / NAVBAR CON TABS ===== */}
-      <header className="sticky top-11 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl" suppressHydrationWarning>
-        <div className="container mx-auto flex h-20 items-center justify-between px-3 sm:px-6 lg:px-12 gap-2 sm:gap-4 overflow-hidden" suppressHydrationWarning>
-          <Link href="/" className="flex items-center gap-4 group transition-transform duration-300">
-            <Image
-              src="/logo-contapyme.png"
-              alt="Contapymepuq Logo"
-              width={180}
-              height={50}
-              priority
-              className="h-auto w-[120px] sm:w-[160px] md:w-[200px] drop-shadow-sm"
-            />
-          </Link>
-          <PublicNav />
-          <div className="flex items-center gap-4">
-            {session ? (
-              <Link href="/dashboard">
-                <Button className="text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-8 rounded-full h-11">
-                  <LayoutDashboard className="mr-2 h-3 w-3" /> Panel de Control
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/login">
-                <Button className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-6 sm:px-10 rounded-full h-9 sm:h-11">
-                  Acceso Clientes
-                </Button>
-              </Link>
-            )}
+      <header className="sticky top-11 z-50 w-full border-b border-border bg-background/85 backdrop-blur-xl" suppressHydrationWarning>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12" suppressHydrationWarning>
+          {/* Fila 1: Logo prominente y Botón de Acción */}
+          <div className="flex h-16 sm:h-20 items-center justify-between gap-4">
+            <Link href="/" className="flex items-center gap-4 group transition-transform duration-300">
+              <Image
+                src="/logo-contapyme.png"
+                alt="Contapymepuq Logo"
+                width={180}
+                height={50}
+                priority
+                className="h-auto w-[140px] sm:w-[170px] md:w-[200px] drop-shadow-sm shrink-0"
+              />
+            </Link>
+
+            {/* En Desktop la navegación va al centro */}
+            <div className="hidden lg:block">
+              <PublicNav />
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {session ? (
+                <Link href="/dashboard">
+                  <Button className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-4 sm:px-8 rounded-full h-9 sm:h-11">
+                    <LayoutDashboard className="mr-1.5 sm:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Panel de Control</span><span className="xs:hidden">Panel</span>
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/login">
+                  <Button className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-5 sm:px-10 rounded-full h-9 sm:h-11 whitespace-nowrap">
+                    Acceso Clientes
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Fila 2: Sub-Barra de Navegación Móvil (Solo visible en móviles/tablets) */}
+          <div className="block lg:hidden pb-3 border-t border-border/40 pt-2">
+            <PublicNav />
           </div>
         </div>
       </header>

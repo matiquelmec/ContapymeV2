@@ -17,7 +17,7 @@ export function PublicNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex items-center gap-1.5 sm:gap-2 bg-muted/30 p-1.5 rounded-full border border-border/40 backdrop-blur-md overflow-x-auto max-w-full scrollbar-none whitespace-nowrap shrink">
+    <nav className="flex items-center gap-1.5 sm:gap-2 bg-muted/30 p-1.5 rounded-full border border-border/40 backdrop-blur-md overflow-x-auto max-w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden whitespace-nowrap shrink">
       {tabs.map(tab => {
         const Icon = tab.icon
         const isActive = tab.href === '/'
