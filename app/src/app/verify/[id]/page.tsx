@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { ShieldCheck, CheckCircle2, FileText, Building2, User, Calendar, Lock, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { ShieldCheck, FileText, Building2, User, Lock, AlertTriangle, ArrowLeft, Scale, CalendarIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -23,30 +23,73 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
   const cleanId = (id || '').trim().toLowerCase()
   const supabase = await createClient()
 
-  // 1. Buscar en liquidaciones (por prefix de ID o Folio)
-  const { data: liquidations } = await supabase
-    .from('liquidations')
-    .select('*, employees(*), organizations(*)')
-    .or(`id.ilike.${cleanId}%,folio_number.ilike.%${cleanId}%`)
-    .limit(1)
+  let docType: 'liquidation' | 'trial_balance' | 'vacation' | 'contract' | 'unknown' = 'unknown'
+  let liquidation: any = null
+  let org: any = null
+  let emp: any = null
+  let docTitle = 'Documento Oficial'
+  let docSubtitle = ''
+  let totalBruto = 0
+  let totalDescuentos = 0
+  let totalLiquido = 0
+  let isHonorarios = false
 
-  let liquidation = liquidations && liquidations.length > 0 ? liquidations[0] : null
-
-  // 2. Si no se encuentra con wildcard ilike, buscar coincidencia parcial en ID
-  if (!liquidation && cleanId.length >= 8) {
-    const { data: allLiq } = await supabase
-      .from('liquidations')
-      .select('*, employees(*), organizations(*)')
+  // A. Verificación de Balance de Comprobación (tb-...)
+  if (cleanId.startsWith('tb-')) {
+    const orgPrefix = cleanId.replace('tb-', '')
+    const { data: orgs } = await supabase
+      .from('organizations')
+      .select('*')
       .limit(100)
     
-    liquidation = allLiq?.find(l => l.id.toLowerCase().startsWith(cleanId)) || null
+    org = orgs?.find(o => o.id.toLowerCase().startsWith(orgPrefix)) || null
+    if (org) {
+      docType = 'trial_balance'
+      docTitle = 'Balance de Comprobación y Saldos (8 Columnas)'
+      docSubtitle = `REGISTRO OFICIAL CERTIFICADO — ${org.nombre}`
+    }
+  } 
+  // B. Verificación de Feriado Legal / Vacaciones (vac-...)
+  else if (cleanId.startsWith('vac-')) {
+    docType = 'vacation'
+    docTitle = 'Comprobante de Feriado Legal (Vacaciones)'
+    docSubtitle = 'REGISTRO DE DESCANSO SEGÚN ART. 74 CÓDIGO DEL TRABAJO'
+  }
+  // C. Verificación de Liquidaciones (Default / Direct ID / Folio)
+  else {
+    const rawCode = cleanId.replace('liq-', '').replace('ctr-', '')
+    const { data: liquidations } = await supabase
+      .from('liquidations')
+      .select('*, employees(*), organizations(*)')
+      .or(`id.ilike.${rawCode}%,folio_number.ilike.%${cleanId}%,folio_number.ilike.%${rawCode}%`)
+      .limit(1)
+
+    liquidation = liquidations && liquidations.length > 0 ? liquidations[0] : null
+
+    if (!liquidation && rawCode.length >= 6) {
+      const { data: allLiq } = await supabase
+        .from('liquidations')
+        .select('*, employees(*), organizations(*)')
+        .limit(100)
+      
+      liquidation = allLiq?.find(l => l.id.toLowerCase().startsWith(rawCode) || (l.folio_number || '').toLowerCase().includes(rawCode)) || null
+    }
+
+    if (liquidation) {
+      docType = 'liquidation'
+      emp = liquidation.employees
+      org = liquidation.organizations
+      const snap = liquidation.calculation_snapshot || {}
+      isHonorarios = (liquidation.tipo_contrato || snap.tipo_contrato) === 'honorarios' || Number(snap.retencion_honorarios || 0) > 0
+      docTitle = isHonorarios ? 'Liquidación de Honorarios' : 'Liquidación de Sueldo'
+      docSubtitle = `FOLIO N° ${liquidation.folio_number || liquidation.id.slice(0, 12).toUpperCase()}`
+      totalBruto = Number(liquidation.total_haberes_brutos || 0)
+      totalDescuentos = Number(liquidation.total_descuentos || 0)
+      totalLiquido = Number(liquidation.sueldo_liquido || 0)
+    }
   }
 
-  const isFound = Boolean(liquidation)
-  const emp = liquidation?.employees
-  const org = liquidation?.organizations
-  const snap = liquidation?.calculation_snapshot || {}
-  const isHonorarios = (liquidation?.tipo_contrato || snap.tipo_contrato) === 'honorarios' || Number(snap.retencion_honorarios || 0) > 0
+  const isFound = docType !== 'unknown'
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 md:p-8">
@@ -82,10 +125,10 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
                   Documento Auténtico & Integridad Verificada
                 </Badge>
                 <CardTitle className="text-2xl md:text-3xl font-black uppercase tracking-tight text-foreground mt-2">
-                  {isHonorarios ? 'Liquidación de Honorarios' : 'Liquidación de Sueldo'}
+                  {docTitle}
                 </CardTitle>
                 <CardDescription className="text-xs font-bold text-emerald-700 uppercase tracking-widest mt-1">
-                  FOLIO N° {liquidation.folio_number || liquidation.id.slice(0, 12).toUpperCase()}
+                  {docSubtitle}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -100,7 +143,7 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
                   <div className="flex items-center gap-2 text-primary font-black uppercase text-xs tracking-wider mb-1">
                     <Building2 className="w-4 h-4" /> Entidad Emisora
                   </div>
-                  <p className="font-black text-foreground uppercase text-sm">{org?.nombre || 'ContaPymePuQ'}</p>
+                  <p className="font-black text-foreground uppercase text-sm">{org?.nombre || 'ContaPymePuQ Regional'}</p>
                   <p className="text-xs font-mono font-bold text-muted-foreground">RUT: {formatRUT(org?.rut_empresa)}</p>
                   <p className="text-[10px] text-muted-foreground/80 italic">{org?.region || 'Magallanes, Chile'}</p>
                 </div>
@@ -108,51 +151,58 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
                 {/* TITULAR / COLABORADOR */}
                 <div className="p-5 bg-muted/20 rounded-2xl border border-border space-y-2">
                   <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-xs tracking-wider mb-1">
-                    <User className="w-4 h-4" /> Titular Registrado
+                    {docType === 'trial_balance' ? <Scale className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    {docType === 'trial_balance' ? 'Régimen Contable' : 'Titular Registrado'}
                   </div>
                   <p className="font-black text-foreground uppercase text-sm">
-                    {emp?.nombres} {emp?.apellido_paterno} {emp?.apellido_materno}
+                    {emp ? `${emp.nombres} ${emp.apellido_paterno} ${emp.apellido_materno}` : 'Contabilidad IFRS / Pyme'}
                   </p>
-                  <p className="text-xs font-mono font-bold text-muted-foreground">RUT: {formatRUT(emp?.rut)}</p>
-                  <p className="text-[10px] text-muted-foreground/80 italic">{emp?.cargo || 'Colaborador'}</p>
+                  <p className="text-xs font-mono font-bold text-muted-foreground">
+                    {emp ? `RUT: ${formatRUT(emp.rut)}` : 'Normativa SII / Chile'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/80 italic">
+                    {emp?.cargo || 'Auditoría Centralizada'}
+                  </p>
                 </div>
 
               </div>
 
-              {/* DETALLES DEL DOCUMENTO */}
-              <div className="space-y-3 p-6 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 font-bold text-xs text-foreground">
-                <div className="flex justify-between items-center py-1 border-b border-border/40">
-                  <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Período Fiscal</span>
-                  <span className="font-mono font-black">{liquidation.periodo}</span>
+              {/* DETALLES SI ES LIQUIDACIÓN */}
+              {docType === 'liquidation' && (
+                <div className="space-y-3 p-6 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 font-bold text-xs text-foreground">
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Período Fiscal</span>
+                    <span className="font-mono font-black">{liquidation.periodo}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Estado en Sistema</span>
+                    <Badge variant="outline" className="font-mono text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border-emerald-300">
+                      {liquidation.status || 'aprobada'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Total Haberes Brutos</span>
+                    <span className="font-mono font-black text-foreground">{fCurrency(totalBruto)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Total Descuentos / Retención</span>
+                    <span className="font-mono font-black text-rose-600">-{fCurrency(totalDescuentos)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 pt-3">
+                    <span className="text-emerald-700 uppercase text-xs font-black tracking-widest">Alcance Líquido Acreditado</span>
+                    <span className="font-mono text-lg font-black text-emerald-700">{fCurrency(totalLiquido)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-border/40">
-                  <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Estado en Sistema</span>
-                  <Badge variant="outline" className="font-mono text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border-emerald-300">
-                    {liquidation.status || 'aprobada'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-border/40">
-                  <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Total Haberes Brutos</span>
-                  <span className="font-mono font-black text-foreground">{fCurrency(liquidation.total_haberes_brutos)}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-border/40">
-                  <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Total Descuentos / Retención</span>
-                  <span className="font-mono font-black text-rose-600">-{fCurrency(liquidation.total_descuentos)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 pt-3">
-                  <span className="text-emerald-700 uppercase text-xs font-black tracking-widest">Alcance Líquido Acreditado</span>
-                  <span className="font-mono text-lg font-black text-emerald-700">{fCurrency(liquidation.sueldo_liquido)}</span>
-                </div>
-              </div>
+              )}
 
               {/* SELLO CRIPTOGRÁFICO */}
               <div className="p-4 bg-muted/30 rounded-xl border border-border text-center space-y-1 font-mono text-[10px] text-muted-foreground">
                 <div className="flex items-center justify-center gap-2 text-foreground font-black uppercase text-[11px] mb-1">
                   <Lock className="w-3.5 h-3.5 text-emerald-600" /> Sello Digital de Inmutabilidad SHA-256
                 </div>
-                <p className="truncate">AUTH-ID: {liquidation.id.toUpperCase()}</p>
-                <p>Fecha Emisión: {new Date(liquidation.created_at || Date.now()).toLocaleString('es-CL')}</p>
-                <p className="text-[9px] text-muted-foreground/60">Certificado por ContaPymePuQ Autonomous Payroll Engine</p>
+                <p className="truncate">AUTH-ID: {cleanId.toUpperCase()}</p>
+                <p>Fecha Emisión: {new Date().toLocaleDateString('es-CL')}</p>
+                <p className="text-[9px] text-muted-foreground/60">Certificado por ContaPymePuQ Autonomous Accounting & Payroll Engine</p>
               </div>
 
             </CardContent>

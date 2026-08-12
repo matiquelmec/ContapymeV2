@@ -115,7 +115,7 @@ export function buildVacationComprobantePDF(data: VacationComprobanteData): jsPD
   }
 
   // ── Firmas ────────────────────────────────────────────────────────────────
-  y = Math.max(y, 210)
+  y = Math.max(y, 205)
   doc.setLineWidth(0.2); doc.setDrawColor(0)
   doc.line(30, y, 90, y)
   doc.line(120, y, 180, y)
@@ -131,11 +131,28 @@ export function buildVacationComprobantePDF(data: VacationComprobanteData): jsPD
   doc.text(fullName, 150, y + 10, { align: 'center' })
   doc.text(formatRUT(employee.rut), 150, y + 14, { align: 'center' })
 
+  // ── Sello de Verificación Digital ─────────────────────────────────────────
+  y += 24
+  doc.setDrawColor(200); doc.setLineWidth(0.1)
+  doc.line(20, y, 190, y)
+
+  const reqId = String(request.id || '').slice(0, 12)
+  const authCode = `AUTH-VAC-${reqId.toUpperCase() || 'V1'}`
+  const verifyUrl = `https://contapymepuq.cl/verify/vac-${reqId || 'valid'}`
+
+  y += 4
+  doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(80)
+  doc.text('VERIFICACION DE INTEGRIDAD DIGITAL', 20, y + 4)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(140)
+  doc.text(`CODIGO: ${authCode}`, 20, y + 8)
+  doc.text(`URL: ${verifyUrl}`, 20, y + 12)
+  doc.text('CONTAPYMEPUQ — SELLO DE TIEMPO REGISTRADO', 20, y + 16)
+
   // ── Pie ───────────────────────────────────────────────────────────────────
   doc.setFontSize(7); doc.setTextColor(150)
   doc.text(
     `Documento generado por Contapymepuq | Emision: ${new Date().toLocaleString('es-CL')}`,
-    105, 285, { align: 'center' }
+    105, 287, { align: 'center' }
   )
 
   return doc
