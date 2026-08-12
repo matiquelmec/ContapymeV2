@@ -47,20 +47,40 @@ def create_contract_template():
 
     # Cláusulas
     clauses = [
-        ('PRIMERO: Naturaleza de los servicios.', 
-         'El trabajador se obliga a desempeñar el cargo de {{CARGO}} y todas las funciones inherentes a dicha posición, así como aquellas que el empleador le encomiende de acuerdo a su especialidad y conocimientos.'),
+        ('PRIMERO: Naturaleza de los servicios y polifuncionalidad.', 
+         'El Trabajador se obliga a desempeñar las funciones correspondientes al cargo de {{CARGO}}, ejecutando con la debida diligencia y lealtad las labores encomendadas por la jefatura. Asimismo, de conformidad a lo dispuesto en el inciso 3º del artículo 10 del Código del Trabajo, el Trabajador podrá realizar otras labores análogas y/o complementarias a las de su especialidad que no importen menoscabo moral o material.'),
         
         ('SEGUNDO: Lugar de desempeño.', 
-         'Los servicios se prestarán en las dependencias de la empresa ubicadas en {{EMPRESA_DIRECCION}}, ciudad de {{CIUDAD}}, sin perjuicio de lo dispuesto en el artículo 12 del Código del Trabajo.'),
+         'Los servicios se prestarán en el establecimiento del Empleador ubicado en {{EMPRESA_DIRECCION}}, comuna de {{EMPLEADO_COMUNA}}, ciudad de {{CIUDAD}}, sin perjuicio de la facultad del Empleador contemplada en el artículo 12 del Código del Trabajo para alterar la naturaleza de los servicios o el sitio o recinto en que ellos deban prestarse.'),
         
-        ('TERCERO: Jornada de trabajo.', 
-         'La jornada de trabajo será de 44 horas semanales, distribuidas de lunes a viernes en horario general de la empresa.'),
+        ('TERCERO: Jornada de trabajo y descanso (Ley 21.561).', 
+         'La jornada ordinaria de trabajo será de {{HORAS_SEMANALES}} horas semanales, ajustada a la gradualidad establecida en la Ley Nº 21.561 de 40 Horas. Dicha jornada se distribuirá de la siguiente manera: {{HORARIO}}. El tiempo destinado a colación no se considerará trabajado ni imputable a la jornada. El control de asistencia se registrará mediante el sistema oficial de la empresa.'),
         
-        ('CUARTO: Remuneraciones.', 
-         'El empleador pagará al trabajador una remuneración mensual de {{SUELDO_BASE}} ({{SUELDO_PALABRAS}}), la que será liquidada y pagada el último día hábil de cada mes.'),
+        ('CUARTO: Remuneraciones y modalidad de pago.', 
+         'El Empleador pagará al Trabajador una remuneración mensual compuesta por:\n'
+         'a) Sueldo Base mensual de {{SUELDO_BASE}} ({{SUELDO_PALABRAS}}).\n'
+         'b) Gratificación Legal equivalente al 25% de la remuneración mensual con el tope de 4,75 Ingresos Mínimos Mensuales (Modalidad Art. 50 del Código del Trabajo).\n'
+         'c) Asignación de Colación no imponible por {{COLACION_MONTO}} ({{COLACION_PALABRAS}}).\n'
+         'd) Asignación de Movilización no imponible por {{MOVILIZACION_MONTO}} ({{MOVILIZACION_PALABRAS}}).\n'
+         'Las remuneraciones se pagarán por período vencido el último día hábil de cada mes mediante transferencia electrónica a la cuenta bancaria informada por el Trabajador.'),
         
-        ('QUINTO: Vigencia del contrato.', 
-         'El presente contrato tendrá una vigencia a contar del {{FECHA_INGRESO}} y su duración será de carácter INDEFINIDO.')
+        ('QUINTO: Vigencia y duración.', 
+         'El presente contrato tendrá vigencia a contar del {{FECHA_INGRESO}} y su duración será de carácter {{DURACION_TEXTO}}.'),
+        
+        ('SEXTO: Confidencialidad, propiedad intelectual y secreto industrial.', 
+         'El Trabajador se obliga a guardar absoluta reserva y confidencialidad respecto de toda la información comercial, técnica, código fuente, listas de clientes y secretos de la empresa a los que tenga acceso con motivo de sus servicios. Asimismo, todas las creaciones, desarrollos de software y marcas generadas pertenecerán exclusivamente al Empleador conforme a la Ley Nº 17.336.'),
+        
+        ('SÉPTIMO: Obligación de higiene, seguridad y prevención (Ley Karin 21.643).', 
+         'El Trabajador se compromete a dar estricto cumplimiento al Reglamento Interno de Orden, Higiene y Seguridad (RIOHS) de la empresa, así como a las disposiciones del Protocolo de Prevención de Acoso Laboral, Sexual y Violencia en el Trabajo establecido por la Ley Nº 21.643 (Ley Karin).'),
+        
+        ('OCTAVO: Protección de datos personales.', 
+         'El Trabajador autoriza expresamente al Empleador para el tratamiento y almacenamiento de sus datos personales conforme a la Ley Nº 19.628, con el exclusivo objeto de dar cumplimiento a las obligaciones laborales, previsionales y tributarias.'),
+        
+        ('NOVENO: Domicilio y jurisdicción.', 
+         'Para todos los efectos legales derivados del presente contrato, las partes fijan su domicilio en la ciudad de {{CIUDAD}} y se someten a la competencia de sus Tribunales de Letras del Trabajo.'),
+        
+        ('DÉCIMO: Ejemplares y Registro Laboral Electrónico (LRE).', 
+         'El presente contrato se firma en dos ejemplares de idéntico tenor y fecha, quedando uno en poder de cada parte. De conformidad al artículo 9º del Código del Trabajo, el Empleador procederá al registro electrónico del presente instrumento en la plataforma de la Dirección del Trabajo (LRE).')
     ]
 
     for title_text, body_text in clauses:
@@ -111,7 +131,7 @@ def create_contract_template():
     
     file_path = os.path.join(templates_path, 'contrato_base.docx')
     doc.save(file_path)
-    print(f"✅ Plantilla Contrato creada en: {file_path}")
+    print(f"[OK] Plantilla creada en: {file_path}")
 
 def create_annex_template():
     doc = Document()
@@ -218,7 +238,7 @@ def create_annex_template():
     
     file_path = os.path.join(templates_path, 'anexo_base.docx')
     doc.save(file_path)
-    print(f"✅ Plantilla Anexo creada en: {file_path}")
+    print(f"[OK] Plantilla Anexo creada en: {file_path}")
 
 if __name__ == "__main__":
     create_contract_template()
