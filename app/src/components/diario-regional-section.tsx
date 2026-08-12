@@ -426,11 +426,11 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             <div className="text-center max-w-3xl mx-auto space-y-4">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Plataforma Empresarial ContaPyme</span>
               <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-slate-900">
-                La Inteligencia Contable <br />
-                <span className="text-primary italic font-serif">Que tu PyME Necesita</span>
+                Gestión Contable & Nómina <br />
+                <span className="text-primary italic font-serif">Optimizada para Magallanes</span>
               </h2>
               <p className="text-slate-500 font-medium italic text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
-                Diseñado exclusivamente para cumplir con las normativas locales del SII en Magallanes, facilitando la gestión de Zona Franca y optimizando el flujo de caja diario.
+                Software contable integral diseñado para normativas del SII en Chile, bonificación a la contratación DL 889, exenciones de Zona Franca y gestión diaria de flujo de caja.
               </p>
             </div>
 
@@ -442,9 +442,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <Landmark className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Facturación Express</h4>
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Facturación SII & DTE</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Emisión instantánea de boletas y facturas electrónicas integradas al SII. Cumple con la normativa vigente sin demoras.
+                  Emisión instantánea de boletas, facturas y guías electrónicas sincronizadas directamente con el SII y conciliación bancaria automática.
                 </p>
               </div>
 
@@ -453,9 +453,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <Sparkles className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Leyes Sociales & LRE</h4>
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Nómina & Libro LRE DT</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Generación de liquidaciones con firma digital basadas en nuestro motor de cálculo. Exportación directa para el Libro de Remuneraciones Electrónico.
+                  Liquidaciones con firma digital, feriado legal de 20 días en Magallanes y exportación directa al Libro de Remuneraciones Electrónico.
                 </p>
               </div>
 
@@ -464,9 +464,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="h-5 w-5" />
                 </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Zona Franca Directa</h4>
+                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Beneficios DL 889 & Zona Franca</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Auditoría inteligente del beneficio fiscal de Zona Franca vs Régimen General. Reportes financieros adaptados a Magallanes.
+                  Cálculo de bonificación a la contratación DL 889, exenciones tributarias de Zona Franca y auditoría comparativa de ahorro fiscal.
                 </p>
               </div>
 
