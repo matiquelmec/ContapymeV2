@@ -59,14 +59,14 @@ export default function CrearEmpresaPage() {
             </p>
           </div>
 
-          {/* REPRODUCTOR DE VIDEO PROMOCIONAL */}
-          <div className="max-w-4xl mx-auto space-y-8">
-            <div className="relative rounded-[2.5rem] overflow-hidden border-2 border-primary/20 bg-slate-950 shadow-[0_30px_90px_rgba(0,0,0,0.2)] group">
+          {/* REPRODUCTOR DE VIDEO PROMOCIONAL (FORMATO VERTICAL 9:16 REEL/SMARTPHONE) */}
+          <div className="max-w-[380px] mx-auto space-y-8">
+            <div className="relative rounded-[2.5rem] overflow-hidden border-4 border-slate-900 bg-slate-950 shadow-[0_30px_90px_rgba(0,0,0,0.3)] ring-1 ring-white/10 group">
               <video 
                 controls 
+                playsInline
                 preload="metadata"
-                className="w-full h-auto aspect-video object-cover"
-                poster="/og-image.png"
+                className="w-full h-auto max-h-[650px] aspect-[9/16] object-cover mx-auto rounded-[2.2rem]"
               >
                 <source src="/videos/crea-tu-empresa.mp4" type="video/mp4" />
                 Tu navegador no soporta la reproducción de video HTML5.
