@@ -383,14 +383,24 @@ export default function SalaryCalculatorPage() {
                     <Percent className="w-4 h-4 text-rose-600" /> Retenciones y Descuentos Legales
                   </h4>
                   <div className="bg-rose-50/30 border border-rose-100/50 rounded-2xl p-6 space-y-3 font-mono text-xs text-rose-950">
-                    <div className="flex justify-between">
-                      <span className="font-sans font-bold text-rose-800/80">Cotización Previsional AFP ({result.liquidacion.afp_code})</span>
-                      <span className="font-bold">{formatCLP(result.liquidacion.afp + result.liquidacion.afp_comision)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-sans font-bold text-rose-800/80">Cotización de Salud ({result.liquidacion.salud_code})</span>
-                      <span className="font-bold">{formatCLP(result.liquidacion.salud_total)}</span>
-                    </div>
+                    {Number(result.liquidacion.calculation_snapshot?.retencion_honorarios || result.liquidacion.retencion_honorarios || 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="font-sans font-bold text-rose-800/80">Retención Honorarios de Ley (15.25%)</span>
+                        <span className="font-bold">{formatCLP(Number(result.liquidacion.calculation_snapshot?.retencion_honorarios || result.liquidacion.retencion_honorarios))}</span>
+                      </div>
+                    )}
+                    {(result.liquidacion.afp + result.liquidacion.afp_comision) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="font-sans font-bold text-rose-800/80">Cotización Previsional AFP ({result.liquidacion.afp_code})</span>
+                        <span className="font-bold">{formatCLP(result.liquidacion.afp + result.liquidacion.afp_comision)}</span>
+                      </div>
+                    )}
+                    {result.liquidacion.salud_total > 0 && (
+                      <div className="flex justify-between">
+                        <span className="font-sans font-bold text-rose-800/80">Cotización de Salud ({result.liquidacion.salud_code})</span>
+                        <span className="font-bold">{formatCLP(result.liquidacion.salud_total)}</span>
+                      </div>
+                    )}
                     {result.liquidacion.afc_trabajador > 0 && (
                       <div className="flex justify-between">
                         <span className="font-sans font-bold text-rose-800/80">Seguro de Cesantía (AFC Trabajador)</span>
