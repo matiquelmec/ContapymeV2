@@ -493,9 +493,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
 
             {/* Botón de Acción Principal */}
             <div className="text-center pt-4">
-              <Link href="/login">
-                <Button size="lg" className="w-full max-w-[280px] sm:w-auto text-[10px] sm:text-xs font-black uppercase tracking-widest h-11 sm:h-14 px-6 sm:px-12 rounded-2xl bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all group">
-                  Iniciar Prueba Gratis de 14 Días <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <Link href="/login" className="inline-block">
+                <Button size="lg" className="inline-flex items-center justify-center text-[10px] sm:text-xs font-black uppercase tracking-widest h-12 sm:h-14 px-8 sm:px-12 rounded-full bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all whitespace-nowrap group">
+                  Iniciar Prueba Gratis de 14 Días <ArrowRight className="ml-2.5 h-4 w-4 group-hover:translate-x-1 transition-transform shrink-0" />
                 </Button>
               </Link>
             </div>
