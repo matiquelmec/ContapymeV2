@@ -84,6 +84,9 @@ export function ContactForm() {
       <div className="space-y-4">
         <div className="relative group">
           <input 
+            id="contactName"
+            name="name"
+            autoComplete="name"
             type="text"
             required
             disabled={isPending}
@@ -96,6 +99,9 @@ export function ContactForm() {
         
         <div className="relative group">
           <input 
+            id="contactEmail"
+            name="email"
+            autoComplete="email"
             type="email"
             required
             disabled={isPending}
@@ -108,6 +114,8 @@ export function ContactForm() {
         
         <div className="relative group">
           <textarea 
+            id="contactMessage"
+            name="message"
             required
             disabled={isPending}
             value={message}
