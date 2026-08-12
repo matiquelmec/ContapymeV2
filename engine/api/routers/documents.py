@@ -91,6 +91,9 @@ async def generate_document(
 
         fecha_legal = format_date_cl(date.today())
 
+        funciones_raw = (description or emp.get('funciones') or emp.get('cargo_descripcion') or "").strip()
+        funciones_texto = f"consistentes en {funciones_raw}," if funciones_raw else "así como todas las labores inherentes a dicha posición,"
+
         # 4. Contexto para la plantilla
         context = {
             'EMPRESA_NOMBRE': safe_upper(org.get('nombre'), 'EMPRESA NO REGISTRADA'),
@@ -114,6 +117,7 @@ async def generate_document(
             'FECHA_INGRESO': format_date_cl(emp.get('fecha_ingreso')),
             'DURACION_TEXTO': duracion_texto.upper(),
             'CARGO': safe_upper(emp.get('cargo'), 'TRABAJADOR'),
+            'FUNCIONES_DETALLE': funciones_texto,
             'SUELDO_BASE': format_clp(sueldo_base),
             'SUELDO_PALABRAS': to_words(sueldo_base),
             'GRATIFICACION_CLAUSULA': clausula_gratificacion.upper(),

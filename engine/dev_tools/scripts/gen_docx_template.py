@@ -48,7 +48,7 @@ def create_contract_template():
     # Cláusulas
     clauses = [
         ('PRIMERO: Naturaleza de los servicios y polifuncionalidad.', 
-         'El Trabajador se obliga a desempeñar las funciones correspondientes al cargo de {{CARGO}}, ejecutando con la debida diligencia y lealtad las labores encomendadas por la jefatura. Asimismo, de conformidad a lo dispuesto en el inciso 3º del artículo 10 del Código del Trabajo, el Trabajador podrá realizar otras labores análogas y/o complementarias a las de su especialidad que no importen menoscabo moral o material.'),
+         'El Trabajador se obliga a desempeñar las funciones correspondientes al cargo de {{CARGO}}, {{FUNCIONES_DETALLE}} ejecutando con la debida diligencia y lealtad las labores encomendadas por la jefatura. Asimismo, de conformidad a lo dispuesto en el inciso 3º del artículo 10 del Código del Trabajo, el Trabajador podrá realizar otras labores análogas y/o complementarias a las de su especialidad que no importen menoscabo moral o material.'),
         
         ('SEGUNDO: Lugar de desempeño.', 
          'Los servicios se prestarán en el establecimiento del Empleador ubicado en {{EMPRESA_DIRECCION}}, comuna de {{EMPLEADO_COMUNA}}, ciudad de {{CIUDAD}}, sin perjuicio de la facultad del Empleador contemplada en el artículo 12 del Código del Trabajo para alterar la naturaleza de los servicios o el sitio o recinto en que ellos deban prestarse.'),
