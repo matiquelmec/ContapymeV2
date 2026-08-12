@@ -168,7 +168,8 @@ export default function LiquidationDetailPage() {
     doc.text(`Fecha Ingreso: ${emp?.fecha_ingreso || ''}`, 25, 98)
     doc.text(`Cargo: ${emp?.cargo || ''}`, 110, 84)
     doc.text(`Días Trabajados: ${liquidation.dias_trabajados || 30}`, 110, 91)
-    doc.text(`AFP / Salud: ${liquidation.afp_code} / ${liquidation.salud_code}`, 110, 98)
+    const afpSaludText = isHonorarios ? 'N/A (Honorarios)' : `${liquidation.afp_code} / ${liquidation.salud_code}`
+    doc.text(`AFP / Salud: ${afpSaludText}`, 110, 98)
 
     // Columnas haberes / descuentos
     let y = 108

@@ -117,7 +117,8 @@ export async function buildLiquidationPDFDocument({ liquidation, organization, s
   doc.text(`Fecha Ingreso: ${emp?.fecha_ingreso || ''}`, 25, 98)
   doc.text(`Cargo: ${emp?.cargo || ''}`, 110, 84)
   doc.text(`Dias Trabajados: ${liquidation.dias_trabajados || 30}`, 110, 91)
-  doc.text(`AFP / Salud: ${liquidation.afp_code || ''} / ${liquidation.salud_code || ''}`, 110, 98)
+  const afpSaludLabel = isHonorariosDoc ? 'N/A (Honorarios)' : `${liquidation.afp_code || ''} / ${liquidation.salud_code || ''}`
+  doc.text(`AFP / Salud: ${afpSaludLabel}`, 110, 98)
 
   let y = 108
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10)
