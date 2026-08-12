@@ -165,16 +165,18 @@ export default function OnboardingWizard() {
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Nombre completo</Label>
-                <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Juan Pérez González" className="h-11" />
+                <Label htmlFor="fullName" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Nombre completo</Label>
+                <Input id="fullName" name="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Juan Pérez González" className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Teléfono</Label>
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 9 1234 5678" className="h-11" />
+                <Label htmlFor="phone" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Teléfono</Label>
+                <Input id="phone" name="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 9 1234 5678" className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Tu rol profesional</Label>
+                <Label htmlFor="role" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Tu rol profesional</Label>
                 <select 
+                  id="role"
+                  name="role"
                   value={role} 
                   onChange={e => setRole(e.target.value)}
                   className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
@@ -197,8 +199,10 @@ export default function OnboardingWizard() {
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">RUT Empresa</Label>
+                  <Label htmlFor="rutEmpresa" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">RUT Empresa</Label>
                   <Input 
+                    id="rutEmpresa"
+                    name="rutEmpresa"
                     value={rut} 
                     onChange={e => setRut(formatRut(e.target.value))} 
                     placeholder="76.XXX.XXX-X" 
@@ -207,8 +211,10 @@ export default function OnboardingWizard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Régimen</Label>
+                  <Label htmlFor="regimen" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Régimen</Label>
                   <select 
+                    id="regimen"
+                    name="regimen"
                     value={regimen} 
                     onChange={e => setRegimen(e.target.value)}
                     className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
@@ -221,25 +227,25 @@ export default function OnboardingWizard() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Razón Social</Label>
-                <Input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Mi Empresa SpA" className="h-11" />
+                <Label htmlFor="nombreEmpresa" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Razón Social</Label>
+                <Input id="nombreEmpresa" name="nombreEmpresa" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Mi Empresa SpA" className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Giro comercial</Label>
-                <Input value={giro} onChange={e => setGiro(e.target.value)} placeholder="Servicios contables" className="h-11" />
+                <Label htmlFor="giroComercial" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Giro comercial</Label>
+                <Input id="giroComercial" name="giroComercial" value={giro} onChange={e => setGiro(e.target.value)} placeholder="Servicios contables" className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Dirección</Label>
-                <Input value={direccion} onChange={e => setDireccion(e.target.value)} placeholder="Av. España 1234" className="h-11" />
+                <Label htmlFor="direccionEmpresa" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Dirección</Label>
+                <Input id="direccionEmpresa" name="direccionEmpresa" value={direccion} onChange={e => setDireccion(e.target.value)} placeholder="Av. España 1234" className="h-11" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Comuna</Label>
-                  <Input value={comuna} onChange={e => setComuna(e.target.value)} placeholder="Punta Arenas" className="h-11" />
+                  <Label htmlFor="comunaEmpresa" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Comuna</Label>
+                  <Input id="comunaEmpresa" name="comunaEmpresa" value={comuna} onChange={e => setComuna(e.target.value)} placeholder="Punta Arenas" className="h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Región</Label>
-                  <Input value={region} onChange={e => setRegion(e.target.value)} placeholder="Magallanes" className="h-11" />
+                  <Label htmlFor="regionEmpresa" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Región</Label>
+                  <Input id="regionEmpresa" name="regionEmpresa" value={region} onChange={e => setRegion(e.target.value)} placeholder="Magallanes" className="h-11" />
                 </div>
               </div>
 
@@ -251,12 +257,14 @@ export default function OnboardingWizard() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Nombre Completo</Label>
-                    <Input value={repLegalNombre} onChange={e => setRepLegalNombre(e.target.value)} placeholder="Ej: Juan Pérez" className="h-11 bg-primary/5 shadow-inner" />
+                    <Label htmlFor="repLegalNombre" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">Nombre Completo</Label>
+                    <Input id="repLegalNombre" name="repLegalNombre" value={repLegalNombre} onChange={e => setRepLegalNombre(e.target.value)} placeholder="Ej: Juan Pérez" className="h-11 bg-primary/5 shadow-inner" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">RUT Personal</Label>
+                    <Label htmlFor="repLegalRut" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">RUT Personal</Label>
                     <Input 
+                      id="repLegalRut"
+                      name="repLegalRut"
                       value={repLegalRut} 
                       onChange={e => setRepLegalRut(formatRut(e.target.value))} 
                       placeholder="12.XXX.XXX-X" 
