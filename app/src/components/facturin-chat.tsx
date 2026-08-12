@@ -243,6 +243,8 @@ export function FacturinChat() {
           {/* Formulario de Entrada de Texto */}
           <form onSubmit={handleSendMessage} className="p-3 bg-zinc-50 border-t border-zinc-150 flex gap-2 items-center shrink-0">
             <input
+              id="facturinChatInput"
+              name="facturinChatInput"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

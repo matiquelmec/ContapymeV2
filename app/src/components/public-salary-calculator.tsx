@@ -439,8 +439,10 @@ function CalculatorContent() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Plan Pactado (UF)</label>
+            <label htmlFor="planSaludUf" className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Plan Pactado (UF)</label>
             <input
+              id="planSaludUf"
+              name="planSaludUf"
               type="number"
               step="0.01"
               disabled={saludCode === "FONASA"}
@@ -454,8 +456,10 @@ function CalculatorContent() {
         {/* Asignaciones no imponibles */}
         <div className="grid grid-cols-2 gap-4 pt-1">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Movilización ($)</label>
+            <label htmlFor="asignacionMovilizacion" className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Movilización ($)</label>
             <input
+              id="asignacionMovilizacion"
+              name="asignacionMovilizacion"
               type="number"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={asignacionMovilizacion}
@@ -463,8 +467,10 @@ function CalculatorContent() {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Colación ($)</label>
+            <label htmlFor="asignacionColacion" className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Colación ($)</label>
             <input
+              id="asignacionColacion"
+              name="asignacionColacion"
               type="number"
               className="w-full h-11 rounded-xl border border-primary/15 bg-white px-3 text-xs font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={asignacionColacion}
@@ -475,8 +481,10 @@ function CalculatorContent() {
 
         {/* Toggles Rápidos */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center pt-3 border-t border-neutral-100">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label htmlFor="gratificacion" className="flex items-center gap-2 cursor-pointer select-none">
             <input
+              id="gratificacion"
+              name="gratificacion"
               type="checkbox"
               checked={gratificacion}
               onChange={(e) => setGratificacion(e.target.checked)}
@@ -488,8 +496,10 @@ function CalculatorContent() {
             </div>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label htmlFor="esZonaExtrema" className="flex items-center gap-2 cursor-pointer select-none">
             <input
+              id="esZonaExtrema"
+              name="esZonaExtrema"
               type="checkbox"
               checked={esZonaExtrema}
               onChange={(e) => setEsZonaExtrema(e.target.checked)}
