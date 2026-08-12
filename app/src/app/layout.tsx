@@ -70,6 +70,15 @@ export const metadata: Metadata = {
     description: "Gestión contable avanzada y remuneraciones para la Región de Magallanes.",
     images: ["https://contapymepuq.cl/og-image.png"],
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ContaPymePuq",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({

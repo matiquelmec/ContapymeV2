@@ -1,0 +1,44 @@
+{
+  "name": "ContaPymePuq - Diario & SaaS Contable Magallanes",
+  "short_name": "ContaPymePuq",
+  "description": "Estudio contable digital, remuneraciones, facturación electrónica SII y diario regional en Punta Arenas, Magallanes y Antártica Chilena.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-contapyme.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Crea tu Empresa ($35K)",
+      "short_name": "Crea Empresa",
+      "description": "Formaliza tu Pyme en Punta Arenas por solo $35.000 CLP",
+      "url": "/crear-empresa"
+    },
+    {
+      "name": "Calculadora Sueldos",
+      "short_name": "Calculadora",
+      "description": "Simula sueldos líquidos y costo empleador en Chile",
+      "url": "/calculadora"
+    },
+    {
+      "name": "Diario Regional",
+      "short_name": "Noticias",
+      "description": "Información estratégica de Punta Arenas y Magallanes",
+      "url": "/"
+    }
+  ]
+}

@@ -28,6 +28,7 @@ export function PublicNav() {
           <Link
             key={tab.href}
             href={tab.href}
+            prefetch={true}
             className={`flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all duration-300 shrink-0 ${
               isActive
                 ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'

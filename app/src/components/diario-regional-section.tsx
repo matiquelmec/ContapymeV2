@@ -19,6 +19,7 @@ import { HeroBentoGrid } from "@/components/hero-bento";
 import { GlobalMarketPanel } from "@/components/global-market-panel";
 import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
+import { NewsCardSkeleton, SmallNewsCardSkeleton } from "@/components/skeleton-loader";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
 interface NewsArticle {
@@ -289,15 +290,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                       </div>
                     </Link>
                   ) : (
-                    <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl bg-muted/10 backdrop-blur-sm flex flex-col items-center justify-center space-y-4 p-6 sm:p-12 text-center border-dashed">
-                       <div className="h-16 w-16 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
-                          <Globe className="h-8 w-8 text-primary/20" />
-                       </div>
-                       <h3 className="text-xl font-black tracking-tighter uppercase italic text-muted-foreground/40">Sintonizando Central de Noticias</h3>
-                       <p className="text-[10px] font-black text-muted-foreground/20 uppercase tracking-widest max-w-xs">
-                          Verificando fuentes regionales. La integridad de la información es nuestro activo más valioso.
-                       </p>
-                    </div>
+                    <NewsCardSkeleton />
                   )}
 
                   {/* Panel de Análisis de Mercado (Slingshot) */}
