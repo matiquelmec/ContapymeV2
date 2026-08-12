@@ -58,21 +58,82 @@ export default async function PublicLayout({
 
       <main className="flex-1">{children}</main>
 
-      {/* ===== FOOTER ===== */}
-      <footer className="border-t border-border bg-white py-12">
+      {/* ===== FOOTER PREMIUM WORLD-CLASS ===== */}
+      <footer className="border-t border-border/80 bg-gradient-to-b from-card to-background pt-16 pb-12 text-foreground">
         <div className="container mx-auto px-6 lg:px-12">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-2 group cursor-default">
-              <Globe className="h-5 w-5 text-primary group-hover:rotate-12 transition-transform duration-500" />
-              <span className="text-[10px] font-black italic uppercase tracking-widest text-foreground/60">Contapymepuq — Magallanes, Chile</span>
+          {/* Grid Principal Footer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 pb-14 border-b border-border/60">
+            {/* Columna 1 & 2: Branding & Misión Regional */}
+            <div className="lg:col-span-2 space-y-6">
+              <Link href="/" className="inline-block group">
+                <Image
+                  src="/logo-contapyme.png"
+                  alt="Contapymepuq Logo"
+                  width={200}
+                  height={55}
+                  priority
+                  className="h-auto w-[160px] sm:w-[190px] drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                />
+              </Link>
+              <p className="text-xs font-medium leading-relaxed text-muted-foreground max-w-md">
+                Ecosistema digital integral para Pymes de Chile y Magallanes. Gestión Contable IFRS, Nómina conforme a la Dirección del Trabajo (LRE), Facturación Electrónica SII y Diario Informativo Regional.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
+                  <Globe className="h-3.5 w-3.5 animate-pulse" />
+                  <span>Punta Arenas • Magallanes</span>
+                </div>
+                <div className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                  Sello Certificado SHA-256
+                </div>
+              </div>
             </div>
-            <div className="flex gap-8 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+
+            {/* Columna 3: Módulos & Soluciones */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Soluciones Pyme</h4>
+              <ul className="space-y-2.5 text-xs font-bold text-muted-foreground">
+                <li><Link href="/software" className="hover:text-primary transition-colors">ERP Contable & IFRS</Link></li>
+                <li><Link href="/dashboard/payroll" className="hover:text-primary transition-colors">Nómina & Ley 40 Horas</Link></li>
+                <li><Link href="/dashboard/payroll/lre" className="hover:text-primary transition-colors">Libro Remuneraciones (LRE)</Link></li>
+                <li><Link href="/dashboard/accounting/rcv" className="hover:text-primary transition-colors">Registro RCV & F29 SII</Link></li>
+                <li><Link href="/dashboard/treasury" className="hover:text-primary transition-colors">Tesorería & Flujo Caja</Link></li>
+              </ul>
+            </div>
+
+            {/* Columna 4: Normativa & Herramientas */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Normativa & Servicios</h4>
+              <ul className="space-y-2.5 text-xs font-bold text-muted-foreground">
+                <li><Link href="/calculadora" className="hover:text-primary transition-colors">Calculadora de Sueldo Líquido</Link></li>
+                <li><Link href="/noticias" className="hover:text-primary transition-colors">Diario Regional Magallanes</Link></li>
+                <li><Link href="/precios" className="hover:text-primary transition-colors">Planes & Suscripciones</Link></li>
+                <li><Link href="/contacto" className="hover:text-primary transition-colors">Soporte Técnico Especializado</Link></li>
+              </ul>
+            </div>
+
+            {/* Columna 5: Transparencia & Legal */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black uppercase tracking-widest text-foreground">Legal & Garantía</h4>
+              <ul className="space-y-2.5 text-xs font-bold text-muted-foreground">
+                <li><Link href="/privacidad" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>
+                <li><Link href="/terminos" className="hover:text-primary transition-colors">Términos de Servicio</Link></li>
+                <li><Link href="/verify/check" className="hover:text-primary transition-colors">Portal de Verificación Pública</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Sub-Footer Infobar */}
+          <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+            <div>
+              © {new Date().getFullYear()} CONTAPYMEPUQ. Punta Arenas, Región de Magallanes y Antártica Chilena. Todos los derechos reservados.
+            </div>
+            <div className="flex gap-6">
               <Link href="/privacidad" className="hover:text-primary transition-colors">Privacidad</Link>
+              <span>•</span>
               <Link href="/terminos" className="hover:text-primary transition-colors">Términos</Link>
+              <span>•</span>
               <Link href="/contacto" className="hover:text-primary transition-colors">Contacto</Link>
-            </div>
-            <div className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/40">
-              © 2026 Contapymepuq. Magallanes, Chile.
             </div>
           </div>
         </div>
