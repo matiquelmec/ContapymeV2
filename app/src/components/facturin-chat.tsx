@@ -24,9 +24,9 @@ export function FacturinChat() {
   const [inputValue, setInputValue] = useState('')
 
   const quickQuestions = [
+    { q: 'Crear Empresa $35K 🚀', a: '¿Cómo funciona el servicio de constitución de empresas por $35.000 CLP?' },
     { q: 'Zona Franca 🏢', a: '¿Cómo funciona la exención de la Zona Franca en Punta Arenas?' },
     { q: 'Libro LRE 📊', a: '¿Qué es el Libro de Remuneraciones Electrónico (LRE) y cómo lo genera el sistema?' },
-    { q: 'Ley Navarino ⚓', a: '¿Qué beneficios tributarios y de exención otorga la Ley Navarino?' },
     { q: 'Ley 889 (Zona Extrema) 🏔️', a: '¿Cómo se calcula el subsidio del 17% por contratación de la Ley 889?' }
   ]
 
