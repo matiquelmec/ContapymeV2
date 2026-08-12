@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { cache } from 'react'
 
 export async function getUserOrganizations() {
   const supabase = await createClient()
@@ -61,7 +62,7 @@ export async function setActiveOrganization(orgId: string) {
   return { success: true }
 }
 
-export async function getActiveOrganizationId() {
+export const getActiveOrganizationId = cache(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -86,4 +87,4 @@ export async function getActiveOrganizationId() {
   // No persistimos cookie aquí porque este getter se invoca durante el render.
   const orgs = await getUserOrganizations()
   return orgs.length > 0 ? orgs[0].id : null
-}
+})
