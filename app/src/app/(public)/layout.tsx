@@ -28,7 +28,7 @@ export default async function PublicLayout({
 
       {/* ===== HEADER / NAVBAR CON TABS ===== */}
       <header className="sticky top-11 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl" suppressHydrationWarning>
-        <div className="container mx-auto flex h-20 items-center justify-between px-6 lg:px-12" suppressHydrationWarning>
+        <div className="container mx-auto flex h-20 items-center justify-between px-3 sm:px-6 lg:px-12 gap-2 sm:gap-4 overflow-hidden" suppressHydrationWarning>
           <Link href="/" className="flex items-center gap-4 group transition-transform duration-300">
             <Image
               src="/logo-contapyme.png"
