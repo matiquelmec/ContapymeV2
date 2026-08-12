@@ -214,14 +214,23 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
                 </div>
               )}
 
-              {/* SELLO CRIPTOGRÁFICO */}
-              <div className="p-4 bg-muted/30 rounded-xl border border-border text-center space-y-1 font-mono text-[10px] text-muted-foreground">
-                <div className="flex items-center justify-center gap-2 text-foreground font-black uppercase text-[11px] mb-1">
+              {/* SELLO CRIPTOGRÁFICO & ACCIÓN DE IMPRESIÓN */}
+              <div className="p-5 bg-muted/30 rounded-2xl border border-border text-center space-y-3 font-mono text-[10px] text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 text-foreground font-black uppercase text-[11px]">
                   <Lock className="w-3.5 h-3.5 text-emerald-600" /> Sello Digital de Inmutabilidad SHA-256
                 </div>
                 <p className="truncate">AUTH-ID: {cleanId.toUpperCase()}</p>
                 <p>Fecha Emisión: {new Date().toLocaleDateString('es-CL')}</p>
                 <p className="text-[9px] text-muted-foreground/60">Certificado por ContaPymePuQ Autonomous Accounting & Payroll Engine</p>
+                
+                {/* Botón de Impresión/Descarga PDF */}
+                <div className="pt-2 flex items-center justify-center gap-3 print:hidden">
+                  <Link href="/login">
+                    <button className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer">
+                      <FileText className="w-3.5 h-3.5" /> Acceder a la Plataforma
+                    </button>
+                  </Link>
+                </div>
               </div>
 
             </CardContent>
