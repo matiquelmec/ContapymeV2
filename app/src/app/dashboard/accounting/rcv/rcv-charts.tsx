@@ -40,7 +40,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export const AnalysisBarChart = memo(({ data }: { data: any[] }) => (
-  <ResponsiveContainer width="100%" height={320}>
+  <ResponsiveContainer width="100%" height={320} minWidth={0}>
     <BarChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 60 }}>
       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
       <XAxis
@@ -71,7 +71,7 @@ export const AnalysisBarChart = memo(({ data }: { data: any[] }) => (
 AnalysisBarChart.displayName = 'AnalysisBarChart';
 
 export const AnalysisPieChart = memo(({ data }: { data: any[] }) => (
-  <ResponsiveContainer width="100%" height={320}>
+  <ResponsiveContainer width="100%" height={320} minWidth={0}>
     <PieChart>
       <Pie
         data={data}
