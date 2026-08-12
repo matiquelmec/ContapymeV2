@@ -249,32 +249,38 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   {heroNews ? (
                     <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
                       <div className="group cursor-pointer space-y-4">
-                        <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl hover:border-primary/40 transition-all duration-700">
+                        <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl hover:border-primary/40 transition-all duration-700">
                            <img 
                               src={heroNews.image_url || "/news-placeholder.png"} 
                               alt={heroNews.title} 
                               className="object-cover transition-transform duration-1000 group-hover:scale-[1.03] w-full h-full absolute inset-0"
                             />
-                           <div className="absolute inset-x-0 top-0 p-6 flex justify-between items-center">
-                              <div className="bg-rose-600/90 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-rose-400/30 shadow-lg flex items-center gap-2">
-                                 <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                                 <span className="text-[9px] font-black uppercase tracking-widest text-white">Última Hora • Magallanes</span>
+                            
+                           {/* Top Badges (Insignias Superiores) */}
+                           <div className="absolute inset-x-0 top-0 p-3 sm:p-5 flex justify-between items-center z-10">
+                              <div className="bg-rose-600/95 backdrop-blur-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-rose-400/30 shadow-lg flex items-center gap-1.5">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white">Última Hora</span>
                               </div>
-                              <div className="bg-white/90 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-2">
-                                 <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-                                 <span className="text-[9px] font-black uppercase tracking-widest text-primary">Verificado</span>
+                              <div className="bg-white/95 backdrop-blur-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-1.5">
+                                 <BadgeCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
+                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-primary">Verificado</span>
                               </div>
                            </div>
-                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-                           <div className="absolute bottom-6 left-6 right-6 p-2 space-y-3 max-w-[95%]">
+
+                           {/* Gradient Background */}
+                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+
+                           {/* Bottom Content Container */}
+                           <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 space-y-2 sm:space-y-3 z-10">
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black tracking-widest text-primary-foreground italic px-3 py-1 border border-primary/50 rounded-lg bg-primary/95 backdrop-blur-xl shadow-lg uppercase">{heroNews.category}</span>
-                                <span className="text-[9px] font-black tracking-widest text-white/80 italic px-3 py-1 border border-white/20 rounded-lg bg-black/40 backdrop-blur-xl uppercase">3 min lectura</span>
+                                <span className="text-[8px] sm:text-[9px] font-black tracking-widest text-primary-foreground italic px-2.5 py-0.5 sm:px-3 sm:py-1 border border-primary/50 rounded-lg bg-primary/95 backdrop-blur-xl shadow-lg uppercase">{heroNews.category}</span>
+                                <span className="text-[8px] sm:text-[9px] font-black tracking-widest text-white/90 italic px-2.5 py-0.5 sm:px-3 sm:py-1 border border-white/20 rounded-lg bg-black/50 backdrop-blur-xl uppercase">3 min lectura</span>
                               </div>
-                              <h3 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-3">
+                              <h3 className="text-base sm:text-2xl md:text-3xl font-black leading-tight italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-2 sm:line-clamp-3">
                                  {heroNews.title}
                               </h3>
-                              <div className="flex items-center justify-between text-[10px] font-black text-white/80 uppercase tracking-widest italic pt-1" suppressHydrationWarning>
+                              <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-black text-white/80 uppercase tracking-widest italic pt-0.5" suppressHydrationWarning>
                                  <span>{heroNews.source_name || "Prensa Magallanes"}</span>
                                  <span>{new Date(heroNews.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: 'long', year: 'numeric'})}</span>
                               </div>
