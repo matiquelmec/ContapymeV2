@@ -189,7 +189,7 @@ export default function F29ComparativeClient({
           </CardHeader>
           <CardContent className="p-8 pb-4">
             <div className="h-[380px] w-full relative">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 600, height: 380 }} debounce={50}>
                 <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorDeb" x1="0" y1="0" x2="0" y2="1">
@@ -307,7 +307,7 @@ export default function F29ComparativeClient({
             </CardHeader>
             <CardContent className="p-8">
               <div className="h-[250px] w-full relative">
-                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                 <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 400, height: 250 }} debounce={50}>
                     <BarChart data={chartData} margin={{ left: -20, right: 10, top: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="periodo" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tick={{ fontWeight: 900 }} />
@@ -331,7 +331,7 @@ export default function F29ComparativeClient({
             </CardHeader>
             <CardContent className="p-8">
               <div className="h-[250px] w-full relative">
-                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                 <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 400, height: 250 }} debounce={50}>
                     <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="periodo" stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} tick={{ fontWeight: 900 }} />
