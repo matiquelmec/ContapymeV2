@@ -8,6 +8,7 @@ import { MarketTicker } from "@/components/market-ticker";
 import { getLatestIndicators } from "@/actions/indicators";
 import { FacturinChat } from "@/components/facturin-chat";
 import { WhatsAppIcon, InstagramIcon } from "@/components/social-icons";
+import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 
 export default async function PublicLayout({
   children,
@@ -155,6 +156,9 @@ export default async function PublicLayout({
 
       {/* ===== CHAT WIDGET INTERACTIVO DE FACTURÍN ===== */}
       <FacturinChat />
+      
+      {/* ===== BOTÓN FLOTANTE DIRECTO DE WHATSAPP ===== */}
+      <WhatsAppFloatingButton />
     </div>
   );
 }

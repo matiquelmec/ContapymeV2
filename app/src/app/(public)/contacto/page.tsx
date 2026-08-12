@@ -31,7 +31,7 @@ export default function ContactoPage() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Dirección Corporativa</span>
-                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground">O&apos;Higgins 123, Punta Arenas.</span>
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground">Las Malvas 2775, Punta Arenas.</span>
                   </div>
                 </div>
 

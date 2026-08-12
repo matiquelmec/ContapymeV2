@@ -12,6 +12,8 @@ export function JsonLdSchema() {
     "description": "Estudio contable digital, remuneraciones, facturación electrónica SII y diario regional en Punta Arenas, Región de Magallanes y Antártica Chilena.",
     "address": {
       "@type": "PostalAddress",
+      "streetAddress": "Las Malvas 2775",
+      "postalCode": "8320000",
       "addressLocality": "Punta Arenas",
       "addressRegion": "Magallanes y de la Antártica Chilena",
       "addressCountry": "CL"
