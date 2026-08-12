@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { updateAccountingPeriod } from '@/actions/accounting-periods'
+import { updateAccountingPeriod, getAccountingPeriods } from '@/actions/accounting-periods'
 import { Calendar, ShieldAlert, Lock, Unlock, Loader2 } from 'lucide-react'
 
 interface Period {
@@ -28,8 +28,25 @@ const MESES = [
 export function PeriodsClient({ initialPeriods, activeOrgId, activeOrgName }: PeriodsClientProps) {
   const [periods, setPeriods] = useState<Period[]>(initialPeriods)
   const [year, setYear] = useState(new Date().getFullYear())
+  const [isLoadingYear, setIsLoadingYear] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [updatingMonth, setUpdatingMonth] = useState<number | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoadingYear(true)
+    getAccountingPeriods(activeOrgId, year)
+      .then(data => {
+        if (isMounted) {
+          setPeriods(data)
+          setIsLoadingYear(false)
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingYear(false)
+      })
+    return () => { isMounted = false }
+  }, [year, activeOrgId])
 
   const getStatus = (month: number) => {
     const p = periods.find(p => p.mes === month)
@@ -76,11 +93,13 @@ export function PeriodsClient({ initialPeriods, activeOrgId, activeOrgName }: Pe
 
         {/* SELECTOR DE AÑO */}
         <div className="flex items-center gap-2">
+          {isLoadingYear && <Loader2 className="w-4 h-4 text-primary animate-spin mr-1" />}
           <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Año Fiscal:</span>
           <select id="field_year" name="field_year"
             value={year}
+            disabled={isLoadingYear}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="h-10 rounded-xl border border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            className="h-10 rounded-xl border border-border bg-card px-4 font-black uppercase text-xs tracking-wider text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           >
             {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
               <option key={y} value={y}>{y}</option>
