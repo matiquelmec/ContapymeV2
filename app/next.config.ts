@@ -28,8 +28,12 @@ const nextConfig: NextConfig = {
       // 1. Tributario & RCV
       { source: '/registro-rcv', destination: '/dashboard/accounting/rcv' },
       { source: '/tributario/registro-rcv', destination: '/dashboard/accounting/rcv' },
+      { source: '/registro-rcv/historial', destination: '/dashboard/accounting/rcv/history' },
+      { source: '/tributario/registro-rcv/historial', destination: '/dashboard/accounting/rcv/history' },
       { source: '/facturacion-dte', destination: '/dashboard/billing' },
       { source: '/tributario/facturacion-dte', destination: '/dashboard/billing' },
+      { source: '/facturacion-dte/ordenes-compra', destination: '/dashboard/billing/purchase-orders' },
+      { source: '/tributario/facturacion-dte/ordenes-compra', destination: '/dashboard/billing/purchase-orders' },
       { source: '/contabilidad-f29', destination: '/dashboard/accounting' },
       { source: '/tributario/contabilidad-f29', destination: '/dashboard/accounting' },
       { source: '/analisis-f29', destination: '/dashboard/accounting/f29-comparative' },
@@ -58,6 +62,9 @@ const nextConfig: NextConfig = {
       // 4. Recursos Humanos (RRHH)
       { source: '/remuneraciones', destination: '/dashboard/payroll' },
       { source: '/rrhh/remuneraciones', destination: '/dashboard/payroll' },
+      { source: '/remuneraciones/liquidaciones/:id*', destination: '/dashboard/payroll/liquidations/:id*' },
+      { source: '/rrhh/remuneraciones/liquidaciones/:id*', destination: '/dashboard/payroll/liquidations/:id*' },
+      { source: '/liquidaciones/:id*', destination: '/dashboard/payroll/liquidations/:id*' },
       { source: '/gestion-de-vacaciones', destination: '/dashboard/payroll/vacations' },
       { source: '/rrhh/gestion-de-vacaciones', destination: '/dashboard/payroll/vacations' },
       { source: '/contratos', destination: '/dashboard/payroll/contracts' },

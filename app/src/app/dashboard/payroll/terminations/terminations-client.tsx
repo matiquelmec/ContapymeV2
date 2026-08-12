@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -22,7 +23,6 @@ import {
   PenTool
 } from 'lucide-react'
 import { SignaturePad } from '@/components/ui/signature-pad'
-import Link from 'next/link'
 import { deleteTerminationAction, getTerminationDocumentAction, finalizeTerminationAction, downloadTerminationDocAction, exportTerminationCsvAction } from '@/actions/terminations'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -217,11 +217,11 @@ export default function TerminationsClient({
                   La validez jurídica de los finiquitos y cartas de aviso requiere completar este registro.
                 </p>
                 <div className="pt-3">
-                  <a href="/dashboard/payroll/settings">
+                  <Link href="/rrhh/configuracion-previsional" prefetch={true}>
                     <Button variant="outline" size="sm" className="bg-white border-amber-300 text-amber-700 hover:bg-amber-100 font-black uppercase text-[10px] tracking-widest rounded-xl px-6 h-10 shadow-sm transition-all hover:scale-105 active:scale-95">
                       Configurar Entidad <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>

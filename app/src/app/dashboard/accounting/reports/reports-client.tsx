@@ -27,11 +27,13 @@ import {
   Loader2,
   Lock
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { getFinancialReports } from "@/actions/accounting";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
 export default function ReportsClient({ organizationId }: { organizationId: string }) {
+  const router = useRouter();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | undefined>(undefined);
   const [reports, setReports] = useState<any>(null);
@@ -214,7 +216,7 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                         <TableRow 
                           key={d.codigo} 
                           className="group hover:bg-primary/[0.02] transition-colors cursor-pointer"
-                          onClick={() => window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`}
+                          onClick={() => router.push(`/contabilidad/libro-mayor?account=${d.codigo}`)}
                         >
                           <TableCell className="px-10 py-6 font-mono text-[11px] font-black tracking-[0.2em] text-muted-foreground/50">{d.codigo}</TableCell>
                           <TableCell className="px-10 py-6">
@@ -289,7 +291,7 @@ export default function ReportsClient({ organizationId }: { organizationId: stri
                           className={`group hover:bg-primary/[0.02] transition-colors ${d.is_virtual ? 'bg-indigo-50/20 italic' : 'cursor-pointer'}`}
                           onClick={() => {
                             if (!d.is_virtual) {
-                              window.location.href = `/dashboard/accounting/ledger?account=${d.codigo}`;
+                              router.push(`/contabilidad/libro-mayor?account=${d.codigo}`);
                             }
                           }}
                         >

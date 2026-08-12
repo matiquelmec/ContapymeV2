@@ -396,7 +396,7 @@ export default function LiquidationDetailPage() {
                 const res = await updateLiquidationStatus(liquidation.id, 'aprobada')
                 if (res.success) {
                   toast.success('Liquidación aprobada satisfactoriamente.')
-                  setTimeout(() => window.location.reload(), 1000)
+                  router.refresh()
                 } else {
                   toast.error('Error al aprobar.')
                 }
