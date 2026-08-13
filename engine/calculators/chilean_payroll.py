@@ -488,8 +488,9 @@ def calcular_liquidacion(
         gratificacion = min(gratif_calculada, tope_mensual_prop)
 
     # Colación, movilización y viáticos: NO son imponibles (Art. 41 CT), se suman al final
-    colacion = emp.asignacion_colacion
-    movilizacion = emp.asignacion_movilizacion
+    # Se prorratean por días efectivamente trabajados en el mes
+    colacion = int(round(emp.asignacion_colacion * factor_dias))
+    movilizacion = int(round(emp.asignacion_movilizacion * factor_dias))
     viatico = emp.asignacion_viatico
     
     otros_haberes_no_imp = max(0, emp.otros_haberes_no_imponibles)
