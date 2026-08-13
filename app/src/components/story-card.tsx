@@ -157,9 +157,10 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
 
         {/* Top Safe Zone Header (Logo Contapymepuq) */}
         <div style={{
-          padding: '110px 80px 10px 80px',
+          padding: '100px 75px 20px 75px',
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
           width: '100%',
           boxSizing: 'border-box',
           position: 'relative',
@@ -170,7 +171,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             src="/logo-contapyme.png" 
             alt="ContaPyme Logo"
             style={{
-              height: '140px',
+              height: '130px',
               width: 'auto',
               objectFit: 'contain',
               filter: 'drop-shadow(0 4px 20px rgba(37, 99, 235, 0.4))',
@@ -179,122 +180,130 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           />
         </div>
 
-        {/* Zona Central: Marco Fotográfico Hero + Titular Periodístico */}
+        {/* 🌟 TARJETA PRINCIPAL ESTRUCTURADA BENTO PRESS CARD (ESTILO BLOOMBERG / FINANCIAL TIMES) */}
         <div style={{
           flex: '1',
-          padding: '0 75px',
+          padding: '0 60px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           position: 'relative',
           zIndex: 10,
           boxSizing: 'border-box',
-          gap: '24px',
         }}>
-          {/* Badge de Categoría con Gradiente de Marca */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-          }}>
-            <div style={{
-              backgroundColor: theme.badgeBg,
-              border: `1.5px solid ${theme.borderColor}`,
-              borderRadius: '9999px',
-              padding: '10px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-            }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '9999px',
-                backgroundColor: theme.accentColor,
-                boxShadow: `0 0 10px ${theme.accentColor}`
-              }} />
-              <span style={{
-                color: theme.textColor,
-                fontSize: '15px',
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                letterSpacing: '3px',
-                fontStyle: 'italic',
-              }}>
-                {category}
-              </span>
-            </div>
-          </div>
-
-          {/* 🖼️ MARCO FOTOGRÁFICO DESTACADO PROPORCIONAL (SAFE ZONE FIT) */}
           <div style={{
             width: '100%',
-            height: '520px',
-            borderRadius: '32px',
-            overflow: 'hidden',
+            backgroundColor: '#090d16',
+            borderRadius: '36px',
             border: '2px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 30px 90px rgba(0,0,0,0.85), 0 0 40px rgba(37, 99, 235, 0.2)',
-            position: 'relative',
-            backgroundColor: '#0f172a',
+            boxShadow: '0 35px 100px rgba(0,0,0,0.9), 0 0 50px rgba(37, 99, 235, 0.25)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
           }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={title}
-              crossOrigin="anonymous"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-            />
+            {/* 🖼️ 1. FOTOGRAFÍA NÍTIDA SUPERIOR (560px) */}
             <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(180deg, transparent 65%, rgba(2, 6, 23, 0.8) 100%)',
-            }} />
-          </div>
-          
-          {/* Titular Principal de Impacto Editorial */}
-          <h2 style={{
-            color: '#ffffff',
-            fontSize: '52px',
-            fontWeight: 900,
-            fontStyle: 'italic',
-            letterSpacing: '-1.5px',
-            lineHeight: 1.15,
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            margin: '4px 0 0 0',
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textShadow: '0 6px 25px rgba(0,0,0,0.9)'
-          }}>
-            {title}
-          </h2>
+              width: '100%',
+              height: '560px',
+              position: 'relative',
+              backgroundColor: '#0f172a',
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={title}
+                crossOrigin="anonymous"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                }}
+              />
+              {/* Overlay suave para integrar con el bloque inferior */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(9, 13, 22, 0.9) 100%)',
+              }} />
 
-          {/* Resumen Periodístico / Subtítulo */}
-          <p style={{
-            color: '#cbd5e1',
-            fontSize: '22px',
-            fontWeight: 500,
-            lineHeight: 1.45,
-            margin: '0 auto',
-            maxWidth: '880px',
-            textAlign: 'center',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textShadow: '0 4px 12px rgba(0,0,0,0.95)'
-          }}>
-            {summary || "Revisa la cobertura completa y el análisis detallado en el Diario Regional Contapymepuq."}
-          </p>
+              {/* Badge de Categoría encima de la foto */}
+              <div style={{
+                position: 'absolute',
+                top: '28px',
+                left: '28px',
+                backgroundColor: 'rgba(9, 13, 22, 0.85)',
+                border: `1.5px solid ${theme.borderColor}`,
+                backdropFilter: 'blur(12px)',
+                borderRadius: '9999px',
+                padding: '8px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              }}>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '9999px',
+                  backgroundColor: theme.accentColor,
+                  boxShadow: `0 0 10px ${theme.accentColor}`
+                }} />
+                <span style={{
+                  color: theme.textColor,
+                  fontSize: '14px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  letterSpacing: '2.5px',
+                  fontStyle: 'italic',
+                }}>
+                  {category}
+                </span>
+              </div>
+            </div>
+
+            {/* 📝 2. CONTENEDOR DE TEXTO DE ALTO CONTRASATE (FONDO SÓLIDO 100% LEGIBLE) */}
+            <div style={{
+              padding: '36px 44px 44px 44px',
+              backgroundColor: '#090d16',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}>
+              {/* Titular Principal de Impacto Masivo */}
+              <h2 style={{
+                color: '#ffffff',
+                fontSize: '48px',
+                fontWeight: 900,
+                fontStyle: 'italic',
+                letterSpacing: '-1px',
+                lineHeight: 1.18,
+                textTransform: 'uppercase',
+                margin: 0,
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {title}
+              </h2>
+
+              {/* Resumen Periodístico / Subtítulo Nítido */}
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '22px',
+                fontWeight: 500,
+                lineHeight: 1.45,
+                margin: 0,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {summary || "Revisa la cobertura periodística completa y los detalles clave en el Diario Regional Contapymepuq."}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Bottom Safe Zone Footer */}
