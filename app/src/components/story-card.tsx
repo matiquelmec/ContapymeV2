@@ -9,7 +9,6 @@ interface StoryCardProps {
   date: string
   summary?: string
   sourceName?: string
-  showStickerGuide?: boolean
 }
 
 // 🎨 Paletas de Diseño "Contapymepuq Master Brand"
@@ -93,7 +92,7 @@ const getTheme = (cat: string, title: string) => {
  * y la paleta de marca oficial de Contapymepuq.
  */
 export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
-  ({ title, category, imageUrl, date, summary, sourceName = 'Diario Contapymepuq', showStickerGuide = false }, ref) => {
+  ({ title, category, imageUrl, date, summary, sourceName = 'Diario Contapymepuq' }, ref) => {
     const theme = getTheme(category, title);
 
     const formattedDate = new Date(date).toLocaleDateString('es-CL', {
@@ -257,25 +256,6 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             }}>
               {summary || "Revisa la cobertura periodística completa y los detalles clave en el Diario Regional Contapymepuq."}
             </p>
-
-            {/* Guía visual opcional para sticker de Instagram */}
-            {showStickerGuide && (
-              <div style={{
-                marginTop: '10px',
-                padding: '12px 20px',
-                borderRadius: '16px',
-                backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                border: '2px dashed rgba(59, 130, 246, 0.6)',
-                color: '#93c5fd',
-                fontSize: '13px',
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '2px',
-                textAlign: 'center',
-              }}>
-                🔗 PEGA TU STICKER DE ENLACE DE INSTAGRAM AQUÍ
-              </div>
-            )}
           </div>
 
           {/* Footer Bar Integrado */}
