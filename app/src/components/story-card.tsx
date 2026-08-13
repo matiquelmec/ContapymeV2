@@ -188,11 +188,11 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           zIndex: 2,
         }} />
 
-        {/* Header / Logo centrado y más grande sin contornos */}
+        {/* Header / Logo centrado de marca */}
         <div style={{
-          padding: '120px 80px 10px 80px',
+          padding: '80px 80px 10px 80px',
           display: 'flex',
-          justifyContent: 'center', // Centrar el logo
+          justifyContent: 'center',
           width: '100%',
           boxSizing: 'border-box',
           position: 'relative',
@@ -203,87 +203,122 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
             src="/logo-contapyme.png" 
             alt="ContaPyme Logo"
             style={{
-              height: '260px', // Agrandar tamaño
+              height: '180px',
               width: 'auto',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 0 20px rgba(0, 242, 254, 0.5))', // Brillo neón más intenso
+              filter: 'drop-shadow(0 0 25px rgba(0, 242, 254, 0.6))',
             }}
             crossOrigin="anonymous"
           />
         </div>
 
-        {/* Zona Central de Textos Disruptivos (Sin Celular) */}
+        {/* Zona Central: Fotografía Destacada + Titular Periodístico */}
         <div style={{
           flex: '1',
           padding: '0 80px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center', // Centrar verticalmente en el espacio disponible
+          justifyContent: 'center',
           position: 'relative',
           zIndex: 10,
           boxSizing: 'border-box',
+          gap: '24px',
         }}>
-          {/* Eslógan / Categoría superior con glow */}
+          {/* Categoría superior con glow */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '16px',
+            gap: '14px',
             color: theme.textColor || '#90e0ef',
-            fontSize: '18px',
+            fontSize: '16px',
             fontWeight: 950,
             textTransform: 'uppercase',
-            letterSpacing: '8px',
+            letterSpacing: '6px',
             fontStyle: 'italic',
-            marginBottom: '36px',
             textShadow: '0 0 10px rgba(0, 242, 254, 0.4)'
           }}>
             <span style={{
-              width: '40px',
+              width: '30px',
               height: '3px',
               backgroundColor: '#00f2fe',
               boxShadow: '0 0 8px #00f2fe'
             }} />
             {category}
             <span style={{
-              width: '40px',
+              width: '30px',
               height: '3px',
               backgroundColor: '#00f2fe',
               boxShadow: '0 0 8px #00f2fe'
             }} />
           </div>
+
+          {/* 🖼️ MARCO DE FOTOGRAFÍA NÍTIDA DE LA NOTICIA */}
+          <div style={{
+            width: '100%',
+            height: '460px',
+            borderRadius: '32px',
+            overflow: 'hidden',
+            border: '4px solid rgba(0, 242, 254, 0.4)',
+            boxShadow: '0 25px 70px rgba(0,0,0,0.8), 0 0 30px rgba(0, 242, 254, 0.25)',
+            position: 'relative',
+            backgroundColor: '#020712',
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={title}
+              crossOrigin="anonymous"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+              }}
+            />
+            {/* Sombra suave inferior en la foto */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.7) 100%)',
+            }} />
+          </div>
           
-          {/* Titular Principal de Impacto Masivo Centrado */}
+          {/* Titular Principal de Impacto Masivo */}
           <h2 style={{
             color: '#ffffff',
-            fontSize: '78px', // Aumentado para máximo impacto
+            fontSize: '56px',
             fontWeight: 950,
             fontStyle: 'italic',
-            letterSpacing: '-2px',
-            lineHeight: 1.05,
+            letterSpacing: '-1.5px',
+            lineHeight: 1.1,
             textTransform: 'uppercase',
             textAlign: 'center',
-            margin: '0 0 40px 0',
+            margin: '8px 0 0 0',
             display: '-webkit-box',
-            WebkitLineClamp: 4,
+            WebkitLineClamp: 3,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0, 242, 254, 0.1)'
+            textShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0, 242, 254, 0.2)'
           }}>
             {title}
           </h2>
 
-          {/* Resumen expectante / Gancho limpio y sin contenedores */}
+          {/* Resumen Periodístico / Gancho Legible */}
           <p style={{
-            color: '#ffffff', // Letras blancas
-            fontSize: '30px', // Ligeramente mayor para legibilidad
+            color: '#e2e8f0',
+            fontSize: '24px',
             fontWeight: 500,
-            lineHeight: 1.5,
+            lineHeight: 1.4,
             margin: '0 auto',
             maxWidth: '850px',
             textAlign: 'center',
             fontStyle: 'italic',
-            textShadow: '0 4px 12px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.8)' // Sombra dura para legibilidad total
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textShadow: '0 4px 12px rgba(0,0,0,0.95)'
           }}>
             {summary || "¿Cómo afecta esto a tu bolsillo y a tu negocio local? Entérate de los detalles clave antes de que sea tarde..."}
           </p>
@@ -291,7 +326,7 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
 
         {/* Footer Minimalista de Contraste */}
         <div style={{
-          padding: '40px 80px 80px 80px',
+          padding: '30px 80px 60px 80px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
