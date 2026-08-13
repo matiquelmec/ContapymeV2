@@ -42,6 +42,35 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
     : []
 
   /**
+   * Obtiene un resumen periodístico completo y cerrado sin cortar oraciones.
+   */
+  const getCompleteSummary = () => {
+    const raw = (news.summary || news.content || '').replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim()
+    if (!raw) return 'Revisa la cobertura periodística completa y los detalles clave en el Diario Regional Contapymepuq.'
+    
+    // Si la cadena original es corta, retornarla completa
+    if (raw.length <= 220) {
+      return (raw.endsWith('.') || raw.endsWith('!') || raw.endsWith('?')) ? raw : `${raw}.`
+    }
+    
+    // Buscar el punto seguido completo antes de los 220 caracteres
+    const slice = raw.substring(0, 220)
+    const lastDot = slice.lastIndexOf('.')
+    if (lastDot > 90) {
+      return slice.substring(0, lastDot + 1)
+    }
+    
+    // De lo contrario buscar el último espacio para no cortar palabras a la mitad
+    const lastSpace = slice.lastIndexOf(' ')
+    if (lastSpace > 70) {
+      return `${slice.substring(0, lastSpace)}...`
+    }
+    return `${slice}...`
+  }
+
+  const effectiveSummary = getCompleteSummary()
+
+  /**
    * Genera una imagen tipo Story Card (1080x1920) de la noticia
    * y retorna un File listo para compartir.
    */
@@ -228,7 +257,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         category={news.category || 'Regional'}
         imageUrl={news.image_url || '/news-placeholder.png'}
         date={news.published_at}
-        summary={news.summary}
+        summary={effectiveSummary}
         showStickerGuide={showStickerGuide}
       />
 
