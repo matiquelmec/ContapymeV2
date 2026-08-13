@@ -3,11 +3,12 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Globe, Calendar, MessageCircle, Share2, Instagram, Download, Loader2, Clock } from 'lucide-react'
+import { Globe, Calendar, MessageCircle, Share2, Instagram, Download, Loader2, Clock, Film, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { StoryCard } from './story-card'
 import { toast } from 'sonner'
+import { recordCanvasToVideo } from '@/lib/video-story-generator'
 
 interface NewsArticleContentProps {
   news: any
@@ -17,6 +18,8 @@ interface NewsArticleContentProps {
 export function NewsArticleContent({ news, isModal = false }: NewsArticleContentProps) {
   const storyCardRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [showStickerGuide, setShowStickerGuide] = useState(false)
 
   if (!news) return null
 
@@ -133,18 +136,47 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
   }
 
   /**
-   * Descarga directa de la Story Card como imagen.
+   * Descarga de la Story Card como Video Animado (Motion Graphics WebM/MP4).
    */
-  const handleDownloadStory = async () => {
-    setIsGenerating(true)
+  const handleShareVideoStory = async () => {
+    if (!storyCardRef.current) return
+    setIsGeneratingVideo(true)
     try {
-      const file = await generateStoryImage()
-      if (file) {
-        downloadImage(file)
-        toast.success("¡Imagen descargada exitosamente!")
+      const html2canvas = (await import('html2canvas-pro')).default
+      const canvas = await html2canvas(storyCardRef.current, {
+        width: 1080,
+        height: 1920,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#020617',
+        logging: false,
+      })
+
+      toast.info("📹 Generando video animado HD de 6 segundos...")
+      const videoFile = await recordCanvasToVideo(canvas, 6000)
+
+      if (videoFile) {
+        if (navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+          await navigator.share({
+            files: [videoFile],
+            title: news.title,
+            text: `📍 ${news.title} — Diario Regional Contapymepuq\n${getCanonicalUrl()}`,
+          })
+          toast.success("¡Video listo para compartir!")
+        } else {
+          downloadImage(videoFile)
+          toast.success("¡Video animado descargado exitosamente!")
+        }
+      } else {
+        toast.error("No se pudo generar el video en este navegador. Usando formato de imagen estática.")
+        handleShareInstagram()
       }
+    } catch (err) {
+      console.error("Error al generar video:", err)
+      toast.error("Error al procesar el video animado.")
     } finally {
-      setIsGenerating(false)
+      setIsGeneratingVideo(false)
     }
   }
 
@@ -202,6 +234,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         imageUrl={news.image_url || '/news-placeholder.png'}
         date={news.published_at}
         summary={news.summary}
+        showStickerGuide={showStickerGuide}
       />
 
       {/* Imagen Principal Inmersiva */}
@@ -355,6 +388,20 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
               {isGenerating ? 'Generando Imagen HD...' : 'Historia / Post'}
             </Button>
 
+            {/* Nuevo Botón: Video Animado (Motion Graphics) */}
+            <Button
+              onClick={handleShareVideoStory}
+              disabled={isGeneratingVideo}
+              className="rounded-full h-12 px-7 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40 transition-all duration-300 hover:scale-105 active:scale-95 border-none disabled:opacity-50"
+            >
+              {isGeneratingVideo ? (
+                <Loader2 className="mr-2.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Film className="mr-2.5 h-4 w-4" />
+              )}
+              {isGeneratingVideo ? 'Procesando Video HD...' : 'Video Animado 🎥'}
+            </Button>
+
             {/* WhatsApp Directo */}
             <Button
               onClick={handleWhatsApp}
@@ -370,6 +417,19 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
               className="rounded-full h-12 px-7 text-[10px] font-black uppercase tracking-widest border-border/80 bg-muted/30 hover:bg-muted/70 text-foreground shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <Share2 className="mr-2.5 h-4 w-4" /> Compartir Link
+            </Button>
+
+            {/* Alternar Guía para Sticker de Instagram */}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowStickerGuide(!showStickerGuide)
+                toast.info(showStickerGuide ? "Guía de sticker desactivada" : "Guía visual de sticker activada en la historia 🔗")
+              }}
+              className="rounded-full h-12 px-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
+            >
+              <Sparkles className="mr-2 h-3.5 w-3.5 text-blue-500" />
+              {showStickerGuide ? 'Ocultar Guía Sticker' : 'Guía Sticker Instagram'}
             </Button>
           </div>
         </div>
