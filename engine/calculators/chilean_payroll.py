@@ -370,8 +370,13 @@ def _calcular_honorarios(
     """
     haberes_imp = max(0, emp.otros_haberes_imponibles)
     haberes_no_imp = max(0, emp.otros_haberes_no_imponibles)
+
+    # Proporcional según los días efectivamente trabajados en el periodo (base mensual de 30 días)
+    factor_dias = (emp.dias_trabajados / 30.0) if emp.dias_trabajados > 0 else 1.0
+    sueldo_base = int(round(max(0, emp.sueldo_base) * factor_dias))
+
     bruto = (
-        max(0, emp.sueldo_base) + max(0, emp.bono_extra) + max(0, emp.bono_fijo)
+        sueldo_base + max(0, emp.bono_extra) + max(0, emp.bono_fijo)
         + haberes_imp + haberes_no_imp
     )
     # La retención aplica sobre el honorario (no sobre haberes no imponibles).
@@ -380,7 +385,7 @@ def _calcular_honorarios(
 
     credito_ccaf, anticipo, prestamo, retencion_judicial, varios, otros = _otros_descuentos(emp)
 
-    res.sueldo_base = max(0, emp.sueldo_base)
+    res.sueldo_base = sueldo_base
     res.bono_extra = max(0, emp.bono_extra)
     res.bono_fijo = max(0, emp.bono_fijo)
     res.otros_haberes_imponibles = haberes_imp
