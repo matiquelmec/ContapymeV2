@@ -130,132 +130,101 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
           boxSizing: 'border-box',
         }}
       >
-        {/* Imagen de fondo desenfocada con gradiente corporativo */}
+        {/* 🖼️ 1. FOTOGRAFÍA DESTACADA FULL-BLEED SUPERIOR (1080px × 1140px) */}
         <div style={{
           position: 'absolute',
-          inset: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '1140px',
           zIndex: 1,
+          backgroundColor: '#0f172a',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
-            alt="Fondo Inmersivo"
+            alt={title}
             crossOrigin="anonymous"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              filter: 'blur(35px) brightness(0.18) contrast(1.1)',
-              transform: 'scale(1.15)',
+              objectPosition: 'center',
             }}
           />
+          {/* Sombra gradual superior para destacar el logo */}
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(2, 6, 23, 0.92) 50%, rgba(2, 6, 23, 0.98) 100%)',
+            background: 'linear-gradient(180deg, rgba(2, 6, 23, 0.85) 0%, rgba(2, 6, 23, 0.2) 30%, transparent 60%, #020617 100%)',
           }} />
+
+          {/* Header de Marca Flotante */}
+          <div style={{
+            position: 'absolute',
+            top: '110px',
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/logo-contapyme.png" 
+              alt="ContaPyme Logo"
+              style={{
+                height: '140px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 6px 25px rgba(0,0,0,0.9)) drop-shadow(0 0 20px rgba(37, 99, 235, 0.5))',
+              }}
+              crossOrigin="anonymous"
+            />
+          </div>
         </div>
 
-        {/* Top Safe Zone Header (Logo Contapymepuq) */}
+        {/* 📝 2. HOJA PERIODÍSTICA INFERIOR (TEXT SHEET DE ALTO IMPACTO: 880px) */}
         <div style={{
-          padding: '100px 75px 20px 75px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-          boxSizing: 'border-box',
-          position: 'relative',
-          zIndex: 10,
-        }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="/logo-contapyme.png" 
-            alt="ContaPyme Logo"
-            style={{
-              height: '130px',
-              width: 'auto',
-              objectFit: 'contain',
-              filter: 'drop-shadow(0 4px 20px rgba(37, 99, 235, 0.4))',
-            }}
-            crossOrigin="anonymous"
-          />
-        </div>
-
-        {/* 🌟 TARJETA PRINCIPAL ESTRUCTURADA BENTO PRESS CARD (ESTILO BLOOMBERG / FINANCIAL TIMES) */}
-        <div style={{
-          flex: '1',
-          padding: '0 60px',
+          marginTop: '980px',
+          height: '940px',
+          backgroundColor: '#020617',
+          borderTop: '3px solid rgba(59, 130, 246, 0.5)',
+          padding: '40px 75px 120px 75px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           position: 'relative',
           zIndex: 10,
           boxSizing: 'border-box',
+          boxShadow: '0 -30px 80px rgba(0,0,0,0.95)',
         }}>
-          <div style={{
-            width: '100%',
-            backgroundColor: '#090d16',
-            borderRadius: '36px',
-            border: '2px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 35px 100px rgba(0,0,0,0.9), 0 0 50px rgba(37, 99, 235, 0.25)',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}>
-            {/* 🖼️ 1. FOTOGRAFÍA NÍTIDA SUPERIOR (560px) */}
-            <div style={{
-              width: '100%',
-              height: '560px',
-              position: 'relative',
-              backgroundColor: '#0f172a',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt={title}
-                crossOrigin="anonymous"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                }}
-              />
-              {/* Overlay suave para integrar con el bloque inferior */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Badge de Categoría con Destello */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(9, 13, 22, 0.9) 100%)',
-              }} />
-
-              {/* Badge de Categoría encima de la foto */}
-              <div style={{
-                position: 'absolute',
-                top: '28px',
-                left: '28px',
-                backgroundColor: 'rgba(9, 13, 22, 0.85)',
+                backgroundColor: theme.badgeBg,
                 border: `1.5px solid ${theme.borderColor}`,
-                backdropFilter: 'blur(12px)',
                 borderRadius: '9999px',
-                padding: '8px 20px',
+                padding: '10px 24px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                gap: '10px',
               }}>
                 <span style={{
-                  width: '8px',
-                  height: '8px',
+                  width: '10px',
+                  height: '10px',
                   borderRadius: '9999px',
                   backgroundColor: theme.accentColor,
-                  boxShadow: `0 0 10px ${theme.accentColor}`
+                  boxShadow: `0 0 12px ${theme.accentColor}`
                 }} />
                 <span style={{
                   color: theme.textColor,
-                  fontSize: '14px',
+                  fontSize: '16px',
                   fontWeight: 900,
                   textTransform: 'uppercase',
-                  letterSpacing: '2.5px',
+                  letterSpacing: '3px',
                   fontStyle: 'italic',
                 }}>
                   {category}
@@ -263,140 +232,113 @@ export const StoryCard = forwardRef<HTMLDivElement, StoryCardProps>(
               </div>
             </div>
 
-            {/* 📝 2. CONTENEDOR DE TEXTO DE ALTO CONTRASATE (FONDO SÓLIDO 100% LEGIBLE) */}
-            <div style={{
-              padding: '36px 44px 44px 44px',
-              backgroundColor: '#090d16',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            }}>
-              {/* Titular Principal de Impacto Masivo */}
-              <h2 style={{
-                color: '#ffffff',
-                fontSize: '48px',
-                fontWeight: 900,
-                fontStyle: 'italic',
-                letterSpacing: '-1px',
-                lineHeight: 1.18,
-                textTransform: 'uppercase',
-                margin: 0,
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}>
-                {title}
-              </h2>
-
-              {/* Resumen Periodístico / Subtítulo Nítido */}
-              <p style={{
-                color: '#94a3b8',
-                fontSize: '22px',
-                fontWeight: 500,
-                lineHeight: 1.45,
-                margin: 0,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}>
-                {summary || "Revisa la cobertura periodística completa y los detalles clave en el Diario Regional Contapymepuq."}
-              </p>
-            </div>
-          </div>
-
-          {/* Guía visual opcional para pegar sticker de Instagram */}
-          {showStickerGuide && (
-            <div style={{
-              marginTop: '16px',
-              padding: '14px 20px',
-              borderRadius: '20px',
-              backgroundColor: 'rgba(37, 99, 235, 0.12)',
-              border: '2px dashed rgba(59, 130, 246, 0.6)',
-              color: '#93c5fd',
-              fontSize: '14px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-              textAlign: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}>
-              <span>🔗 PEGA TU STICKER DE ENLACE DE INSTAGRAM AQUÍ</span>
-            </div>
-          )}
-        </div>
-
-        {/* Bottom Safe Zone Footer */}
-        <div style={{
-          padding: '24px 75px 120px 75px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          marginTop: 'auto',
-          position: 'relative',
-          zIndex: 10,
-          width: '100%',
-          boxSizing: 'border-box',
-          backgroundColor: 'rgba(2, 6, 23, 0.8)',
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div>
-            <div style={{
+            {/* Titular Principal de Alto Impacto (Sin Cortes de Texto) */}
+            <h2 style={{
               color: '#ffffff',
-              fontSize: '16px',
+              fontSize: '56px',
               fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '3px',
               fontStyle: 'italic',
-            }}>
-              {sourceName}
-            </div>
-            <div style={{
-              color: '#64748b',
-              fontSize: '13px',
-              fontWeight: 700,
+              letterSpacing: '-1.5px',
+              lineHeight: 1.15,
               textTransform: 'uppercase',
-              letterSpacing: '2px',
-              marginTop: '4px',
+              margin: 0,
+              textShadow: '0 4px 20px rgba(0,0,0,0.9)',
             }}>
-              {formattedDate} • PUNTA ARENAS
-            </div>
+              {title}
+            </h2>
+
+            {/* Resumen Periodístico / Subtítulo Completo Nítido */}
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '25px',
+              fontWeight: 500,
+              lineHeight: 1.45,
+              margin: 0,
+            }}>
+              {summary || "Revisa la cobertura periodística completa y los detalles clave en el Diario Regional Contapymepuq."}
+            </p>
+
+            {/* Guía visual opcional para sticker de Instagram */}
+            {showStickerGuide && (
+              <div style={{
+                marginTop: '10px',
+                padding: '12px 20px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                border: '2px dashed rgba(59, 130, 246, 0.6)',
+                color: '#93c5fd',
+                fontSize: '13px',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                textAlign: 'center',
+              }}>
+                🔗 PEGA TU STICKER DE ENLACE DE INSTAGRAM AQUÍ
+              </div>
+            )}
           </div>
-          
-          {/* Sello de Verificación Oficial de Marca */}
+
+          {/* Footer Bar Integrado */}
           <div style={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            paddingTop: '24px',
+            width: '100%',
           }}>
-            <div style={{
-              background: 'rgba(37, 99, 235, 0.15)',
-              border: '1px solid rgba(59, 130, 246, 0.5)',
-              borderRadius: '9999px',
-              padding: '6px 16px',
-              color: '#60a5fa',
-              fontSize: '11px',
-              fontWeight: 900,
-              letterSpacing: '1.5px',
-              textTransform: 'uppercase',
-              marginBottom: '4px',
-              fontStyle: 'italic',
-              boxShadow: '0 0 12px rgba(37, 99, 235, 0.2)'
-            }}>
-              ✓ CONTAPYMEPUQ VERIFICADO
+            <div>
+              <div style={{
+                color: '#ffffff',
+                fontSize: '16px',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '3px',
+                fontStyle: 'italic',
+              }}>
+                {sourceName}
+              </div>
+              <div style={{
+                color: '#64748b',
+                fontSize: '13px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                marginTop: '4px',
+              }}>
+                {formattedDate} • PUNTA ARENAS
+              </div>
             </div>
+
+            {/* Sello de Verificación Oficial de Marca */}
             <div style={{
-              color: '#64748b',
-              fontSize: '11px',
-              fontFamily: 'monospace',
-              letterSpacing: '1px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
             }}>
-              contapymepuq.cl • SHA-256:{fakeHash}
+              <div style={{
+                background: 'rgba(37, 99, 235, 0.15)',
+                border: '1px solid rgba(59, 130, 246, 0.5)',
+                borderRadius: '9999px',
+                padding: '6px 16px',
+                color: '#60a5fa',
+                fontSize: '11px',
+                fontWeight: 900,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                marginBottom: '4px',
+                fontStyle: 'italic',
+              }}>
+                ✓ CONTAPYMEPUQ VERIFICADO
+              </div>
+              <div style={{
+                color: '#64748b',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                letterSpacing: '1px',
+              }}>
+                contapymepuq.cl • SHA-256:{fakeHash}
+              </div>
             </div>
           </div>
         </div>
