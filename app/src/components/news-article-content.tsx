@@ -176,9 +176,17 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
   }
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(`📍 *NOTICIA REGIONAL* - ${news.title}\n\nLee más en el portal oficial:\n${getCanonicalUrl()}`)
+    const formattedCategory = (news.category || 'NOTICIA REGIONAL').toUpperCase()
+    const summaryText = news.summary ? `\n\n📝 _${news.summary}_` : ''
+    const text = encodeURIComponent(
+      `📰 *${formattedCategory} — PUNTA ARENAS & MAGALLANES*\n\n` +
+      `📌 *${news.title}*${summaryText}\n\n` +
+      `💡 _Cobertura periodística y análisis en el Diario Regional Contapymepuq:_\n` +
+      `🔗 ${getCanonicalUrl()}\n\n` +
+      `💼 _ContaPymePuq — Software Contable, Sueldos & Creación de Empresas en Magallanes_`
+    )
     window.open(`https://wa.me/?text=${text}`, '_blank')
-    toast.success("Redirigiendo a WhatsApp...")
+    toast.success("Abriendo WhatsApp con formato editorial profesional...")
   }
 
   return (
@@ -332,38 +340,36 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
           <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 italic">
             Compartir Noticia en Redes
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Botón principal: Compartir con Imagen (Stories/Post/etc) */}
+          <div className="flex flex-wrap items-center gap-3.5">
+            {/* Botón principal: Instagram Historia / Post */}
             <Button
-              variant="outline"
               onClick={handleShareInstagram}
               disabled={isGenerating}
-              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-[#E1306C]/30 text-[#E1306C] hover:bg-[#E1306C]/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+              className="rounded-full h-12 px-7 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 text-white shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 border-none disabled:opacity-50"
             >
               {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2.5 h-4 w-4 animate-spin" />
               ) : (
-                <Instagram className="mr-2 h-4 w-4" />
+                <Instagram className="mr-2.5 h-4 w-4" />
               )}
-              {isGenerating ? 'Generando...' : 'Historia / Post'}
+              {isGenerating ? 'Generando Imagen HD...' : 'Historia / Post'}
             </Button>
 
-            {/* WhatsApp */}
+            {/* WhatsApp Directo */}
             <Button
-              variant="outline"
               onClick={handleWhatsApp}
-              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all hover:scale-105 active:scale-95"
+              className="rounded-full h-12 px-7 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all duration-300 hover:scale-105 active:scale-95 border-none"
             >
-              <MessageCircle className="mr-2 h-4 w-4" /> WhatsApp
+              <MessageCircle className="mr-2.5 h-4 w-4" /> WhatsApp
             </Button>
 
             {/* Compartir Link (genérico) */}
             <Button
               variant="outline"
               onClick={handleShareFallback}
-              className="rounded-xl h-12 px-6 text-[10px] font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 transition-all hover:scale-105 active:scale-95"
+              className="rounded-full h-12 px-7 text-[10px] font-black uppercase tracking-widest border-border/80 bg-muted/30 hover:bg-muted/70 text-foreground shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
             >
-              <Share2 className="mr-2 h-4 w-4" /> Compartir Link
+              <Share2 className="mr-2.5 h-4 w-4" /> Compartir Link
             </Button>
           </div>
         </div>
