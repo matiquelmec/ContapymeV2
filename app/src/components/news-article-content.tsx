@@ -157,17 +157,12 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       const videoFile = await recordCanvasToVideo(canvas, 6000)
 
       if (videoFile) {
-        if (navigator.canShare && navigator.canShare({ files: [videoFile] })) {
-          await navigator.share({
-            files: [videoFile],
-            title: news.title,
-            text: `📍 ${news.title} — Diario Regional Contapymepuq\n${getCanonicalUrl()}`,
-          })
-          toast.success("¡Video listo para compartir!")
-        } else {
-          downloadImage(videoFile)
-          toast.success("¡Video animado descargado exitosamente!")
-        }
+        // Descarga directa del archivo de video para evitar que el navegador expire el evento de clic del usuario
+        downloadImage(videoFile)
+        try {
+          await navigator.clipboard.writeText(getCanonicalUrl())
+        } catch (e) {}
+        toast.success("¡Video HD descargado! Enlace copiado al portapapeles. ¡Listo para publicar en Reels o Stories! 🎥")
       } else {
         toast.error("No se pudo generar el video en este navegador. Usando formato de imagen estática.")
         handleShareInstagram()
