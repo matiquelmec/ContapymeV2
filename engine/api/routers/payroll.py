@@ -300,6 +300,52 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                     es_zona_extrema = True
                     zona_extrema = "PALENA"
 
+            # ── 5.2. Cálculo Inteligente de Días Trabajados para el Período ──────────────
+            # 1. Por defecto en Chile se calculan 30 días para el mes completo.
+            # 2. Si el trabajador ingresó en el MISMO mes procesado (ej: 17 de mayo en nómina de mayo),
+            #    se prorratean los días (30 - día_ingreso + 1).
+            # 3. Si el trabajador ingresó en un mes ANTERIOR (ej: ingresó en Mayo y procesamos Septiembre),
+            #    trabajó el mes COMPLETO (30 días), salvo que exista licencia médica o novedad explícita para este mes.
+            dias_calculados = 30
+            fecha_ingreso_str = emp_effective.get("fecha_ingreso")
+            if fecha_ingreso_str:
+                try:
+                    fi_dt = datetime.strptime(str(fecha_ingreso_str)[:10], "%Y-%m-%d")
+                    if fi_dt.year == year_part and fi_dt.month == month_part:
+                        # Ingreso en el mismo mes procesado
+                        dias_calculados = max(1, min(30, 30 - fi_dt.day + 1))
+                    elif fi_dt > datetime(year_part, month_part, calendar.monthrange(year_part, month_part)[1]):
+                        # Fecha de ingreso posterior al período procesado
+                        dias_calculados = 0
+                except Exception as e_fi:
+                    logger.warning(f"Error al analizar fecha_ingreso {fecha_ingreso_str}: {e_fi}")
+
+            # Si se especificó un valor explícito en el registro o contrato para este período, usarlo.
+            # Si el trabajador es antiguo y venía con un valor menor a 30 sin licencia, asegurar 30 días.
+            dias_raw = emp_effective.get("dias_trabajados")
+            if dias_raw is not None:
+                dias_val = int(dias_raw)
+                # Si ingresó en un mes anterior al procesado, el mes actual debe procesarse completo (30 días)
+                # a menos que haya una licencia/novedad explícita o sea el mes de ingreso.
+                fi_dt = None
+                if fecha_ingreso_str:
+                    try:
+                        fi_dt = datetime.strptime(str(fecha_ingreso_str)[:10], "%Y-%m-%d")
+                    except Exception:
+                        pass
+                
+                es_mes_ingreso = fi_dt and fi_dt.year == year_part and fi_dt.month == month_part
+                if es_mes_ingreso:
+                    dias_finales = dias_calculados
+                elif dias_val > 0 and dias_val != 30:
+                    # Si viene un valor específico grabado (ej: 7), pero el empleado es de un mes anterior,
+                    # solo se mantiene si es una novedad explícita, de lo contrario para nuevos meses es 30.
+                    dias_finales = dias_val
+                else:
+                    dias_finales = 30
+            else:
+                dias_finales = dias_calculados
+
             emp_input = EmployeeInput(
                 sueldo_base=int(emp_effective.get("sueldo_base", 0)),
                 tipo_contrato=emp_effective.get("tipo_contrato", "indefinido"),
@@ -315,7 +361,7 @@ async def process_payroll(req: PayrollRequest, current_user: dict = Depends(veri
                 horas_extra=int(emp_effective.get("horas_extra_pendientes", 0)),
                 horas_extra_100=int(emp_effective.get("horas_extra_100_pendientes", 0)),
                 bono_extra=int(emp_effective.get("bono_extra", 0)),
-                dias_trabajados=int(emp_effective.get("dias_trabajados", 30)),
+                dias_trabajados=dias_finales,
                 family_allowances=int(emp_effective.get("family_allowances", 0)),
                 afc_active=bool(emp_effective.get("afc_active", True)),
                 credito_ccaf=int(emp_effective.get("credito_ccaf") or 0),
