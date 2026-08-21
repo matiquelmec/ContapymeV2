@@ -58,18 +58,18 @@ async def generate_and_upload_image(prompt: str, news_id: str = None) -> str:
                     
                     logger.warning(f"[Images] Hugging Face falló con status={response.status_code}. Pasando a Pollinations...")
                 except Exception as hfe:
-                    logger.warning(f"[Images] Error en Hugging Face ({hfe}). Pasando a Pollinations...")
+                    logger.warning(f"[Images] Hugging Face no disponible ({hfe}). Pasando directamente a Pollinations FLUX...")
             else:
-                logger.info("[Images] HF_TOKEN no configurado en entorno. Pasando directamente a Pollinations...")
+                logger.info("[Images] HF_TOKEN no configurado. Pasando directamente a Pollinations FLUX...")
 
-            # MOTOR 2: Pollinations (FLUX - Alta Calidad) con reintentos y esperas de 5 segundos
-            max_retries = 3
+            # MOTOR 2: Pollinations (FLUX - Alta Calidad)
+            max_retries = 2
             for attempt in range(1, max_retries + 1):
                 seed = random.randint(1, 999999)
                 try:
-                    logger.info(f"[Images] Intentando generar con Pollinations FLUX (Intento {attempt}/{max_retries})...")
+                    logger.info(f"[Images] Generando con Pollinations FLUX (Intento {attempt}/{max_retries})...")
                     gen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=768&seed={seed}&model=flux&nologo=true"
-                    response = await client.get(gen_url)
+                    response = await client.get(gen_url, timeout=45.0)
                     content_type = response.headers.get("content-type", "")
                     
                     if response.status_code == 200 and content_type.startswith("image/"):
@@ -80,29 +80,26 @@ async def generate_and_upload_image(prompt: str, news_id: str = None) -> str:
                             f"[Images] Pollinations FLUX intento {attempt} fallido: status={response.status_code}, type={content_type}"
                         )
                 except Exception as pe:
-                    logger.warning(f"[Images] Pollinations FLUX intento {attempt} falló con excepción: {pe}")
+                    logger.warning(f"[Images] Pollinations FLUX intento {attempt} no respondió: {pe}")
                 
                 if attempt < max_retries:
-                    logger.info(f"[Images] Esperando 5 segundos antes de reintentar con Pollinations FLUX...")
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(3)
             
             # MOTOR 3: Pollinations (SDXL Turbo - Respaldo Rápido y Estable)
             try:
-                logger.info("[Images] Pollinations FLUX falló. Recurriendo a Motor 3 (SDXL Turbo)...")
+                logger.info("[Images] Recurriendo a Motor 3 (SDXL Turbo)...")
                 seed = random.randint(1, 999999)
                 turbo_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=768&seed={seed}&model=turbo&nologo=true"
-                response = await client.get(turbo_url, timeout=30.0)
+                response = await client.get(turbo_url, timeout=25.0)
                 content_type = response.headers.get("content-type", "")
                 if response.status_code == 200 and content_type.startswith("image/"):
                     logger.info("[Images] Éxito con Pollinations SDXL Turbo!")
                     return await _upload_to_supabase(response.content, "turbo")
-                else:
-                    logger.warning(f"[Images] Motor 3 (Turbo) no devolvió imagen válida: status={response.status_code}, type={content_type}")
             except Exception as te:
-                logger.error(f"[Images] Motor 3 (Turbo) falló: {te}")
+                logger.warning(f"[Images] Motor 3 (Turbo) no disponible: {te}")
 
-    except Exception:
-        logger.error(f"[Images] Fallo general en generador: {traceback.format_exc()}")
+    except Exception as ex:
+        logger.error(f"[Images] Fallo general en generador: {ex}")
     return None
 
 async def _upload_to_supabase(content: bytes, prefix: str) -> str:
@@ -113,13 +110,12 @@ async def _upload_to_supabase(content: bytes, prefix: str) -> str:
         return str(db.storage.from_("news_images").get_public_url(filename)).split('?')[0]
     except Exception as e:
         logger.error(f"[Images] Error al subir a Supabase Storage: {e}")
-        traceback.print_exc()
         return None
 
 async def download_and_upload_image(image_url: str) -> str:
     if not image_url or not image_url.startswith("http"): return None
     try:
-        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
             response = await client.get(image_url)
             if response.status_code == 200:
                 prefix = "brand" if "clearbit" in image_url else "stock"
@@ -127,8 +123,7 @@ async def download_and_upload_image(image_url: str) -> str:
             else:
                 logger.warning(f"[Images] Fallo al descargar de {image_url}: status={response.status_code}")
     except Exception as e:
-        logger.error(f"[Images] Excepcion en download_and_upload_image: {e}")
-        traceback.print_exc()
+        logger.warning(f"[Images] No se pudo descargar imagen externa ({image_url}): {e}")
     return None
 
 async def get_category_fallback_url(category: str, title: str = "") -> str:
