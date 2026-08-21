@@ -32,7 +32,16 @@ async def fetch_brand_logo_url(brand_name: str) -> str | None:
         "bco estado": "bancoestado.cl",
         "banco de chile": "bancochile.cl",
         "bci": "bci.cl",
-        "santander": "santander.cl"
+        "santander": "santander.cl",
+        "edelmag": "edelmag.cl",
+        "dicrep": "dicrep.cl",
+        "tia rica": "dicrep.cl",
+        "la tia rica": "dicrep.cl",
+        "enap": "enap.cl",
+        "gore magallanes": "goremagallanes.cl",
+        "municipalidad de punta arenas": "puntaarenas.cl",
+        "pjud": "pjud.cl",
+        "corte suprema": "pjud.cl"
     }
     
     clean_name = brand_name.lower().strip()
@@ -44,7 +53,12 @@ async def fetch_brand_logo_url(brand_name: str) -> str | None:
     if not domain:
         # Remover espacios y caracteres especiales
         safe_name = clean_name.replace(" ", "").replace("&", "n").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
-        # Por defecto asumimos .cl para marcas locales chilenas si no es una conocida internacional
+        # Si tiene caracteres alfanuméricos válidos
+        if safe_name:
+            domain = f"{safe_name}.cl"
+        else:
+            return None
+        
     # Usar Google Favicon API de alta resolución (128px) - 100% uptime y sin límites de consulta
     logo_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
     logger.info(f"[Brand Scrapper] Resolviendo marca '{brand_name}' -> Dominio: {domain} -> Logo URL: {logo_url}")
