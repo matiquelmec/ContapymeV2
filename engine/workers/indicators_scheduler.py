@@ -18,7 +18,7 @@ INDICADORES ACTUALIZADOS:
 
 import logging
 import httpx
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
@@ -82,7 +82,7 @@ async def _fetch_and_store_indicators() -> dict:
                             "valor": valor,
                             "fecha": fecha_valor,
                             "fuente": "mindicador.cl",
-                            "updated_at": datetime.utcnow().isoformat(),
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
                         },
                         on_conflict="codigo,fecha",
                     ).execute()
@@ -127,7 +127,7 @@ async def _fetch_and_store_indicators() -> dict:
                             "valor": valor,
                             "fecha": hoy,
                             "fuente": "Yahoo Finance (Global)",
-                            "updated_at": datetime.utcnow().isoformat(),
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
                         }, on_conflict="codigo,fecha").execute()
                         
                         actualizados.append({"codigo": codigo, "valor": valor})
@@ -144,7 +144,7 @@ async def _fetch_and_store_indicators() -> dict:
         "actualizados": actualizados,
         "errores": errores,
         "total": len(actualizados),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     if errores:
@@ -161,7 +161,7 @@ async def _cleanup_old_audit_logs():
     para mantener el rendimiento de la tabla y no asfixiar PostgreSQL.
     """
     db = get_supabase()
-    limite_fecha = (datetime.utcnow() - timedelta(days=180)).isoformat()
+    limite_fecha = (datetime.now(timezone.utc) - timedelta(days=180)).isoformat()
     logger.info(f"[Mantenimiento] Iniciando purga de bitácora (anteriores a {limite_fecha})...")
     
     try:

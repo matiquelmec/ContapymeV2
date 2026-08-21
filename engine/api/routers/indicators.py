@@ -7,7 +7,7 @@ Resuelve el problema de "Cargando..." habilitando Market Pulse dinámico.
 import httpx
 import time
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from core.database import get_supabase
@@ -74,7 +74,7 @@ async def update_indicators(current_user: dict = Depends(verify_token)):
                             "valor": valor,
                             "fecha": fecha_valor, 
                             "fuente": "mindicador.cl", 
-                            "updated_at": datetime.utcnow().isoformat()
+                            "updated_at": datetime.now(timezone.utc).isoformat()
                         }, on_conflict="codigo,fecha").execute()
 
                         actualizados.append(codigo)
@@ -98,7 +98,7 @@ async def update_indicators(current_user: dict = Depends(verify_token)):
                         "valor": valor,
                         "fecha": hoy,
                         "fuente": "Yahoo Finance", 
-                        "updated_at": datetime.utcnow().isoformat()
+                        "updated_at": datetime.now(timezone.utc).isoformat()
                     }, on_conflict="codigo,fecha").execute()
 
                     actualizados.append(codigo)
@@ -111,7 +111,7 @@ async def update_indicators(current_user: dict = Depends(verify_token)):
         "success": len(errores) == 0, 
         "actualizados": actualizados, 
         "errores": errores, 
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @router.get("/latest")

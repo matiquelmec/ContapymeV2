@@ -1,0 +1,60 @@
+name: CI / CD Quality Gate & Security Audit
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  engine-tests:
+    name: 🐍 Python Engine Tests & Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Engine Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r engine/requirements.txt
+
+      - name: Run Full Test Suite & Coverage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://mock.supabase.co' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'mock-service-role-key' }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'mock-groq-key' }}
+        run: |
+          python -m pytest tests --cov=engine/calculators --cov=engine/core --cov=engine/api -v
+
+  frontend-typecheck:
+    name: ⚡ Next.js & TypeScript Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./app
+        run: |
+          npm ci --prefer-offline || npm install
+
+      - name: TypeScript Strict Typecheck
+        working-directory: ./app
+        run: |
+          npx tsc --noEmit

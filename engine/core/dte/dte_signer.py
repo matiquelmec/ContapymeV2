@@ -57,7 +57,7 @@ class DTESigner:
             # Versiones antiguas (naive UTC)
             not_after = cert.not_valid_after
             not_before = cert.not_valid_before
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         if now > not_after:
             raise Exception(

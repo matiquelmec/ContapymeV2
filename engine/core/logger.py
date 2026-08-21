@@ -4,7 +4,7 @@ Permite registrar acciones críticas realizadas por usuarios o por el sistema.
 """
 import logging
 from typing import Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from .database import get_supabase
 
 # Logger estándar de Python para consola con soporte seguro para Unicode/emojis en Windows
@@ -69,7 +69,7 @@ def log_activity(
             "details": details or {},
             "ip_address": ip_address,
             "user_agent": user_agent,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         # Usamos service_role para que el motor siempre pueda escribir el log

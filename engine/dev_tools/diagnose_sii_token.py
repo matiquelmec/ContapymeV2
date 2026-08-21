@@ -72,7 +72,7 @@ def _print_cert_info(cert):
     except AttributeError:
         not_after = cert.not_valid_after
         not_before = cert.not_valid_before
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     print(f"  Sujeto:  {cert.subject.rfc4514_string()}")
     print(f"  Emisor:  {cert.issuer.rfc4514_string()}")

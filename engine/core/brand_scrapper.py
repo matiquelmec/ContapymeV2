@@ -45,8 +45,7 @@ async def fetch_brand_logo_url(brand_name: str) -> str | None:
         # Remover espacios y caracteres especiales
         safe_name = clean_name.replace(" ", "").replace("&", "n").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
         # Por defecto asumimos .cl para marcas locales chilenas si no es una conocida internacional
-        domain = f"{safe_name}.cl"
-        
-    logo_url = f"https://logo.clearbit.com/{domain}"
+    # Usar Google Favicon API de alta resolución (128px) - 100% uptime y sin límites de consulta
+    logo_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
     logger.info(f"[Brand Scrapper] Resolviendo marca '{brand_name}' -> Dominio: {domain} -> Logo URL: {logo_url}")
     return logo_url
