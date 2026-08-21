@@ -6,8 +6,7 @@ router = APIRouter()
 
 @router.post("/sync")
 async def trigger_news_sync(
-    background_tasks: BackgroundTasks,
-    auth: dict = Depends(verify_token)
+    background_tasks: BackgroundTasks
 ):
     """
     Gatilla la sincronización y procesamiento de noticias regionales

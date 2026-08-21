@@ -9,7 +9,9 @@ logger = logging.getLogger("contapyme.ai")
 # Configuración de Groq Cloud (v8.7 Smart Cloud)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
+FALLBACK_MODEL = "openai/gpt-oss-20b"
+TERTIARY_MODEL = "qwen/qwen3.6-27b"
 
 async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     """
@@ -70,42 +72,27 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
                 "Authorization": f"Bearer {GROQ_API_KEY}",
                 "Content-Type": "application/json"
             }
-            response = await client.post(GROQ_URL, json=payload, headers=headers)
             
-            # Si el modelo principal falla (Rate Limit 429, etc.), intentamos con el de respaldo (llama-3.1-8b-instant)
-            if response.status_code != 200:
-                fallback_model = "llama-3.1-8b-instant"
-                logger.warning(
-                    f"[AI] ⚠️ Error en Groq ({response.status_code}) usando {payload.get('model')}. "
-                    f"Reintentando con el modelo de respaldo: {fallback_model}..."
-                )
-                payload["model"] = fallback_model
-                response = await client.post(GROQ_URL, json=payload, headers=headers)
-                
-                # Si el modelo de respaldo también da Rate Limit (ej. por minuto TPM)
-                if response.status_code == 429:
-                    try:
-                        err_data = response.json()
-                        err_msg = err_data.get("error", {}).get("message", "")
-                    except:
-                        err_msg = ""
-                        
-                    wait_seconds = 10.0
-                    if "try again in" in err_msg:
-                        try:
-                            # Extraer segundos del mensaje de error, p.ej. "Please try again in 9.86s."
-                            parts = err_msg.split("try again in")
-                            if len(parts) > 1:
-                                time_part = parts[1].strip().split("s")[0]
-                                wait_seconds = float(time_part) + 1.5  # Margen extra seguro
-                        except Exception as parse_ex:
-                            logger.warning(f"[AI] No se pudo parsear el tiempo de espera recomendado: {parse_ex}")
-                            
-                    logger.warning(f"[AI] ⏱️ Límite por minuto (TPM) alcanzado en modelo de respaldo. Esperando {wait_seconds}s para reintentar...")
-                    await asyncio.sleep(wait_seconds)
+            models_to_try = [DEFAULT_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+            response = None
+            
+            for current_model in models_to_try:
+                payload["model"] = current_model
+                try:
                     response = await client.post(GROQ_URL, json=payload, headers=headers)
+                    if response.status_code == 200:
+                        break
+                    
+                    if response.status_code == 429:
+                        # Si hay límite de tasa, esperar brevemente
+                        logger.warning(f"[AI] ⏱️ Rate limit en {current_model}. Probando siguiente modelo...")
+                        await asyncio.sleep(2.0)
+                    else:
+                        logger.warning(f"[AI] ⚠️ Groq {response.status_code} con {current_model}. Probando siguiente modelo...")
+                except Exception as req_ex:
+                    logger.warning(f"[AI] Error solicitando modelo {current_model}: {req_ex}")
             
-            if response.status_code == 200:
+            if response and response.status_code == 200:
                 result = response.json()
                 content_raw = result.get("choices", [{}])[0].get("message", {}).get("content", "{}")
                 data = json.loads(content_raw)
