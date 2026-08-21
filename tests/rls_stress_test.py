@@ -1,3 +1,4 @@
+import pytest
 import httpx
 import asyncio
 
@@ -7,6 +8,7 @@ TOKEN_ORG_A = "YOUR_ORG_A_TOKEN"
 ORG_ID_A = "ORG_A_UUID"
 ORG_ID_B = "ORG_B_UUID"
 
+@pytest.mark.asyncio
 async def test_data_leakage():
     # Intento: Usuario de Org_A trata de pedir nóminas de Org_B
     endpoint = f"http://localhost:8000/api/v1/payroll/liquidations?organization_id={ORG_ID_B}"

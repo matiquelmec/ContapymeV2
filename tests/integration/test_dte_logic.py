@@ -1,8 +1,10 @@
+import pytest
 import asyncio
 from uuid import UUID
 from core.database import get_supabase
 from core.dte.dte_logic import DTELogic
 
+@pytest.mark.asyncio
 async def test_list():
     org_id = "2e9f634b-4087-448c-bfa6-244bfa1eec61"
     logic = DTELogic(org_id)

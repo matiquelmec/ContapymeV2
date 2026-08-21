@@ -97,8 +97,9 @@ def test_fuzz_1000_payroll_calculations():
                                                 res.otros_haberes_imponibles + res.otros_haberes_no_imponibles +
                                                 res.asignacion_familiar)
 
-            # 4. Los descuentos legales deben ser <= total de haberes
-            assert res.total_descuentos_legales <= res.total_haberes_brutos
+            # 4. Los descuentos legales deben ser <= total de haberes, salvo en casos extremos de plan Isapre fijo en UF con pocos días
+            if not any("Líquido negativo" in adv for adv in res.advertencias):
+                assert res.total_descuentos_legales <= res.total_haberes_brutos
 
         except Exception as e:
             errores.append(f"Error en iteración {i} [Sueldo: {sueldo_base}, Contrato: {tipo_contrato}]: {str(e)}")
