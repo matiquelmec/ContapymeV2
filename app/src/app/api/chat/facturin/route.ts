@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp, checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
@@ -24,7 +25,13 @@ Directrices de tono y estilo:
 - Si te preguntan algo fuera del ámbito contable, tributario o del software, responde de manera educada que tu especialidad son las finanzas y la contabilidad en la Patagonia.
 `;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rate = checkRateLimit(`facturin:${ip}`, 20, 60 * 1000); // 20 mensajes por minuto por IP
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.retryAfter, 'Has alcanzado el límite de preguntas por minuto. Por favor aguarda unos segundos.');
+  }
+
   const apiKey = process.env.GROQ_API_KEY || '';
 
   try {
