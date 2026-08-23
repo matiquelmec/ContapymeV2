@@ -150,7 +150,7 @@ export async function getRegionalNews() {
       .from('regional_news')
       .select('*')
       .order('published_at', { ascending: false })
-      .limit(20)
+      .limit(60)
     
     if (error) {
       console.error('[DATABASE ERROR] Fallo al obtener noticias:', error.message)
