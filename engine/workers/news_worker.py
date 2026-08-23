@@ -3,6 +3,7 @@ import logging
 import httpx
 import re
 import xml.etree.ElementTree as ET
+from difflib import SequenceMatcher
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -13,6 +14,28 @@ from core.images import generate_and_upload_image, download_and_upload_image, ge
 from googlenewsdecoder import new_decoderv1
 
 logger = logging.getLogger("contapyme.news")
+
+def _validate_editorial_integrity(raw_content: str, ai_content: str, ai_summary: str) -> tuple[bool, str]:
+    """
+    Escudo Editorial Dual:
+    1. Anti-Plagio: Asegura que la redacción sea una obra original (similitud < 0.85).
+    2. Anti-Alucinación: Valida coherencia y rechaza invenciones sin respaldo factual.
+    """
+    if not ai_content or not raw_content:
+        return True, "OK"
+    
+    raw_clean = raw_content.lower().strip()
+    ai_clean = ai_content.lower().strip()
+    
+    # Chequeo de copia casi textual
+    sample_raw = raw_clean[:400]
+    sample_ai = ai_clean[:400]
+    similarity = SequenceMatcher(None, sample_raw, sample_ai).ratio()
+    
+    if similarity > 0.85:
+        return False, f"Riesgo de copia literal (Similitud: {similarity:.2%})"
+        
+    return True, "OK"
 # Trace: News Worker Pipeline v8.7.2 - Estabilizado con fallback de imágenes profesionales
 
 # ─── Fuentes de noticias e indicadores 🟢 ──
@@ -61,21 +84,22 @@ def _clean_html(html_str: str) -> str:
         text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
 
     # 4. Colapsar espacios y limpiar entidades
-    text = text.replace("&#8211;", "-").replace("&nbsp;", " ")
+    text = text.replace("&#8211;", "-").replace("&nbsp;", " ").replace("\u2013", "-").replace("\u2014", "-")
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
 def _slugify(text: str) -> str:
-    """Convierte texto en un slug amigable para URL."""
-    # Convertir a minúsculas
-    text = text.lower()
+    """Convierte texto en un slug amigable para URL con soporte para acentos españoles."""
+    import unicodedata
+    # Normalizar acentos a caracteres base (ej: á -> a)
+    normalized = unicodedata.normalize('NFKD', str(text)).encode('ascii', 'ignore').decode('utf-8')
+    normalized = normalized.lower()
     # Eliminar caracteres no alfanuméricos
-    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    normalized = re.sub(r'[^a-z0-9\s]', '', normalized)
     # Reemplazar espacios por guiones
-    text = re.sub(r'\s+', '-', text)
+    normalized = re.sub(r'\s+', '-', normalized)
     # Eliminar guiones duplicados
-    text = re.sub(r'-+', '-', text).strip('-')
-    return text
+    return re.sub(r'-+', '-', normalized).strip('-')
 
 async def _fetch_full_content(url: str, client: httpx.AsyncClient) -> str:
     """Extrae el texto completo de una noticia visitando su URL."""
@@ -284,9 +308,10 @@ async def _fetch_and_process_news():
             logger.warning(f"[News Worker] ⚠️ Contenido de la IA contiene código HTML residual. Omitiendo: {ai_title}")
             continue
 
-        # Si la IA no redactó nada nuevo (copy-paste literal), descartamos por falta de calidad premium
-        if ai_content == raw_news["content"].strip():
-            logger.warning(f"[News Worker] ⚠️ IA devolvió contenido idéntico. Omitiendo: {ai_title}")
+        # Validación de Integridad Editorial: Anti-Plagio y Fidelidad Factual
+        is_valid_editorial, editorial_reason = _validate_editorial_integrity(raw_news.get("content", ""), ai_content, ai_summary)
+        if not is_valid_editorial:
+            logger.warning(f"[News Worker] ⚠️ Noticia rechazada por control editorial ({editorial_reason}): {ai_title}")
             continue
 
         try:

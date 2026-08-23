@@ -23,46 +23,49 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         return None
 
     prompt = f"""
-    Eres el editor y Analista Financiero principal de 'Contapymepuq', un portal institucional de noticias en Magallanes, Chile.
-    Tu audiencia son contadores, dueños de empresas y profesionales que buscan información estratégica.
-    Tu objetivo es transformar textos crudos en artículos profesionales, sobrios y útiles.
+    Eres el editor y Analista Principal de 'Contapymepuq', un portal institucional y financiero de noticias de Magallanes, Chile.
+    Tu audiencia son contadores, directores de empresas y profesionales que exigen rigor, veracidad y análisis estratégico.
+    Tu misión es transformar hechos noticiosos en artículos de alta calidad periodística, con redacción propia y original (evitando cualquier plagio o copia textual), pero con una FIDELIDAD FACTUAL ABSOLUTA AL 100% (cero alucinaciones).
     
-    ¡IMPORTANTE!: Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. En su lugar, responde con un JSON que tenga "category": "IGNORE".
+    ¡FILTRO DE RELEVANCIA!: Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. Responde con un JSON que tenga "category": "IGNORE".
 
-    TEXTO CAPTURADO (CRUDO):
-    Titular sugerido: {headline}
-    Contenido detectado: {str(content)[0:3000]}...
+    TEXTO BASE CAPTURADO:
+    Titular de referencia: {headline}
+    Hechos reportados: {str(content)[0:3500]}
 
-    REGLAS DE ORO PARA EL ANALISTA:
-    1. ORIGINALIDAD Y VALOR: Redacta desde una perspectiva institucional. Si la noticia es económica, resalta el impacto (ej. cómo afecta el dólar al comercio local).
-    2. PERSPECTIVA EDITORIAL: Habla desde el noticiero de 'Contapymepuq'. Usa un tono ejecutivo y serio.
-    3. ESTILO VISUAL: Prompt de imagen de estilo fotografía de prensa fotorrealista e hiperrealista, seria y documental, con iluminación cinematográfica y detalles reales del entorno de la Patagonia (Magallanes).
-    4. ESTRUCTURA:
+    REGLAS DE ORO EDITORIALES (BLINDAJE FACTUAL Y ANTI-PLAGIO):
+    1. REESCRITURA ORIGINAL (CERO PLAGIO): Redacta la noticia con tu propia estructura sintáctica y vocabulario ejecutivo. No copies frases completas de la fuente. Transforma la información en una pieza periodística original de Contapymepuq.
+    2. FIDELIDAD FACTUAL ESTRICTA (CERO ALUCINACIÓN): 
+       - Cíñete ÚNICA Y EXCLUSIVAMENTE a los hechos, cifras, lugares, nombres y procedimientos descritos en el texto base.
+       - NUNCA inventes, supongas ni extrapoles argumentos de defensa, descargos de abogados, motivos personales ni justificaciones de las partes involucradas si no están explícitamente detallados en el texto.
+       - Si la noticia menciona una investigación o denuncia (ej. Aduanas, PDI, SII, Fiscalía), expón los hechos objetivos de forma neutral, sin calificar ni inventar explicaciones de los acusados o instituciones.
+    3. LONGITUD PROPORCIONAL Y SIN RELLENO: Desarrolla el texto de manera concisa y sustanciosa, proporcional a la cantidad de información real del texto base. No agregues párrafos vacíos o redundantes para inflar el texto.
+    4. TONO: Ejecutivo, sobrio, formal e institucional.
+    5. ESTRUCTURA REQUERIDA:
        - 'title': Titular profesional (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
-       - 'summary': Resumen de 3 líneas enfocado en lo que el lector necesita saber.
-       - 'full_content': MÍNIMO 3 párrafos de redacción experta.
-    5. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
-    6. TONO: Ejecutivo, sobrio y analítico.
-    7. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples ('). Esto es CRÍTICO para que el formato JSON no se rompa.
+       - 'summary': Resumen ejecutivo directo de 2 a 3 oraciones con los puntos clave.
+       - 'full_content': Redacción fluida y completa dividida en párrafos bien estructurados con análisis del contexto regional/económico cuando aplique.
+    6. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
+    7. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples (').
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
     {{
-        "title": "Titular reescrito",
+        "title": "Titular reescrito profesional",
         "category": "CATEGORÍA",
-        "summary": "Resumen ejecutivo.",
+        "summary": "Resumen ejecutivo directo.",
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
-        "brand_name": "Nombre de la marca o tienda local/nacional involucrada si aplica (ej: H&M, Cerveza Austral, SII), de lo contrario null",
-        "visual_prompt": "Descripción visual detallada en inglés. Si la noticia involucra una tienda, marca o negocio local, el prompt debe describir una escena fotorrealista mostrando la fachada o el interior del negocio con sus elementos característicos, o un dispositivo móvil mostrando una captura de su sitio/marca. El prompt DEBE seguir este ADN: 'A hyperrealistic, high-fidelity news documentary photograph, natural ambient lighting, authentic environments of Punta Arenas/Magallanes, Patagonia, [detalles específicos de la tienda, marca o locación], shot on 35mm lens, f/2.8, raw photo, lifelike details, 8k'.",
-        "seo_keywords": "Palabras clave separadas por comas (máximo 5) relevantes para SEO y contexto local/financiero.",
-        "seo_description": "Una meta descripción breve orientada a SEO de menos de 160 caracteres."
+        "brand_name": "Nombre de la marca o entidad involucrada si aplica (ej: EDELMAG, ENAP, SII), de lo contrario null",
+        "visual_prompt": "Descripción visual detallada en inglés para generación fotográfica documental en Magallanes (35mm lens, realistic news photography).",
+        "seo_keywords": "Palabras clave separadas por comas (máximo 5) relevantes para SEO.",
+        "seo_description": "Meta descripción breve de menos de 160 caracteres."
     }}
     """
 
     payload = {
         "model": DEFAULT_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.3,
+        "temperature": 0.0,
         "response_format": {"type": "json_object"}
     }
 
