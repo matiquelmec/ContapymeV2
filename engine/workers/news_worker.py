@@ -36,6 +36,61 @@ def _validate_editorial_integrity(raw_content: str, ai_content: str, ai_summary:
         return False, f"Riesgo de copia literal (Similitud: {similarity:.2%})"
         
     return True, "OK"
+
+def _extract_semantic_keywords(text: str) -> set:
+    """Extrae palabras clave representativas ignorando stopwords y acentos en español."""
+    import unicodedata
+    stop_words = {
+        "para", "como", "este", "esta", "estos", "estas", "entre", "sobre", "tras", "desde",
+        "hacia", "hasta", "durante", "segun", "según", "donde", "cuando", "quien", "quién",
+        "cual", "cuál", "cuyo", "cuya", "haber", "hacer", "tener", "estar", "poder", "decir",
+        "noticia", "diario", "prensa", "region", "región", "chile", "punta", "arenas", "magallanes"
+    }
+    # Normalizar acentos
+    norm = unicodedata.normalize('NFKD', str(text)).encode('ascii', 'ignore').decode('utf-8').lower()
+    words = re.findall(r'\b[a-z]{4,}\b', norm)
+    return {w for w in words if w not in stop_words}
+
+def _is_semantic_duplicate(headline: str, content: str, existing_articles: list) -> tuple[bool, str]:
+    """
+    Detecta si una noticia entrante trata sobre el mismo hecho noticioso ya publicado
+    analizando la intersección de entidades clave y similitud de tokens (Jaccard).
+    """
+    c_head_tokens = _extract_semantic_keywords(headline)
+    if not c_head_tokens:
+        return False, ""
+        
+    c_content_tokens = _extract_semantic_keywords(content[:800])
+    
+    for ext in existing_articles:
+        ext_title = ext.get("title", "") or ext.get("normalized_title", "")
+        ext_head_tokens = _extract_semantic_keywords(ext_title)
+        
+        if not ext_head_tokens:
+            continue
+            
+        # Jaccard sobre palabras clave del titular
+        intersection_title = c_head_tokens.intersection(ext_head_tokens)
+        union_title = c_head_tokens.union(ext_head_tokens)
+        jaccard_title = len(intersection_title) / len(union_title) if union_title else 0
+        
+        # Si comparten 3 o más palabras clave específicas o Jaccard >= 30% con al menos 2 palabras clave
+        if len(intersection_title) >= 3 or (jaccard_title >= 0.30 and len(intersection_title) >= 2):
+            return True, f"Titular similar a '{ext_title}' ({jaccard_title:.0%})"
+            
+        # Comparación combinada de titular y cuerpo
+        if c_content_tokens:
+            ext_content = ext.get("content", "") or ext.get("summary", "")
+            ext_content_tokens = _extract_semantic_keywords(ext_content[:800])
+            if ext_content_tokens:
+                intersection_content = c_content_tokens.intersection(ext_content_tokens)
+                union_content = c_content_tokens.union(ext_content_tokens)
+                jaccard_content = len(intersection_content) / len(union_content) if union_content else 0
+                
+                if (jaccard_title >= 0.20 and jaccard_content >= 0.30 and len(intersection_title) >= 1) or len(intersection_content) >= 8:
+                    return True, f"Contenido similar a '{ext_title}'"
+                    
+    return False, ""
 # Trace: News Worker Pipeline v8.7.2 - Estabilizado con fallback de imágenes profesionales
 
 # ─── Fuentes de noticias e indicadores 🟢 ──
@@ -187,16 +242,18 @@ async def _fetch_and_process_news():
         logger.warning("[News Worker] ⚠️ No se encontraron noticias nuevas en las fuentes RSS.")
         return {"total": 0}
 
-    # 2. Obtener duplicados (URLs y Títulos Normalizados) para evitar reprocesar con IA
+    # 2. Obtener historial reciente para deduplicación exacta y semántica
+    existing_articles = []
     try:
-        existing_res = db.table("regional_news").select("source_url, normalized_title").execute()
-        existing_urls = [n["source_url"] for n in existing_res.data if n.get("source_url")] if existing_res.data else []
-        existing_titles = [n["normalized_title"] for n in existing_res.data if n.get("normalized_title")]
+        existing_res = db.table("regional_news").select("source_url, normalized_title, title, summary, content").order("published_at", desc=True).limit(60).execute()
+        existing_articles = existing_res.data or []
+        existing_urls = [n["source_url"] for n in existing_articles if n.get("source_url")]
+        existing_titles = [n["normalized_title"] for n in existing_articles if n.get("normalized_title")]
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener datos existentes: {e}")
-        existing_urls, existing_titles = [], []
+        existing_urls, existing_titles, existing_articles = [], [], []
 
-    # 3. Filtrado Inteligente (Deduplicación rápida y relevancia local con priorización de nicho)
+    # 3. Filtrado Inteligente (Deduplicación semántica y relevancia local con priorización de nicho)
     financial_candidates = []
     regional_candidates = []
     seen_uf = False
@@ -209,9 +266,15 @@ async def _fetch_and_process_news():
         if url in existing_urls:
             continue
             
-        # Omitir si el título (o algo muy parecido) ya fue procesado
+        # Omitir si el título exacto ya fue procesado
         if norm_headline in existing_titles:
-            logger.info(f"[News Worker] ⏭️ Omitiendo (Título similar ya existe): {headline[:50]}...")
+            logger.info(f"[News Worker] ⏭️ Omitiendo (Título exacto ya existe): {headline[:50]}...")
+            continue
+
+        # Deduplicación Semántica Inteligente (Cruces entre diferentes diarios del mismo hecho)
+        is_dup, dup_reason = _is_semantic_duplicate(headline, raw.get("content", ""), existing_articles)
+        if is_dup:
+            logger.info(f"[News Worker] ⏭️ Omitiendo por duplicidad temática ({dup_reason}): {headline[:50]}...")
             continue
 
         # Evitar múltiples noticias redundantes sobre el valor de la UF en la misma corrida

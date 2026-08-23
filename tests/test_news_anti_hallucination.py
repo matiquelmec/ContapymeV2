@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 # Añadir ruta del engine al sys.path
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'engine'))
 
-from workers.news_worker import _validate_editorial_integrity, _clean_html, _slugify
+from workers.news_worker import _validate_editorial_integrity, _clean_html, _slugify, _is_semantic_duplicate
 from core.ai import process_news_with_local_llm, DEFAULT_MODEL
 
 class TestNewsAntiHallucinationAndQuality(unittest.TestCase):
@@ -70,6 +70,20 @@ class TestNewsAntiHallucinationAndQuality(unittest.TestCase):
         self.assertIn("REESCRITURA ORIGINAL (CERO PLAGIO)", source_code)
         self.assertIn("FIDELIDAD FACTUAL ESTRICTA (CERO ALUCINACIÓN)", source_code)
         self.assertIn("NUNCA inventes, supongas ni extrapoles", source_code)
+
+    def test_semantic_deduplication_detects_cross_source_duplicates(self):
+        """6. Validar que la desduplicación semántica detecte el mismo hecho noticioso de dos fuentes distintas"""
+        existing = [{
+            "id": "1",
+            "title": "Defensa del yate incautado en Natales niega uso comercial",
+            "content": "El estudio Cariola emitió declaración pública..."
+        }]
+        incoming_headline = "Equipo legal de yate británico en Natales rechaza uso comercial"
+        incoming_content = "El equipo legal de la embarcación privada..."
+        
+        is_dup, reason = _is_semantic_duplicate(incoming_headline, incoming_content, existing)
+        self.assertTrue(is_dup)
+        self.assertIn("Titular similar", reason)
 
 if __name__ == "__main__":
     unittest.main()
