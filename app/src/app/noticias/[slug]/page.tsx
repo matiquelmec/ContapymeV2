@@ -13,7 +13,7 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// 🌐 SEO & SOCIAL MEDIA PREVIEWS
+// 🌐 SEO & SOCIAL MEDIA PREVIEWS (2026 Standards & Google Discover)
 export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
@@ -24,17 +24,44 @@ export async function generateMetadata(
 
   if (!news) return { title: "Noticia no encontrada" };
 
-  const excerpt = news.summary || news.content.substring(0, 160) + "...";
+  const excerpt = news.seo_description || news.summary || news.content.substring(0, 160) + "...";
+  const canonicalUrl = `https://www.contapymepuq.cl/noticias/${slug}`;
+  const keywordsList = news.seo_keywords 
+    ? news.seo_keywords.split(',').map((k: string) => k.trim())
+    : ['noticias magallanes', 'punta arenas', 'diario regional'];
 
   return {
-    title: `${news.title} | Diario Punta Arenas`,
+    title: `${news.title} | Contapymepuq Diario Regional`,
     description: excerpt,
+    keywords: keywordsList,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
     openGraph: {
       title: news.title,
       description: excerpt,
-      images: [news.image_url || "/news-placeholder.png"],
+      url: canonicalUrl,
+      siteName: "Contapymepuq",
+      locale: "es_CL",
+      images: [
+        {
+          url: news.image_url || "/news-placeholder.png",
+          width: 1200,
+          height: 630,
+          alt: news.title,
+        }
+      ],
       type: "article",
       publishedTime: news.published_at,
+      modifiedTime: news.updated_at || news.published_at,
+      section: news.category || "Regional",
     },
     twitter: {
       card: "summary_large_image",
@@ -52,8 +79,47 @@ export default async function NewsPage({ params }: Props) {
 
   if (!news) notFound();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: news.title,
+    description: news.seo_description || news.summary || news.content.substring(0, 160),
+    image: [
+      news.image_url || "https://www.contapymepuq.cl/news-placeholder.png"
+    ],
+    datePublished: news.published_at,
+    dateModified: news.updated_at || news.published_at,
+    author: [{
+      "@type": "Organization",
+      name: "Equipo Editorial Contapymepuq",
+      url: "https://www.contapymepuq.cl"
+    }],
+    publisher: {
+      "@type": "NewsMediaOrganization",
+      name: "Contapymepuq",
+      url: "https://www.contapymepuq.cl",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.contapymepuq.cl/logo-contapyme.png"
+      }
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://www.contapymepuq.cl/noticias/${slug}`
+    },
+    articleSection: news.category || "Regional",
+    keywords: news.seo_keywords || "noticias magallanes, punta arenas",
+    inLanguage: "es-CL"
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
+      {/* 🤖 SCHEMA.ORG NEWSARTICLE STRUCTURED DATA (Google News, Discover & GEO/AEO) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* 🧭 NAVIGATION HEADER */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto h-20 flex items-center justify-between px-6 lg:px-12">
