@@ -74,8 +74,8 @@ def _is_semantic_duplicate(headline: str, content: str, existing_articles: list)
         union_title = c_head_tokens.union(ext_head_tokens)
         jaccard_title = len(intersection_title) / len(union_title) if union_title else 0
         
-        # Si comparten 3 o más palabras clave específicas o Jaccard >= 30% con al menos 2 palabras clave
-        if len(intersection_title) >= 3 or (jaccard_title >= 0.30 and len(intersection_title) >= 2):
+        # Si comparten 2 o más palabras clave específicas en el titular o Jaccard >= 20%
+        if len(intersection_title) >= 2 or (jaccard_title >= 0.20 and len(intersection_title) >= 1):
             return True, f"Titular similar a '{ext_title}' ({jaccard_title:.0%})"
             
         # Comparación combinada de titular y cuerpo
@@ -87,7 +87,7 @@ def _is_semantic_duplicate(headline: str, content: str, existing_articles: list)
                 union_content = c_content_tokens.union(ext_content_tokens)
                 jaccard_content = len(intersection_content) / len(union_content) if union_content else 0
                 
-                if (jaccard_title >= 0.20 and jaccard_content >= 0.30 and len(intersection_title) >= 1) or len(intersection_content) >= 8:
+                if (len(intersection_title) >= 2 and len(intersection_content) >= 2) or (jaccard_title >= 0.15 and jaccard_content >= 0.25) or len(intersection_content) >= 6:
                     return True, f"Contenido similar a '{ext_title}'"
                     
     return False, ""
