@@ -38,12 +38,12 @@ class TestSecurityHeadersAndWAF(unittest.TestCase):
         self.assertIn("X-DNS-Prefetch-Control", content)
         self.assertIn("X-XSS-Protection", content)
 
-    def test_middleware_file_exists_and_blocks_scanners(self):
-        """3. Validar que middleware.ts intercepte escáneres de vulnerabilidades y modo mantenimiento"""
-        mw_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'src', 'middleware.ts')
-        self.assertTrue(os.path.exists(mw_path), "middleware.ts debe existir en app/src/")
+    def test_proxy_file_exists_and_blocks_scanners(self):
+        """3. Validar que proxy.ts (Next.js 16) intercepte escáneres de vulnerabilidades, auth y modo mantenimiento"""
+        proxy_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'src', 'proxy.ts')
+        self.assertTrue(os.path.exists(proxy_path), "proxy.ts debe existir en app/src/")
         
-        with open(mw_path, 'r', encoding='utf-8') as f:
+        with open(proxy_path, 'r', encoding='utf-8') as f:
             content = f.read()
             
         self.assertIn("BLOCKED_USER_AGENTS", content)
@@ -51,6 +51,7 @@ class TestSecurityHeadersAndWAF(unittest.TestCase):
         self.assertIn("nikto", content)
         self.assertIn("MAINTENANCE_MODE", content)
         self.assertIn("checkRateLimit", content)
+        self.assertIn("createServerClient", content)
 
     def test_rate_limit_helper_exists(self):
         """4. Validar existencia y funciones del rate limiter en lib/rate-limit.ts"""
