@@ -41,41 +41,37 @@ interface DiarioRegionalSectionProps {
   indicators?: any[];
 }
 
-/** 🧬 Motor Editorial Experto: Scoring de Relevancia Dinámica */
+/** 🧬 Motor Editorial Experto: Scoring de Relevancia Dinámica y Frescura en Tiempo Real */
 export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle | null; secondary: NewsArticle[] } {
   if (news.length === 0) return { hero: null, secondary: [] };
 
-  // Estabilizar scoring sin Date.now() para evitar discrepancias de hidratación SSR/cliente.
-  // En su lugar, usamos el orden relativo de published_at para puntuar la frescura.
+  // 1. Orden cronológico estricto de más reciente a más antigua
   const sortedByDate = [...news].sort((a, b) => 
     new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
   );
 
-  const scoredNews = news.map(article => {
+  // 2. Selección de Noticia Hero (evalúa el pool de las 10 noticias más recientes)
+  const recentPool = sortedByDate.slice(0, 10);
+  const scoredRecent = recentPool.map(article => {
     let score = 0;
     const cat = article.category?.toUpperCase() || "";
 
-    if (cat.includes("SII") || cat.includes("LEGAL")) score += 100;
-    else if (cat.includes("FINANZAS")) score += 90;
-    else if (cat.includes("ECONOMÍA")) score += 80;
-    else if (cat.includes("INVERSIONES")) score += 70;
-    else if (cat.includes("MAGALLANES") || cat.includes("ACTUAL")) score += 40;
+    if (cat.includes("SII") || cat.includes("LEGAL")) score += 50;
+    else if (cat.includes("FINANZAS")) score += 40;
+    else if (cat.includes("ECONOMÍA")) score += 35;
+    else if (cat.includes("INVERSIONES")) score += 30;
     else score += 10;
 
-    // Puntuar frescura por posición relativa en vez de Date.now()
-    const recencyIndex = sortedByDate.findIndex(n => n.id === article.id);
-    if (recencyIndex === 0) score += 40;
-    else if (recencyIndex <= 2) score += 30;
-    else if (recencyIndex <= 5) score += 20;
+    if (article.is_featured) score += 100;
 
-    if (article.is_featured) score += 1000;
-
-    return { ...article, finalScore: score };
+    return { article, score };
   });
 
-  const ranked = [...scoredNews].sort((a, b) => (b as any).finalScore - (a as any).finalScore);
-  const hero = ranked[0] || null;
-  const secondary = ranked.slice(1, 7);
+  scoredRecent.sort((a, b) => b.score - a.score);
+  const hero = scoredRecent[0]?.article || sortedByDate[0] || null;
+
+  // 3. Flujo de Noticias Secundarias (Las 6 noticias más recientes del día, excluyendo la Hero)
+  const secondary = sortedByDate.filter(n => !hero || n.id !== hero.id).slice(0, 6);
 
   return { hero, secondary };
 }
