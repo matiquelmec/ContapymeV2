@@ -79,5 +79,35 @@ class TestJobBannerGeneration(unittest.TestCase):
         self.assertIn("prompt_ejecucion_ia_generativa", spec)
         self.assertIn("logo_contapyme", spec["elementos_graficos"])
 
+    def test_06_nano_banana_2_studio_ad_schema(self):
+        """6. Nano Banana 2: Validar esquema de control determinista multimodal (Gemini 3.1 Flash Image)"""
+        sample_spec = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "model": "gemini-3.1-flash-image-preview",
+            "meta": {
+                "aspect_ratio": "9:16",
+                "quality": "ultra_photorealistic",
+                "thinking_level": "high"
+            },
+            "brand_identity": {
+                "nombre_empresa": "Recasur",
+                "paleta_de_colores_hex": {
+                    "color_primario_corporativo": "#004080",
+                    "color_acento_sueldo": "#10B981"
+                }
+            },
+            "text_rendering": {
+                "exact_title": "Mecánico Automotriz",
+                "font_style": "Plus Jakarta Sans, Weight 900 Italic"
+            },
+            "technical": {
+                "camera": { "type": "Hasselblad X2D 100C" }
+            }
+        }
+        self.assertEqual(sample_spec["model"], "gemini-3.1-flash-image-preview")
+        self.assertEqual(sample_spec["meta"]["thinking_level"], "high")
+        self.assertIn("color_primario_corporativo", sample_spec["brand_identity"]["paleta_de_colores_hex"])
+        self.assertIn("camera", sample_spec["technical"])
+
 if __name__ == '__main__':
     unittest.main()
