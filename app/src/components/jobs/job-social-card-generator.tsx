@@ -215,7 +215,6 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
   const handleDownloadImage = async () => {
     setIsGenerating(true)
     try {
-      // Copiar enlace automáticamente al portapapeles para facilitar pegar el link
       await handleCopyLink()
 
       const blob = await generateImageBlob()
@@ -294,8 +293,8 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl md:max-w-2xl rounded-3xl bg-white p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 border border-zinc-200 shadow-2xl max-h-[92vh] overflow-x-hidden overflow-y-auto box-border min-w-0">
-          {/* Header con margen derecho para no colisionar con botón Cerrar */}
+        <DialogContent className="w-[95vw] sm:max-w-xl md:max-w-2xl rounded-3xl bg-white p-3.5 sm:p-6 space-y-3 sm:space-y-4 border border-zinc-200 shadow-2xl max-h-[92vh] overflow-x-hidden overflow-y-auto box-border min-w-0">
+          {/* Header */}
           <DialogHeader className="space-y-1 text-left pr-8 min-w-0">
             <div className="flex items-center gap-1.5 text-primary text-[11px] sm:text-xs font-black uppercase tracking-wider min-w-0">
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
@@ -305,7 +304,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               Generador de Anuncios Profesionales
             </DialogTitle>
             <DialogDescription className="text-[11px] sm:text-xs text-muted-foreground leading-normal">
-              Genera imágenes en alta definición en formato Historia 9:16 o Post 1:1 listas para compartir.
+              Genera imágenes en alta definición en formato Post 1:1 o Historia 9:16 listas para compartir.
             </DialogDescription>
           </DialogHeader>
 
@@ -355,7 +354,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                   onClick={() => setAspectRatio('square')}
                   className={`py-1 px-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all text-center min-w-0 truncate cursor-pointer ${
                     aspectRatio === 'square'
-                      ? 'bg-zinc-900 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
@@ -376,7 +375,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
             </div>
           </div>
 
-          {/* BANNER NOTIFICACIÓN: COPIAR ENLACE PARA STICKER DE INSTAGRAM */}
+          {/* BANNER NOTIFICACIÓN: COPIAR ENLACE */}
           <div className="p-2.5 sm:p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between gap-2.5 w-full min-w-0 box-border">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="p-1.5 rounded-xl bg-amber-500/20 text-amber-800 shrink-0">
@@ -384,7 +383,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               </div>
               <div className="space-y-0.5 min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 block truncate">
-                  Sticker de Enlace para Historias
+                  Enlace para Sticker o Compartir
                 </span>
                 <p className="text-[9px] sm:text-[10px] text-amber-800/90 truncate font-mono">
                   {shareUrl}
@@ -409,14 +408,14 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
             </Button>
           </div>
 
-          {/* ===== ANUNCIO PUBLICITARIO VISUAL BRANDED (PROPORCIÓN EXACTA 9:16 O 1:1) ===== */}
+          {/* ===== ANUNCIO PUBLICITARIO VISUAL BRANDED (PROPORCIÓN EXACTA Y AJUSTADA) ===== */}
           <div className="w-full flex justify-center py-1">
             <div
               ref={cardRef}
               className={`rounded-2xl sm:rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between box-border transition-all duration-300 w-full min-w-0 ${
                 aspectRatio === 'story'
-                  ? 'aspect-[9/16] max-w-[340px] sm:max-w-[360px] p-4 sm:p-6 space-y-3'
-                  : 'aspect-square max-w-[380px] sm:max-w-[420px] p-4 sm:p-6 space-y-2.5'
+                  ? 'aspect-[9/16] max-w-[340px] sm:max-w-[360px] p-3.5 sm:p-5 space-y-2 sm:space-y-3'
+                  : 'aspect-square max-w-[330px] sm:max-w-[370px] p-3 sm:p-4 space-y-1.5 sm:space-y-2'
               } ${
                 theme === 'white'
                   ? 'bg-white text-slate-950 border-2 sm:border-4 border-slate-200'
@@ -426,18 +425,18 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               {/* Destellos de iluminación de fondo */}
               {theme === 'white' ? (
                 <>
-                  <div className="absolute top-0 right-0 w-44 h-44 bg-blue-500/8 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 w-44 h-44 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/8 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
                 </>
               ) : (
                 <>
-                  <div className="absolute top-0 right-0 w-44 h-44 bg-blue-600/25 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 w-44 h-44 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-600/25 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
                 </>
               )}
 
               {/* 1. CINTILLO PUBLICITARIO SUPERIOR */}
-              <div className={`p-1.5 sm:p-2 rounded-xl flex items-center justify-between gap-1 text-[8px] sm:text-[10px] font-black uppercase tracking-wider relative z-10 w-full min-w-0 box-border ${
+              <div className={`p-1.5 rounded-lg sm:rounded-xl flex items-center justify-between gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider relative z-10 w-full min-w-0 box-border ${
                 theme === 'white'
                   ? 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white shadow-xs'
                   : 'bg-slate-800 text-slate-200 border border-slate-700'
@@ -445,7 +444,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                 <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
                   <Flame className="h-3 w-3 text-amber-300 shrink-0" />
                   <span className="truncate">
-                    {aspectRatio === 'story' ? '¡NUEVA VACANTE DISPONIBLE!' : '¡OFERTA EN MAGALLANES!'}
+                    {aspectRatio === 'story' ? '¡NUEVA VACANTE EN MAGALLANES!' : '¡OFERTA EN MAGALLANES!'}
                   </span>
                 </div>
                 <span className="font-mono text-white/90 shrink-0 text-[8px] sm:text-[9px]">
@@ -454,20 +453,20 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               </div>
 
               {/* 2. HEADER DEL ANUNCIO CON LOGOTIPO */}
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/90 pb-2 pt-0.5 relative z-10 gap-2 w-full min-w-0">
+              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/90 pb-1.5 pt-0.5 relative z-10 gap-2 w-full min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Image
                     src="/logo-contapyme.png"
                     alt="ContaPyme"
-                    width={110}
-                    height={30}
-                    className={`h-auto w-20 sm:w-26 shrink-0 ${theme === 'dark' ? 'brightness-125' : ''}`}
+                    width={100}
+                    height={28}
+                    className={`h-auto w-18 sm:w-24 shrink-0 ${theme === 'dark' ? 'brightness-125' : ''}`}
                   />
-                  <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded-full border border-emerald-500/30 shrink-0">
+                  <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded-full border border-emerald-500/30 shrink-0">
                     ContaEmpleos
                   </span>
                 </div>
-                <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 truncate max-w-[120px] sm:max-w-[160px] ${
+                <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider px-2 py-0.2 rounded-md shrink-0 truncate max-w-[110px] sm:max-w-[150px] ${
                   theme === 'white' ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-slate-800 text-slate-300'
                 }`}>
                   {job.sector}
@@ -475,62 +474,62 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               </div>
 
               {/* 3. CUERPO HERO (TÍTULO Y EMPRESA) */}
-              <div className={`space-y-1.5 relative z-10 w-full min-w-0 ${aspectRatio === 'story' ? 'my-auto py-1' : 'my-auto'}`}>
+              <div className={`space-y-1 relative z-10 w-full min-w-0 ${aspectRatio === 'story' ? 'my-auto py-0.5' : 'my-auto'}`}>
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span className="text-[11px] sm:text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1 truncate max-w-full">
-                    <Building2 className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{job.company_name}</span>
+                  <span className="text-[10px] sm:text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1 truncate max-w-full">
+                    <Building2 className="h-3 w-3 shrink-0" /> <span className="truncate">{job.company_name}</span>
                   </span>
                   {job.is_verified && (
-                    <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded shrink-0">
+                    <span className="inline-flex items-center gap-0.5 text-[7.5px] sm:text-[8.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded shrink-0">
                       <BadgeCheck className="h-2.5 w-2.5" /> Verificada
                     </span>
                   )}
                 </div>
 
-                {/* TÍTULO ULTRA LLAMATIVO */}
+                {/* TÍTULO ULTRA LLAMATIVO RESPONSIVO */}
                 <h3 className={`font-black italic uppercase tracking-tight leading-snug break-words hyphens-auto w-full min-w-0 ${
                   aspectRatio === 'story' 
-                    ? 'text-lg sm:text-2xl text-slate-950 dark:text-white' 
-                    : 'text-base sm:text-xl text-slate-950 dark:text-white'
+                    ? 'text-base sm:text-xl text-slate-950 dark:text-white' 
+                    : 'text-[13px] sm:text-base text-slate-950 dark:text-white line-clamp-2'
                 }`}>
                   {job.title}
                 </h3>
 
                 {/* Cápsula de Sueldo y Turno */}
-                <div className="flex flex-wrap gap-1.5 pt-0.5 w-full min-w-0">
+                <div className="flex flex-wrap gap-1 pt-0.5 w-full min-w-0">
                   {job.salary_raw && (
-                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black text-white bg-emerald-600 px-3 py-1 rounded-xl shadow-xs shrink-0">
-                      <DollarSign className="h-3 w-3 shrink-0" />
+                    <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-white bg-emerald-600 px-2.5 py-0.5 rounded-lg shadow-xs shrink-0">
+                      <DollarSign className="h-2.5 w-2.5 shrink-0" />
                       <span>{job.salary_raw}</span>
                     </div>
                   )}
                   {job.work_shift && (
-                    <div className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider shrink-0 ${
+                    <div className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider shrink-0 ${
                       theme === 'white'
                         ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
                         : 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/40'
                     }`}>
-                      <Clock className="h-3 w-3 shrink-0" />
+                      <Clock className="h-2.5 w-2.5 shrink-0" />
                       <span>{job.work_shift}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Requisitos principales */}
+                {/* Requisitos principales (Adaptados según formato) */}
                 {job.requirements && job.requirements.length > 0 && (
-                  <div className={`pt-1.5 space-y-1 w-full min-w-0 ${aspectRatio === 'story' ? 'block' : 'hidden sm:block'}`}>
-                    <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider block ${
+                  <div className={`space-y-0.5 w-full min-w-0 ${aspectRatio === 'story' ? 'pt-1 block' : 'pt-0.5 block'}`}>
+                    <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block ${
                       theme === 'white' ? 'text-slate-500' : 'text-slate-400'
                     }`}>
                       Requisitos clave:
                     </span>
-                    <div className="space-y-1 w-full min-w-0">
+                    <div className="space-y-0.5 w-full min-w-0">
                       {job.requirements.slice(0, aspectRatio === 'story' ? 4 : 2).map((req, idx) => (
-                        <div key={idx} className={`flex items-start gap-1.5 text-[10px] sm:text-xs font-bold leading-snug w-full min-w-0 ${
+                        <div key={idx} className={`flex items-start gap-1 text-[9.5px] sm:text-[10.5px] font-bold leading-snug w-full min-w-0 ${
                           theme === 'white' ? 'text-slate-700' : 'text-slate-300'
                         }`}>
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                          <span className="break-words line-clamp-2 min-w-0 flex-1">{req}</span>
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <span className="break-words line-clamp-1 min-w-0 flex-1">{req}</span>
                         </div>
                       ))}
                     </div>
@@ -539,50 +538,50 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               </div>
 
               {/* 4. BLOQUE DE POSTULACIÓN Y CÓDIGO QR */}
-              <div className={`p-2.5 sm:p-3 rounded-2xl flex items-center justify-between gap-2 relative z-10 w-full min-w-0 box-border ${
+              <div className={`p-2 sm:p-2.5 rounded-xl flex items-center justify-between gap-2 relative z-10 w-full min-w-0 box-border ${
                 theme === 'white'
                   ? 'bg-slate-50 border border-slate-200'
                   : 'bg-slate-800/80 border border-slate-700/80'
               }`}>
-                <div className="space-y-0.5 min-w-0 flex-1">
-                  <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                <div className="space-y-0.2 min-w-0 flex-1">
+                  <span className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
                     Postulación Rápida
                   </span>
-                  <p className={`text-[10px] sm:text-xs truncate font-mono font-bold ${
+                  <p className={`text-[9.5px] sm:text-[11px] truncate font-mono font-bold ${
                     theme === 'white' ? 'text-slate-900' : 'text-slate-200'
                   }`}>
                     {job.contact_email ? `✉️ ${job.contact_email}` : (job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : '🌐 contapymepuq.cl')}
                   </p>
-                  <p className={`text-[8px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-400'} truncate`}>
-                    Escanea el QR o usa el sticker de enlace.
+                  <p className={`text-[7.5px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-400'} truncate`}>
+                    Escanea el QR o usa el enlace directo.
                   </p>
                 </div>
                 <img
                   src={qrCodeUrl}
                   alt="QR Postulación"
-                  className={`h-12 w-12 sm:h-14 sm:w-14 rounded-xl p-0.5 shrink-0 shadow-xs ${
+                  className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg p-0.5 shrink-0 shadow-xs ${
                     theme === 'white' ? 'bg-white border border-slate-200' : 'bg-white'
                   }`}
                   crossOrigin="anonymous"
                 />
               </div>
 
-              {/* 5. CALLOUT EXCLUSIVO PARA HISTORIAS DE INSTAGRAM (Sticker de Enlace) */}
+              {/* 5. CALLOUT EXCLUSIVO PARA HISTORIAS DE INSTAGRAM */}
               {aspectRatio === 'story' && (
-                <div className="p-2 rounded-xl bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 border border-rose-400/30 flex items-center justify-center gap-1.5 text-center relative z-10">
-                  <LinkIcon className="h-3.5 w-3.5 text-rose-600 shrink-0" />
-                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 truncate">
+                <div className="p-1.5 rounded-lg bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 border border-rose-400/30 flex items-center justify-center gap-1.5 text-center relative z-10">
+                  <LinkIcon className="h-3 w-3 text-rose-600 shrink-0" />
+                  <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 truncate">
                     👆 TOCA EL STICKER DE ENLACE ARRIBA
                   </span>
                 </div>
               )}
 
               {/* 6. FOOTER DEL ANUNCIO */}
-              <div className={`pt-2 border-t flex items-center justify-between gap-1 text-[8px] sm:text-[9px] font-bold uppercase relative z-10 w-full min-w-0 ${
+              <div className={`pt-1.5 border-t flex items-center justify-between gap-1 text-[7.5px] sm:text-[8.5px] font-bold uppercase relative z-10 w-full min-w-0 ${
                 theme === 'white' ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'
               }`}>
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 shrink-0">
-                  <ShieldCheck className="h-3 w-3 shrink-0" /> Art. 2° Código del Trabajo
+                  <ShieldCheck className="h-2.5 w-2.5 shrink-0" /> Art. 2° Código del Trabajo
                 </span>
                 <span className="font-mono truncate">contapymepuq.cl/empleos</span>
               </div>
