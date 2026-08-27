@@ -17,7 +17,9 @@ import {
   Calendar,
   Sparkles,
   ChevronRight,
-  Mail
+  Mail,
+  Phone,
+  ExternalLink
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -183,11 +185,16 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredJobs.map((job) => {
-            const whatsappUrl = job.contact_whatsapp
-              ? `https://wa.me/${job.contact_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
+            // Validadores inteligentes de canales de contacto
+            const hasEmail = Boolean(job.contact_email && job.contact_email.trim().includes('@') && job.contact_email.trim().includes('.'))
+            const rawPhone = (job.contact_whatsapp || '').replace(/\D/g, '')
+            const hasWhatsApp = Boolean(rawPhone && rawPhone.length >= 8)
+            const whatsappUrl = hasWhatsApp
+              ? `https://wa.me/${rawPhone}?text=${encodeURIComponent(
                   `Hola, te escribo por la oferta laboral '${job.title}' en ${job.company_name} que vi en ContaEmpleos Magallanes.`
                 )}`
               : null
+            const hasAppUrl = Boolean(job.application_url && job.application_url.trim().startsWith('http'))
 
             return (
               <Card 
@@ -244,7 +251,7 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                     </p>
                   </div>
 
-                  {/* Footer de la tarjeta con Botones de Acción */}
+                  {/* Footer de la tarjeta con Botones de Acción Inteligentes */}
                   <div className="pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/70">
                       <span className="bg-zinc-100 px-2 py-0.5 rounded-md font-mono text-zinc-600">
@@ -253,9 +260,10 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {job.contact_email && (
+                      {/* Botón de Email: Solo si hay email válido */}
+                      {hasEmail && (
                         <a
-                          href={`mailto:${job.contact_email}?subject=Postulaci%C3%B3n%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
+                          href={`mailto:${job.contact_email?.trim()}?subject=Postulaci%C3%B3n%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 text-white text-[10px] font-black uppercase tracking-wider hover:bg-zinc-800 shadow-sm transition-all active:scale-95"
                           title={`Enviar CV a ${job.contact_email}`}
                         >
@@ -263,6 +271,8 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                           <span>Email</span>
                         </a>
                       )}
+
+                      {/* Botón de WhatsApp: Solo si hay número válido */}
                       {whatsappUrl && (
                         <a
                           href={whatsappUrl}
@@ -275,6 +285,21 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                           <span>WhatsApp</span>
                         </a>
                       )}
+
+                      {/* Botón de Enlace Externo: Solo si no hay WhatsApp ni Email pero sí URL externa */}
+                      {!whatsappUrl && !hasEmail && hasAppUrl && (
+                        <a
+                          href={job.application_url?.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 shadow-sm transition-all active:scale-95"
+                          title="Abrir portal oficial de postulación"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Portal</span>
+                        </a>
+                      )}
+
                       <Link href={`/empleos/${job.slug}`}>
                         <Button 
                           variant="outline" 

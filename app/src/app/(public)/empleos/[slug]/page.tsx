@@ -12,7 +12,9 @@ import {
   Mail, 
   ShieldCheck, 
   CheckCircle2, 
-  Sparkles
+  Sparkles,
+  Phone,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getJobBySlug } from "@/actions/jobs";
@@ -271,52 +273,81 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           {/* 📱 COLUMNA LATERAL: POSTULACIÓN RÁPIDA & SEGURIDAD (4/12) */}
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             {/* Card de Postulación */}
-            <div className="p-8 rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-6">
-              <div className="space-y-2">
-                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
-                  Canal de Postulación Directa
-                </span>
-                <h3 className="text-xl font-black uppercase tracking-tight italic">
-                  ¿Te interesa este cargo?
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Comunícate de inmediato con el equipo de selección de <strong>{job.company_name}</strong>.
-                </p>
-              </div>
+            {(() => {
+              const hasEmail = Boolean(job.contact_email && job.contact_email.trim().includes('@') && job.contact_email.trim().includes('.'));
+              const rawPhone = (job.contact_whatsapp || '').replace(/\D/g, '');
+              const hasWhatsApp = Boolean(rawPhone && rawPhone.length >= 8);
+              const whatsappUrl = hasWhatsApp
+                ? `https://wa.me/${rawPhone}?text=${encodeURIComponent(
+                    `Hola, me interesa postular al cargo de '${job.title}' en ${job.company_name} que vi publicado en ContaEmpleos Magallanes.`
+                  )}`
+                : null;
+              const hasAppUrl = Boolean(job.application_url && job.application_url.trim().startsWith('http'));
+              const hasAnyContact = hasEmail || hasWhatsApp || hasAppUrl;
 
-              <div className="space-y-3 pt-2">
-                {whatsappUrl && (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
-                  >
-                    <Send className="h-4 w-4" /> Postular por WhatsApp
-                  </a>
-                )}
+              return (
+                <div className="p-8 rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-6">
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
+                      Canal de Postulación Directa
+                    </span>
+                    <h3 className="text-xl font-black uppercase tracking-tight italic">
+                      ¿Te interesa este cargo?
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Comunícate con el equipo de selección de <strong>{job.company_name}</strong>.
+                    </p>
+                  </div>
 
-                {job.contact_email && (
-                  <a
-                    href={`mailto:${job.contact_email}?subject=Postulaci%C3%B3n%20Cargo%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-zinc-900 text-white font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all"
-                  >
-                    <Mail className="h-4 w-4" /> Enviar Currículum (Email)
-                  </a>
-                )}
+                  <div className="space-y-3 pt-2">
+                    {/* Botón WhatsApp */}
+                    {whatsappUrl && (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                      >
+                        <Send className="h-4 w-4" /> Postular por WhatsApp
+                      </a>
+                    )}
 
-                {job.application_url && !whatsappUrl && !job.contact_email && (
-                  <a
-                    href={job.application_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all"
-                  >
-                    Ir al Portal de Postulación
-                  </a>
-                )}
-              </div>
-            </div>
+                    {/* Botón Email */}
+                    {hasEmail && (
+                      <a
+                        href={`mailto:${job.contact_email?.trim()}?subject=Postulaci%C3%B3n%20Cargo%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-zinc-900 text-white font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all"
+                      >
+                        <Mail className="h-4 w-4" /> Enviar Currículum (Email)
+                      </a>
+                    )}
+
+                    {/* Botón Portal Oficial */}
+                    {hasAppUrl && (
+                      <a
+                        href={job.application_url?.trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                          !hasWhatsApp && !hasEmail
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20'
+                            : 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200 border border-zinc-200'
+                        }`}
+                      >
+                        <ExternalLink className="h-4 w-4" /> Ir a la Fuente Oficial ({job.source_name || 'BNE'})
+                      </a>
+                    )}
+
+                    {/* Aviso informativo si no hay contacto digital directo */}
+                    {!hasAnyContact && (
+                      <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-muted-foreground text-center font-medium">
+                        Postulación sujeta a las indicaciones detalladas en la descripción del aviso.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Sello de Cumplimiento Legal Art. 2° */}
             <div className="p-6 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-3">
