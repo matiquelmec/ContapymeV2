@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { getJobBySlug } from "@/actions/jobs";
 import { JobSalaryCalculator } from "@/components/jobs/job-salary-calculator";
 import { JobEmailButton } from "@/components/jobs/job-email-button";
+import { JobSocialCardGenerator } from "@/components/jobs/job-social-card-generator";
 
 import type { Metadata } from "next";
 
@@ -149,8 +150,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl space-y-10">
-        {/* NAVEGACIÓN BREADCRUMB */}
-        <div className="flex items-center justify-between">
+        {/* NAVEGACIÓN BREADCRUMB & ACCIONES SOCIALES */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
             <Link href="/empleos" className="hover:text-primary transition-colors">Empleos Magallanes</Link>
             <span>/</span>
@@ -159,11 +160,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             <span className="text-foreground truncate max-w-xs">{job.title}</span>
           </div>
 
-          <Link href="/empleos">
-            <Button variant="ghost" size="sm" className="text-xs font-black uppercase tracking-wider gap-1.5 rounded-xl">
-              <ChevronLeft className="h-4 w-4" /> Volver a Empleos
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <JobSocialCardGenerator job={job} />
+            <Link href="/empleos">
+              <Button variant="ghost" size="sm" className="text-xs font-black uppercase tracking-wider gap-1.5 rounded-2xl h-11 px-4">
+                <ChevronLeft className="h-4 w-4" /> Volver a Empleos
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">

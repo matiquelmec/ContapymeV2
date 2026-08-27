@@ -1,0 +1,114 @@
+{
+  "brand_identity": {
+    "name": "ContaEmpleos Magallanes",
+    "parent_brand": "ContaPymePUQ",
+    "slogan": "Bolsa de Empleos Hiperlocal & Ecosistema Empresarial de la Patagonia",
+    "region": "Magallanes y de la Antártica Chilena",
+    "website_url": "https://contapymepuq.cl/empleos",
+    "legal_compliance": "Artículo 2° del Código del Trabajo y Ley N° 20.609 (Ley Zamudio)",
+    "logo_assets": {
+      "primary_horizontal": "https://contapymepuq.cl/logo-contapyme.png",
+      "favicon": "https://contapymepuq.cl/icon.png",
+      "og_image_default": "https://contapymepuq.cl/og-image.png",
+      "brand_icon": "Briefcase & CheckBadge"
+    },
+    "color_palette": {
+      "primary_navy": {
+        "hex": "#0F172A",
+        "rgb": "rgb(15, 23, 42)",
+        "name": "Deep Patagonia Slate",
+        "usage": "Fondos principales, encabezados oscuros y textos de alto contraste"
+      },
+      "brand_blue": {
+        "hex": "#2563EB",
+        "rgb": "rgb(37, 99, 235)",
+        "name": "ContaPyme Electric Blue",
+        "usage": "Botones de acción primarios, insignias de verificación y branding"
+      },
+      "emerald_salary": {
+        "hex": "#10B981",
+        "rgb": "rgb(16, 185, 129)",
+        "name": "Magallanes Emerald Green",
+        "usage": "Etiquetas de sueldo líquido verificado, canal WhatsApp y sellos de aprobación"
+      },
+      "ice_glacier": {
+        "hex": "#38BDF8",
+        "rgb": "rgb(56, 189, 248)",
+        "name": "Glacier Sky Cyan",
+        "usage": "Destellos de fondo, acentos patagónicos y micro-etiquetas"
+      },
+      "indigo_shift": {
+        "hex": "#6366F1",
+        "rgb": "rgb(99, 102, 241)",
+        "name": "Shift Indigo",
+        "usage": "Insignias de jornada y turnos de faena (7x7, 14x14, 40 hrs)"
+      },
+      "card_surface": {
+        "hex": "#FFFFFF",
+        "rgb": "rgb(255, 255, 255)",
+        "name": "Pure Arctic White",
+        "usage": "Superficies de tarjetas, cajas de contenido y contraste"
+      },
+      "border_subtle": {
+        "hex": "#E2E8F0",
+        "rgb": "rgb(226, 232, 240)",
+        "name": "Border Slate Light",
+        "usage": "Líneas de separación y contornos de tarjetas"
+      },
+      "muted_slate": {
+        "hex": "#64748B",
+        "rgb": "rgb(100, 116, 139)",
+        "name": "Muted Slate Text",
+        "usage": "Descripciones secundarias, fechas y créditos de fuente oficial"
+      }
+    },
+    "typography": {
+      "primary_font": "Inter, system-ui, -apple-system, sans-serif",
+      "display_font": "Plus Jakarta Sans, Montserrat, sans-serif",
+      "mono_font": "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace"
+    }
+  },
+  "social_media_dimensions": {
+    "instagram_post_square": {
+      "width": 1080,
+      "height": 1080,
+      "aspect_ratio": "1:1",
+      "use_case": "Feed de Instagram, Facebook y LinkedIn"
+    },
+    "instagram_story_vertical": {
+      "width": 1080,
+      "height": 1920,
+      "aspect_ratio": "9:16",
+      "use_case": "Historias de Instagram, WhatsApp Status y TikTok"
+    },
+    "whatsapp_broadcast_card": {
+      "width": 1200,
+      "height": 630,
+      "aspect_ratio": "1.91:1",
+      "use_case": "OpenGraph Preview en WhatsApp y Telegram"
+    }
+  },
+  "templates_and_copy": {
+    "whatsapp_community_broadcast": {
+      "template": "💼 *NUEVA OFERTA LABORAL EN MAGALLANES*\n📍 *Ubicación:* {location}\n🏢 *Empresa:* {company_name} {verified_badge}\n📌 *Cargo:* {title}\n💰 *Sueldo Estimado:* {salary_raw}\n⏱️ *Jornada / Turno:* {work_shift}\n\n📋 *Requisitos Principales:*\n{requirements_bullets}\n\n📲 *Postula directo por WhatsApp o Email aquí:*\n🔗 https://contapymepuq.cl/empleos/{slug}\n\n🛡️ _Aviso auditado bajo Art. 2° Código del Trabajo. Bolsa de Empleos ContaEmpleos PUQ._"
+    },
+    "instagram_story_caption": {
+      "template": "🏔️ ¡Nueva vacante disponible en {location}! 🚀\n\n📌 Cargo: {title}\n🏢 Empresa: {company_name}\n💰 Sueldo: {salary_raw}\n⏱️ Modalidad: {work_shift}\n\n👉 Toca el enlace del sticker o entra a contapymepuq.cl/empleos/{slug} para postular directo por WhatsApp.\n\n#EmpleosMagallanes #PuntaArenas #PuertoNatales #Porvenir #TorresDelPaine #TrabajoMagallanes #ContaEmpleosPUQ"
+    },
+    "linkedin_professional_post": {
+      "template": "📢 Oportunidad Laboral en la Región de Magallanes y de la Antártica Chilena:\n\n{company_name} se encuentra en búsqueda de {title} para sus operaciones en {location}.\n\n🔹 Jornada: {work_shift}\n🔹 Remuneración aproximada: {salary_raw}\n🔹 Postulación transparente y directa sin intermediarios.\n\nRevisa todos los requisitos y postula directamente en el ecosistema regional:\n🔗 https://contapymepuq.cl/empleos/{slug}\n\n#EmpleoMagallanes #ContapymePUQ #PuntaArenas #PuertoNatales #ZonaAustral #TrabajoChile"
+    }
+  },
+  "hashtags": [
+    "#EmpleosPuntaArenas",
+    "#TrabajoMagallanes",
+    "#BolsaDeEmpleoMagallanes",
+    "#PuertoNatales",
+    "#Porvenir",
+    "#TorresDelPaine",
+    "#SalmoniculturaMagallanes",
+    "#HidrogenoVerdeMagallanes",
+    "#ZonaFrancaPuntaArenas",
+    "#ContaEmpleosPUQ"
+  ]
+}
