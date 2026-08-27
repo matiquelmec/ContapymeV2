@@ -1,13 +1,13 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
-**Versión:** 10.0 (Enterprise Quality Certified & Google SEO Max 👑)
-**Estado:** Production & Audit-Ready 🚀
-**Última Auditoría:** 12 de Agosto, 2026
+**Versión:** 16.0 (Ecosistema Integral: ERP, Diario Regional & ContaEmpleos Magallanes 👑)  
+**Estado:** Production & Audit-Ready 🚀  
+**Última Actualización:** Agosto 2026  
 
 ---
 
 > [!IMPORTANT]
 > **PROYECTO DE REFERENCIA (SOURCE OF TRUTH):**
-> Todas las funcionalidades, lógica de negocio y estética deben basarse y evolucionar desde:
+> Todas las funcionalidades, lógica de negocio, arquitectura y estética se basan y evolucionan desde:
 > `C:\Users\Matías Riquelme\Desktop\Proyectos documentados\Contapymepuq`
 
 > [!NOTE]
@@ -16,97 +16,108 @@
 > - Engine API + Docs: http://localhost:8000/docs
 
 > [!TIP]
-> **CERTIFIED ARCHIVAL & INTEGRITY (v10.0):** 
-> - **Google SEO Max Architecture**: sitemap.ts dinámico, robots.ts y datos estructurados Schema.org (`AccountingService`, `WebApplication`, `NewsMediaOrganization`).
-> - **Diseño UI/UX Cyber-SaaS**: Navbar glassmorphism con píldoras e iconos, Footer Slate Dark de 5 columnas, gráfico de dona SVG en simulador de sueldos y página 404 personalizada magallánica.
-> - **Portal Público de Verificación (`/verify/[id]`)**: Validación pública inmutable de Liquidaciones, Vacaciones, Contratos, Finiquitos y Balances con descarga de certificados.
-> - **Estándar Legal de Contratos (10 Cláusulas - 2026)**: Cumplimiento de Ley 40 Horas (21.561), Ley Karin (21.643), Ley 17.336 y Ley 19.628.
-> - **Pruebas de Estrés y Test Suite**: 98/98 tests pasados al 100% en 27s.
+> **CERTIFIED ARCHIVAL & BRANDING INTEGRITY (v16.0):** 
+> - **ContaEmpleos Magallanes (`/empleos`)**: Portal de empleo regional descentralizado con auditoría legal bajo el **Art. 2° del Código del Trabajo**.
+> - **Motor de Extracción Cromática y Co-Branding**: Análisis de paleta de colores de logos de empresas vía Canvas HTML5 y adaptación visual en tiempo real.
+> - **Generador Publicitario IA Multimodal (Nano Banana 2 / Gemini 3.1 Flash Image)**: Generación determinista de anuncios en formato **Post 1:1** e **Historia 9:16** con QR y llamado para Sticker de Enlace de Instagram.
+> - **Google SEO & Schema.org**: `JobPosting`, `AccountingService`, `NewsMediaOrganization`, sitemaps dinámicos (`/sitemap.xml`, `/sitemap-jobs.xml`, `/sitemap-news.xml`).
+> - **Next.js 16.3.3 + Supabase + Python 3.12**: Cero vulnerabilidades en `npm audit` y suite completa de 162+ pruebas unitarias aprobadas al 100%.
 
 ---
 
 ## 🏗️ 1. ARQUITECTURA TÉCNICA Y DIAGRAMA LÓGICO
 
-El ecosistema consta de 3 actores independientes comunicados mediante APIs REST:
+El ecosistema consta de 4 capas integradas comunicadas mediante APIs REST y Server Actions:
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  MOTOR DE PROCESAMIENTO Y FISCALIZACIÓN (Python + FastAPI)           │
-│  - RCV Auditor 2.0: Agregación real de documentos vs Bitácoras.      │
-│  - DTE Core: Generación de XML, Firma Digital y Timbrado Electrónico.│
-│  - INTEGRITY ENGINE: Cómputo de SHA-256 Chaining & QRs de Verificación│
-│  - Documents Router: Contratos legal-grade 10 cláusulas & Finiquitos.│
-│  - Conciliación API: API de cierre contable y blindaje bancario.     │
-└───────────────────────────────────┬──────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│  MOTOR DE INGESTA, AUDITORÍA LEGAL E IA (Python + FastAPI)             │
+│  - Job Worker: Ingesta periódica, deduplicación y filtro Art. 2° DT.   │
+│  - News Worker: Pipeline de noticias regionales con verificación IA.   │
+│  - RCV Auditor 2.0: Agregación real de documentos vs Bitácoras SII.   │
+│  - DTE Core: Generación XML, Firma Digital y Timbrado Electrónico.     │
+│  - INTEGRITY ENGINE: Criptografía SHA-256 Chaining & QRs Certificados. │
+└───────────────────────────────────┬────────────────────────────────────┘
                                     │ API REST / JSON Struct
-┌───────────────────────────────────▼──────────────────────────────────┐
-│  CENTRO DE DATOS Y SEGURIDAD (Supabase PostgreSQL)                   │
-│  - RLS (Row Level Security): EL MURO MULTI-TENANT. Datos Aislados.   │
-│  - integrity_hash: Registro forense de inmutabilidad documental.     │
-│  - Audit Logs: Trazabilidad total de acciones por organización.      │
-│  - Database Triggers: Sincronización inmutable de estados de banco.  │
-└───────────────────────────────────┬──────────────────────────────────┘
+┌───────────────────────────────────▼────────────────────────────────────┐
+│  CENTRO DE DATOS Y SEGURIDAD (Supabase PostgreSQL)                     │
+│  - RLS (Row Level Security): Blindaje Multi-Tenant por Organización.   │
+│  - job_postings: Almacenamiento auditado con auto-expiración a 21 días.│
+│  - news_articles: Repositorio descentralizado de noticias australes.  │
+│  - integrity_hash: Registro forense de inmutabilidad documental.       │
+└───────────────────────────────────┬────────────────────────────────────┘
                                     │ Supabase Client / Server Actions
-┌───────────────────────────────────▼──────────────────────────────────┐
-│  FRONTEND INSTITUCIONAL (Next.js 16 App Router)                      │
-│  - UI "Seamless": MarketTicker global & Footer Premium Magallanes.   │
-│  - Verification Portal: /verify/[id] público para auditorías.        │
-│  - Treasury 360°: Cobros RCV, Pagos a Proveedores y Nómina.          │
-│  - Conciliación Bancaria: Interfaz interactiva de cuadratura contable.│
-└──────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────▼────────────────────────────────────┐
+│  FRONTEND INSTITUCIONAL & PORTALES PÚBLICOS (Next.js 16.3.3)           │
+│  - ContaEmpleos: Directorio /empleos y vista /empleos/[slug].          │
+│  - Generador de Anuncios: Co-branding, extracción de color y QR HD.   │
+│  - Diario Regional: Noticias /noticias con modal interactivo.         │
+│  - Portal de Verificación: /verify/[id] público para auditorías.       │
+│  - ERP Dashboard: Tesorería 360°, Conciliación Bancaria y Nómina.      │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Exportación JSON / Multimodal
+┌───────────────────────────────────▼────────────────────────────────────┐
+│  GENERACIÓN MULTIMODAL & REDES SOCIALES (Nano Banana 2 Studio SSoT)    │
+│  - Gemini 3.1 Flash Image Preview con Thinking Mode de alta fidelidad. │
+│  - Especificación JSON para anuncios 1:1 Feed y 9:16 Instagram Stories.│
+│  - Sincronización Web Share API y portapapeles automático de enlaces.  │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ 2. ESPECIFICACIÓN DE MÓDULOS (LOW LEVEL DESIGN)
+## 🛠️ 2. ESPECIFICACIÓN DE MÓDULOS
 
-### 2.1 📊 Módulo Base: Autenticación e Integridad
-*   **Seguridad:** RLS nivel Dios en todas las tablas transaccionales.
-*   **Integrity Chain:** Modelo `Hash(n) = SHA256(Record(n) + Hash(n-1))` para DTEs y sellos digitales en PDFs/DOCX.
+### 2.1 💼 Módulo ContaEmpleos Magallanes (v16.0)
+*   **Directorio Regional:** Catálogo interactivo con filtros por Comuna (Punta Arenas, Puerto Natales, Porvenir, etc.), Sector Productivo y Turnos de Faena.
+*   **Auditoría Jurídica Automática:** Filtro algorítmico contra patrones discriminatorios (edad, fotos, género, DICOM) según el **Artículo 2° del Código del Trabajo**.
+*   **Calculadora Previsional Integrada:** Estimador automático de sueldo líquido regional con retenciones de AFP, Salud, AFC e Impuesto Único.
+*   **Expiración Autónoma:** Ciclos de depuración cada 6 horas para vacantes inactivas o con más de 21 días.
+
+### 2.2 🎨 Módulo de Branding, Extracción Cromática y Generación Publicitaria
+*   **Extracción de Paleta de Marca (`color-extractor.ts`):** Análisis de píxeles vía Canvas HTML5 que cuantiza los colores corporativos del logo de la empresa (Primario, Acento y Contraste WCAG AAA).
+*   **Co-Branding en Vivo:** Inyección instantánea del logo de la empresa empleadora junto al sello *ContaEmpleos Magallanes*.
+*   **Generador JSON Nano Banana 2:** Exportación de especificaciones de grado de estudio para modelos de difusión de IA (Gemini 3.1 Flash Image / Midjourney) con la *Regla de Distancia de Texto* y parámetros ópticos de cámara *Hasselblad X2D 100C*.
+*   **Formatos para Redes:**
+    *   **Post Cuadrado (1:1):** $1080\times 1080\text{px}$ optimizado para Feed de Instagram y LinkedIn.
+    *   **Historia Vertical (9:16):** $1080\times 1920\text{px}$ con caja de llamado para el **Sticker de Enlace de Instagram** y copia automática de URL al portapapeles.
+
+### 2.3 📊 Módulo Base: Autenticación, RLS e Integridad
+*   **Seguridad:** RLS en todas las tablas transaccionales de PostgreSQL.
+*   **Integrity Chain:** Modelo `Hash(n) = SHA256(Record(n) + Hash(n-1))` para DTEs y sellos digitales en documentos.
 *   **Audit Logs:** Registro GRC (Gobierno/Riesgo/Cumplimiento) de cada acción crítica.
 
-### 2.2 🧾 Módulo RCV e Inteligencia
-*   **RCV 2.0:** Motor de agregación real (físico) para auditoría de cumplimiento.
-*   **Selector Inteligente:** Interfaz proactiva que solo muestra periodos con data.
-
-### 2.3 📄 Módulo DTE, Contratos y Remuneraciones
-*   **Contratos 10 Cláusulas:** Norma legal 2026 (Ley 40 horas & Ley Karin).
-*   **Finiquitos Magallanes:** Factor de 20 días hábiles de feriado proporcional (1.6667/mes) y cálculo de años de servicio.
-*   **SII Compliance:** Generación y firma de XML (SHA1/C14N).
-
-### 2.4 📜 Módulo de Reportes Certificados & Verificación Pública
-*   **Archivado Inmutable:** Repositorio en la nube (Supabase Storage) con metadatos en DB.
-*   **Portal /verify/[id]:** Consulta pública directa de validez documental por QR o UUID.
-
-### 2.5 🏦 Módulo de Tesorería & Conciliación Bancaria (v9.5)
-*   **Sincronización Transaccional:** Centralización automática de cobros y pagos en Libro Diario.
-*   **Gobernanza por Triggers:** La función de base de datos `sync_reconciliation_status` gestiona de forma inmutable el estado de reconciliación.
+### 2.4 📰 Módulo Diario Regional Descentralizado
+*   **Noticias Magallánicas:** Noticias de Punta Arenas, Última Esperanza, Tierra del Fuego y Antártica.
+*   **Widgets en Tiempo Real:** Clima austral, indicadores económicos (UF, UTM, Dólar, Euro) y horóscopo.
 
 ---
 
-## 🚀 3. ROADMAP: LAS FASES DE EVOLUCIÓN
-
-### FASE 12: Consolidación Institutional Grade 🏛️ — **COMPLETADO**
-*   [x] **SSoT Utility Engine:** Módulo `shared_utils.py` operativo.
-*   [x] **Blockchain Integrity:** Implementación de SHA-256 Integrity Chaining en DTEs.
-*   [x] **Financial Certification:** Módulo de Reportes Certificados y Repositorio en la nube.
-
-### FASE 13: Despliegue a Producción y Estabilización Bancaria 🌐 — **COMPLETADO**
-*   [x] **IaC (Infrastructure as Code):** `render.yaml` y `railway.json` creados.
-*   [x] **Sincronización de Conciliación:** Implementación del endpoint `/save-reconciliation` y migración SQL de triggers.
-*   [x] **Test E2E Final:** Validación de cadena de integridad en producción.
+## 🚀 3. ROADMAP Y FASES DE EVOLUCIÓN
 
 ### FASE 14: Ecosistema Jurídico, Verificación Criptográfica y UI World-Class 🛡️ — **COMPLETADO**
-*   [x] **Portal Público de Verificación (`/verify/[id]`):** Soporte multi-documento para liquidaciones, contratos, finiquitos y balances.
-*   [x] **Estándar Legal de Contratos 2026:** Plantilla Word de 10 cláusulas (Ley 40 Horas & Ley Karin).
-*   [x] **Diferenciación de Contratos:** Adaptación matemática y gráfica para Indefinido, Plazo Fijo, Honorarios y Part-Time.
-*   [x] **Tesoreria & Flujo de Caja:** Integración 360° con Libro Diario y pruebas de estrés aprobadas (100%).
-*   [x] **Rediseño Footer Público:** Estética corporativa de 5 columnas con sellos de garantía y marca regional Magallanes.
+*   [x] Portal Público de Verificación (`/verify/[id]`) multi-documento.
+*   [x] Estándar Legal de Contratos 2026 (Ley 40 Horas & Ley Karin).
+*   [x] Tesorería & Flujo de Caja 360° con Libro Diario.
+
+### FASE 15: Diario Regional e Inteligencia Descentralizada 📰 — **COMPLETADO**
+*   [x] Pipeline autónomo de noticias regionales (`news_worker.py`).
+*   [x] Modal interactivo de lectura rápida con rutas interceptadas de Next.js.
+*   [x] Widgets en vivo de indicadores macroeconómicos y meteorología de Magallanes.
+
+### FASE 16: ContaEmpleos, Co-Branding y Generación Publicitaria con IA Multimodal 💼 — **COMPLETADO**
+*   [x] Portal de empleos regional `/empleos` y páginas individuales `/empleos/[slug]`.
+*   [x] Auditoría algorítmica legal bajo Art. 2° Código del Trabajo y auto-expiración a 21 días.
+*   [x] Motor de extracción cromática (`color-extractor.ts`) y soporte para carga de logotipos de empresas.
+*   [x] Generador publicitario con proporciones nativas 1:1 e Historia 9:16 ajustadas a pantallas móviles.
+*   [x] Especificación JSON SSoT de grado de estudio para **Nano Banana 2** (Gemini 3.1 Flash Image).
+*   [x] Copia automática de enlace al portapapeles para Sticker de Enlace de Instagram.
+*   [x] Actualización de dependencias a **Next.js 16.3.3** con **0 vulnerabilidades** en `npm audit`.
 
 ---
 
 ## 🏛️ VISIÓN ESTRATÉGICA
-Contapymepuq es el ecosistema de confianza institucional líder en Magallanes. La versión 9.5 consagra la **Inmutabilidad por Diseño, el Cumplimiento Legal 2026 y la Cuadratura Bancaria de Alto Estándar**.
+Contapymepuq es el ecosistema de confianza institucional y productivo líder en Magallanes, uniendo la **gestión financiera empresarial, la información regional descentralizada y la empleabilidad austral auditada**.
 
 ---
 © 2026 Contapymepuq — Propiedad Intelectual Reservada. Magallanes, Chile.

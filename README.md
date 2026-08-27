@@ -1,49 +1,47 @@
 # <p align="center">💎 CONTAPYMEPUQ 💎</p>
 <p align="center">
-  <strong>Ecosistema Contable Descentralizado de Magallanes (v9.0)</strong>
+  <strong>Ecosistema Contable, Informativo y Laboral Descentralizado de Magallanes (v16.0)</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-9.0--Certified-blue?style=for-the-badge&logo=opsgenie&logoColor=white&color=0D6EFD" alt="Version 9.0">
+  <img src="https://img.shields.io/badge/Version-16.0--Certified-blue?style=for-the-badge&logo=opsgenie&logoColor=white&color=0D6EFD" alt="Version 16.0">
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white&color=3776AB" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/Next.js-16.0-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16">
+  <img src="https://img.shields.io/badge/Next.js-16.3.3-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16.3.3">
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-green?style=for-the-badge&logo=supabase&logoColor=white&color=3ECF8E" alt="Supabase">
+  <img src="https://img.shields.io/badge/Security-0_Vulnerabilities-emerald?style=for-the-badge&logo=snyk&logoColor=white" alt="0 Vulnerabilities">
 </p>
 
 <p align="center">
-  <em>"Precisión Institucional, Lógica Superior y Robustez Criptográfica."</em>
+  <em>"Precisión Institucional, Lógica Superior y Ecosistema Productivo para la Patagonia Austral."</em>
 </p>
 
 ---
 
 ## 📖 Descripción General
 
-**Contapymepuq** es la plataforma líder de Software as a Service (SaaS) contable y remunerativo descentralizado, construida específicamente para responder a las exigencias operativas y tributarias de la región de **Magallanes y de la Antártica Chilena**. 
+**Contapymepuq** es la plataforma líder de Software as a Service (SaaS) contable, informativo y laboral descentralizado, construida específicamente para responder a las exigencias operativas, tributarias y productivas de la región de **Magallanes y de la Antártica Chilena**.
 
-Este ecosistema combina el poder analítico de un motor financiero en **FastAPI (Python)** para el cálculo de sueldos chilenos, conciliación bancaria y firmas de documentos XML, con una interfaz premium basada en **Next.js 16** y el blindaje de seguridad multi-tenant provisto por **Supabase (PostgreSQL RLS)**.
+Este ecosistema integra cuatro pilares fundamentales:
+1. **ERP & Contabilidad Austral:** Facturación Electrónica DTE (SII), Nómina con Ley 40 Horas / Ley Karin y Conciliación Bancaria con cadena de integridad criptográfica SHA-256.
+2. **ContaEmpleos Magallanes (`/empleos`):** Bolsa de trabajo regional auditada bajo el **Artículo 2° del Código del Trabajo** con estimador previsional de sueldo líquido.
+3. **Generador Publicitario de Co-Branding con IA:** Extracción cromática automática de logos de empresas y generación determinista de anuncios para **Nano Banana 2 (Gemini 3.1 Flash Image)** en formatos **Post 1:1** e **Historia 9:16**.
+4. **Diario Regional Descentralizado (`/noticias`):** Noticias locales verificadas, indicadores macroeconómicos y meteorología austral en tiempo real.
 
 ---
 
 ## 📊 Flujo de Datos y Arquitectura del Sistema
 
-A continuación se detalla cómo fluyen los datos y cómo opera el blindaje de seguridad y la cadena de integridad del sistema:
-
 ```mermaid
 graph TD
-    A[👤 Usuario / Contador] -->|1. Emite DTE / Concilia Banco / Genera Sueldos| B[🎨 Frontend Next.js 16]
-    B -->|2. Valida Token JWT y Tenant ID| C{¿Autenticación OK?}
-    C -->|No| D[🚫 Acceso Denegado / Login]
-    C -->|Sí| E[⚙️ FastAPI Engine Backend]
-    E -->|3. Verifica Rol de Organización en API| F{¿Autorizado?}
-    F -->|No| D
-    F -->|Sí| G[⚡ Procesamiento Financiero & Cálculos]
-    G -->|A. Emisión & Firma DTE XML| H[🇨🇱 Servicio de Impuestos Internos - SII]
-    G -->|B. Libro LRE / Remuneraciones DT| I[💼 Centralización de Asiento Contable]
-    G -->|C. Reconciliación por Triggers| J[🔗 Sincronización Directa de Bancos]
-    I -->|4. Escritura en DB con Service Role| K[(🔥 Supabase PostgreSQL DB)]
-    J -->|4. Escritura en DB con Service Role| K
-    K -->|5. Ejecuta Seguridad RLS| L[🔒 Aislamiento Multi-Tenant de Inquilinos]
-    K -->|6. Trigger de Firma Criptográfica| M[⛓️ Encadenamiento Ledger SHA-256]
+    A[👤 Usuario / Empresa / Postulante] -->|1. Consulta Empleos / DTE / Noticias| B[🎨 Frontend Next.js 16.3.3]
+    B -->|2. Extracción Cromática de Logo Canvas| C[🎨 Color Extractor Engine]
+    B -->|3. Server Actions & APIs| D{¿Tipo de Solicitud?}
+    D -->|ERP & Fiscal| E[⚙️ FastAPI Engine Backend]
+    D -->|Empleos & Noticias| F[(🔥 Supabase PostgreSQL DB)]
+    E -->|Firma Digital XML & Hash SHA-256| G[🇨🇱 SII / DT]
+    F -->|Políticas RLS & Inmutabilidad| H[🔒 Aislamiento Multi-Tenant]
+    B -->|4. Generación JSON SSoT| I[🤖 Nano Banana 2 / Gemini 3.1 Flash Image]
+    I -->|5. Renderizado Publicitario HD| J[📱 Anuncios 1:1 Post & 9:16 Instagram Stories]
 ```
 
 ---
@@ -52,90 +50,72 @@ graph TD
 
 | Capa / Componente | Tecnologías Clave | Propósito en el Ecosistema |
 | :--- | :--- | :--- |
-| **Frontend UI/UX** | Next.js 16 (App Router), React, TypeScript, React-Bootstrap | Interfaz interactiva de alta fidelidad, MarketTicker de Bloomberg y paneles ERP. |
-| **Backend Engine** | Python 3.12, FastAPI, Uvicorn, Pydantic v2 | Motor de cálculo de haberes, procesamiento XML, firmas electrónicas y API de conciliación. |
-| **Persistencia** | Supabase PostgreSQL, Row Level Security (RLS) | Seguridad multi-tenant por diseño, aislamiento forense de datos. |
-| **Criptografía** | SHA-256 Hash Chaining, cryptography (PyCA) | Encadenamiento inmutable de DTEs emitidos para auditorías SII. |
-| **Procesamiento** | `lxml` (firmas C14N), `pdfplumber` | Generación y lectura de documentos tributarios oficiales. |
+| **Frontend UI/UX** | Next.js 16.3.3 (App Router), React 19, TypeScript, Tailwind CSS, Base UI | Portal público, catálogo de empleos, generador social y dashboard ERP. |
+| **Backend Engine** | Python 3.12, FastAPI, Uvicorn, Pydantic v2, APScheduler | Motores de cálculo previsional, workers de ingesta y auditoría legal. |
+| **Persistencia** | Supabase PostgreSQL, Row Level Security (RLS) | Base de datos relacional multi-tenant con seguridad a nivel de fila. |
+| **Branding & IA** | HTML5 Canvas Color Quantization, Gemini 3.1 Flash Image Spec | Extracción automática de paletas corporativas y prompts de grado de estudio. |
+| **Criptografía** | SHA-256 Hash Chaining, cryptography (PyCA) | Encadenamiento inmutable de DTEs y certificados de verificación pública. |
 
 ---
 
-## 📁 Arquitectura del Repositorio (Project Structure)
+## 📁 Arquitectura del Repositorio
 
 ```text
 Contapymepuq/
-├── app/                      # 🎨 Frontend Web (Next.js 16)
+├── app/                      # 🎨 Frontend Web (Next.js 16.3.3)
+│   ├── public/branding/      # Kits de marca oficiales y especificaciones JSON
 │   ├── src/
-│   │   ├── actions/          # Server Actions para llamadas directas a Supabase
-│   │   ├── app/              # Rutas físicas (Dashboard, Noticias, Auth)
-│   │   ├── components/       # Componentes visuales UI/UX
-│   │   └── lib/              # Inicializaciones de Supabase Client & Helpers
+│   │   ├── actions/          # Server Actions (Empleos, Documentos, Parámetros)
+│   │   ├── app/              # Rutas físicas (/empleos, /noticias, /dashboard, /verify)
+│   │   ├── components/       # Componentes UI (Generador social, calculadoras, filtros)
+│   │   └── lib/branding/     # color-extractor.ts (Extracción cromática de logos)
 │   └── package.json
 ├── engine/                   # ⚙️ Motor de Procesamiento (Python FastAPI)
-│   ├── api/
-│   │   └── routers/          # Endpoints de API protegidos por JWT (18 controladores)
-│   ├── calculators/          # Motor matemático de remuneraciones chilenas
-│   ├── core/
-│   │   ├── dte/              # Lógica de creación, firma y envío XML al SII
-│   │   └── database.py       # Singleton del conector de Supabase (Service Role)
-│   ├── templates/            # Plantillas Word/CSV de finiquitos y contratos
+│   ├── api/routers/          # Controladores REST protegidos por JWT
+│   ├── calculators/          # Motor de remuneraciones y liquidaciones chilenas
+│   ├── workers/              # job_worker.py & news_worker.py (Ingesta periódica y auditoría)
+│   ├── core/                 # DTE, base de datos y utilidades criptográficas
 │   └── requirements.txt
 ├── supabase/                 # 🔥 Base de Datos & Despliegue
-│   ├── migrations/           # 78 archivos de migración SQL ordenados cronológicamente
-│   └── snapshots/            # Snapshots periódicos del esquema de base de datos
-├── docs/                     # 📚 Repositorio de Conocimiento & Auditorías
-│   ├── architecture/         # Lógica RLS y flujos de datos
-│   ├── audit/                # Gap Analysis, plan técnico DTE y reportes de consistencia
-│   └── db/                   # Guía de operaciones y Runbook de Base de Datos
-├── tools/                    # 🛠️ Herramientas de Mantenimiento y Validación
-│   └── db/                   # Scripts de auditoría, remediación y test multi-tenant
-├── start.ps1                 # 🚀 Script único para iniciar el entorno de desarrollo local
-└── BLUEPRINT_MAESTRO.md      # 🎯 Fuente Única de Verdad (SSoT) del Roadmap
+│   ├── migrations/           # Migraciones SQL cronológicas (job_postings, news, RLS)
+│   └── snapshots/            # Esquemas relacionales históricos
+├── tests/                    # 🧪 Test Suite Integral
+│   ├── test_job_banner_generation.py  # Pruebas de esquemas Nano Banana y branding
+│   └── test_jobs_pipeline_and_compliance.py  # Pruebas de cumplimiento legal Art. 2° DT
+├── start.ps1                 # 🚀 Script de inicio del ecosistema local
+└── BLUEPRINT_MAESTRO.md      # 🎯 Fuente Única de Verdad (SSoT) de Arquitectura
 ```
 
 ---
 
-## ✨ Características Principales (Features v9.5)
+## ✨ Características Principales (Features v16.0)
 
-*   **🔒 Multi-Tenant Nivel Dios**: Todas las tablas transaccionales están blindadas con Políticas de Seguridad a Nivel de Fila (RLS) en PostgreSQL (`private.is_org_member`).
-*   **🌐 Portal Público de Verificación Criptográfica (`/verify/[id]`)**: Autenticación inmutable pública de Liquidaciones, Vacaciones, Contratos, Finiquitos y Balances de 8 Columnas sin requerir inicio de sesión.
-*   **📜 Estándar Legal de Contratos (10 Cláusulas - 2026)**: Plantilla jurídica de grado corporativo adaptada a la Ley 21.561 (40 Horas), Ley Karin 21.643, Ley 17.336 (Propiedad Intelectual) y Ley 19.628 (Protección de Datos).
-*   **💼 Diferenciación Dinámica de Tipos de Contrato**: Lógica diferenciada para contratos Indefinidos, Plazo Fijo, Honorarios (Retención 15.25%), Obra o Faena, Part-Time 30h y Teletrabajo (Ley 21.220).
-*   **🏦 Tesorería & Flujo de Caja 360°**: Cobros RCV, pagos a proveedores y nómina con centralización contable automática en Libro Diario y pruebas de estrés de conciliación bancaria.
-*   **🔗 Blockchain-like Ledger & Sello SHA-256**: Encadenamiento inmutable de DTEs e inserción de sello digital con código QR de verificación en documentos.
-*   **🧮 Motor de Remuneraciones Magallanes**: Cálculo preciso de cotizaciones previsionales, Impuesto Único de Segunda Categoría, asignación por zona extrema (20 días de vacaciones) y topes UF/UTM actualizados.
-*   **📰 Diario Informativo Regional**: Motor agregador de noticias de la Región de Magallanes (`regional_news`) integrado con SEO avanzado y slugs inmutables.
-
----
-
-## 🚀 Inicio Rápido para Desarrolladores
-
-Para levantar el entorno completo de desarrollo de forma unificada, abre una terminal de **PowerShell** en la raíz del proyecto y ejecuta:
-
-```powershell
-.\start.ps1
-```
-
-Este script automatizado levantará concurrentemente:
-*   El **Frontend** en `http://localhost:3000`
-*   El **Backend Engine** en `http://localhost:8000` (Documentación Swagger interactiva en `/docs`)
+*   **💼 ContaEmpleos Magallanes:**
+    *   Filtros inteligentes por Comuna (Punta Arenas, Puerto Natales, Porvenir, Faena).
+    *   Auditoría de legalidad bajo el Artículo 2° del Código del Trabajo (anti-discriminación).
+    *   Estimación de Sueldo Líquido con cálculo de descuentos previsionales chilenos.
+*   **🎨 Kit de Publicidad & Co-Branding con IA:**
+    *   Carga de logotipos de empresas y extracción automática de códigos HEX corporativos.
+    *   Renderizado en vivo en formato **Post 1:1** e **Historia 9:16**.
+    *   Pestaña `[JSON Nano Banana]` con la especificación completa para Gemini 3.1 Flash Image.
+    *   Copia automática de URL para el **Sticker de Enlace de Instagram** y Web Share API.
+*   **🔒 Multi-Tenant Nivel Dios:** RLS activo en todas las tablas transaccionales.
+*   **📜 Portal de Verificación Pública (`/verify/[id]`):** Validación inmutable mediante códigos QR de contratos, liquidaciones y balances contables.
 
 ---
 
-## 🧪 Pruebas y Validación (Testing)
-
-El ecosistema cuenta con tests automatizados para asegurar la integridad de la lógica financiera y la seguridad de los tenants:
+## 🧪 Verificación y Calidad
 
 ```bash
-# Correr tests unitarios y lógicos del motor de sueldos
-engine\.venv\Scripts\python.exe -m pytest tests/engine
+# Ejecutar pruebas unitarias de backend y branding
+python -m pytest tests/ -v
 
-# Correr pruebas de integración de base de datos y consistencia
-engine\.venv\Scripts\python.exe -m pytest tests/database
+# Validar tipado TypeScript
+cd app && npx tsc --noEmit
+
+# Compilación de producción en Next.js
+npm run build
 ```
 
 ---
-
-<p align="center">
-  <sub>© 2026 Contapymepuq. Todos los derechos reservados. Desarrollado con ❤️ para la Región de Magallanes, Chile.</sub>
-</p>
+© 2026 Contapymepuq — Todos los derechos reservados. Magallanes y de la Antártica Chilena.
