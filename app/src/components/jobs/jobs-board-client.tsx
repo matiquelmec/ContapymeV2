@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -97,14 +98,32 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
       {/* 🔍 BARRA DE BÚSQUEDA Y FILTROS RÁPIDOS */}
       <div className="p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/60 shadow-xl shadow-primary/5 space-y-6 box-border overflow-hidden">
         <div className="relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
           <Input
-            type="text"
+            type="search"
+            name="job_search_query"
+            id="job-search-input"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            data-lpignore="true"
+            data-form-type="other"
             placeholder="Buscar por cargo (ej. Contador, Mecánico, Jefe de Turno, Recepción)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-14 h-14 rounded-2xl bg-zinc-50 border-zinc-200 text-sm font-medium focus-visible:ring-primary focus-visible:bg-white transition-all"
+            className="pl-14 pr-12 h-14 rounded-2xl bg-zinc-50 border-zinc-200 text-sm font-medium focus-visible:ring-primary focus-visible:bg-white transition-all"
           />
+          {search.trim() && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-zinc-200 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Filtros de Comuna (Pills) */}
