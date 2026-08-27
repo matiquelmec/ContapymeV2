@@ -169,9 +169,14 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                     Calculadora Tributaria
                   </Button>
                 </Link>
+                <Link href="/empleos" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-2xl h-12 px-8 transition-all">
+                    Bolsa de Empleos
+                  </Button>
+                </Link>
                 <Link href="/noticias" className="w-full sm:w-auto">
                   <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
-                    Hemeroteca Regional
+                    Hemeroteca
                   </Button>
                 </Link>
                 <Link href="/contacto" className="w-full sm:w-auto">

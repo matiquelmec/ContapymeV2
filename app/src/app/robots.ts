@@ -7,6 +7,10 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/dashboard/", "/api/"],
     },
-    sitemap: "https://contapymepuq.cl/sitemap.xml",
+    sitemap: [
+      "https://contapymepuq.cl/sitemap.xml",
+      "https://contapymepuq.cl/sitemap-news.xml",
+      "https://contapymepuq.cl/sitemap-jobs.xml"
+    ],
   };
 }

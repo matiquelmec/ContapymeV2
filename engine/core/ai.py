@@ -13,6 +13,50 @@ DEFAULT_MODEL = "openai/gpt-oss-120b"
 FALLBACK_MODEL = "openai/gpt-oss-20b"
 TERTIARY_MODEL = "qwen/qwen3.6-27b"
 
+async def groq_chat_completion(messages: list, temperature: float = 0.0, json_mode: bool = True) -> str | None:
+    """
+    Función genérica para ejecutar inferencia en Groq Cloud con reintentos y fallbacks.
+    """
+    if not GROQ_API_KEY:
+        logger.error("[AI] ⚠️ Falta GROQ_API_KEY. Abortando llamada a Groq.")
+        return None
+
+    payload = {
+        "model": DEFAULT_MODEL,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+
+    models_to_try = [DEFAULT_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for current_model in models_to_try:
+                payload["model"] = current_model
+                try:
+                    resp = await client.post(GROQ_URL, json=payload, headers=headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if resp.status_code == 429:
+                        logger.warning(f"[AI] ⏱️ Rate limit en {current_model}. Probando siguiente modelo...")
+                        await asyncio.sleep(1.5)
+                    else:
+                        logger.warning(f"[AI] ⚠️ Groq {resp.status_code} con {current_model}...")
+                except Exception as ex:
+                    logger.warning(f"[AI] Excepción en modelo {current_model}: {ex}")
+    except Exception as e:
+        logger.error(f"[AI] Error ejecutando groq_chat_completion: {e}")
+
+    return None
+
+
 async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     """
     Procesa una noticia usando Groq Cloud para resumirla,

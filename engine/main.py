@@ -16,26 +16,28 @@ from api.routers import (
     rcv, accounting, dashboard_metrics,
     payroll_settings, lre, bank_reconciliation,
     audit, ml_classifier, dte, dj1887, previred_importer,
-    news, purchase_orders
+    news, purchase_orders, jobs
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
+from workers.job_worker import start_jobs_worker, stop_jobs_worker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Gestiona el ciclo de vida del API Engine.
-    Incluye los workers de indicadores y noticias para que
-    se ejecuten automáticamente al iniciar el servidor.
+    Incluye los workers de indicadores, noticias y ciclo de vida de empleos.
     """
     # Arrancar workers de fondo
     await start_scheduler()
     await start_news_worker()
+    await start_jobs_worker()
     yield
     # Limpieza al apagar
     await stop_scheduler()
     await stop_news_worker()
+    await stop_jobs_worker()
 
 
 # ─── Aplicación FastAPI ────────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ app.include_router(dj1887.router,              prefix="/api/v1/dj1887",      tag
 app.include_router(previred_importer.router,   prefix="/api/v1/previred-importer", tags=["Importador Previred"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(news.router,                prefix="/api/v1/news",        tags=["Noticias Regionales (IA)"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(purchase_orders.router,     prefix="/api/v1/purchase-orders", tags=["Órdenes de Compra"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(jobs.router,                prefix="/api/v1/jobs",        tags=["ContaEmpleos Magallanes"], dependencies=[]) # Público para buscador y postulación
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────
