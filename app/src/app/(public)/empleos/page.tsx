@@ -55,20 +55,31 @@ export default async function JobsPage() {
             </p>
           </div>
 
-          {/* Micro badges informativos */}
-          <div className="flex flex-wrap gap-3 pt-1 text-xs font-bold">
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-border shadow-sm">
-              <Building className="h-4 w-4 text-primary" />
-              <span>{stats.total} Vacantes Activas</span>
+          {/* Micro badges informativos y Botón Publicar para Empresas */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div className="flex flex-wrap gap-2.5 text-xs font-bold">
+              <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-border shadow-xs">
+                <Building className="h-4 w-4 text-primary" />
+                <span>{stats.total} Vacantes Activas</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-border shadow-xs">
+                <MapPin className="h-4 w-4 text-emerald-600" />
+                <span>Punta Arenas • Natales • Faena</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-2xl border border-border shadow-xs">
+                <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                <span>Art. 2° DT</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-border shadow-sm">
-              <MapPin className="h-4 w-4 text-emerald-600" />
-              <span>Punta Arenas • Natales • Porvenir • Faena</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-border shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-indigo-600" />
-              <span>Auditoría Art. 2° Código del Trabajo</span>
-            </div>
+
+            <Link
+              href="/dashboard/empleos"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-wider px-5 h-11 shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95 shrink-0"
+            >
+              <Briefcase className="h-4 w-4" />
+              <span>+ Publicar Oferta Laboral</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Link>
           </div>
         </div>
 
