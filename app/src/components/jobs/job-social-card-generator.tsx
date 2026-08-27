@@ -101,8 +101,8 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-xl rounded-[2.5rem] bg-white p-6 sm:p-8 space-y-6 border border-zinc-200 max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="space-y-2">
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-xl rounded-[2rem] bg-white p-6 sm:p-7 space-y-5 border border-zinc-200 shadow-2xl max-h-[90vh] overflow-y-auto box-border">
+          <DialogHeader className="space-y-1.5 text-left">
             <div className="flex items-center gap-2 text-primary text-xs font-black uppercase tracking-widest">
               <Sparkles className="h-4 w-4" />
               <span>Kit de Publicidad & Redes Sociales</span>

@@ -55,7 +55,6 @@ export function JobEmailButton({
   const handleButtonClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    // Abrir diálogo con opciones de correo y copiar automáticamente
     setIsOpen(true)
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(cleanEmail).catch(() => {})
@@ -96,29 +95,29 @@ export function JobEmailButton({
         </button>
       )}
 
-      {/* Modal interactivo con opciones de envío para Webmail y Desktop */}
+      {/* Modal interactivo con contención y dimensiones perfectas */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] bg-white p-7 space-y-5 border border-zinc-200">
-          <DialogHeader className="space-y-2">
-            <div className="flex items-center gap-2 text-primary text-xs font-black uppercase tracking-widest">
-              <Mail className="h-4 w-4" />
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-md rounded-[2rem] bg-white p-6 sm:p-7 border border-zinc-200 shadow-2xl space-y-5 overflow-hidden box-border">
+          <DialogHeader className="space-y-1.5 text-left">
+            <div className="flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest">
+              <Mail className="h-3.5 w-3.5" />
               <span>Canal de Postulación por Correo</span>
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight italic">
+            <DialogTitle className="text-lg sm:text-xl font-black uppercase tracking-tight italic text-foreground leading-tight">
               Enviar Currículum a {companyName}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
               Dirección oficial de selección para el cargo <strong>{jobTitle}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           {/* Caja con email y botón de copia */}
-          <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-3">
-            <div className="truncate">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase block">
+          <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-3 w-full box-border min-w-0">
+            <div className="min-w-0 flex-1">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase block tracking-wider">
                 Correo Electrónico
               </span>
-              <span className="text-sm font-black font-mono text-foreground select-all">
+              <span className="text-xs sm:text-sm font-black font-mono text-foreground truncate block select-all">
                 {cleanEmail}
               </span>
             </div>
@@ -127,25 +126,25 @@ export function JobEmailButton({
               variant="outline"
               size="sm"
               onClick={handleCopy}
-              className="rounded-xl text-xs font-black uppercase tracking-wider shrink-0 gap-1.5 h-9"
+              className="rounded-xl text-[11px] font-black uppercase tracking-wider shrink-0 gap-1.5 h-8 px-3"
             >
               {copied ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <Check className="h-3 w-3 text-emerald-600" />
                   <span className="text-emerald-600">Copiado</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-3.5 w-3.5" />
+                  <Copy className="h-3 w-3" />
                   <span>Copiar</span>
                 </>
               )}
             </Button>
           </div>
 
-          {/* Opciones directas de apertura */}
-          <div className="space-y-2.5 pt-1">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground block">
+          {/* Opciones directas de apertura contenidas */}
+          <div className="space-y-2 pt-1 w-full box-border">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/80 block">
               Elige cómo redactar tu correo
             </span>
 
@@ -154,13 +153,13 @@ export function JobEmailButton({
               href={gmailUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100/80 text-rose-900 border border-rose-200/60 font-bold text-xs transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-rose-50/80 hover:bg-rose-100 text-rose-950 border border-rose-200/70 font-bold text-xs transition-all box-border"
             >
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-rose-600" />
-                <span>Abrir en Gmail Web</span>
+              <span className="flex items-center gap-2 truncate">
+                <span className="h-2 w-2 rounded-full bg-rose-600 shrink-0" />
+                <span className="truncate">Abrir en Gmail Web</span>
               </span>
-              <ExternalLink className="h-3.5 w-3.5 text-rose-700" />
+              <ExternalLink className="h-3.5 w-3.5 text-rose-700 shrink-0 ml-2" />
             </a>
 
             {/* Abrir en Outlook Web */}
@@ -168,30 +167,30 @@ export function JobEmailButton({
               href={outlookUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-sky-50 hover:bg-sky-100/80 text-sky-900 border border-sky-200/60 font-bold text-xs transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-sky-50/80 hover:bg-sky-100 text-sky-950 border border-sky-200/70 font-bold text-xs transition-all box-border"
             >
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-sky-600" />
-                <span>Abrir en Outlook / Hotmail</span>
+              <span className="flex items-center gap-2 truncate">
+                <span className="h-2 w-2 rounded-full bg-sky-600 shrink-0" />
+                <span className="truncate">Abrir en Outlook / Hotmail</span>
               </span>
-              <ExternalLink className="h-3.5 w-3.5 text-sky-700" />
+              <ExternalLink className="h-3.5 w-3.5 text-sky-700 shrink-0 ml-2" />
             </a>
 
             {/* Abrir en App de Correo del Sistema (mailto) */}
             <a
               href={mailtoUrl}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-200 font-bold text-xs transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-zinc-100 hover:bg-zinc-200/80 text-zinc-900 border border-zinc-200 font-bold text-xs transition-all box-border"
             >
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-zinc-800" />
-                <span>Abrir aplicación de correo local</span>
+              <span className="flex items-center gap-2 truncate">
+                <span className="h-2 w-2 rounded-full bg-zinc-700 shrink-0" />
+                <span className="truncate">Abrir aplicación de correo local</span>
               </span>
-              <Mail className="h-3.5 w-3.5 text-zinc-700" />
+              <Mail className="h-3.5 w-3.5 text-zinc-700 shrink-0 ml-2" />
             </a>
           </div>
 
-          <div className="border-t border-zinc-100 pt-3 text-center">
-            <p className="text-[10px] text-muted-foreground italic">
+          <div className="border-t border-zinc-100 pt-2 text-center">
+            <p className="text-[10px] text-muted-foreground/70 italic">
               * La dirección de correo ya ha sido copiada a tu portapapeles.
             </p>
           </div>
