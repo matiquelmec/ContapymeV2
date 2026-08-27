@@ -95,7 +95,7 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
   return (
     <div className="space-y-12">
       {/* 🔍 BARRA DE BÚSQUEDA Y FILTROS RÁPIDOS */}
-      <div className="p-6 sm:p-8 rounded-[2.5rem] bg-white border border-border/60 shadow-xl shadow-primary/5 space-y-6">
+      <div className="p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/60 shadow-xl shadow-primary/5 space-y-6 box-border overflow-hidden">
         <div className="relative">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -200,9 +200,9 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
             return (
               <Card 
                 key={job.id} 
-                className="group rounded-[2rem] border-border/70 bg-white hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                className="group rounded-3xl sm:rounded-[2rem] border-border/70 bg-white hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between overflow-hidden box-border"
               >
-                <CardContent className="p-7 space-y-5 flex-1 flex flex-col justify-between">
+                <CardContent className="p-5 sm:p-7 space-y-5 flex-1 flex flex-col justify-between box-border">
                   <div className="space-y-4">
                     {/* Header de la Tarjeta: Empresa y Ubicación */}
                     <div className="flex items-start justify-between gap-4">

@@ -174,7 +174,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           {/* 📋 COLUMNA PRINCIPAL: DETALLE DE LA OFERTA (8/12) */}
           <div className="lg:col-span-8 space-y-8">
             {/* Header del Aviso */}
-            <div className="p-8 sm:p-10 rounded-[2.5rem] bg-white border border-border/70 shadow-xl shadow-primary/5 space-y-6">
+            <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-xl shadow-primary/5 space-y-6 box-border overflow-hidden">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
@@ -191,7 +191,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                   </span>
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tight text-foreground leading-tight">
+                <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tight text-foreground leading-tight break-words">
                   {job.title}
                 </h1>
               </div>
@@ -218,25 +218,25 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 </div>
               </div>
 
-              <div className="border-t border-zinc-100 pt-4 flex items-center justify-between text-[10px] font-bold text-muted-foreground/70 uppercase">
+              <div className="border-t border-zinc-100 pt-4 flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-muted-foreground/70 uppercase">
                 <span>Publicado: {new Date(job.published_at).toLocaleDateString('es-CL')}</span>
                 <span>Vigencia: 21 días (Google for Jobs)</span>
               </div>
             </div>
 
             {/* Descripción de Funciones */}
-            <div className="p-8 sm:p-10 rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5">
+            <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
               <h2 className="text-sm font-black uppercase tracking-[0.25em] text-primary flex items-center gap-2">
                 <Briefcase className="h-4 w-4" /> Descripción del Cargo y Responsabilidades
               </h2>
-              <div className="text-sm text-foreground/85 leading-relaxed space-y-4 whitespace-pre-line font-medium">
+              <div className="text-sm text-foreground/85 leading-relaxed space-y-4 whitespace-pre-line font-medium break-words">
                 {job.description}
               </div>
             </div>
 
             {/* Requisitos del Cargo */}
             {job.requirements && job.requirements.length > 0 && (
-              <div className="p-8 sm:p-10 rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5">
+              <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
                 <h2 className="text-sm font-black uppercase tracking-[0.25em] text-foreground flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Requisitos y Competencias Técnicas
                 </h2>
@@ -244,7 +244,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                   {job.requirements.map((req, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-sm text-muted-foreground font-medium">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
-                      <span>{req}</span>
+                      <span className="break-words">{req}</span>
                     </li>
                   ))}
                 </ul>
@@ -253,15 +253,15 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
             {/* Beneficios */}
             {job.benefits && job.benefits.length > 0 && (
-              <div className="p-8 sm:p-10 rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5">
+              <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
                 <h2 className="text-sm font-black uppercase tracking-[0.25em] text-foreground flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" /> Beneficios y Condiciones de Faena
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {job.benefits.map((ben, idx) => (
-                    <div key={idx} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-xs font-bold text-zinc-800 flex items-center gap-2.5">
+                    <div key={idx} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-xs font-bold text-zinc-800 flex items-center gap-2.5 box-border min-w-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span>{ben}</span>
+                      <span className="break-words">{ben}</span>
                     </div>
                   ))}
                 </div>
@@ -291,7 +291,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               const hasAnyContact = hasEmail || hasWhatsApp || hasAppUrl;
 
               return (
-                <div className="p-8 rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-6">
+                <div className="p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-6 box-border overflow-hidden">
                   <div className="space-y-2">
                     <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
                       Canal de Postulación Directa
