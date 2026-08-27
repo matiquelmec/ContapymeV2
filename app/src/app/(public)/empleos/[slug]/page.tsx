@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getJobBySlug } from "@/actions/jobs";
 import { JobSalaryCalculator } from "@/components/jobs/job-salary-calculator";
+import { JobEmailButton } from "@/components/jobs/job-email-button";
 
 import type { Metadata } from "next";
 
@@ -312,14 +313,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                       </a>
                     )}
 
-                    {/* Botón Email */}
-                    {hasEmail && (
-                      <a
-                        href={`mailto:${job.contact_email?.trim()}?subject=Postulaci%C3%B3n%20Cargo%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
-                        className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-zinc-900 text-white font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all"
-                      >
-                        <Mail className="h-4 w-4" /> Enviar Currículum (Email)
-                      </a>
+                    {/* Botón Email Inteligente: Soporta Gmail Web, Outlook Web, app local y copia al portapapeles */}
+                    {hasEmail && job.contact_email && (
+                      <JobEmailButton
+                        email={job.contact_email}
+                        jobTitle={job.title}
+                        companyName={job.company_name}
+                        variant="full"
+                      />
                     )}
 
                     {/* Botón Portal Oficial */}

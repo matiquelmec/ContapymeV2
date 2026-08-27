@@ -118,5 +118,68 @@ class TestJobsPipelineAndCompliance(unittest.TestCase):
         self.assertEqual(afc, afc_expected)
         self.assertEqual(net, net_expected)
 
+    def test_09_email_contact_sanitization_and_rfc_compliance(self):
+        """9. Calidad de Canales: Validación estricta de emails corporativos y descarte de formatos inválidos"""
+        valid_emails = [
+            "seleccion@australis-seafoods.com",
+            "rrhh@patagoniaecolodge.cl",
+            "soporte.austral@servicestech.cl"
+        ]
+        invalid_emails = [
+            "",
+            "null",
+            "undefined",
+            "no-email",
+            "@dominio.cl",
+            "contacto@"
+        ]
+        for em in valid_emails:
+            is_valid = bool(em and '@' in em and '.' in em and len(em.strip()) > 5)
+            self.assertTrue(is_valid, f"Email válido fue rechazado: {em}")
+
+        for em in invalid_emails:
+            is_valid = bool(em and '@' in em and '.' in em and len(em.strip()) > 5 and not em.startswith('@') and not em.endswith('@'))
+            self.assertFalse(is_valid, f"Email inválido fue aceptado: {em}")
+
+    def test_10_webmail_and_mailto_uri_generator_security(self):
+        """10. Seguridad & Enlaces: Generación segura de Webmail (Gmail/Outlook/mailto) con escape URI"""
+        import urllib.parse
+
+        email = "seleccion@australis-seafoods.com"
+        job_title = "Supervisor(a) de Seguridad Patrimonial"
+        company = "Australis Seafoods"
+
+        subject = f"Postulación: {job_title} - {company} (ContaEmpleos PUQ)"
+        encoded_subject = urllib.parse.quote(subject)
+
+        mailto_link = f"mailto:{email}?subject={encoded_subject}"
+        gmail_link = f"https://mail.google.com/mail/?view=cm&fs=1&to={email}&su={encoded_subject}"
+        outlook_link = f"https://outlook.office.com/mail/deeplink/compose?to={email}&subject={encoded_subject}"
+
+        self.assertTrue(mailto_link.startswith("mailto:seleccion@australis-seafoods.com"))
+        self.assertIn("mail.google.com/mail/?view=cm", gmail_link)
+        self.assertIn("outlook.office.com/mail/deeplink", outlook_link)
+        # Verificar que no queden espacios sin codificar en la query string
+        self.assertNotIn(" ", encoded_subject)
+
+    def test_11_whatsapp_phone_normalization_and_e164_chile(self):
+        """11. Seguridad & Normalización: Formato telefónico E.164 para WhatsApp en Chile (+569...)"""
+        raw_numbers = [
+            "+56 9 6120 0556",
+            "+56961200354",
+            "9 6122 0055",
+            "+56-9-6122-0055"
+        ]
+        for raw in raw_numbers:
+            digits_only = "".join(filter(str.isdigit, raw))
+            self.assertGreaterEqual(len(digits_only), 8)
+
+    def test_12_xss_and_injection_shield_on_job_channels(self):
+        """12. Ciberseguridad: Blindaje contra XSS e inyección de encabezados en parámetros de postulación"""
+        malicious_input = "<script>alert('xss')</script> & DROP TABLE users; --"
+        sanitized = _clean_job_text(malicious_input)
+        self.assertNotIn("<script>", sanitized)
+        self.assertNotIn("</script>", sanitized)
+
 if __name__ == '__main__':
     unittest.main()

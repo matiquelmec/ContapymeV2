@@ -24,6 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { JobEmailButton } from '@/components/jobs/job-email-button'
 import type { JobPosting } from '@/actions/jobs'
 
 interface JobsBoardClientProps {
@@ -260,16 +261,14 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {/* Botón de Email: Solo si hay email válido */}
-                      {hasEmail && (
-                        <a
-                          href={`mailto:${job.contact_email?.trim()}?subject=Postulaci%C3%B3n%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 text-white text-[10px] font-black uppercase tracking-wider hover:bg-zinc-800 shadow-sm transition-all active:scale-95"
-                          title={`Enviar CV a ${job.contact_email}`}
-                        >
-                          <Mail className="h-3 w-3" />
-                          <span>Email</span>
-                        </a>
+                      {/* Botón de Email Inteligente: Abre modal con Gmail, Outlook, mailto y copia directa */}
+                      {hasEmail && job.contact_email && (
+                        <JobEmailButton
+                          email={job.contact_email}
+                          jobTitle={job.title}
+                          companyName={job.company_name}
+                          variant="compact"
+                        />
                       )}
 
                       {/* Botón de WhatsApp: Solo si hay número válido */}
