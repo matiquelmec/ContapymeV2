@@ -1,8 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { getJobBySlug } from '@/actions/jobs'
 
-export const runtime = 'edge'
-
 interface RouteProps {
   params: Promise<{ slug: string }>
 }
