@@ -228,6 +228,40 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
 
   return (
     <div className="space-y-6">
+      {/* 💡 GUÍA EDUCATIVA Y BUENAS PRÁCTICAS REGIONALES */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-primary/10 border border-emerald-500/20 space-y-3">
+        <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-black text-xs uppercase tracking-wider">
+          <Sparkles className="h-4 w-4 text-emerald-600" />
+          <span>Guía Rápida de Empleabilidad en Magallanes & Faenas</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
+          <div className="p-3 rounded-2xl bg-white/80 border border-emerald-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              1. Sueldo Líquido Austral
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              En Magallanes, las ofertas con remuneración líquida explícita reciben hasta un 40% más de candidatos calificados.
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/80 border border-emerald-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              2. Blindaje Legal Art. 2° DT
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              El sistema audita automáticamente tu texto para evitar multas de la DT por límites de edad, fotos o certificados DICOM.
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/80 border border-emerald-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              3. Banners IA para Instagram
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              Descarga anuncios 1:1 y 9:16 con tu logo y el link copiado al portapapeles para el Sticker de Enlace de Instagram.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 📊 RESUMEN EJECUTIVO */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="rounded-3xl border-border/60 shadow-sm bg-white">

@@ -159,6 +159,40 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
 
   return (
     <div className="space-y-6">
+      {/* 💡 GUÍA EDUCATIVA EDITORIAL */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-primary/10 border border-blue-500/20 space-y-3">
+        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-black text-xs uppercase tracking-wider">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          <span>Guía de Difusión de Prensa para Empresas en Magallanes</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
+          <div className="p-3 rounded-2xl bg-white/80 border border-blue-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              1. Redacción Periodística IA
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              Escribe tus ideas en bruto y pulsa "Mejorar con IA" para que el motor periodístico estructure tu titular y resumen.
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/80 border border-blue-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              2. Posicionamiento Austral
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              Tus notas sobre inauguraciones, convenios y promociones se difunden a la comunidad de Punta Arenas y la región.
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/80 border border-blue-500/10 space-y-1 shadow-2xs">
+            <strong className="text-foreground font-black text-[11px] uppercase tracking-wide block">
+              3. Portada Inmediata
+            </strong>
+            <p className="text-[11px] leading-relaxed">
+              Al publicar, tu nota se indexa en Google News y en la sección de actualidad del portal regional ContaPymePUQ.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 📊 RESUMEN */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="rounded-3xl border-border/60 shadow-sm bg-white">
