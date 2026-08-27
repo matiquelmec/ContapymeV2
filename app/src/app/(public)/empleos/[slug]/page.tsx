@@ -1,20 +1,18 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { 
-  Briefcase, 
+  Building2, 
   MapPin, 
   Clock, 
   DollarSign, 
-  ChevronLeft, 
-  Building2, 
-  BadgeCheck, 
-  Send, 
-  Mail, 
-  ShieldCheck, 
+  Briefcase, 
   CheckCircle2, 
-  Sparkles,
-  Phone,
-  ExternalLink
+  ShieldCheck, 
+  BadgeCheck, 
+  ChevronLeft, 
+  Send, 
+  Sparkles, 
+  ExternalLink 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getJobBySlug } from "@/actions/jobs";
@@ -92,34 +90,24 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     notFound();
   }
 
-  // Mapeo EmploymentType Schema.org
-  const employmentTypeMap: Record<string, string> = {
-    "Indefinido": "FULL_TIME",
-    "Plazo Fijo": "TEMPORARY",
-    "Faena / Obra": "CONTRACTOR",
-    "Part-Time": "PART_TIME",
-    "Honorarios": "CONTRACTOR",
-    "Práctica": "INTERN"
-  };
-
+  // Schema.org JobPosting estructurado para Google for Jobs
   const schemaOrgJob = {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
     "title": job.title,
-    "description": `<p>${job.description.replace(/\n/g, "<br/>")}</p>`,
+    "description": job.description,
     "identifier": {
       "@type": "PropertyValue",
-      "name": "ContaEmpleos Magallanes",
-      "value": `PUQ-${job.id.slice(0, 8)}`
+      "name": job.company_name,
+      "value": job.slug
     },
     "datePosted": job.published_at,
-    "validThrough": job.expires_at,
-    "employmentType": employmentTypeMap[job.job_type] || "FULL_TIME",
+    "validThrough": job.expires_at || new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+    "employmentType": job.job_type === "Jornada Completa" ? "FULL_TIME" : "PART_TIME",
     "hiringOrganization": {
       "@type": "Organization",
       "name": job.company_name,
-      "sameAs": "https://contapymepuq.cl",
-      "logo": "https://contapymepuq.cl/logo-contapyme.png"
+      "sameAs": "https://contapymepuq.cl"
     },
     "jobLocation": {
       "@type": "Place",
@@ -144,71 +132,67 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     } : {})
   };
 
-  const whatsappUrl = job.contact_whatsapp
-    ? `https://wa.me/${job.contact_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-        `Hola, me interesa postular al cargo de '${job.title}' en ${job.company_name} que vi publicado en ContaEmpleos Magallanes.`
-      )}`
-    : null;
-
   return (
-    <div className="py-12 sm:py-16">
+    <div className="py-6 sm:py-12 lg:py-16">
       {/* Schema.org JobPosting JSON-LD para Google for Jobs */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgJob) }}
       />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl space-y-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl space-y-6 sm:space-y-10">
         {/* NAVEGACIÓN BREADCRUMB & ACCIONES SOCIALES */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-            <Link href="/empleos" className="hover:text-primary transition-colors">Empleos Magallanes</Link>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-muted-foreground min-w-0">
+            <Link href="/empleos" className="hover:text-primary transition-colors shrink-0">
+              Empleos Magallanes
+            </Link>
             <span>/</span>
-            <span>{job.location}</span>
+            <span className="shrink-0">{job.location}</span>
             <span>/</span>
-            <span className="text-foreground truncate max-w-xs">{job.title}</span>
+            <span className="text-foreground truncate max-w-[180px] sm:max-w-xs">{job.title}</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <JobSocialCardGenerator job={job} />
             <Link href="/empleos">
               <Button variant="ghost" size="sm" className="text-xs font-black uppercase tracking-wider gap-1.5 rounded-2xl h-11 px-4">
-                <ChevronLeft className="h-4 w-4" /> Volver a Empleos
+                <ChevronLeft className="h-4 w-4" /> Volver
               </Button>
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* 📋 COLUMNA PRINCIPAL: DETALLE DE LA OFERTA (8/12) */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-8 space-y-6 sm:space-y-8">
             {/* Header del Aviso */}
-            <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-xl shadow-primary/5 space-y-6 box-border overflow-hidden">
+            <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-xl shadow-primary/5 space-y-5 sm:space-y-6 box-border overflow-hidden">
               <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    <span className="text-foreground font-black">{job.company_name}</span>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-muted-foreground min-w-0">
+                    <Building2 className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-foreground font-black truncate">{job.company_name}</span>
                     {job.is_verified && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">
                         <BadgeCheck className="h-3 w-3" /> Verificada
                       </span>
                     )}
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest px-3.5 py-1.5 bg-zinc-100 rounded-xl text-zinc-700">
+                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider px-3 py-1.5 bg-zinc-100 rounded-xl text-zinc-700 shrink-0">
                     <MapPin className="h-3 w-3 inline mr-1 text-primary" /> {job.location}
                   </span>
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tight text-foreground leading-tight break-words">
+                <h1 className="text-xl sm:text-3xl lg:text-4xl font-black italic uppercase tracking-tight text-foreground leading-tight break-words">
                   {job.title}
                 </h1>
               </div>
 
               {/* Badges de Modalidad y Sueldo */}
-              <div className="flex flex-wrap gap-2.5 pt-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {job.salary_raw && (
-                  <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
                     <DollarSign className="h-3.5 w-3.5" />
                     <span>{job.salary_raw}</span>
                   </div>
@@ -234,25 +218,25 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             </div>
 
             {/* Descripción de Funciones */}
-            <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
-              <h2 className="text-sm font-black uppercase tracking-[0.25em] text-primary flex items-center gap-2">
-                <Briefcase className="h-4 w-4" /> Descripción del Cargo y Responsabilidades
+            <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-4 sm:space-y-5 box-border overflow-hidden">
+              <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest text-primary flex items-center gap-2">
+                <Briefcase className="h-4 w-4 shrink-0" /> Descripción del Cargo y Responsabilidades
               </h2>
-              <div className="text-sm text-foreground/85 leading-relaxed space-y-4 whitespace-pre-line font-medium break-words">
+              <div className="text-xs sm:text-sm text-foreground/85 leading-relaxed space-y-4 whitespace-pre-line font-medium break-words">
                 {job.description}
               </div>
             </div>
 
             {/* Requisitos del Cargo */}
             {job.requirements && job.requirements.length > 0 && (
-              <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
-                <h2 className="text-sm font-black uppercase tracking-[0.25em] text-foreground flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Requisitos y Competencias Técnicas
+              <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-4 sm:space-y-5 box-border overflow-hidden">
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest text-foreground flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> Requisitos y Competencias Técnicas
                 </h2>
                 <ul className="space-y-3">
                   {job.requirements.map((req, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-muted-foreground font-medium">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-muted-foreground font-medium">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                       <span className="break-words">{req}</span>
                     </li>
                   ))}
@@ -262,13 +246,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
             {/* Beneficios */}
             {job.benefits && job.benefits.length > 0 && (
-              <div className="p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-5 box-border overflow-hidden">
-                <h2 className="text-sm font-black uppercase tracking-[0.25em] text-foreground flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Beneficios y Condiciones de Faena
+              <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-4 sm:space-y-5 box-border overflow-hidden">
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary shrink-0" /> Beneficios y Condiciones de Faena
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {job.benefits.map((ben, idx) => (
-                    <div key={idx} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-xs font-bold text-zinc-800 flex items-center gap-2.5 box-border min-w-0">
+                    <div key={idx} className="p-3.5 sm:p-4 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-xs font-bold text-zinc-800 flex items-center gap-2.5 box-border min-w-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                       <span className="break-words">{ben}</span>
                     </div>
@@ -300,33 +284,34 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               const hasAnyContact = hasEmail || hasWhatsApp || hasAppUrl;
 
               return (
-                <div className="p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-6 box-border overflow-hidden">
-                  <div className="space-y-2">
-                    <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
+                <div className="p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-white border border-primary/20 shadow-2xl shadow-primary/10 space-y-5 sm:space-y-6 box-border overflow-hidden">
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary block">
                       Canal de Postulación Directa
                     </span>
-                    <h3 className="text-xl font-black uppercase tracking-tight italic">
+                    <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight italic">
                       ¿Te interesa este cargo?
                     </h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       Comunícate con el equipo de selección de <strong>{job.company_name}</strong>.
                     </p>
                   </div>
 
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-2.5 pt-1">
                     {/* Botón WhatsApp */}
                     {whatsappUrl && (
                       <a
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                        className="w-full flex items-center justify-center gap-2 py-3.5 sm:py-4 px-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95 text-center box-border"
                       >
-                        <Send className="h-4 w-4" /> Postular por WhatsApp
+                        <Send className="h-4 w-4 shrink-0" /> 
+                        <span className="truncate">Postular por WhatsApp</span>
                       </a>
                     )}
 
-                    {/* Botón Email Inteligente: Soporta Gmail Web, Outlook Web, app local y copia al portapapeles */}
+                    {/* Botón Email Inteligente */}
                     {hasEmail && job.contact_email && (
                       <JobEmailButton
                         email={job.contact_email}
@@ -342,17 +327,18 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                         href={job.application_url?.trim()}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all text-center box-border ${
                           !hasWhatsApp && !hasEmail
                             ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20'
                             : 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200 border border-zinc-200'
                         }`}
                       >
-                        <ExternalLink className="h-4 w-4" /> Ir a la Fuente Oficial ({job.source_name || 'BNE'})
+                        <ExternalLink className="h-4 w-4 shrink-0" /> 
+                        <span className="truncate">Fuente Oficial ({job.source_name || 'BNE'})</span>
                       </a>
                     )}
 
-                    {/* Aviso informativo si no hay contacto digital directo */}
+                    {/* Aviso si no hay contacto directo */}
                     {!hasAnyContact && (
                       <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-muted-foreground text-center font-medium">
                         Postulación sujeta a las indicaciones detalladas en la descripción del aviso.
@@ -364,27 +350,27 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             })()}
 
             {/* Sello de Cumplimiento Legal Art. 2° */}
-            <div className="p-6 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-2.5 box-border">
               <div className="flex items-center gap-2 text-emerald-800 font-black text-xs uppercase tracking-wider">
                 <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>Aviso Auditado & Cumplimiento Legal</span>
+                <span>Aviso Auditado & Legal</span>
               </div>
               <p className="text-[11px] text-emerald-900/80 leading-relaxed font-medium">
-                Esta publicación fue validada bajo el <strong>Artículo 2° del Código del Trabajo</strong> y la <strong>Ley N° 20.609</strong>. Libre de requisitos discriminatorios y sin intermediación de cobros.
+                Esta publicación fue validada bajo el <strong>Artículo 2° del Código del Trabajo</strong> y la <strong>Ley N° 20.609</strong>. Libre de requisitos discriminatorios.
               </p>
             </div>
 
             {/* CTA para Pymes */}
-            <div className="p-6 rounded-2xl bg-zinc-100 border border-zinc-200 space-y-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-zinc-100 border border-zinc-200 space-y-2.5 box-border">
               <div className="flex items-center gap-2 text-zinc-900 font-black text-xs uppercase tracking-wider">
                 <Building2 className="h-4 w-4 text-primary shrink-0" />
                 <span>¿Eres una Pyme en Magallanes?</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Publica tus ofertas de trabajo gratis y genera automáticamente los contratos de trabajo bajo el Art. 10 con el ecosistema ContaPyme.
+                Publica tus ofertas de trabajo gratis y genera automáticamente los contratos de trabajo bajo el Art. 10.
               </p>
               <Link href="/contacto" className="block pt-1">
-                <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-wider rounded-xl">
+                <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-wider rounded-xl h-9">
                   Publicar una Vacante
                 </Button>
               </Link>
