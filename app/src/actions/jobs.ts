@@ -229,7 +229,7 @@ export async function getJobsStats() {
 }
 
 /**
- * 🏢 Obtiene las vacantes pertenecientes a la empresa u organización conectada.
+ * 🏢 Obtiene exclusivamente las vacantes pertenecientes a la empresa u organización conectada.
  */
 export async function getCompanyJobsAction() {
   try {
@@ -240,40 +240,40 @@ export async function getCompanyJobsAction() {
     }
 
     const adminDb = createAdminClient()
-    const { data: profile } = await adminDb
-      .from('profiles')
-      .select('id, full_name, role, plan')
-      .eq('id', user.id)
-      .single()
 
-    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+    // Obtener las organizaciones a las que pertenece el usuario
+    const { data: orgMembers } = await adminDb
+      .from('organization_members')
+      .select('organization_id, organizations(nombre, rut)')
+      .eq('user_id', user.id)
+
+    const allowedNames = new Set<string>()
+    const allowedRuts = new Set<string>()
+
+    orgMembers?.forEach((m: any) => {
+      if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim())
+      if (m.organizations?.rut) allowedRuts.add(m.organizations.rut.trim())
+    })
+
+    // Si el usuario no tiene empresa u organización creada, no debe ver vacantes de terceros en su panel
+    if (allowedNames.size === 0 && allowedRuts.size === 0) {
+      return { success: true, data: [] }
+    }
+
+    const namesList = Array.from(allowedNames)
+    const rutsList = Array.from(allowedRuts)
 
     let query = adminDb
       .from('job_postings')
       .select('*')
       .order('created_at', { ascending: false })
 
-    // Si NO es superadmin, filtrar estrictamente por su empresa u organización
-    if (!isAdmin) {
-      const { data: orgMembers } = await adminDb
-        .from('organization_members')
-        .select('organization_id, organizations(nombre, rut)')
-        .eq('user_id', user.id)
-
-      const allowedNames = new Set<string>()
-      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
-      
-      orgMembers?.forEach((m: any) => {
-        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
-      })
-
-      const namesList = Array.from(allowedNames)
-      if (namesList.length === 0) {
-        return { success: true, data: [] }
-      }
-
-      // Filtrar empleos por las empresas del usuario
+    if (namesList.length > 0 && rutsList.length > 0) {
+      query = query.or(`company_name.in.(${namesList.map((n) => `"${n}"`).join(',')}),company_rut.in.(${rutsList.map((r) => `"${r}"`).join(',')})`)
+    } else if (namesList.length > 0) {
       query = query.in('company_name', namesList)
+    } else {
+      query = query.in('company_rut', rutsList)
     }
 
     const { data, error } = await query

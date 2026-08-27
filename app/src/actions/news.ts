@@ -644,26 +644,26 @@ export async function getCompanyNewsAction() {
     }
 
     const supabaseAdmin = createAdminClient()
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('id, full_name, role, plan')
-      .eq('id', user.id)
-      .single()
+    const { data: orgMembers } = await supabaseAdmin
+      .from('organization_members')
+      .select('organization_id, organizations(nombre)')
+      .eq('user_id', user.id)
 
-    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+    const allowedSources = new Set<string>()
+    orgMembers?.forEach((m: any) => {
+      if (m.organizations?.nombre) allowedSources.add(m.organizations.nombre.trim())
+    })
 
-    let query = supabaseAdmin
-      .from('regional_news')
-      .select('*')
-      .order('published_at', { ascending: false })
-
-    if (!isAdmin) {
-      const allowedSources = ['Comunicado de Empresa']
-      if (profile?.full_name) allowedSources.push(profile.full_name.trim())
-      query = query.in('source_name', allowedSources)
+    if (allowedSources.size === 0) {
+      return { success: true, data: [] }
     }
 
-    const { data, error } = await query.limit(30)
+    const { data, error } = await supabaseAdmin
+      .from('regional_news')
+      .select('*')
+      .in('source_name', Array.from(allowedSources))
+      .order('published_at', { ascending: false })
+      .limit(30)
 
     if (error) {
       return { success: false, error: error.message, data: [] }
