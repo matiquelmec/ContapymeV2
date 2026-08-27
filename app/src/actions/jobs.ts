@@ -229,7 +229,7 @@ export async function getJobsStats() {
 }
 
 /**
- * 🏢 Obtiene todas las vacantes creadas por la empresa u organización conectada.
+ * 🏢 Obtiene las vacantes pertenecientes a la empresa u organización conectada.
  */
 export async function getCompanyJobsAction() {
   try {
@@ -240,10 +240,43 @@ export async function getCompanyJobsAction() {
     }
 
     const adminDb = createAdminClient()
-    const { data, error } = await adminDb
+    const { data: profile } = await adminDb
+      .from('profiles')
+      .select('id, full_name, role, plan')
+      .eq('id', user.id)
+      .single()
+
+    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+
+    let query = adminDb
       .from('job_postings')
       .select('*')
       .order('created_at', { ascending: false })
+
+    // Si NO es superadmin, filtrar estrictamente por su empresa u organización
+    if (!isAdmin) {
+      const { data: orgMembers } = await adminDb
+        .from('organization_members')
+        .select('organization_id, organizations(nombre, rut)')
+        .eq('user_id', user.id)
+
+      const allowedNames = new Set<string>()
+      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
+      
+      orgMembers?.forEach((m: any) => {
+        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
+      })
+
+      const namesList = Array.from(allowedNames)
+      if (namesList.length === 0) {
+        return { success: true, data: [] }
+      }
+
+      // Filtrar empleos por las empresas del usuario
+      query = query.in('company_name', namesList)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       return { success: false, error: error.message, data: [] }
@@ -357,7 +390,7 @@ export async function createJobAction(formData: {
 }
 
 /**
- * 🔄 Actualiza una vacante existente.
+ * 🔄 Actualiza una vacante existente asegurando autorización multi-tenant.
  */
 export async function updateJobAction(id: string, formData: Partial<JobPosting>) {
   try {
@@ -368,6 +401,45 @@ export async function updateJobAction(id: string, formData: Partial<JobPosting>)
     }
 
     const adminDb = createAdminClient()
+
+    // 1. Obtener la vacante y verificar propiedad
+    const { data: job, error: jobErr } = await adminDb
+      .from('job_postings')
+      .select('id, company_name, company_rut')
+      .eq('id', id)
+      .single()
+
+    if (jobErr || !job) {
+      return { success: false, error: 'La vacante solicitada no existe.' }
+    }
+
+    // 2. Verificar rol y permisos del usuario
+    const { data: profile } = await adminDb
+      .from('profiles')
+      .select('id, full_name, role, plan')
+      .eq('id', user.id)
+      .single()
+
+    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+
+    if (!isAdmin) {
+      const { data: orgMembers } = await adminDb
+        .from('organization_members')
+        .select('organization_id, organizations(nombre, rut)')
+        .eq('user_id', user.id)
+
+      const allowedNames = new Set<string>()
+      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
+      orgMembers?.forEach((m: any) => {
+        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
+      })
+
+      const isOwner = allowedNames.has(job.company_name?.trim().toLowerCase())
+      if (!isOwner) {
+        return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para modificar vacantes de otra empresa.' }
+      }
+    }
+
     const { data, error } = await adminDb
       .from('job_postings')
       .update(formData)
@@ -389,7 +461,7 @@ export async function updateJobAction(id: string, formData: Partial<JobPosting>)
 }
 
 /**
- * 🗑️ Elimina o finaliza una vacante.
+ * 🗑️ Elimina o finaliza una vacante asegurando autorización multi-tenant.
  */
 export async function deleteJobAction(id: string) {
   try {
@@ -400,6 +472,45 @@ export async function deleteJobAction(id: string) {
     }
 
     const adminDb = createAdminClient()
+
+    // 1. Obtener la vacante
+    const { data: job, error: jobErr } = await adminDb
+      .from('job_postings')
+      .select('id, company_name, company_rut')
+      .eq('id', id)
+      .single()
+
+    if (jobErr || !job) {
+      return { success: false, error: 'La vacante solicitada no existe.' }
+    }
+
+    // 2. Verificar rol y permisos
+    const { data: profile } = await adminDb
+      .from('profiles')
+      .select('id, full_name, role, plan')
+      .eq('id', user.id)
+      .single()
+
+    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+
+    if (!isAdmin) {
+      const { data: orgMembers } = await adminDb
+        .from('organization_members')
+        .select('organization_id, organizations(nombre, rut)')
+        .eq('user_id', user.id)
+
+      const allowedNames = new Set<string>()
+      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
+      orgMembers?.forEach((m: any) => {
+        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
+      })
+
+      const isOwner = allowedNames.has(job.company_name?.trim().toLowerCase())
+      if (!isOwner) {
+        return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para eliminar vacantes de otra empresa.' }
+      }
+    }
+
     const { error } = await adminDb
       .from('job_postings')
       .delete()

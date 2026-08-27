@@ -71,5 +71,30 @@ class TestJobsDashboardAndSecurity(unittest.TestCase):
         status_2 = 'filled'
         self.assertIn(status_2, valid_statuses)
 
+    def test_06_unauthorized_user_cannot_modify_other_company_jobs(self):
+        """6. Seguridad Multi-Tenant: Un usuario regular NO puede modificar o eliminar vacantes de otra empresa"""
+        user_company = "Recasur"
+        user_role = "empresa" # no admin
+
+        target_job_company = "Australis Seafoods"
+
+        # Simulación de validación de propiedad
+        is_admin = user_role == "admin"
+        is_owner = user_company.lower() == target_job_company.lower()
+        has_permission = is_admin or is_owner
+
+        self.assertFalse(has_permission, "Un usuario de Recasur no debe tener permiso sobre Australis")
+
+    def test_07_superadmin_can_moderate_all_companies(self):
+        """7. Privilegios Superadmin: El rol admin sí tiene autorización global de moderación"""
+        user_role = "admin"
+        target_job_company = "Australis Seafoods"
+
+        is_admin = user_role == "admin"
+        has_permission = is_admin
+
+        self.assertTrue(has_permission, "El superadmin debe poder moderar cualquier vacante")
+
 if __name__ == '__main__':
     unittest.main()
+

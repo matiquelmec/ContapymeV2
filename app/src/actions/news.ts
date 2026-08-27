@@ -633,7 +633,7 @@ export async function createCompanyNewsAction(newsData: {
 }
 
 /**
- * 📰 Obtiene los comunicados y noticias de la empresa conectada.
+ * 📰 Obtiene los comunicados y noticias de la empresa u organización conectada.
  */
 export async function getCompanyNewsAction() {
   try {
@@ -644,11 +644,26 @@ export async function getCompanyNewsAction() {
     }
 
     const supabaseAdmin = createAdminClient()
-    const { data, error } = await supabaseAdmin
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, role, plan')
+      .eq('id', user.id)
+      .single()
+
+    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+
+    let query = supabaseAdmin
       .from('regional_news')
       .select('*')
       .order('published_at', { ascending: false })
-      .limit(30)
+
+    if (!isAdmin) {
+      const allowedSources = ['Comunicado de Empresa']
+      if (profile?.full_name) allowedSources.push(profile.full_name.trim())
+      query = query.in('source_name', allowedSources)
+    }
+
+    const { data, error } = await query.limit(30)
 
     if (error) {
       return { success: false, error: error.message, data: [] }
@@ -659,4 +674,5 @@ export async function getCompanyNewsAction() {
     return { success: false, error: err.message, data: [] }
   }
 }
+
 
