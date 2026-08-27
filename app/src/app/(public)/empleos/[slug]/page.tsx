@@ -59,11 +59,20 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
       type: "article",
       locale: "es_CL",
       siteName: "ContaEmpleos PUQ",
+      images: [
+        {
+          url: `/api/og/job/${job.slug}`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        }
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [`/api/og/job/${job.slug}`],
     },
     robots: {
       index: true,
