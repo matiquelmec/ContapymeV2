@@ -62,5 +62,22 @@ class TestJobBannerGeneration(unittest.TestCase):
         self.assertIn("#TrabajoMagallanes", hashtags)
         self.assertIn("#ContaEmpleosPUQ", hashtags)
 
+    def test_05_job_ad_prompt_spec_json_integrity(self):
+        """5. AI Prompt Spec: Validar que el archivo job-ad-prompt-spec.json cumpla con el estándar de anuncio publicitario"""
+        spec_path = os.path.join(
+            os.path.dirname(__file__), '..', 'app', 'public', 'branding', 'job-ad-prompt-spec.json'
+        )
+        self.assertTrue(os.path.exists(spec_path), "job-ad-prompt-spec.json no existe")
+        with open(spec_path, 'r', encoding='utf-8') as f:
+            spec = json.load(f)
+
+        self.assertEqual(spec["tarea"], "generacion_oferta_empleo_publicitaria")
+        self.assertIn("marca_principal", spec)
+        self.assertIn("elementos_graficos", spec)
+        self.assertIn("contenido_texto", spec)
+        self.assertIn("estilo_y_composicion", spec)
+        self.assertIn("prompt_ejecucion_ia_generativa", spec)
+        self.assertIn("logo_contapyme", spec["elementos_graficos"])
+
 if __name__ == '__main__':
     unittest.main()

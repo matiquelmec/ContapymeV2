@@ -1,0 +1,68 @@
+{
+  "tarea": "generacion_oferta_empleo_publicitaria",
+  "herramienta": "ContaBanner AI Pro / Nano Banana Pro",
+  "parametros_tecnicos": {
+    "dimensiones": "1080x1080",
+    "relacion_aspecto": "1:1",
+    "formato_salida": "PNG",
+    "calidad_renderizado": "2x Retina High DPI"
+  },
+  "marca_principal": {
+    "nombre": "ContaPymePUQ / ContaEmpleos Magallanes",
+    "region": "Magallanes y de la Antártica Chilena",
+    "paleta_de_colores_hex": {
+      "azul_patagonia_profundo": "#0F172A",
+      "azul_electrico_corporativo": "#2563EB",
+      "verde_esmeralda_sueldo": "#10B981",
+      "celeste_glaciar": "#38BDF8",
+      "indigo_faena": "#6366F1",
+      "blanco_nieve": "#FFFFFF"
+    },
+    "tipografia_corporativa": {
+      "titulos": "Plus Jakarta Sans, Impact, sans-serif (Font Weight 900 Italic)",
+      "textos_y_datos": "Inter, system-ui, sans-serif",
+      "moneda_y_cifras": "JetBrains Mono, ui-monospace, monospace"
+    }
+  },
+  "elementos_graficos": {
+    "logo_contapyme": {
+      "url_recurso": "https://contapymepuq.cl/logo-contapyme.png",
+      "instruccion_modelo": "UTILIZAR EL LOGO OFICIAL CONTAPYMEPUQ. Colocar exactamente este archivo en la esquina superior izquierda sobre el fondo azul noche (#0F172A), manteniendo la relación de aspecto y asegurando alto contraste con destellos cyan (#38BDF8)."
+    },
+    "badge_contaempleos_regional": {
+      "texto": "CONTAEMPLEOS MAGALLANES",
+      "instruccion_modelo": "Colocar una pastilla/badge rectangular curvada en la esquina superior derecha con fondo '#10B981' con 15% de opacidad y borde verde esmeralda (#10B981), indicando '📍 Punta Arenas / Magallanes'."
+    },
+    "sello_certificacion_legal": {
+      "icono": "Escudo verificado",
+      "texto": "Aviso Auditado Art. 2° Código del Trabajo",
+      "posicion": "Esquina inferior izquierda"
+    },
+    "codigo_qr_dinamico": {
+      "instruccion_modelo": "Generar e incrustar el código QR oficial de postulación en la esquina inferior derecha con marco blanco de 4px para escaneo directo desde WhatsApp e Instagram."
+    }
+  },
+  "contenido_texto": {
+    "llamado_accion_principal": "¡BUSCAMOS TU TALENTO EN MAGALLANES!",
+    "empresa_contratante": "[AQUÍ VA EL NOMBRE DE LA EMPRESA]",
+    "titulo_cargo": "[AQUÍ VA EL NOMBRE DEL CARGO]",
+    "sueldo_destacado": "💰 [SUELDO LÍQUIDO O RANGO OFERTADO]",
+    "jornada_turno": "⏱️ [JORNADA / TURNO: EJ. 7x7, 40 HORAS, COMPLETA]",
+    "requisitos_principales": [
+      "✓ [Requisito 1: Ej. Residencia en Punta Arenas o Natales]",
+      "✓ [Requisito 2: Ej. Experiencia en el área o faena]",
+      "✓ [Requisito 3: Ej. Disponibilidad inmediata]"
+    ],
+    "canales_contacto": {
+      "whatsapp": "📲 WhatsApp Selección: [+56 9 XXXX XXXX]",
+      "email": "✉️ Enviar CV a: [postulaciones@empresa.cl]",
+      "portal_web": "🔗 https://contapymepuq.cl/empleos/[slug]"
+    }
+  },
+  "estilo_y_composicion": {
+    "fotografia_fondo": "Fotografía corporativa o industrial de la Patagonia Austral (puerto marítimo, logística, faena o entorno empresarial magallánico) tratada con viñeta oscura azul noche (#0F172A) y degradado al 85% para máxima legibilidad tipográfica.",
+    "estilo_visual": "Banner publicitario de alto impacto visual para redes sociales. Jerarquía nítida: encabezado con logos, cuerpo central con cargo en tipografía extra bold de gran tamaño, cápsula destacada en Verde Esmeralda (#10B981) para la remuneración, viñetas legibles y pie de aviso con canales de postulación inmediata.",
+    "layout": "Composición profesional para Social Media (1080x1080). Logos corporativos en la parte superior; tipografía alineada a la izquierda; badges informativos de sueldo y turno con bordes suaves; bloque inferior con código QR y llamadas a la acción directas."
+  },
+  "prompt_ejecucion_ia_generativa": "Genera un anuncio publicitario de empleo de alta definición en formato cuadrado 1080x1080 para la Región de Magallanes. Es obligatorio integrar el logotipo de ContaPymePUQ en la esquina superior izquierda y la etiqueta ContaEmpleos Magallanes en la derecha. Utiliza la paleta de colores corporativa (fondo #0F172A, azul eléctrico #2563EB, verde esmeralda #10B981). Renderiza el título del cargo con tipografía sans-serif extra bold de alto contraste, el bloque de remuneración destacada, los 3 requisitos clave con viñetas limpias y el bloque de postulación rápida por WhatsApp y código QR."
+}
