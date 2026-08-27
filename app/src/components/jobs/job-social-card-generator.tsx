@@ -45,18 +45,18 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [copiedType, setCopiedType] = useState<string | null>(null)
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square')
-  const [theme, setTheme] = useState<ThemeMode>('white') // Blanco por defecto según solicitud
+  const [theme, setTheme] = useState<ThemeMode>('white') // Blanco por defecto
   const [isGenerating, setIsGenerating] = useState(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const shareUrl = `https://contapymepuq.cl/empleos/${job.slug}`
 
-  // QR Code URL en alta definición con colores según el tema
+  // QR Code URL
   const qrBgColor = theme === 'white' ? 'FFFFFF' : '0F172A'
   const qrColor = theme === 'white' ? '004080' : '38BDF8'
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(shareUrl)}&bgcolor=${qrBgColor}&color=${qrColor}&margin=0`
 
-  // 1. JSON Estructurado Profesional de Anuncio para IA / Modelos Gráficos
+  // 1. JSON Estructurado Profesional de Anuncio
   const jobAdPromptSpec = {
     tarea: "generacion_oferta_empleo_publicitaria",
     herramienta: "ContaBanner AI Pro / Nano Banana Pro",
@@ -90,7 +90,7 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
       },
       codigo_qr_dinamico: {
         url_qr: qrCodeUrl,
-        instruccion_modelo: "Incrustar código QR oficial en la esquina inferior derecha con borde nítido para escaneo directo desde historias o impresos."
+        instruccion_modelo: "Incrustar código QR oficial en la esquina inferior derecha con borde nítido para escaneo directo."
       },
       sello_legal: {
         texto: "Aviso Auditado Art. 2° Código del Trabajo",
@@ -254,70 +254,70 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="rounded-2xl text-xs font-black uppercase tracking-wider border-zinc-200 hover:border-primary/40 hover:bg-primary/5 gap-2 h-11 px-5"
+        className="rounded-2xl text-xs font-black uppercase tracking-wider border-zinc-200 hover:border-primary/40 hover:bg-primary/5 gap-2 h-11 px-4 sm:px-5"
       >
-        <Share2 className="h-4 w-4 text-primary" />
-        <span>Generar Anuncio Social</span>
+        <Share2 className="h-4 w-4 text-primary shrink-0" />
+        <span className="truncate">Generar Anuncio Social</span>
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-full max-w-[92vw] sm:max-w-2xl rounded-[2rem] bg-white p-6 sm:p-7 space-y-5 border border-zinc-200 shadow-2xl max-h-[90vh] overflow-y-auto box-border">
+        <DialogContent className="w-full max-w-[94vw] sm:max-w-xl md:max-w-2xl rounded-3xl sm:rounded-[2rem] bg-white p-4 sm:p-7 space-y-4 sm:space-y-5 border border-zinc-200 shadow-2xl max-h-[90vh] overflow-y-auto box-border">
           <DialogHeader className="space-y-1.5 text-left">
             <div className="flex items-center gap-2 text-primary text-xs font-black uppercase tracking-widest">
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4 shrink-0" />
               <span>Kit de Publicidad & Anuncios de Empleo</span>
             </div>
-            <DialogTitle className="text-xl sm:text-2xl font-black uppercase tracking-tight italic">
+            <DialogTitle className="text-lg sm:text-2xl font-black uppercase tracking-tight italic text-foreground leading-tight">
               Generador de Anuncios Profesionales
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
               Personaliza el fondo (Blanco o Nocturno) y genera imágenes publicitarias de alto impacto para redes.
             </DialogDescription>
           </DialogHeader>
 
           {/* Selectores de Configuración: Fondo (Blanco / Nocturno) y Formato (1:1 / 9:16) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-2xl bg-zinc-100 border border-zinc-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-2xl bg-zinc-100 border border-zinc-200 box-border">
             {/* Selector de Tema */}
-            <div className="flex items-center justify-between p-1.5 rounded-xl bg-white/70">
-              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-2">
+            <div className="flex items-center justify-between p-1.5 rounded-xl bg-white shadow-xs min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 shrink-0">
                 Fondo:
               </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setTheme('white')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
                     theme === 'white'
                       ? 'bg-blue-600 text-white shadow'
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
-                  <Sun className="h-3 w-3" /> Blanco
+                  <Sun className="h-3 w-3 shrink-0" /> Blanco
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme('dark')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer ${
                     theme === 'dark'
                       ? 'bg-slate-900 text-white shadow'
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
-                  <Moon className="h-3 w-3" /> Noche
+                  <Moon className="h-3 w-3 shrink-0" /> Noche
                 </button>
               </div>
             </div>
 
             {/* Selector de Formato */}
-            <div className="flex items-center justify-between p-1.5 rounded-xl bg-white/70">
-              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-2">
+            <div className="flex items-center justify-between p-1.5 rounded-xl bg-white shadow-xs min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 shrink-0">
                 Formato:
               </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setAspectRatio('square')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                     aspectRatio === 'square'
                       ? 'bg-zinc-900 text-white shadow'
                       : 'text-zinc-600 hover:text-zinc-900'
@@ -328,7 +328,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                 <button
                   type="button"
                   onClick={() => setAspectRatio('story')}
-                  className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                     aspectRatio === 'story'
                       ? 'bg-zinc-900 text-white shadow'
                       : 'text-zinc-600 hover:text-zinc-900'
@@ -343,17 +343,17 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
           {/* ===== ANUNCIO PUBLICITARIO VISUAL BRANDED (Renderizable vía Canvas) ===== */}
           <div
             ref={cardRef}
-            className={`p-6 sm:p-8 rounded-[2rem] shadow-2xl space-y-4 relative overflow-hidden flex flex-col justify-between box-border transition-all duration-300 ${
+            className={`p-4 sm:p-7 rounded-2xl sm:rounded-[2rem] shadow-xl space-y-3.5 sm:space-y-4 relative overflow-hidden flex flex-col justify-between box-border transition-all duration-300 w-full max-w-full ${
               theme === 'white'
-                ? 'bg-white text-slate-950 border-4 border-slate-200/90'
+                ? 'bg-white text-slate-950 border-2 sm:border-4 border-slate-200'
                 : 'bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white border border-slate-800'
-            } ${aspectRatio === 'story' ? 'min-h-[560px]' : 'min-h-[440px]'}`}
+            } ${aspectRatio === 'story' ? 'min-h-[500px] sm:min-h-[560px]' : 'min-h-[380px] sm:min-h-[440px]'}`}
           >
             {/* Destellos de iluminación de fondo */}
             {theme === 'white' ? (
               <>
-                <div className="absolute top-0 right-0 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-60 h-60 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
               </>
             ) : (
               <>
@@ -362,28 +362,28 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               </>
             )}
 
-            {/* CINTILLO PUBLICITARIO SUPERIOR DE ALTO IMPACTO */}
-            <div className={`-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 py-2.5 flex items-center justify-between text-[10px] sm:text-xs font-black uppercase tracking-widest ${
+            {/* CINTILLO PUBLICITARIO SUPERIOR CONTENIDO (Sin márgenes negativos para evitar desbordes) */}
+            <div className={`p-2 sm:p-2.5 rounded-xl flex flex-wrap items-center justify-between gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider relative z-10 ${
               theme === 'white'
-                ? 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white shadow-md'
-                : 'bg-slate-800 text-slate-300 border-b border-slate-700'
+                ? 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white shadow-xs'
+                : 'bg-slate-800 text-slate-200 border border-slate-700'
             }`}>
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
-                <span>¡OFERTA LABORAL DESTACADA EN MAGALLANES!</span>
+              <span className="flex items-center gap-1 truncate">
+                <Sparkles className="h-3 w-3 text-amber-300 shrink-0 animate-pulse" />
+                <span className="truncate">¡OFERTA LABORAL EN MAGALLANES!</span>
               </span>
-              <span className="font-mono text-white/90">📍 {job.location}</span>
+              <span className="font-mono text-white/90 shrink-0">📍 {job.location}</span>
             </div>
 
             {/* Header del Anuncio con Logotipo */}
-            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/90 pb-3 pt-1 relative z-10">
-              <div className="flex items-center gap-2.5">
-                <Image src="/logo-contapyme.png" alt="ContaPyme" width={130} height={35} className={`h-auto w-28 sm:w-32 ${theme === 'dark' ? 'brightness-125' : ''}`} />
-                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/90 pb-2.5 pt-0.5 relative z-10 gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Image src="/logo-contapyme.png" alt="ContaPyme" width={110} height={30} className={`h-auto w-24 sm:w-28 shrink-0 ${theme === 'dark' ? 'brightness-125' : ''}`} />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0">
                   ContaEmpleos
                 </span>
               </div>
-              <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-lg ${
+              <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md shrink-0 ${
                 theme === 'white' ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-slate-800 text-slate-300'
               }`}>
                 {job.sector}
@@ -391,42 +391,42 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
             </div>
 
             {/* Cuerpo Central del Anuncio (Título Ultra Llamativo) */}
-            <div className="space-y-3 relative z-10 my-auto">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1">
-                  <Building2 className="h-4 w-4" /> {job.company_name}
+            <div className="space-y-2.5 relative z-10 my-auto min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1 truncate">
+                  <Building2 className="h-3.5 w-3.5 shrink-0" /> {job.company_name}
                 </span>
                 {job.is_verified && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0">
                     <BadgeCheck className="h-3 w-3" /> Verificada
                   </span>
                 )}
               </div>
 
               {/* TÍTULO ULTRA LLAMATIVO */}
-              <h3 className={`text-2xl sm:text-4xl font-black italic uppercase tracking-tight leading-none break-words ${
+              <h3 className={`text-xl sm:text-3xl lg:text-4xl font-black italic uppercase tracking-tight leading-tight break-words hyphens-auto ${
                 theme === 'white'
-                  ? 'text-slate-950 drop-shadow-sm'
+                  ? 'text-slate-950 drop-shadow-xs'
                   : 'text-white'
               }`}>
                 {job.title}
               </h3>
 
               {/* Cápsula de Sueldo y Turno */}
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {job.salary_raw && (
-                  <div className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-white bg-emerald-600 px-4 py-1.5 rounded-xl shadow-md shadow-emerald-600/25">
-                    <DollarSign className="h-4 w-4" />
+                  <div className="flex items-center gap-1 text-xs sm:text-sm font-black text-white bg-emerald-600 px-3.5 py-1 rounded-xl shadow-xs">
+                    <DollarSign className="h-3.5 w-3.5 shrink-0" />
                     <span>{job.salary_raw}</span>
                   </div>
                 )}
                 {job.work_shift && (
-                  <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider ${
+                  <div className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-xl uppercase tracking-wider ${
                     theme === 'white'
                       ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
                       : 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/40'
                   }`}>
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-3 w-3 shrink-0" />
                     <span>{job.work_shift}</span>
                   </div>
                 )}
@@ -434,19 +434,19 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
 
               {/* Requisitos clave con Viñetas */}
               {job.requirements && job.requirements.length > 0 && (
-                <div className="pt-2 space-y-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider block ${
+                <div className="pt-1.5 space-y-1">
+                  <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider block ${
                     theme === 'white' ? 'text-slate-500' : 'text-slate-400'
                   }`}>
-                    Requisitos principales del puesto:
+                    Requisitos principales:
                   </span>
                   <div className="space-y-1">
                     {job.requirements.slice(0, aspectRatio === 'story' ? 3 : 2).map((req, idx) => (
-                      <div key={idx} className={`flex items-center gap-2 text-xs font-bold ${
+                      <div key={idx} className={`flex items-start gap-1.5 text-[11px] sm:text-xs font-bold leading-snug ${
                         theme === 'white' ? 'text-slate-700' : 'text-slate-300'
                       }`}>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="truncate">{req}</span>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="break-words line-clamp-2">{req}</span>
                       </div>
                     ))}
                   </div>
@@ -455,28 +455,28 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
             </div>
 
             {/* Bloque de Postulación Inmediata y Código QR */}
-            <div className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-4 relative z-10 ${
+            <div className={`p-3 sm:p-3.5 rounded-2xl flex items-center justify-between gap-3 relative z-10 box-border min-w-0 ${
               theme === 'white'
-                ? 'bg-slate-50 border-2 border-slate-200'
+                ? 'bg-slate-50 border border-slate-200'
                 : 'bg-slate-800/80 border border-slate-700/80'
             }`}>
-              <div className="space-y-1 min-w-0 flex-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
                   Canal de Postulación Directa
                 </span>
-                <p className={`text-xs truncate font-mono font-bold ${
+                <p className={`text-[11px] sm:text-xs truncate font-mono font-bold ${
                   theme === 'white' ? 'text-slate-900' : 'text-slate-200'
                 }`}>
                   {job.contact_email ? `✉️ ${job.contact_email}` : (job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : '🌐 contapymepuq.cl/empleos')}
                 </p>
-                <p className={`text-[9px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Escanea el código QR o ingresa al enlace oficial sin intermediarios.
+                <p className={`text-[8px] sm:text-[9px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Escanea el código QR o ingresa al enlace oficial.
                 </p>
               </div>
               <img
                 src={qrCodeUrl}
                 alt="QR Postulación"
-                className={`h-16 w-16 rounded-xl p-1 shrink-0 shadow-md ${
+                className={`h-14 w-14 sm:h-16 sm:w-16 rounded-lg p-0.5 shrink-0 shadow-xs ${
                   theme === 'white' ? 'bg-white border border-slate-200' : 'bg-white'
                 }`}
                 crossOrigin="anonymous"
@@ -484,29 +484,29 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
             </div>
 
             {/* Footer del Anuncio */}
-            <div className={`pt-3 border-t flex items-center justify-between text-[9px] font-bold uppercase relative z-10 ${
+            <div className={`pt-2.5 border-t flex flex-wrap items-center justify-between gap-1 text-[8px] sm:text-[9px] font-bold uppercase relative z-10 ${
               theme === 'white' ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'
             }`}>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <ShieldCheck className="h-3.5 w-3.5" /> Art. 2° Código del Trabajo
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <ShieldCheck className="h-3 w-3 shrink-0" /> Art. 2° Código del Trabajo
               </span>
-              <span className="font-mono">contapymepuq.cl/empleos</span>
+              <span className="font-mono truncate">contapymepuq.cl/empleos</span>
             </div>
           </div>
 
           {/* ===== BOTONES DE ACCIÓN DIRECTA ===== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 box-border">
             <Button
               onClick={handleShareInstagram}
               disabled={isGenerating}
-              className="w-full rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white font-black text-xs uppercase tracking-widest gap-2 h-12 shadow-lg shadow-rose-600/20 active:scale-95 cursor-pointer"
+              className="w-full rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-600 text-white font-black text-xs uppercase tracking-widest gap-2 h-12 shadow-md active:scale-95 cursor-pointer"
             >
               {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
               ) : (
-                <Instagram className="h-4 w-4" />
+                <Instagram className="h-4 w-4 shrink-0" />
               )}
-              <span>Publicar en Instagram</span>
+              <span className="truncate">Publicar en Instagram</span>
             </Button>
 
             <Button
@@ -516,34 +516,34 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               className="w-full rounded-2xl font-black text-xs uppercase tracking-widest gap-2 h-12 border-zinc-300 hover:bg-zinc-100 active:scale-95 cursor-pointer"
             >
               {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
               ) : (
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 shrink-0" />
               )}
-              <span>Descargar Imagen HD</span>
+              <span className="truncate">Descargar Imagen HD</span>
             </Button>
           </div>
 
-          {/* ===== PESTAÑAS DE COPIADO: JSON Y TEXTOS ===== */}
-          <Tabs defaultValue="json" className="w-full space-y-3 pt-2">
-            <TabsList className="grid grid-cols-4 bg-zinc-100 p-1 rounded-2xl">
-              <TabsTrigger value="json" className="rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow">
-                <Code2 className="h-3 w-3 text-primary" /> JSON Anuncio
+          {/* ===== PESTAÑAS DE COPIADO: GRID 2x2 EN MÓVIL Y 1x4 EN DESKTOP ===== */}
+          <Tabs defaultValue="json" className="w-full space-y-3 pt-1 box-border">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-zinc-100 p-1 rounded-2xl box-border">
+              <TabsTrigger value="json" className="rounded-xl text-[10px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+                <Code2 className="h-3 w-3 text-primary shrink-0" /> JSON Anuncio
               </TabsTrigger>
-              <TabsTrigger value="whatsapp" className="rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow">
-                <Send className="h-3 w-3 text-emerald-600" /> WhatsApp
+              <TabsTrigger value="whatsapp" className="rounded-xl text-[10px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+                <Send className="h-3 w-3 text-emerald-600 shrink-0" /> WhatsApp
               </TabsTrigger>
-              <TabsTrigger value="instagram" className="rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow">
-                <Instagram className="h-3 w-3 text-rose-600" /> Instagram
+              <TabsTrigger value="instagram" className="rounded-xl text-[10px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+                <Instagram className="h-3 w-3 text-rose-600 shrink-0" /> Instagram
               </TabsTrigger>
-              <TabsTrigger value="linkedin" className="rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow">
-                <Linkedin className="h-3 w-3 text-sky-600" /> LinkedIn
+              <TabsTrigger value="linkedin" className="rounded-xl text-[10px] font-black uppercase tracking-wider gap-1 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+                <Linkedin className="h-3 w-3 text-sky-600 shrink-0" /> LinkedIn
               </TabsTrigger>
             </TabsList>
 
-            {/* Tab JSON Estructurado para Modelos de IA */}
-            <TabsContent value="json" className="space-y-2.5">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 text-zinc-200 border border-zinc-800 text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto">
+            {/* Tab JSON Estructurado */}
+            <TabsContent value="json" className="space-y-2">
+              <div className="p-3 rounded-2xl bg-zinc-900 text-zinc-200 border border-zinc-800 text-[10px] sm:text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto box-border">
                 {JSON.stringify(jobAdPromptSpec, null, 2)}
               </div>
               <Button
@@ -552,19 +552,19 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               >
                 {copiedType === 'json' ? (
                   <>
-                    <Check className="h-4 w-4 text-emerald-400" /> ¡JSON del Anuncio Copiado!
+                    <Check className="h-4 w-4 text-emerald-400 shrink-0" /> ¡JSON Copiado!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-4 w-4" /> Copiar JSON para Nano Banana / IA
+                    <Copy className="h-4 w-4 shrink-0" /> Copiar JSON para Nano Banana / IA
                   </>
                 )}
               </Button>
             </TabsContent>
 
             {/* Tab WhatsApp */}
-            <TabsContent value="whatsapp" className="space-y-2.5">
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-36 overflow-y-auto">
+            <TabsContent value="whatsapp" className="space-y-2">
+              <div className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-32 overflow-y-auto box-border">
                 {whatsappCopy}
               </div>
               <Button
@@ -573,19 +573,19 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               >
                 {copiedType === 'whatsapp' ? (
                   <>
-                    <Check className="h-4 w-4" /> ¡Texto de WhatsApp Copiado!
+                    <Check className="h-4 w-4 shrink-0" /> ¡Texto Copiado!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-4 w-4" /> Copiar para Grupos de WhatsApp
+                    <Copy className="h-4 w-4 shrink-0" /> Copiar para WhatsApp
                   </>
                 )}
               </Button>
             </TabsContent>
 
             {/* Tab Instagram */}
-            <TabsContent value="instagram" className="space-y-2.5">
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-36 overflow-y-auto">
+            <TabsContent value="instagram" className="space-y-2">
+              <div className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-32 overflow-y-auto box-border">
                 {instagramCopy}
               </div>
               <Button
@@ -594,19 +594,19 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               >
                 {copiedType === 'instagram' ? (
                   <>
-                    <Check className="h-4 w-4" /> ¡Texto de Instagram Copiado!
+                    <Check className="h-4 w-4 shrink-0" /> ¡Texto Copiado!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-4 w-4" /> Copiar para Historias / Feed
+                    <Copy className="h-4 w-4 shrink-0" /> Copiar para Instagram
                   </>
                 )}
               </Button>
             </TabsContent>
 
             {/* Tab LinkedIn */}
-            <TabsContent value="linkedin" className="space-y-2.5">
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-36 overflow-y-auto">
+            <TabsContent value="linkedin" className="space-y-2">
+              <div className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs font-mono whitespace-pre-line text-zinc-700 leading-relaxed max-h-32 overflow-y-auto box-border">
                 {linkedinCopy}
               </div>
               <Button
@@ -615,11 +615,11 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
               >
                 {copiedType === 'linkedin' ? (
                   <>
-                    <Check className="h-4 w-4" /> ¡Texto de LinkedIn Copiado!
+                    <Check className="h-4 w-4 shrink-0" /> ¡Texto Copiado!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-4 w-4" /> Copiar Publicación de LinkedIn
+                    <Copy className="h-4 w-4 shrink-0" /> Copiar para LinkedIn
                   </>
                 )}
               </Button>
