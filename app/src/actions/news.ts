@@ -572,3 +572,91 @@ export async function uploadNewsImageAction(formData: FormData) {
   }
 }
 
+/**
+ * 🏢 Permite a una empresa u organización autenticada publicar un comunicado de prensa o noticia.
+ */
+export async function createCompanyNewsAction(newsData: {
+  title: string
+  category: string
+  content: string
+  summary?: string
+  image_url?: string
+  source_name?: string
+  source_url?: string
+}) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Debes iniciar sesión para publicar un comunicado.' }
+    }
+
+    const supabaseAdmin = createAdminClient()
+    const titleClean = cleanHTML(newsData.title)
+    const titleNorm = normalizeTitle(titleClean)
+    const itemSlug = slugify(titleClean) + '-' + Math.random().toString(36).substring(2, 6)
+
+    const finalImage = newsData.image_url || getFallbackImage(titleClean, newsData.category)
+    const rawDesc = newsData.content || ''
+    const summary = newsData.summary || (rawDesc.length > 300 ? rawDesc.substring(0, 297) + '...' : rawDesc)
+
+    const { data, error } = await supabaseAdmin
+      .from('regional_news')
+      .insert({
+        title: titleClean,
+        slug: itemSlug,
+        category: newsData.category,
+        content: rawDesc,
+        summary: summary,
+        image_url: finalImage,
+        source_name: newsData.source_name || 'Comunicado de Empresa',
+        source_url: newsData.source_url || `/noticias/${itemSlug}`,
+        normalized_title: titleNorm,
+        is_featured: false,
+        published_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    revalidatePath('/')
+    revalidatePath('/noticias')
+    revalidatePath('/dashboard/noticias')
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('[createCompanyNewsAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al enviar el comunicado.' }
+  }
+}
+
+/**
+ * 📰 Obtiene los comunicados y noticias de la empresa conectada.
+ */
+export async function getCompanyNewsAction() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'No autorizado.', data: [] }
+    }
+
+    const supabaseAdmin = createAdminClient()
+    const { data, error } = await supabaseAdmin
+      .from('regional_news')
+      .select('*')
+      .order('published_at', { ascending: false })
+      .limit(30)
+
+    if (error) {
+      return { success: false, error: error.message, data: [] }
+    }
+
+    return { success: true, data: data || [] }
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] }
+  }
+}
+

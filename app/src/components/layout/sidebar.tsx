@@ -3,13 +3,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards } from 'lucide-react'
+import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards, Briefcase, Newspaper } from 'lucide-react'
 
 export const navigationGroups = [
   {
     title: "Visión General",
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: TrendingUp },
+    ]
+  },
+  {
+    title: "Ecosistema Regional",
+    items: [
+      { name: 'Mis Empleos', href: '/dashboard/empleos', icon: Briefcase },
+      { name: 'Mis Comunicados', href: '/dashboard/noticias', icon: Newspaper },
     ]
   },
   {

@@ -45,14 +45,41 @@ export interface NetSalaryCalculation {
   totalDeductions: number
 }
 
+// Patrones discriminatorios prohibidos por el Art. 2° del Código del Trabajo
+const DISCRIMINATORY_PATTERNS = [
+  { pattern: /\b(edad\s*(?:entre|de|maxima|minima|debe\s*tener)?\s*\d{2}\s*(?:a|-|y)?\s*\d{2}\s*a[ñn]os?)\b/i, reason: 'Límites o rangos de edad explícitos' },
+  { pattern: /\b(menor\s*de\s*\d{2}\s*a[ñn]os?)\b/i, reason: 'Exclusión por minoría de edad relativa' },
+  { pattern: /\b(mayor\s*de\s*\d{2}\s*a[ñn]os?)\b/i, reason: 'Exclusión por mayoría de edad' },
+  { pattern: /\b(buena\s*presencia)\b/i, reason: 'Discriminación por apariencia física' },
+  { pattern: /\b(foto\s*(?:obligatoria|actualizada|en\s*el\s*cv)?)\b/i, reason: 'Exigencia obligatoria de fotografía en el CV' },
+  { pattern: /\b(solter[oa]|casad[oa]|sin\s*hijos?)\b/i, reason: 'Discriminación por estado civil o situación familiar' },
+  { pattern: /\b(solo\s*(?:hombres|mujeres|chilenos?|extranjeros?))\b/i, reason: 'Exclusión arbitraria por género o nacionalidad' },
+  { pattern: /\b(sin\s*dicom|certificado\s*(?:de\s*)?dicom|bolet[ií]n\s*comercial\s*limpio)\b/i, reason: 'Exigencia ilegal de antecedentes comerciales (DICOM)' },
+  { pattern: /\b(pago\s*previo|costo\s*(?:de\s*)?(?:matr[ií]cula|capacitaci[oó]n|uniforme))\b/i, reason: 'Cobro ilegal previo para postular o capacitar' },
+]
+
+/**
+ * 🛡️ Valida que el texto del aviso cumpla con el Artículo 2° del Código del Trabajo.
+ */
+export async function validateJobCompliance(text: string): Promise<{ isCompliant: boolean; violations: string[] }> {
+  const violations: string[] = []
+  for (const { pattern, reason } of DISCRIMINATORY_PATTERNS) {
+    if (pattern.test(text)) {
+      violations.push(reason)
+    }
+  }
+  return {
+    isCompliant: violations.length === 0,
+    violations,
+  }
+}
+
 /**
  * 🧮 Motor de Cálculo Previsional Chileno (Estimación de Sueldo Líquido Regional)
- * Aplica parámetros previsionales estándar (AFP 11.45% promedio, Salud 7%, AFC 0.6%, Impuesto Único).
  */
 export async function calculateNetSalaryEstimate(
   grossSalary: number,
-  afpRate: number = 0.1145,
-  isExtremeZone: boolean = true
+  afpRate: number = 0.1145
 ): Promise<NetSalaryCalculation> {
   if (!grossSalary || grossSalary <= 0) {
     return {
@@ -66,15 +93,11 @@ export async function calculateNetSalaryEstimate(
     }
   }
 
-  // Cotizaciones obligatorias
   const afpDeduction = Math.round(grossSalary * afpRate)
   const healthDeduction = Math.round(grossSalary * 0.07)
   const afcDeduction = Math.round(grossSalary * 0.006)
-
-  // Base tributable (Afecta a Impuesto Único de 2da Categoría)
   const taxableBase = Math.max(0, grossSalary - afpDeduction - healthDeduction - afcDeduction)
 
-  // Tramos aproximados Impuesto Único 2026 (Pesos Chilenos)
   let taxDeduction = 0
   if (taxableBase > 950000 && taxableBase <= 2100000) {
     taxDeduction = Math.round((taxableBase - 950000) * 0.04)
@@ -202,5 +225,195 @@ export async function getJobsStats() {
     }
   } catch (err) {
     return { total: 0, byLocation: {}, bySector: {} }
+  }
+}
+
+/**
+ * 🏢 Obtiene todas las vacantes creadas por la empresa u organización conectada.
+ */
+export async function getCompanyJobsAction() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'No autorizado. Inicia sesión.', data: [] }
+    }
+
+    const adminDb = createAdminClient()
+    const { data, error } = await adminDb
+      .from('job_postings')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return { success: false, error: error.message, data: [] }
+    }
+
+    return { success: true, data: (data as JobPosting[]) || [] }
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] }
+  }
+}
+
+/**
+ * 📝 Crea una nueva vacante de empleo con validación legal Art. 2° DT.
+ */
+export async function createJobAction(formData: {
+  title: string
+  company_name: string
+  company_rut?: string
+  company_logo_url?: string
+  location: string
+  sector: string
+  job_type: string
+  work_shift: string
+  salary_raw?: string
+  salary_min?: number
+  salary_max?: number
+  description: string
+  requirements: string[]
+  benefits: string[]
+  contact_email?: string
+  contact_whatsapp?: string
+  application_url?: string
+}) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Debes iniciar sesión para publicar una oferta.' }
+    }
+
+    // 1. Auditoría de Cumplimiento Legal (Art. 2° Código del Trabajo)
+    const fullText = `${formData.title} ${formData.description} ${formData.requirements.join(' ')}`
+    const compliance = await validateJobCompliance(fullText)
+    if (!compliance.isCompliant) {
+      return {
+        success: false,
+        error: `El aviso infringe el Art. 2° del Código del Trabajo: ${compliance.violations.join(', ')}. Por favor modifica los requisitos para continuar.`,
+      }
+    }
+
+    // 2. Generar Slug Único
+    const baseSlug = `${formData.title}-${formData.company_name}-${formData.location}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
+
+    const randomSuffix = Math.random().toString(36).substring(2, 7)
+    const slug = `${baseSlug}-${randomSuffix}`
+
+    // 3. Fechas de vigencia (21 días)
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000)
+
+    const adminDb = createAdminClient()
+    const { data, error } = await adminDb
+      .from('job_postings')
+      .insert({
+        title: formData.title.trim(),
+        slug,
+        company_name: formData.company_name.trim(),
+        company_rut: formData.company_rut?.trim() || null,
+        company_logo_url: formData.company_logo_url?.trim() || null,
+        location: formData.location.trim(),
+        sector: formData.sector.trim(),
+        job_type: formData.job_type || 'Presencial',
+        work_shift: formData.work_shift || 'Jornada Completa',
+        salary_raw: formData.salary_raw?.trim() || null,
+        salary_min: formData.salary_min || null,
+        salary_max: formData.salary_max || null,
+        is_salary_public: !!formData.salary_raw,
+        description: formData.description.trim(),
+        requirements: formData.requirements || [],
+        benefits: formData.benefits || [],
+        contact_email: formData.contact_email?.trim() || null,
+        contact_whatsapp: formData.contact_whatsapp?.trim() || null,
+        application_url: formData.application_url?.trim() || null,
+        source_name: 'ContaEmpleos Portal',
+        is_verified: true,
+        status: 'active',
+        published_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error insertando empleo:', error)
+      return { success: false, error: 'Error al registrar la oferta: ' + error.message }
+    }
+
+    revalidatePath('/empleos')
+    revalidatePath('/dashboard/empleos')
+    revalidatePath('/sitemap-jobs.xml')
+
+    return { success: true, data: data as JobPosting }
+  } catch (err: any) {
+    return { success: false, error: 'Error inesperado: ' + err.message }
+  }
+}
+
+/**
+ * 🔄 Actualiza una vacante existente.
+ */
+export async function updateJobAction(id: string, formData: Partial<JobPosting>) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'No autorizado.' }
+    }
+
+    const adminDb = createAdminClient()
+    const { data, error } = await adminDb
+      .from('job_postings')
+      .update(formData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/empleos')
+    revalidatePath('/dashboard/empleos')
+
+    return { success: true, data: data as JobPosting }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 🗑️ Elimina o finaliza una vacante.
+ */
+export async function deleteJobAction(id: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'No autorizado.' }
+    }
+
+    const adminDb = createAdminClient()
+    const { error } = await adminDb
+      .from('job_postings')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/empleos')
+    revalidatePath('/dashboard/empleos')
+
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message }
   }
 }

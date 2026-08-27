@@ -1,12 +1,27 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AdminNewsClient } from './admin-news-client'
+import { AdminJobsClient } from './admin-jobs-client'
 import Link from 'next/link'
-import { BookOpen, LogOut, ArrowLeft, ShieldAlert, LogIn } from 'lucide-react'
+import { 
+  BookOpen, 
+  LogOut, 
+  ArrowLeft, 
+  ShieldAlert, 
+  Newspaper, 
+  Briefcase, 
+  Building2, 
+  Users, 
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles
+} from 'lucide-react'
 import { signOut } from '@/actions/auth'
-import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
-export const revalidate = 0 // Evitar almacenamiento en caché para reflejar cambios del admin al instante
+export const revalidate = 0
 
 export default async function AdminPortalPage() {
   const supabase = await createClient()
@@ -14,7 +29,6 @@ export default async function AdminPortalPage() {
   // 1. Obtener la sesión del usuario actual
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    // Redirigir al login guardando el parámetro de retorno
     return redirect('/login?next=/admin')
   }
 
@@ -25,19 +39,15 @@ export default async function AdminPortalPage() {
     .eq('id', user.id)
     .single()
 
-  // Si no se encuentra perfil, mostrar error informativo
   if (profileError || !profile) {
-    console.error('[Admin] Error al obtener perfil:', profileError?.message, 'User ID:', user.id)
-    // Redirigir al login para refrescar la sesión (posible cookie expirada)
-    return redirect('/login?next=/admin&error=' + encodeURIComponent('Sesión expirada o perfil no encontrado. Inicia sesión nuevamente.'))
+    return redirect('/login?next=/admin&error=' + encodeURIComponent('Sesión expirada o perfil no encontrado.'))
   }
 
-  // 3. Validar permisos de administración (con soporte case-insensitive)
+  // 3. Validar permisos de administración
   const userRole = (profile.role || '').toLowerCase()
   const userPlan = (profile.plan || '').toLowerCase()
   const isAuthorized = userRole === 'admin' || userPlan === 'consorcio'
 
-  // Pantalla de ACCESO RESTRINGIDO (UX Explicativa) si no cuenta con permisos
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800">
@@ -54,7 +64,7 @@ export default async function AdminPortalPage() {
             Acceso Restringido ⚓
           </h1>
           <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-6">
-            Consola Editorial Contapymepuq
+            Consola de Superadministración ContaPymePUQ
           </p>
 
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-left space-y-2 mb-6">
@@ -64,34 +74,30 @@ export default async function AdminPortalPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-200/50">
               <div>
-                <span className="text-slate-400 font-bold block uppercase tracking-wider">Rol de Perfil:</span>
-                <strong className="text-slate-700 capitalize">{profile.role || 'Sin rol asignado'}</strong>
+                <span className="text-slate-400 font-bold block uppercase tracking-wider">Rol:</span>
+                <strong className="text-slate-700 capitalize">{profile.role || 'Sin rol'}</strong>
               </div>
               <div>
-                <span className="text-slate-400 font-bold block uppercase tracking-wider">Plan Comercial:</span>
+                <span className="text-slate-400 font-bold block uppercase tracking-wider">Plan:</span>
                 <strong className="text-slate-700 capitalize">{profile.plan || 'personal'}</strong>
               </div>
             </div>
           </div>
 
-          <p className="text-slate-500 text-xs font-semibold leading-relaxed mb-8">
-            Su cuenta no cuenta con privilegios editoriales. Requiere poseer el rol de <strong>Administrador</strong> del sistema o estar suscrito a una membresía de nivel <strong>Consorcio</strong> para publicar y corregir noticias.
-          </p>
-
           <div className="flex flex-col gap-3">
             <form action={signOut} className="w-full">
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10 shadow-xs transition-all cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-10 shadow-xs cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
-                Cerrar Sesión / Cambiar Cuenta
+                Cerrar Sesión
               </button>
             </form>
 
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs h-10 shadow-2xs transition-all"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs h-10 shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
               Volver a la Portada
@@ -102,15 +108,16 @@ export default async function AdminPortalPage() {
     )
   }
 
-  // 4. Si está autorizado, obtener el listado total de noticias
-  const { data: news, error: newsError } = await supabase
-    .from('regional_news')
-    .select('*')
-    .order('published_at', { ascending: false })
+  // 4. Obtener listados para la consola de superadmin
+  const [newsRes, jobsRes, profilesRes] = await Promise.all([
+    supabase.from('regional_news').select('*').order('published_at', { ascending: false }),
+    supabase.from('job_postings').select('*').order('created_at', { ascending: false }),
+    supabase.from('profiles').select('id, full_name, role, plan, created_at').order('created_at', { ascending: false }).limit(20),
+  ])
 
-  if (newsError) {
-    console.error('Error fetching regional news for admin:', newsError.message)
-  }
+  const news = newsRes.data || []
+  const jobs = jobsRes.data || []
+  const profiles = profilesRes.data || []
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans animate-in fade-in duration-500">
@@ -119,19 +126,21 @@ export default async function AdminPortalPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 p-2 rounded-xl text-primary border border-primary/10">
-              <BookOpen className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-black tracking-widest text-primary block leading-none mb-0.5">Consola Editorial</span>
+              <span className="text-[10px] uppercase font-black tracking-widest text-primary block leading-none mb-0.5">
+                Consola Central de Superadmin
+              </span>
               <h1 className="text-sm sm:text-base font-black tracking-tight text-slate-800 uppercase leading-none">
-                ContaPymePuq
+                ContaPymePUQ Magallanes
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="hidden md:inline-block text-xs font-semibold text-slate-500 mr-2">
-              Editor: <strong className="text-slate-800 font-bold">{profile.full_name || 'Administrador'}</strong>
+              Superadmin: <strong className="text-slate-800 font-bold">{profile.full_name || 'Administrador'}</strong>
             </span>
             
             <Link 
@@ -155,18 +164,115 @@ export default async function AdminPortalPage() {
         </div>
       </header>
 
-      {/* CUERPO CENTRAL */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+      {/* CUERPO CENTRAL CON PESTAÑAS MULTI-MÓDULO */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="space-y-1">
           <h2 className="text-2xl font-black tracking-tight text-slate-800 uppercase leading-none">
-            Administrar Diario Regional ⚓
+            Panel de Control Global ⚓
           </h2>
-          <p className="text-slate-500 text-xs sm:text-sm font-semibold italic mt-1.5">
-            Gestión descentralizada de noticias, portadas, e imágenes del diario regional para Punta Arenas.
+          <p className="text-slate-500 text-xs sm:text-sm font-semibold italic">
+            Administración unificada del diario regional, bolsa de empleos, organizaciones y membresías.
           </p>
         </div>
 
-        <AdminNewsClient initialNews={news || []} />
+        {/* METRICAS GLOBALES */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="rounded-2xl border-slate-200 shadow-xs bg-white">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Noticias Publicadas</span>
+                <span className="text-2xl font-black text-slate-900">{news.length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                <Newspaper className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-slate-200 shadow-xs bg-white">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">Ofertas Laborales Activas</span>
+                <span className="text-2xl font-black text-emerald-600">{jobs.filter(j => j.status === 'active').length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                <Briefcase className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-slate-200 shadow-xs bg-white">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Empresas & Cuentas</span>
+                <span className="text-2xl font-black text-slate-900">{profiles.length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+                <Building2 className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* PESTAÑAS DE ADMINISTRACIÓN */}
+        <Tabs defaultValue="news" className="space-y-4">
+          <TabsList className="grid grid-cols-3 gap-1 bg-slate-200/80 p-1 rounded-2xl w-full max-w-lg">
+            <TabsTrigger value="news" className="rounded-xl text-xs font-black uppercase tracking-wider gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+              <Newspaper className="h-4 w-4 text-blue-600" />
+              <span>Noticias ({news.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="rounded-xl text-xs font-black uppercase tracking-wider gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+              <Briefcase className="h-4 w-4 text-emerald-600" />
+              <span>Empleos ({jobs.length})</span>
+            </TabsTrigger>
+            <TabsTrigger value="companies" className="rounded-xl text-xs font-black uppercase tracking-wider gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-xs py-2">
+              <Building2 className="h-4 w-4 text-indigo-600" />
+              <span>Directorio</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* TAB 1: NOTICIAS */}
+          <TabsContent value="news" className="space-y-4">
+            <AdminNewsClient initialNews={news} />
+          </TabsContent>
+
+          {/* TAB 2: EMPLEOS */}
+          <TabsContent value="jobs" className="space-y-4">
+            <AdminJobsClient initialJobs={jobs} />
+          </TabsContent>
+
+          {/* TAB 3: EMPRESAS & PERFILES */}
+          <TabsContent value="companies" className="space-y-4">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-xs">
+              <h3 className="text-base font-black uppercase tracking-tight text-slate-800">
+                Directorio de Empresas & Membresías
+              </h3>
+              <div className="divide-y divide-slate-100">
+                {profiles.map((p: any) => (
+                  <div key={p.id} className="py-3 flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-xs font-bold text-slate-900 truncate">
+                          {p.full_name || 'Sin nombre'}
+                        </strong>
+                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider">
+                          {p.role || 'user'}
+                        </Badge>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono block">
+                        Plan: <span className="font-bold text-primary capitalize">{p.plan || 'personal'}</span>
+                      </span>
+                    </div>
+
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString('es-CL') : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )
