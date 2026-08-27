@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   Calendar,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -244,19 +245,31 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                   </div>
 
                   {/* Footer de la tarjeta con Botones de Acción */}
-                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground/60 uppercase font-mono">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(job.published_at).toLocaleDateString('es-CL')}</span>
+                  <div className="pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/70">
+                      <span className="bg-zinc-100 px-2 py-0.5 rounded-md font-mono text-zinc-600">
+                        {job.source_name || 'BNE Magallanes'}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {job.contact_email && (
+                        <a
+                          href={`mailto:${job.contact_email}?subject=Postulaci%C3%B3n%20${encodeURIComponent(job.title)}%20-%20ContaEmpleos`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 text-white text-[10px] font-black uppercase tracking-wider hover:bg-zinc-800 shadow-sm transition-all active:scale-95"
+                          title={`Enviar CV a ${job.contact_email}`}
+                        >
+                          <Mail className="h-3 w-3" />
+                          <span>Email</span>
+                        </a>
+                      )}
                       {whatsappUrl && (
                         <a
                           href={whatsappUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-emerald-700 shadow-sm transition-all active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 shadow-sm transition-all active:scale-95"
+                          title="Contactar vía WhatsApp"
                         >
                           <Send className="h-3 w-3" />
                           <span>WhatsApp</span>
@@ -266,9 +279,9 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="rounded-xl text-[11px] font-black uppercase tracking-wider border-zinc-200 group-hover:border-primary/40 group-hover:bg-primary group-hover:text-primary-foreground transition-all"
+                          className="rounded-xl text-[10px] font-black uppercase tracking-wider border-zinc-200 group-hover:border-primary/40 group-hover:bg-primary group-hover:text-primary-foreground transition-all h-8"
                         >
-                          Ver Detalles <ChevronRight className="h-3 w-3 ml-1" />
+                          Detalles <ChevronRight className="h-3 w-3 ml-1" />
                         </Button>
                       </Link>
                     </div>
