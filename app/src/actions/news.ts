@@ -517,9 +517,10 @@ export async function deleteNewsAction(id: string) {
  * Server Action para subir una imagen de portada al bucket 'news_images'.
  */
 export async function uploadNewsImageAction(formData: FormData) {
-  const authCheck = await checkAdminPermission()
-  if (!authCheck.authorized) {
-    return { success: false, error: authCheck.error }
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Debes iniciar sesión para subir imágenes.' }
   }
 
   // Auditar rol de la clave secreta

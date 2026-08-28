@@ -15,7 +15,10 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   Building2,
-  Calendar
+  Calendar,
+  Upload,
+  Link as LinkIcon,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,7 +35,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { createCompanyNewsAction, deleteNewsAction } from '@/actions/news'
+import { createCompanyNewsAction, deleteNewsAction, uploadNewsImageAction } from '@/actions/news'
 import { assistNewsWritingAction } from '@/actions/ai'
 
 const CATEGORIAS = [
@@ -71,14 +74,49 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isAILoading, setIsAILoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
-  // Form
+  // Form State
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('ECONOMÍA Y PYMES')
   const [content, setContent] = useState('')
   const [summary, setSummary] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [sourceName, setSourceName] = useState(companyName || 'Comunicado Corporativo')
+
+  // Cargar imagen local a Supabase Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, sube únicamente archivos de imagen (.jpg, .png, .webp)')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('El tamaño de la imagen no debe superar los 10MB.')
+      return
+    }
+
+    setIsUploading(true)
+    const uploadData = new FormData()
+    uploadData.append('file', file)
+
+    try {
+      const res = await uploadNewsImageAction(uploadData)
+      if (res.success && res.url) {
+        setImageUrl(res.url)
+        toast.success('Imagen cargada con éxito en los servidores de Supabase.')
+      } else {
+        toast.error(res.error || 'Error al subir la imagen.')
+      }
+    } catch (err: any) {
+      toast.error('Error de red al subir la imagen: ' + err.message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleAIAssist = async () => {
     if (!content.trim()) {
@@ -132,6 +170,10 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
         toast.success('¡Comunicado publicado con éxito en el Diario Regional! 📰')
         setNews([res.data, ...news])
         setIsFormOpen(false)
+        setTitle('')
+        setContent('')
+        setSummary('')
+        setImageUrl('')
         router.refresh()
       } else {
         toast.error(res.error || 'Error al publicar el comunicado.')
@@ -323,7 +365,7 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
         </div>
       )}
 
-      {/* 📝 MODAL: CREAR COMUNICADO DE PRENSA */}
+      {/* 📝 MODAL: CREAR COMUNICADO DE PRENSA CON UPLOAD DE IMAGEN DIRECTO */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="w-[95vw] sm:max-w-2xl rounded-3xl bg-white p-4 sm:p-6 space-y-4 max-h-[92vh] overflow-y-auto box-border">
           <DialogHeader className="text-left space-y-1 pr-6">
@@ -335,7 +377,7 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
               Publicar en Diario Regional de Magallanes
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Redacta tu nota de prensa. Puedes usar el Asistente IA para mejorar la estructura y el titular periodístico.
+              Redacta tu nota de prensa. Sube tu imagen de portada y usa el Asistente IA para pulir el titular.
             </DialogDescription>
           </DialogHeader>
 
@@ -397,29 +439,72 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                  URL de Imagen de Portada (Opcional)
-                </Label>
-                <Input
-                  placeholder="https://ejemplo.com/foto.jpg"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="rounded-xl h-10 text-xs font-medium"
-                />
-              </div>
+            {/* 📸 SUBIDA DE FOTO DE PORTADA AVANZADA */}
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                Fotografía de Portada
+              </Label>
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                {/* Previsualización */}
+                <div className="w-24 h-16 rounded-2xl bg-zinc-100 border border-zinc-200 overflow-hidden relative flex items-center justify-center shrink-0">
+                  {imageUrl ? (
+                    <>
+                      <img src={imageUrl} alt="Portada" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-rose-600 text-white rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-zinc-400" />
+                  )}
+                </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                  Firma / Empresa Emisora
-                </Label>
-                <Input
-                  value={sourceName}
-                  onChange={(e) => setSourceName(e.target.value)}
-                  className="rounded-xl h-10 text-xs font-medium"
-                />
+                <div className="space-y-1.5 flex-1 w-full">
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-foreground font-black text-xs px-3.5 h-9 shadow-2xs transition-all">
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="h-4 w-4 text-primary" />
+                      )}
+                      <span>{isUploading ? 'Subiendo...' : 'Subir Imagen desde el Dispositivo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                    <Input
+                      placeholder="O pega una URL externa: https://ejemplo.com/foto.jpg"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="pl-9 h-8 text-xs rounded-xl"
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                Firma / Empresa Emisora
+              </Label>
+              <Input
+                value={sourceName}
+                onChange={(e) => setSourceName(e.target.value)}
+                className="rounded-xl h-10 text-xs font-medium"
+              />
             </div>
 
             <DialogFooter className="pt-3 gap-2">
@@ -433,7 +518,7 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
               </Button>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || isUploading}
                 className="rounded-xl h-10 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white gap-2 cursor-pointer shadow-md shadow-primary/20"
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
