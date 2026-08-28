@@ -26,7 +26,7 @@ export default async function DashboardEmpleosPage() {
   const jobs = jobsRes.success ? jobsRes.data : []
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {isAdmin && (
         <div className="p-4 rounded-3xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 text-indigo-950 shadow-xs">
           <div className="flex items-center gap-3">

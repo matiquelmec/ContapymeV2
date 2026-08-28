@@ -47,6 +47,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      // 0. Ecosistema Regional
+      { source: '/ecosistema/empleos', destination: '/dashboard/empleos' },
+      { source: '/ecosistema/noticias', destination: '/dashboard/noticias' },
+
       // 1. Tributario & RCV
       { source: '/registro-rcv', destination: '/dashboard/accounting/rcv' },
       { source: '/tributario/registro-rcv', destination: '/dashboard/accounting/rcv' },
