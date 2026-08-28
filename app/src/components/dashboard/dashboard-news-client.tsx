@@ -37,6 +37,7 @@ import {
 import { toast } from 'sonner'
 import { createCompanyNewsAction, deleteNewsAction, uploadNewsImageAction } from '@/actions/news'
 import { assistNewsWritingAction } from '@/actions/ai'
+import { compressImage } from '@/lib/media/image-compressor'
 
 const CATEGORIAS = [
   'MAGALLANES ACTUAL',
@@ -84,7 +85,7 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
   const [imageUrl, setImageUrl] = useState('')
   const [sourceName, setSourceName] = useState(companyName || 'Comunicado Corporativo')
 
-  // Cargar imagen local a Supabase Storage
+  // Cargar imagen local comprimida a WebP hacia Supabase Storage
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -94,25 +95,33 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('El tamaño de la imagen no debe superar los 10MB.')
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('El tamaño de la imagen original no debe superar los 15MB.')
       return
     }
 
     setIsUploading(true)
-    const uploadData = new FormData()
-    uploadData.append('file', file)
+    const toastId = toast.loading('Comprimiendo y optimizando imagen a WebP...')
 
     try {
+      const { file: compressedFile, ratio } = await compressImage(file, {
+        maxWidth: 1600,
+        quality: 0.85,
+        format: 'image/webp'
+      })
+
+      const uploadData = new FormData()
+      uploadData.append('file', compressedFile)
+
       const res = await uploadNewsImageAction(uploadData)
       if (res.success && res.url) {
         setImageUrl(res.url)
-        toast.success('Imagen cargada con éxito en los servidores de Supabase.')
+        toast.success(`Imagen optimizada a WebP (${ratio} ahorro) y subida a Supabase. 🚀`, { id: toastId })
       } else {
-        toast.error(res.error || 'Error al subir la imagen.')
+        toast.error(res.error || 'Error al subir la imagen.', { id: toastId })
       }
     } catch (err: any) {
-      toast.error('Error de red al subir la imagen: ' + err.message)
+      toast.error('Error al procesar la imagen: ' + err.message, { id: toastId })
     } finally {
       setIsUploading(false)
     }

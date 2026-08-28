@@ -18,6 +18,7 @@ import { Image as ImageIcon, Upload, Loader2, Link as LinkIcon, AlertCircle, Spa
 import { toast } from 'sonner'
 import { createNewsAction, updateNewsAction, uploadNewsImageAction } from '@/actions/news'
 import { assistNewsWritingAction } from '@/actions/ai'
+import { compressImage } from '@/lib/media/image-compressor'
 
 interface NewsItem {
   id: string
@@ -81,7 +82,7 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
           category: res.data.category,
           content: res.data.content,
           summary: res.data.summary,
-          image_url: formData.image_url, // Mantener imagen actual
+          image_url: formData.image_url,
           source_name: formData.source_name,
           source_url: formData.source_url,
           is_featured: formData.is_featured
@@ -108,7 +109,7 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
     setFormData((prev) => ({ ...prev, is_featured: checked }))
   }
 
-  // Cargar imagen local
+  // Cargar imagen local con compresión WebP
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -118,25 +119,33 @@ export function NewsFormModal({ isOpen, onClose, newsItem, onSuccess }: NewsForm
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('El tamaño de la imagen no debe superar los 10MB.')
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('El tamaño de la imagen original no debe superar los 15MB.')
       return
     }
 
     setIsUploading(true)
-    const uploadData = new FormData()
-    uploadData.append('file', file)
+    const toastId = toast.loading('Comprimiendo y optimizando imagen a WebP...')
 
     try {
+      const { file: compressedFile, ratio } = await compressImage(file, {
+        maxWidth: 1600,
+        quality: 0.85,
+        format: 'image/webp'
+      })
+
+      const uploadData = new FormData()
+      uploadData.append('file', compressedFile)
+
       const res = await uploadNewsImageAction(uploadData)
       if (res.success && res.url) {
         setFormData((prev) => ({ ...prev, image_url: res.url }))
-        toast.success('Imagen cargada con éxito en los servidores de Supabase.')
+        toast.success(`Imagen optimizada a WebP (${ratio} menos peso) y subida a Supabase. 🚀`, { id: toastId })
       } else {
-        toast.error(res.error || 'Error al subir la imagen.')
+        toast.error(res.error || 'Error al subir la imagen.', { id: toastId })
       }
     } catch (err: any) {
-      toast.error('Error de red al subir la imagen: ' + err.message)
+      toast.error('Error de red al subir la imagen: ' + err.message, { id: toastId })
     } finally {
       setIsUploading(false)
     }
