@@ -11,13 +11,16 @@ import {
   Save, UserCircle, Building2, Users2, Shield, Loader2, 
   CheckCircle2, Mail, Phone, MapPin, FileText, Globe, UserCog,
   History, Fingerprint, Activity, Plus, Trash2, X, Send, 
-  UploadCloud, FileUp, AlertTriangle, Info, Eye, EyeOff
+  UploadCloud, FileUp, AlertTriangle, Info, Eye, EyeOff,
+  Upload, Image as ImageIcon, Link as LinkIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, updateOrganization } from "@/actions/settings";
 import { inviteMember, deleteInvitation, getPendingInvitations } from "@/actions/members";
 import { getAuditLogs, getAuditActions } from "@/actions/audit";
 import { updateDTEConfig, uploadCAF, uploadPFX, getCAFRecords } from "@/actions/billing";
+import { uploadNewsImageAction } from "@/actions/news";
+import { compressImage } from "@/lib/media/image-compressor";
 import { formatRUT, cleanRUT } from "@/lib/utils/rut";
 import { cn } from "@/lib/utils";
 import { 
@@ -151,6 +154,45 @@ export default function SettingsPageClient({
     setHasCert(!!initialDTEConfig?.cert_path);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDTEConfig]);
+
+  const [loadingAvatar, setLoadingAvatar] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecciona un archivo de imagen válido (.jpg, .png, .webp).');
+      return;
+    }
+
+    setLoadingAvatar(true);
+    const toastId = toast.loading('Optimizando foto de perfil...');
+
+    try {
+      const { file: compressedFile, ratio } = await compressImage(file, {
+        maxWidth: 500,
+        maxHeight: 500,
+        quality: 0.9,
+        format: 'image/webp',
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
+      const res = await uploadNewsImageAction(formData);
+      if (res.success && res.url) {
+        setProfileForm((prev) => ({ ...prev, avatar_url: res.url }));
+        toast.success(`Foto de perfil optimizada (${ratio} ahorro) y cargada con éxito. 🚀`, { id: toastId });
+      } else {
+        toast.error(res.error || 'Error al subir la foto de perfil.', { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error('Error al procesar la imagen: ' + err.message, { id: toastId });
+    } finally {
+      setLoadingAvatar(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     setLoadingProfile(true);
@@ -926,21 +968,54 @@ export default function SettingsPageClient({
           <CardContent className="p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-8">
             {/* AVATAR */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 p-4 sm:p-6 md:p-8 bg-muted/5 border-2 border-border/50 rounded-[1.5rem] sm:rounded-[2rem]">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-primary/10 flex items-center justify-center text-4xl sm:text-5xl font-black text-primary uppercase overflow-hidden shadow-xl border-2 border-primary/20 shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-primary/10 flex items-center justify-center text-4xl sm:text-5xl font-black text-primary uppercase overflow-hidden shadow-xl border-2 border-primary/20 shrink-0 relative group">
                 {profileForm.avatar_url ? (
-                  <img src={profileForm.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  <>
+                    <img src={profileForm.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setProfileForm({ ...profileForm, avatar_url: '' })}
+                      className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-rose-600 text-white rounded-full p-1 transition-all"
+                      title="Eliminar foto"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </>
                 ) : (
                   <span>{profileForm.full_name?.charAt(0) || userEmail?.charAt(0) || "?"}</span>
                 )}
               </div>
               <div className="flex-1 space-y-3 w-full">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">URL DE FOTO DE PERFIL</Label>
-                <PInput
-                  placeholder="https://su-foto.com/perfil.jpg"
-                  value={profileForm.avatar_url}
-                  onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
-                />
-                <p className="text-[9px] text-muted-foreground/60 italic ml-1">Enlace directo a imagen (JPG, PNG, WebP). Visible en documentos laborales.</p>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">FOTO DE PERFIL / AVATAR</Label>
+                
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary font-black text-xs px-4 h-10 shadow-xs transition-all hover:scale-105 active:scale-95">
+                    {loadingAvatar ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-primary" />
+                    )}
+                    <span>{loadingAvatar ? 'Optimizando WebP...' : 'Subir Foto desde el Dispositivo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={loadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="relative">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <PInput
+                    placeholder="O escribe una URL directa: https://su-foto.com/perfil.jpg"
+                    value={profileForm.avatar_url}
+                    onChange={(e) => setProfileForm({ ...profileForm, avatar_url: e.target.value })}
+                    className="pl-9 h-11 text-xs"
+                  />
+                </div>
+                <p className="text-[9px] text-muted-foreground/60 italic ml-1">La foto se comprime automáticamente en formato WebP de alta velocidad. Visible en liquidaciones y contratos.</p>
               </div>
             </div>
 
