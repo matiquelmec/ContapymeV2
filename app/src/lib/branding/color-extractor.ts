@@ -152,3 +152,52 @@ export async function extractBrandPaletteFromImage(imageSrc: string): Promise<Br
     img.src = imageSrc
   })
 }
+
+/**
+ * Convierte Hexadecimal a componentes RGB { r, g, b }.
+ */
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let clean = (hex || '').replace('#', '')
+  if (clean.length === 3) {
+    clean = clean.split('').map((c) => c + c).join('')
+  }
+  const num = parseInt(clean, 16) || 0
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  }
+}
+
+/**
+ * Ajusta un color hexadecimal para garantizar contraste WCAG AA (>4.5:1)
+ * sobre fondos oscuros (Modo Noche) o fondos claros (Modo Día).
+ */
+export function ensureHighContrastColor(hex: string, isDarkBackground: boolean): string {
+  const { r, g, b } = hexToRgb(hex)
+  const lum = getLuminance(r, g, b)
+
+  if (isDarkBackground) {
+    // Si el fondo es oscuro y el color es muy oscuro (ej: azul marino #004080 o verde oscuro),
+    // iluminarlo a un tono vibrante / pastel brillante
+    if (lum < 0.45) {
+      const scale = 0.55 / Math.max(0.08, lum)
+      const newR = Math.min(255, Math.round(r * scale + 70))
+      const newG = Math.min(255, Math.round(g * scale + 70))
+      const newB = Math.min(255, Math.round(b * scale + 70))
+      return rgbToHex(newR, newG, newB)
+    }
+  } else {
+    // Si el fondo es claro y el color es muy claro (ej: amarillo chillón o verde lima muy pálido),
+    // oscurecerlo para que contraste nítidamente sobre blanco
+    if (lum > 0.65) {
+      const scale = 0.45 / lum
+      const newR = Math.max(0, Math.round(r * scale))
+      const newG = Math.max(0, Math.round(g * scale))
+      const newB = Math.max(0, Math.round(b * scale))
+      return rgbToHex(newR, newG, newB)
+    }
+  }
+
+  return hex
+}

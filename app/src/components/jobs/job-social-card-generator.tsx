@@ -38,7 +38,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { extractBrandPaletteFromImage, type BrandPalette } from '@/lib/branding/color-extractor'
+import { extractBrandPaletteFromImage, ensureHighContrastColor, type BrandPalette } from '@/lib/branding/color-extractor'
 import type { JobPosting } from '@/actions/jobs'
 
 interface JobSocialCardGeneratorProps {
@@ -541,231 +541,249 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
 
           {/* ===== ANUNCIO PUBLICITARIO VISUAL CON IDENTIDAD DE LA EMPRESA ===== */}
           <div className="w-full flex justify-center py-1">
-            <div
-              ref={cardRef}
-              className={`rounded-2xl sm:rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between box-border transition-all duration-300 w-full min-w-0 ${
-                aspectRatio === 'story'
-                  ? 'aspect-[9/16] max-w-[340px] sm:max-w-[360px] p-3.5 sm:p-5 space-y-2 sm:space-y-3'
-                  : 'aspect-square max-w-[330px] sm:max-w-[370px] p-3 sm:p-4 space-y-1.5 sm:space-y-2'
-              } ${
-                theme === 'white'
-                  ? 'bg-white text-slate-950 border-2 sm:border-4 border-slate-200'
-                  : 'bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white border border-slate-800'
-              }`}
-            >
-              {/* Destellos de iluminación de fondo adaptados al color corporativo */}
-              {theme === 'white' ? (
-                <>
-                  <div
-                    className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-10"
-                    style={{ backgroundColor: brandPalette.primaryHex }}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-10"
-                    style={{ backgroundColor: brandPalette.accentHex }}
-                  />
-                </>
-              ) : (
-                <>
-                  <div
-                    className="absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-25"
-                    style={{ backgroundColor: brandPalette.primaryHex }}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-20"
-                    style={{ backgroundColor: brandPalette.accentHex }}
-                  />
-                </>
-              )}
+            {(() => {
+              const isDarkCard = theme === 'dark'
+              const contrastPrimaryHex = ensureHighContrastColor(brandPalette.primaryHex, isDarkCard)
+              const contrastAccentHex = ensureHighContrastColor(brandPalette.accentHex, isDarkCard)
 
-              {/* 1. CINTILLO PUBLICITARIO SUPERIOR CON COLOR PRIMARIO */}
-              <div
-                className="p-1.5 rounded-lg sm:rounded-xl flex items-center justify-between gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider relative z-10 w-full min-w-0 box-border text-white shadow-2xs"
-                style={{
-                  background: `linear-gradient(90deg, ${brandPalette.primaryHex} 0%, ${brandPalette.primaryHex}DD 100%)`
-                }}
-              >
-                <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
-                  <Flame className="h-3 w-3 text-amber-300 shrink-0" />
-                  <span className="truncate">
-                    {aspectRatio === 'story' ? '¡NUEVA VACANTE EN MAGALLANES!' : '¡OFERTA EN MAGALLANES!'}
-                  </span>
-                </div>
-                <span className="font-mono text-white/90 shrink-0 text-[8px] sm:text-[9px]">
-                  📍 {job.location}
-                </span>
-              </div>
-
-              {/* 2. HEADER CON LOGOTIPO DE LA EMPRESA + CONTAEMPLEOS */}
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/90 pb-1.5 pt-0.5 relative z-10 gap-2 w-full min-w-0">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {customLogoUrl ? (
-                    <img
-                      src={customLogoUrl}
-                      alt={job.company_name}
-                      className="h-6 sm:h-7 w-auto max-w-[90px] sm:max-w-[120px] object-contain shrink-0"
-                    />
+              return (
+                <div
+                  ref={cardRef}
+                  className={`rounded-2xl sm:rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between box-border transition-all duration-300 w-full min-w-0 ${
+                    aspectRatio === 'story'
+                      ? 'aspect-[9/16] max-w-[340px] sm:max-w-[360px] p-3.5 sm:p-5 space-y-2 sm:space-y-3'
+                      : 'aspect-square max-w-[330px] sm:max-w-[370px] p-3 sm:p-4 space-y-1.5 sm:space-y-2'
+                  } ${
+                    theme === 'white'
+                      ? 'bg-white text-slate-950 border-2 sm:border-4 border-slate-200'
+                      : 'bg-[#0B0F19] text-white border-2 border-slate-700/90 shadow-2xl shadow-cyan-950/40'
+                  }`}
+                >
+                  {/* Destellos de iluminación de fondo adaptados al color corporativo */}
+                  {theme === 'white' ? (
+                    <>
+                      <div
+                        className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-10"
+                        style={{ backgroundColor: brandPalette.primaryHex }}
+                      />
+                      <div
+                        className="absolute bottom-0 left-0 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-10"
+                        style={{ backgroundColor: brandPalette.accentHex }}
+                      />
+                    </>
                   ) : (
-                    <Image
-                      src="/logo-contapyme.png"
-                      alt="ContaPyme"
-                      width={100}
-                      height={28}
-                      className={`h-auto w-18 sm:w-24 shrink-0 ${theme === 'dark' ? 'brightness-125' : ''}`}
-                    />
+                    <>
+                      <div
+                        className="absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-30"
+                        style={{ backgroundColor: contrastPrimaryHex }}
+                      />
+                      <div
+                        className="absolute bottom-0 left-0 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-25"
+                        style={{ backgroundColor: contrastAccentHex }}
+                      />
+                    </>
                   )}
-                  <span
-                    className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-full border shrink-0"
+
+                  {/* 1. CINTILLO PUBLICITARIO SUPERIOR CON COLOR PRIMARIO */}
+                  <div
+                    className="p-1.5 rounded-lg sm:rounded-xl flex items-center justify-between gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-wider relative z-10 w-full min-w-0 box-border text-white shadow-2xs"
                     style={{
-                      color: brandPalette.accentHex,
-                      backgroundColor: `${brandPalette.accentHex}1A`,
-                      borderColor: `${brandPalette.accentHex}4D`
+                      background: theme === 'white'
+                        ? `linear-gradient(90deg, ${brandPalette.primaryHex} 0%, ${brandPalette.primaryHex}DD 100%)`
+                        : `linear-gradient(90deg, #0284C7 0%, ${contrastPrimaryHex} 100%)`
                     }}
                   >
-                    ContaEmpleos
-                  </span>
-                </div>
-                <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider px-2 py-0.2 rounded-md shrink-0 truncate max-w-[110px] sm:max-w-[150px] ${
-                  theme === 'white' ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {job.sector}
-                </span>
-              </div>
-
-              {/* 3. CUERPO HERO (TÍTULO Y EMPRESA) */}
-              <div className={`space-y-1 relative z-10 w-full min-w-0 ${aspectRatio === 'story' ? 'my-auto py-0.5' : 'my-auto'}`}>
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span
-                    className="text-[10px] sm:text-xs font-black uppercase tracking-wide flex items-center gap-1 truncate max-w-full"
-                    style={{ color: brandPalette.primaryHex }}
-                  >
-                    <Building2 className="h-3 w-3 shrink-0" /> <span className="truncate">{job.company_name}</span>
-                  </span>
-                  {job.is_verified && (
-                    <span
-                      className="inline-flex items-center gap-0.5 text-[7.5px] sm:text-[8.5px] font-black px-1.5 py-0.2 rounded shrink-0"
-                      style={{
-                        color: brandPalette.accentHex,
-                        backgroundColor: `${brandPalette.accentHex}1A`
-                      }}
-                    >
-                      <BadgeCheck className="h-2.5 w-2.5" /> Verificada
+                    <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+                      <Flame className="h-3 w-3 text-amber-300 shrink-0" />
+                      <span className="truncate">
+                        {aspectRatio === 'story' ? '¡NUEVA VACANTE EN MAGALLANES!' : '¡OFERTA EN MAGALLANES!'}
+                      </span>
+                    </div>
+                    <span className="font-mono text-white shrink-0 text-[8px] sm:text-[9px] font-bold">
+                      📍 {job.location}
                     </span>
-                  )}
-                </div>
-
-                {/* TÍTULO ULTRA LLAMATIVO */}
-                <h3 className={`font-black italic uppercase tracking-tight leading-snug break-words hyphens-auto w-full min-w-0 ${
-                  aspectRatio === 'story' 
-                    ? 'text-base sm:text-xl text-slate-950 dark:text-white' 
-                    : 'text-[13px] sm:text-base text-slate-950 dark:text-white line-clamp-2'
-                }`}>
-                  {job.title}
-                </h3>
-
-                {/* Cápsula de Sueldo y Turno */}
-                <div className="flex flex-wrap gap-1 pt-0.5 w-full min-w-0">
-                  {job.salary_raw && (
-                    <div
-                      className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-white px-2.5 py-0.5 rounded-lg shadow-2xs shrink-0"
-                      style={{ backgroundColor: brandPalette.accentHex }}
-                    >
-                      <DollarSign className="h-2.5 w-2.5 shrink-0" />
-                      <span>{job.salary_raw}</span>
-                    </div>
-                  )}
-                  {job.work_shift && (
-                    <div className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider shrink-0 ${
-                      theme === 'white'
-                        ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
-                        : 'bg-indigo-950/80 text-indigo-300 border border-indigo-500/40'
-                    }`}>
-                      <Clock className="h-2.5 w-2.5 shrink-0" />
-                      <span>{job.work_shift}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Requisitos principales */}
-                {job.requirements && job.requirements.length > 0 && (
-                  <div className={`space-y-0.5 w-full min-w-0 ${aspectRatio === 'story' ? 'pt-1 block' : 'pt-0.5 block'}`}>
-                    <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block ${
-                      theme === 'white' ? 'text-slate-500' : 'text-slate-400'
-                    }`}>
-                      Requisitos clave:
-                    </span>
-                    <div className="space-y-0.5 w-full min-w-0">
-                      {job.requirements.slice(0, aspectRatio === 'story' ? 4 : 2).map((req, idx) => (
-                        <div key={idx} className={`flex items-start gap-1 text-[9.5px] sm:text-[10.5px] font-bold leading-snug w-full min-w-0 ${
-                          theme === 'white' ? 'text-slate-700' : 'text-slate-300'
-                        }`}>
-                          <CheckCircle2
-                            className="h-3 w-3 shrink-0 mt-0.5"
-                            style={{ color: brandPalette.accentHex }}
-                          />
-                          <span className="break-words line-clamp-1 min-w-0 flex-1">{req}</span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* 4. BLOQUE DE POSTULACIÓN Y CÓDIGO QR */}
-              <div className={`p-2 sm:p-2.5 rounded-xl flex items-center justify-between gap-2 relative z-10 w-full min-w-0 box-border ${
-                theme === 'white'
-                  ? 'bg-slate-50 border border-slate-200'
-                  : 'bg-slate-800/80 border border-slate-700/80'
-              }`}>
-                <div className="space-y-0.2 min-w-0 flex-1">
-                  <span
-                    className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block"
-                    style={{ color: brandPalette.accentHex }}
-                  >
-                    Postulación Rápida
-                  </span>
-                  <p className={`text-[9.5px] sm:text-[11px] truncate font-mono font-bold ${
-                    theme === 'white' ? 'text-slate-900' : 'text-slate-200'
+                  {/* 2. HEADER CON LOGOTIPO DE LA EMPRESA + CONTAEMPLEOS */}
+                  <div className={`flex items-center justify-between border-b ${theme === 'white' ? 'border-slate-200/90' : 'border-slate-800'} pb-1.5 pt-0.5 relative z-10 gap-2 w-full min-w-0`}>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {customLogoUrl ? (
+                        <div className={`p-1 rounded-lg ${theme === 'white' ? 'bg-transparent' : 'bg-white/95'} flex items-center justify-center shrink-0`}>
+                          <img
+                            src={customLogoUrl}
+                            alt={job.company_name}
+                            className="h-6 sm:h-7 w-auto max-w-[90px] sm:max-w-[120px] object-contain shrink-0"
+                          />
+                        </div>
+                      ) : (
+                        <Image
+                          src="/logo-contapyme.png"
+                          alt="ContaPyme"
+                          width={100}
+                          height={28}
+                          className={`h-auto w-18 sm:w-24 shrink-0 ${theme === 'dark' ? 'brightness-125' : ''}`}
+                        />
+                      )}
+                      <span
+                        className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0"
+                        style={{
+                          color: theme === 'white' ? brandPalette.accentHex : '#34D399',
+                          backgroundColor: theme === 'white' ? `${brandPalette.accentHex}1A` : 'rgba(52, 211, 153, 0.15)',
+                          borderColor: theme === 'white' ? `${brandPalette.accentHex}4D` : 'rgba(52, 211, 153, 0.4)'
+                        }}
+                      >
+                        ContaEmpleos
+                      </span>
+                    </div>
+                    <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 truncate max-w-[110px] sm:max-w-[150px] ${
+                      theme === 'white' ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-slate-800 text-cyan-200 border border-slate-700'
+                    }`}>
+                      {job.sector}
+                    </span>
+                  </div>
+
+                  {/* 3. CUERPO HERO (TÍTULO Y EMPRESA) */}
+                  <div className={`space-y-1 relative z-10 w-full min-w-0 ${aspectRatio === 'story' ? 'my-auto py-0.5' : 'my-auto'}`}>
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <span
+                        className={`text-[10px] sm:text-xs font-black uppercase tracking-wide flex items-center gap-1 truncate max-w-full ${
+                          theme === 'white' ? '' : 'drop-shadow-sm'
+                        }`}
+                        style={{ color: contrastPrimaryHex }}
+                      >
+                        <Building2 className="h-3 w-3 shrink-0" /> <span className="truncate">{job.company_name}</span>
+                      </span>
+                      {job.is_verified && (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[7.5px] sm:text-[8.5px] font-black px-1.5 py-0.2 rounded shrink-0"
+                          style={{
+                            color: theme === 'white' ? brandPalette.accentHex : '#34D399',
+                            backgroundColor: theme === 'white' ? `${brandPalette.accentHex}1A` : 'rgba(52, 211, 153, 0.15)'
+                          }}
+                        >
+                          <BadgeCheck className="h-2.5 w-2.5" /> Verificada
+                        </span>
+                      )}
+                    </div>
+
+                    {/* TÍTULO ULTRA LLAMATIVO CON ALTO CONTRASTE */}
+                    <h3 className={`font-black italic uppercase tracking-tight leading-snug break-words hyphens-auto w-full min-w-0 ${
+                      aspectRatio === 'story' 
+                        ? `text-base sm:text-xl ${theme === 'white' ? 'text-slate-950' : 'text-white drop-shadow-sm'}` 
+                        : `text-[13px] sm:text-base ${theme === 'white' ? 'text-slate-950' : 'text-white drop-shadow-sm'} line-clamp-2`
+                    }`}>
+                      {job.title}
+                    </h3>
+
+                    {/* Cápsula de Sueldo y Turno */}
+                    <div className="flex flex-wrap gap-1 pt-0.5 w-full min-w-0">
+                      {job.salary_raw && (
+                        <div
+                          className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-white px-2.5 py-0.5 rounded-lg shadow-2xs shrink-0"
+                          style={{ backgroundColor: theme === 'white' ? brandPalette.accentHex : '#059669' }}
+                        >
+                          <DollarSign className="h-2.5 w-2.5 shrink-0" />
+                          <span>{job.salary_raw}</span>
+                        </div>
+                      )}
+                      {job.work_shift && (
+                        <div className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider shrink-0 ${
+                          theme === 'white'
+                            ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
+                            : 'bg-indigo-950 text-indigo-200 border border-indigo-700/60'
+                        }`}>
+                          <Clock className="h-2.5 w-2.5 shrink-0" />
+                          <span>{job.work_shift}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Requisitos principales */}
+                    {job.requirements && job.requirements.length > 0 && (
+                      <div className={`space-y-0.5 w-full min-w-0 ${aspectRatio === 'story' ? 'pt-1 block' : 'pt-0.5 block'}`}>
+                        <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block ${
+                          theme === 'white' ? 'text-slate-500' : 'text-slate-300'
+                        }`}>
+                          Requisitos clave:
+                        </span>
+                        <div className="space-y-0.5 w-full min-w-0">
+                          {job.requirements.slice(0, aspectRatio === 'story' ? 4 : 2).map((req, idx) => (
+                            <div key={idx} className={`flex items-start gap-1 text-[9.5px] sm:text-[10.5px] font-bold leading-snug w-full min-w-0 ${
+                              theme === 'white' ? 'text-slate-700' : 'text-slate-100'
+                            }`}>
+                              <CheckCircle2
+                                className="h-3 w-3 shrink-0 mt-0.5"
+                                style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
+                              />
+                              <span className="break-words line-clamp-1 min-w-0 flex-1">{req}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. BLOQUE DE POSTULACIÓN Y CÓDIGO QR */}
+                  <div className={`p-2 sm:p-2.5 rounded-xl flex items-center justify-between gap-2 relative z-10 w-full min-w-0 box-border ${
+                    theme === 'white'
+                      ? 'bg-slate-50 border border-slate-200'
+                      : 'bg-slate-900/90 border border-slate-700/90'
                   }`}>
-                    {job.contact_email ? `✉️ ${job.contact_email}` : (job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : '🌐 contapymepuq.cl')}
-                  </p>
-                  <p className={`text-[7.5px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-400'} truncate`}>
-                    Escanea el QR o usa el enlace directo.
-                  </p>
-                </div>
-                <img
-                  src={qrCodeUrl}
-                  alt="QR Postulación"
-                  className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg p-0.5 shrink-0 shadow-2xs ${
-                    theme === 'white' ? 'bg-white border border-slate-200' : 'bg-white'
-                  }`}
-                  crossOrigin="anonymous"
-                />
-              </div>
+                    <div className="space-y-0.2 min-w-0 flex-1">
+                      <span
+                        className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block"
+                        style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
+                      >
+                        Postulación Rápida
+                      </span>
+                      <p className={`text-[9.5px] sm:text-[11px] truncate font-mono font-bold ${
+                        theme === 'white' ? 'text-slate-900' : 'text-white'
+                      }`}>
+                        {job.contact_email ? `✉️ ${job.contact_email}` : (job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : '🌐 contapymepuq.cl')}
+                      </p>
+                      <p className={`text-[7.5px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-300'} truncate`}>
+                        Escanea el QR o usa el enlace directo.
+                      </p>
+                    </div>
+                    <img
+                      src={qrCodeUrl}
+                      alt="QR Postulación"
+                      className={`h-10 w-10 sm:h-12 sm:w-12 rounded-lg p-0.5 shrink-0 shadow-2xs ${
+                        theme === 'white' ? 'bg-white border border-slate-200' : 'bg-white'
+                      }`}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
 
-              {/* 5. CALLOUT EXCLUSIVO PARA HISTORIAS DE INSTAGRAM */}
-              {aspectRatio === 'story' && (
-                <div className="p-1.5 rounded-lg bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 border border-rose-400/30 flex items-center justify-center gap-1.5 text-center relative z-10">
-                  <LinkIcon className="h-3 w-3 text-rose-600 shrink-0" />
-                  <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 truncate">
-                    👆 TOCA EL STICKER DE ENLACE ARRIBA
-                  </span>
-                </div>
-              )}
+                  {/* 5. CALLOUT EXCLUSIVO PARA HISTORIAS DE INSTAGRAM */}
+                  {aspectRatio === 'story' && (
+                    <div className={`p-1.5 rounded-lg border flex items-center justify-center gap-1.5 text-center relative z-10 ${
+                      theme === 'white'
+                        ? 'bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 border-rose-400/30 text-rose-700'
+                        : 'bg-gradient-to-r from-rose-950/80 via-pink-950/80 to-amber-950/80 border-rose-500/50 text-rose-200'
+                    }`}>
+                      <LinkIcon className="h-3 w-3 text-rose-500 shrink-0" />
+                      <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider truncate">
+                        👆 TOCA EL STICKER DE ENLACE ARRIBA
+                      </span>
+                    </div>
+                  )}
 
-              {/* 6. FOOTER DEL ANUNCIO */}
-              <div className={`pt-1.5 border-t flex items-center justify-between gap-1 text-[7.5px] sm:text-[8.5px] font-bold uppercase relative z-10 w-full min-w-0 ${
-                theme === 'white' ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'
-              }`}>
-                <span
-                  className="flex items-center gap-1 shrink-0"
-                  style={{ color: brandPalette.accentHex }}
-                >
-                  <ShieldCheck className="h-2.5 w-2.5 shrink-0" /> Art. 2° Código del Trabajo
-                </span>
-                <span className="font-mono truncate">contapymepuq.cl/empleos</span>
-              </div>
-            </div>
+                  {/* 6. FOOTER DEL ANUNCIO */}
+                  <div className={`pt-1.5 border-t flex items-center justify-between gap-1 text-[7.5px] sm:text-[8.5px] font-bold uppercase relative z-10 w-full min-w-0 ${
+                    theme === 'white' ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-300'
+                  }`}>
+                    <span
+                      className="flex items-center gap-1 shrink-0"
+                      style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
+                    >
+                      <ShieldCheck className="h-2.5 w-2.5 shrink-0" /> Art. 2° Código del Trabajo
+                    </span>
+                    <span className="font-mono truncate">contapymepuq.cl/empleos</span>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
           {/* ===== BOTONES DE ACCIÓN DIRECTA ===== */}
