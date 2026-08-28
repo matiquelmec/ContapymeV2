@@ -90,24 +90,26 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     notFound();
   }
 
-  // Schema.org JobPosting estructurado para Google for Jobs
+  // Schema.org JobPosting estructurado para Google for Jobs (Estándares 2026)
   const schemaOrgJob = {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
     "title": job.title,
-    "description": job.description,
+    "description": `<p>${job.description.replace(/\n/g, '<br/>')}</p>${job.requirements && job.requirements.length > 0 ? `<h3>Requisitos:</h3><ul>${job.requirements.map((r: string) => `<li>${r}</li>`).join('')}</ul>` : ''}${job.benefits && job.benefits.length > 0 ? `<h3>Beneficios:</h3><ul>${job.benefits.map((b: string) => `<li>${b}</li>`).join('')}</ul>` : ''}`,
     "identifier": {
       "@type": "PropertyValue",
       "name": job.company_name,
       "value": job.slug
     },
-    "datePosted": job.published_at,
-    "validThrough": job.expires_at || new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-    "employmentType": job.job_type === "Jornada Completa" ? "FULL_TIME" : "PART_TIME",
+    "datePosted": job.published_at || new Date().toISOString(),
+    "validThrough": job.expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    "employmentType": job.job_type === "Jornada Completa" ? "FULL_TIME" : job.job_type === "Part-Time" ? "PART_TIME" : "CONTRACTOR",
+    "directApply": true,
     "hiringOrganization": {
       "@type": "Organization",
       "name": job.company_name,
-      "sameAs": "https://contapymepuq.cl"
+      "sameAs": "https://contapymepuq.cl",
+      "logo": job.company_logo_url || "https://contapymepuq.cl/logo-contapyme.png"
     },
     "jobLocation": {
       "@type": "Place",
@@ -115,8 +117,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         "@type": "PostalAddress",
         "addressLocality": job.location,
         "addressRegion": "Magallanes y de la Antártica Chilena",
+        "postalCode": job.location === "Punta Arenas" ? "6200000" : job.location === "Puerto Natales" ? "6160000" : job.location === "Porvenir" ? "6300000" : "6200000",
         "addressCountry": "CL"
       }
+    },
+    "applicantLocationRequirements": {
+      "@type": "Country",
+      "name": "Chile"
     },
     ...(job.salary_min ? {
       "baseSalary": {
@@ -132,12 +139,41 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     } : {})
   };
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ContaEmpleos Magallanes",
+        "item": "https://contapymepuq.cl/empleos"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": job.location,
+        "item": `https://contapymepuq.cl/empleos/comuna/${encodeURIComponent(job.location.toLowerCase().replace(/\s+/g, '-'))}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": job.title,
+        "item": `https://contapymepuq.cl/empleos/${job.slug}`
+      }
+    ]
+  };
+
   return (
     <div className="py-6 sm:py-12 lg:py-16">
-      {/* Schema.org JobPosting JSON-LD para Google for Jobs */}
+      {/* Schema.org JobPosting JSON-LD & Breadcrumbs para Google for Jobs */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgJob) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl space-y-6 sm:space-y-10">

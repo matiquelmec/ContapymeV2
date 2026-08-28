@@ -10,18 +10,18 @@ export async function GET() {
 
   let { data: news } = await supabase
     .from('regional_news')
-    .select('title, slug, published_at, category')
+    .select('title, slug, published_at, category, image_url')
     .gte('published_at', twoDaysAgo)
     .order('published_at', { ascending: false })
     .limit(100)
 
-  // Fallback: si no hay noticias en las últimas 48h, tomar las últimas 20 registradas
+  // Fallback: si no hay noticias en las últimas 48h, tomar las últimas 30 registradas
   if (!news || news.length === 0) {
     const { data: latestNews } = await supabase
       .from('regional_news')
-      .select('title, slug, published_at, category')
+      .select('title, slug, published_at, category, image_url')
       .order('published_at', { ascending: false })
-      .limit(20)
+      .limit(30)
     news = latestNews || []
   }
 
@@ -37,23 +37,30 @@ export async function GET() {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;')
 
+    const imageTag = item.image_url ? `
+    <image:image>
+      <image:loc>${item.image_url.replace(/&/g, '&amp;')}</image:loc>
+      <image:title>${cleanTitle}</image:title>
+    </image:image>` : ''
+
     return `
   <url>
     <loc>${newsUrl}</loc>
     <news:news>
       <news:publication>
-        <news:name>Contapymepuq Diario Regional</news:name>
+        <news:name>ContaPymePUQ Diario Regional de Magallanes</news:name>
         <news:language>es</news:language>
       </news:publication>
       <news:publication_date>${pubDate}</news:publication_date>
       <news:title>${cleanTitle}</news:title>
-    </news:news>
+    </news:news>${imageTag}
   </url>`
   }).join('')
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${xmlItems}
 </urlset>`
 

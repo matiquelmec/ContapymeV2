@@ -348,6 +348,23 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
           </div>
         )}
 
+        {/* Interlinking Estratégico SEO: Empleabilidad Austral */}
+        <div className="p-6 rounded-[2rem] bg-gradient-to-r from-primary/5 via-primary/10 to-blue-500/5 border border-primary/20 space-y-3">
+          <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest">
+            <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <span>Mercado Laboral de Magallanes</span>
+          </div>
+          <h4 className="text-base sm:text-lg font-black uppercase tracking-tight text-foreground">
+            ¿Buscas trabajo o nuevas oportunidades en Punta Arenas y la región?
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Revisa las ofertas de empleo verificadas bajo la Ley 40 Horas y postulaciones directas por WhatsApp.
+          </p>
+          <Link href="/empleos" className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+            <span>Ver Bolsa de Empleos Regional ➔</span>
+          </Link>
+        </div>
+
         {/* Barra de Interacción y Compartir */}
         <div className="pt-8 border-t border-border/50 space-y-4">
           <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 italic">

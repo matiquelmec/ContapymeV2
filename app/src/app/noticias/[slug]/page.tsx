@@ -109,15 +109,48 @@ export default async function NewsPage({ params }: Props) {
     },
     articleSection: news.category || "Regional",
     keywords: news.seo_keywords || "noticias magallanes, punta arenas",
-    inLanguage: "es-CL"
+    inLanguage: "es-CL",
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", ".news-summary", "article p"]
+    }
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Diario Regional Magallanes",
+        item: "https://www.contapymepuq.cl/noticias"
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: news.category || "Regional",
+        item: `https://www.contapymepuq.cl/noticias?cat=${encodeURIComponent(news.category || "Regional")}`
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: news.title,
+        item: `https://www.contapymepuq.cl/noticias/${slug}`
+      }
+    ]
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
-      {/* 🤖 SCHEMA.ORG NEWSARTICLE STRUCTURED DATA (Google News, Discover & GEO/AEO) */}
+      {/* 🤖 SCHEMA.ORG NEWSARTICLE & BREADCRUMBS (Google News, Discover & Voice AEO) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       {/* 🧭 NAVIGATION HEADER */}
