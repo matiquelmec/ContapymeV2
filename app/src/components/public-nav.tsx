@@ -2,12 +2,13 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Newspaper, Calculator, Cpu, Tag, Phone, Building2, Briefcase } from 'lucide-react'
+import { Newspaper, Calculator, Cpu, Tag, Phone, Building2, Briefcase, Sparkles } from 'lucide-react'
 
 const tabs = [
   { href: '/', label: 'Diario Regional', icon: Newspaper },
   { href: '/empleos', label: 'Bolsa de Empleos', icon: Briefcase },
   { href: '/crear-empresa', label: 'Crea tu Empresa ($35K)', icon: Building2 },
+  { href: '/nosotros', label: 'Manifiesto & Misión', icon: Sparkles },
   { href: '/calculadora', label: 'Calculadora Sueldos', icon: Calculator },
   { href: '/software', label: 'Software ERP', icon: Cpu },
   { href: '/precios', label: 'Planes', icon: Tag },

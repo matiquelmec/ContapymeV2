@@ -94,7 +94,7 @@ export default async function PublicLayout({
                   </div>
                 </Link>
                 <p className="text-xs font-medium leading-relaxed text-slate-400 max-w-sm">
-                  Ecosistema digital integral para Pymes de Chile y Magallanes. Gestión Contable IFRS, Nómina LRE (Dirección del Trabajo), Facturación Electrónica SII y Diario Informativo Regional.
+                  «Tú haz crecer tu negocio. Nosotros nos encargamos de los números.» Ecosistema digital integral para Pymes de Magallanes: Formalización, Contabilidad IFRS, Ley 40 Horas, Bolsa de Empleos y Diario Regional.
                 </p>
               </div>
 
@@ -116,16 +116,17 @@ export default async function PublicLayout({
               <ul className="space-y-2 text-xs font-semibold text-slate-400">
                 <li><Link href="/crear-empresa" className="hover:text-emerald-400 font-bold transition-colors">Creación de Empresas ($35.000)</Link></li>
                 <li><Link href="/software" className="hover:text-primary transition-colors">ERP Contable & IFRS</Link></li>
+                <li><Link href="/empleos" className="hover:text-primary transition-colors">ContaEmpleos Magallanes</Link></li>
                 <li><Link href="/dashboard/payroll" className="hover:text-primary transition-colors">Nómina & Ley 40 Horas</Link></li>
-                <li><Link href="/dashboard/payroll/lre" className="hover:text-primary transition-colors">Libro Remuneraciones (LRE)</Link></li>
                 <li><Link href="/dashboard/accounting/rcv" className="hover:text-primary transition-colors">Registro RCV & F29 SII</Link></li>
               </ul>
             </div>
 
             {/* Columna 4: Normativa & Herramientas */}
             <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-emerald-500 pl-2.5">Normativa & Servicios</h4>
+              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-emerald-500 pl-2.5">Institucional & Servicios</h4>
               <ul className="space-y-2 text-xs font-semibold text-slate-400">
+                <li><Link href="/nosotros" className="hover:text-emerald-400 font-bold transition-colors">Manifiesto, Misión & Visión</Link></li>
                 <li><Link href="/calculadora" className="hover:text-primary transition-colors">Calculadora de Sueldo Líquido</Link></li>
                 <li><Link href="/noticias" className="hover:text-primary transition-colors">Diario Regional Magallanes</Link></li>
                 <li><Link href="/precios" className="hover:text-primary transition-colors">Planes & Suscripciones</Link></li>
