@@ -46,25 +46,49 @@ export default async function NewsArchivePage() {
           <Link href="/" className="flex items-center gap-2 group transition-transform duration-300">
             <Image src="/logo-contapyme.png" alt="Logo" width={140} height={40} className="h-auto w-[120px]" />
           </Link>
-          <Link href="/">
-             <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/noticias"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-black text-[11px] uppercase tracking-wider px-4 h-9 shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+            >
+              <Newspaper className="h-3.5 w-3.5" />
+              <span>+ Publicar Noticia / Comunicado</span>
+            </Link>
+
+            <Link href="/">
+              <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest gap-2">
                 <ChevronLeft className="h-4 w-4" /> Volver al Inicio
-             </Button>
-          </Link>
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 py-20 px-6">
+      <main className="flex-1 py-16 px-6">
         <div className="container mx-auto">
-          {/* TÍTULO INSTITUCIONAL */}
-          <div className="max-w-4xl mb-20 space-y-4">
-             <div className="inline-flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.4em]">
-                <Newspaper className="h-3 w-3" /> Hemeroteca Regional & Financiera
-             </div>
-             <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.85] text-foreground">
-                Archivo de Noticias <br />
-                <span className="text-muted-foreground/30">Magallanes & Antártica.</span>
-             </h1>
+          {/* TÍTULO INSTITUCIONAL Y CTA */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+            <div className="max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.4em]">
+                <Newspaper className="h-3 w-3" /> Hemeroteca Regional & Diario de Magallanes
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-[0.85] text-foreground">
+                Diario Regional <br />
+                <span className="text-muted-foreground/30 font-serif">Punta Arenas & Antártica.</span>
+              </h1>
+              <p className="text-muted-foreground font-medium text-xs sm:text-sm max-w-xl leading-relaxed">
+                Información económica, actualidad, convenios y comunicados oficiales de las empresas de la región austral.
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/noticias"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-primary/20 hover:border-primary text-primary hover:bg-primary/5 font-black text-xs uppercase tracking-wider px-5 h-12 shadow-xs transition-all hover:scale-105 active:scale-95 shrink-0"
+            >
+              <Newspaper className="h-4 w-4 text-primary" />
+              <span>Difundir Comunicado de Prensa</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Link>
           </div>
 
           {/* GRILLA DE NOTICIAS */}
