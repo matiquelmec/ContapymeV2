@@ -22,7 +22,10 @@ import {
   Check,
   X,
   Eye,
-  BadgeCheck
+  BadgeCheck,
+  Upload,
+  Image as ImageIcon,
+  Link as LinkIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +43,8 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { createJobAction, updateJobAction, deleteJobAction, validateJobCompliance, type JobPosting } from '@/actions/jobs'
+import { uploadNewsImageAction } from '@/actions/news'
+import { compressImage } from '@/lib/media/image-compressor'
 import { JobSocialCardGenerator } from '@/components/jobs/job-social-card-generator'
 
 const COMUNAS = [
@@ -97,6 +102,7 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
   const [empresa, setEmpresa] = useState(companyName || '')
   const [rut, setRut] = useState(companyRut || '')
   const [logoUrl, setLogoUrl] = useState('')
+  const [isLogoUploading, setIsLogoUploading] = useState(false)
   const [location, setLocation] = useState('Punta Arenas')
   const [sector, setSector] = useState('Comercio y Retail')
   const [jobType, setJobType] = useState('Presencial')
@@ -110,6 +116,44 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
   const [contactEmail, setContactEmail] = useState('')
   const [contactWhatsapp, setContactWhatsapp] = useState('+569 ')
   const [applicationUrl, setApplicationUrl] = useState('')
+
+  // Subir logotipo con compresión WebP
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, sube únicamente archivos de imagen (.jpg, .png, .webp, .svg)')
+      return
+    }
+
+    setIsLogoUploading(true)
+    const toastId = toast.loading('Optimizando logotipo de empresa...')
+
+    try {
+      const { file: compressedFile, ratio } = await compressImage(file, {
+        maxWidth: 600,
+        maxHeight: 600,
+        quality: 0.9,
+        format: 'image/webp',
+      })
+
+      const uploadData = new FormData()
+      uploadData.append('file', compressedFile)
+
+      const res = await uploadNewsImageAction(uploadData)
+      if (res.success && res.url) {
+        setLogoUrl(res.url)
+        toast.success(`Logotipo optimizado (${ratio} ahorro) y adjuntado. 🚀`, { id: toastId })
+      } else {
+        toast.error(res.error || 'Error al subir el logo.', { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error('Error al procesar el logotipo: ' + err.message, { id: toastId })
+    } finally {
+      setIsLogoUploading(false)
+    }
+  }
 
   // Validación legal en vivo
   const [complianceViolations, setComplianceViolations] = useState<string[]>([])
@@ -467,6 +511,60 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
                   onChange={(e) => setEmpresa(e.target.value)}
                   className="rounded-xl h-10 text-xs font-medium"
                 />
+              </div>
+            </div>
+
+            {/* Logotipo de la Empresa con Compresión WebP */}
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80">
+              <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                Logotipo de la Empresa (Opcional)
+              </Label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-white border border-zinc-200 overflow-hidden relative flex items-center justify-center shrink-0 shadow-2xs">
+                  {logoUrl ? (
+                    <>
+                      <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1.5" />
+                      <button
+                        type="button"
+                        onClick={() => setLogoUrl('')}
+                        className="absolute top-1 right-1 bg-black/70 hover:bg-rose-600 text-white rounded-full p-0.5"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <Building2 className="h-6 w-6 text-zinc-400" />
+                  )}
+                </div>
+
+                <div className="space-y-1.5 flex-1 w-full">
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-100 text-foreground font-black text-xs px-3.5 h-8 shadow-2xs transition-all">
+                      {isLogoUploading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5 text-primary" />
+                      )}
+                      <span>{isLogoUploading ? 'Optimizando WebP...' : 'Subir Logotipo desde el Dispositivo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isLogoUploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                    <Input
+                      placeholder="O pega una URL: https://ejemplo.com/logo.png"
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                      className="pl-8 h-8 text-xs rounded-xl bg-white"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
