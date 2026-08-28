@@ -191,6 +191,11 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
           <div className="flex flex-wrap items-center gap-2.5">
             <JobSocialCardGenerator job={job} />
+            <Link href="/dashboard/empleos">
+              <Button size="sm" className="text-xs font-black uppercase tracking-wider gap-1.5 rounded-2xl h-11 px-4 bg-primary text-white shadow-md shadow-primary/20 hover:bg-primary/90 transition-all hover:scale-105 active:scale-95">
+                <Briefcase className="h-4 w-4" /> + Publicar Empleo
+              </Button>
+            </Link>
             <Link href="/empleos">
               <Button variant="ghost" size="sm" className="text-xs font-black uppercase tracking-wider gap-1.5 rounded-2xl h-11 px-4">
                 <ChevronLeft className="h-4 w-4" /> Volver
@@ -397,17 +402,17 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             </div>
 
             {/* CTA para Pymes */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-zinc-100 border border-zinc-200 space-y-2.5 box-border">
-              <div className="flex items-center gap-2 text-zinc-900 font-black text-xs uppercase tracking-wider">
+            <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-blue-500/5 border border-primary/20 space-y-3 box-border">
+              <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
                 <Building2 className="h-4 w-4 text-primary shrink-0" />
                 <span>¿Eres una Pyme en Magallanes?</span>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Publica tus ofertas de trabajo gratis y genera automáticamente los contratos de trabajo bajo el Art. 10.
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Publica tus ofertas de trabajo gratis, genera kits publicitarios para redes y gestiona tus contratos bajo la Ley 40 Horas.
               </p>
-              <Link href="/contacto" className="block pt-1">
-                <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-wider rounded-xl h-9">
-                  Publicar una Vacante
+              <Link href="/dashboard/empleos" className="block pt-1">
+                <Button className="w-full text-xs font-black uppercase tracking-wider rounded-xl h-10 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                  <Briefcase className="h-3.5 w-3.5 mr-1.5" /> Publicar Vacante en ContaEmpleos ➔
                 </Button>
               </Link>
             </div>
