@@ -63,6 +63,7 @@ export const navigationGroups = [
     title: "Administración B2B",
     items: [
       { name: 'Configuración de Empresa', href: '/configuracion-empresa', icon: UserCog },
+      { name: 'Consola Superadmin', href: '/admin', icon: Shield },
     ]
   }
 ]
