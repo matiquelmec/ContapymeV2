@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Manejo especial de Ofertas de Empleo (ContaEmpleos)
-    if (itemType === 'job_post' && jobData) {
+    if ((itemType === 'job_post' || itemType === 'job_posting') && jobData) {
       // Validar Art. 2° Código del Trabajo
       const fullText = `${jobData.title} ${jobData.description} ${(jobData.requirements || []).join(' ')}`
       const compliance = await validateJobCompliance(fullText)
