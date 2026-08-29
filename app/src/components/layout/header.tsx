@@ -11,6 +11,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Plus, Menu } from 'lucide-react'
 import { NewCompanyModal } from './new-company-modal'
 import { MobileSidebar } from './mobile-sidebar'
+import { SubscriptionBadge } from '@/components/subscription/subscription-badge'
 
 export function Header() {
   const [organizations, setOrganizations] = useState<any[]>([])
@@ -94,10 +95,12 @@ export function Header() {
           </Select>
         </div>
       </div>
-      <div className="flex items-center gap-4" suppressHydrationWarning={true}>
+      <div className="flex items-center gap-3 sm:gap-4" suppressHydrationWarning={true}>
+        <SubscriptionBadge organizationId={activeOrgId} />
+        
         <Button 
           variant="ghost" 
-          className="text-muted-foreground hover:text-foreground hover:bg-accent px-2 sm:px-4" 
+          className="text-muted-foreground hover:text-foreground hover:bg-accent px-2 sm:px-4 text-xs font-bold" 
           onClick={async () => { await signOut() }}
         >
           <span className="hidden sm:inline">Cerrar Sesión</span>
