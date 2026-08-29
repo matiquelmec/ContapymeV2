@@ -77,6 +77,7 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
           planType: planId,
           billingCycle,
           organizationId,
+          returnTo: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
         }),
       })
 

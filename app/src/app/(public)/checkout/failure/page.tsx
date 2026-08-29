@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function CheckoutFailurePage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; external_reference?: string; payment_id?: string }>
+  searchParams: Promise<{ type?: string; external_reference?: string; payment_id?: string; return_to?: string }>
 }) {
   const params = await searchParams
   const type = params.type || (params.external_reference?.startsWith('sub_') ? 'subscription' : params.external_reference?.startsWith('news_') ? 'press_release' : params.external_reference?.startsWith('banner_') ? 'ad_banner' : 'job')
@@ -63,6 +63,7 @@ export default async function CheckoutFailurePage({
     icon: LayoutDashboard,
   }
 
+  const returnTo = params.return_to || config.backHref
   const BackIcon = config.icon
 
   return (
@@ -87,7 +88,7 @@ export default async function CheckoutFailurePage({
               <RefreshCw className="mr-2 h-4 w-4" /> {config.retryText}
             </Button>
           </Link>
-          <Link href={config.backHref}>
+          <Link href={returnTo}>
             <Button size="lg" variant="ghost" className="w-full rounded-2xl h-12 text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-foreground border border-zinc-200 cursor-pointer">
               <BackIcon className="mr-2 h-4 w-4" /> {config.backText}
             </Button>

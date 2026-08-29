@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { planType, billingCycle, organizationId } = body // 'emprendedor' | 'pyme_pro' | 'estudio' | 'corporativo'
+    const { planType, billingCycle, organizationId, returnTo } = body // 'emprendedor' | 'pyme_pro' | 'estudio' | 'corporativo'
 
     if (!planType) {
       return NextResponse.json({ success: false, error: 'planType requerido' }, { status: 400 })
@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
         billing_cycle: billingCycle || 'monthly',
         organization_id: organizationId,
       },
-      successUrl: 'https://www.contapymepuq.cl/checkout/success?type=subscription',
-      failureUrl: 'https://www.contapymepuq.cl/checkout/failure',
+      successUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.contapymepuq.cl'}/checkout/success?type=subscription&return_to=${encodeURIComponent(returnTo || '/dashboard')}`,
+      failureUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.contapymepuq.cl'}/checkout/failure?type=subscription&return_to=${encodeURIComponent(returnTo || '/dashboard')}`,
     })
 
     if (!preferenceRes.success) {

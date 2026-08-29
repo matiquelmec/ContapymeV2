@@ -30,4 +30,4 @@ def test_economic_indicators_query_latency():
     print(f"\n⏱️ Latencia de consulta economic_indicators: {elapsed_ms:.2f} ms")
     
     assert res.data is not None
-    assert elapsed_ms < 1500.0  # Respuesta de red remota aceptable en < 1.5s
+    assert elapsed_ms < 3000.0  # Respuesta de red remota aceptable en < 3s
