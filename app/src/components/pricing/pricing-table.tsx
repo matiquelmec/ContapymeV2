@@ -195,7 +195,7 @@ export function PricingTable() {
     },
   ]
 
-  // 3. Planes Diario Regional & Prensa
+  // 3. Planes Diario Regional & Prensa (Self-Serve con Mercado Pago)
   const newsPlans = [
     {
       name: 'Nota de Prensa / Comunicado',
@@ -211,7 +211,7 @@ export function PricingTable() {
         'Botón directo de contacto por WhatsApp',
       ],
       ctaText: 'Publicar Nota de Prensa',
-      href: '/contacto',
+      href: '/publicar-comunicado',
     },
     {
       name: 'Publirreportaje de Portada',
@@ -228,7 +228,7 @@ export function PricingTable() {
         'Galería de hasta 5 fotografías en alta resolución',
       ],
       ctaText: 'Contratar Publirreportaje',
-      href: '/contacto',
+      href: '/publicar-comunicado',
     },
     {
       name: 'Cobertura Comercial + Banner',
@@ -244,7 +244,7 @@ export function PricingTable() {
         'Reporte de clics e impresiones generadas',
       ],
       ctaText: 'Solicitar Cobertura',
-      href: '/contacto',
+      href: '/publicar-comunicado',
     },
   ]
 

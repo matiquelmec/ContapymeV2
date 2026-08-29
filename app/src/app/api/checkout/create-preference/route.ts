@@ -134,6 +134,82 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // 2. Manejo de Notas de Prensa & Publirreportajes
+    if (itemType === 'press_release' && body.newsData) {
+      const { newsData } = body
+
+      let amount = 19990
+      let title = 'Nota de Prensa / Comunicado ($19.990)'
+      if (itemTier === 'featured') {
+        amount = 39990
+        title = 'Publirreportaje de Portada ($39.990)'
+      } else if (itemTier === 'campaign') {
+        amount = 79990
+        title = 'Cobertura Comercial + Banner ($79.990)'
+      }
+
+      const supabase = createAdminClient()
+      const slug = `${(newsData.title || 'noticia')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')}-${Date.now().toString(36)}`
+
+      const { data: createdNews, error: newsError } = await supabase
+        .from('regional_news')
+        .insert({
+          title: newsData.title,
+          slug,
+          category: newsData.category || 'REGIONAL',
+          content: newsData.content,
+          summary: newsData.summary || newsData.title,
+          image_url: newsData.image_url || 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=800&q=80',
+          source_name: newsData.company_name || 'Publirreportaje Comercial',
+          source_url: 'https://www.contapymepuq.cl/noticias',
+          is_featured: itemTier === 'featured' || itemTier === 'campaign',
+          published_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (newsError) {
+        console.error('Error creating regional_news:', newsError)
+        return NextResponse.json({ success: false, error: 'Error al registrar noticia en base de datos' }, { status: 500 })
+      }
+
+      const preferenceRes = await createMercadoPagoPreference({
+        items: [{
+          id: `news_${createdNews.id}`,
+          title: `${title} - ${newsData.title}`,
+          quantity: 1,
+          unit_price: amount,
+          description: `Publicación en Diario Regional Punta Arenas (${newsData.company_name})`,
+        }],
+        payerEmail: contactEmail || 'contacto@contapymepuq.cl',
+        payerName: newsData.company_name,
+        externalReference: `news_${createdNews.id}`,
+        metadata: {
+          news_id: createdNews.id,
+          news_slug: slug,
+          item_tier: itemTier,
+          amount_clp: amount,
+        },
+      })
+
+      if (!preferenceRes.success) {
+        return NextResponse.json({ success: false, error: preferenceRes.error }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        init_point: preferenceRes.init_point,
+        preference_id: preferenceRes.id,
+        news_slug: slug,
+        news_id: createdNews.id,
+      })
+    }
+
     return NextResponse.json({ success: false, error: 'Tipo de producto no soportado' }, { status: 400 })
   } catch (err: any) {
     console.error('API create-preference error:', err)
