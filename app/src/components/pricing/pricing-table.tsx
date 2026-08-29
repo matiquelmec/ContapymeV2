@@ -248,7 +248,7 @@ export function PricingTable() {
     },
   ]
 
-  // 4. Banners Publicitarios (Media Kit)
+  // 4. Banners Publicitarios (Media Kit Digital con Mercado Pago)
   const adPlans = [
     {
       name: 'Banner Lateral en Artículos',
@@ -264,7 +264,7 @@ export function PricingTable() {
         'Segmentación 100% regional Magallanes',
       ],
       ctaText: 'Reservar Espacio',
-      href: '/contacto',
+      href: '/anunciar?slot=sidebar',
     },
     {
       name: 'Banner Calculadora de Sueldos',
@@ -280,7 +280,7 @@ export function PricingTable() {
         'Enlace con tracking de conversiones',
       ],
       ctaText: 'Reservar Calculadora',
-      href: '/contacto',
+      href: '/anunciar?slot=calculator',
     },
     {
       name: 'Mega Banner Superior (Header)',
@@ -296,7 +296,7 @@ export function PricingTable() {
         'Rotación prioritaria en móviles y escritorio',
       ],
       ctaText: 'Reservar Mega Banner',
-      href: '/contacto',
+      href: '/anunciar?slot=header',
     },
   ]
 

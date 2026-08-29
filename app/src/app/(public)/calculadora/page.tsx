@@ -18,6 +18,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
 
 export const metadata: Metadata = {
   title: "Calculadora de Sueldo Líquido y Bruto Chile 2026 (Gratis) | ContaPymePUQ",
@@ -397,6 +398,9 @@ export default async function CalculadoraPublicaPage() {
             {/* COLUMNA DERECHA: APORTES PATRONALES, MAGALLANES & INTERLINKING (4/12) */}
             <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
               
+              {/* Slot Publicitario de la Calculadora */}
+              <AdBannerSlot position="calculator" />
+
               {/* Costo Empresa / Aportes Patronales */}
               <div className="p-6 rounded-3xl bg-white border border-border/80 shadow-xl space-y-4">
                 <div className="flex items-center gap-2 text-indigo-700 font-black text-xs uppercase tracking-wider">

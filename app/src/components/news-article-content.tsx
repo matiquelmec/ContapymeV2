@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { StoryCard } from './story-card'
 import { toast } from 'sonner'
+import { AdBannerSlot } from './ads/ad-banner-slot'
 
 interface NewsArticleContentProps {
   news: any
@@ -347,6 +348,9 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
             </Link>
           </div>
         )}
+
+        {/* Slot Publicitario del Diario Regional */}
+        <AdBannerSlot position="news_sidebar" className="my-4" />
 
         {/* Interlinking Estratégico SEO: Empleabilidad Austral */}
         <div className="p-6 rounded-[2rem] bg-gradient-to-r from-primary/5 via-primary/10 to-blue-500/5 border border-primary/20 space-y-3">

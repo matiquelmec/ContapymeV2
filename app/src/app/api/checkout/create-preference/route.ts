@@ -210,6 +210,54 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // 3. Manejo de Banners Publicitarios (Media Kit Digital)
+    if (itemType === 'ad_banner' && body.adData) {
+      const { adData } = body
+      let amount = 49990
+      let title = 'Banner Calculadora de Sueldos ($49.990/mes)'
+
+      if (itemTier === 'sidebar') {
+        amount = 39990
+        title = 'Banner Lateral en Noticias ($39.990/mes)'
+      } else if (itemTier === 'header') {
+        amount = 59990
+        title = 'Mega Banner Superior Header ($59.990/mes)'
+      }
+
+      const bannerRefId = `banner_${Date.now().toString(36)}`
+
+      const preferenceRes = await createMercadoPagoPreference({
+        items: [{
+          id: bannerRefId,
+          title: `${title} - ${adData.sponsor_name}`,
+          quantity: 1,
+          unit_price: amount,
+          description: `Espacio Publicitario 30 días en ContaPymePUQ (${adData.sponsor_name})`,
+        }],
+        payerEmail: contactEmail || 'contacto@contapymepuq.cl',
+        payerName: adData.sponsor_name,
+        externalReference: bannerRefId,
+        metadata: {
+          type: 'ad_banner',
+          sponsor_name: adData.sponsor_name,
+          position: adData.position || 'calculator',
+          image_url: adData.image_url,
+          target_url: adData.target_url,
+          amount_clp: amount,
+        },
+      })
+
+      if (!preferenceRes.success) {
+        return NextResponse.json({ success: false, error: preferenceRes.error }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        init_point: preferenceRes.init_point,
+        preference_id: preferenceRes.id,
+      })
+    }
+
     return NextResponse.json({ success: false, error: 'Tipo de producto no soportado' }, { status: 400 })
   } catch (err: any) {
     console.error('API create-preference error:', err)
