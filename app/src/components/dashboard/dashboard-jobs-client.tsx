@@ -25,7 +25,8 @@ import {
   BadgeCheck,
   Upload,
   Image as ImageIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -371,6 +372,31 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
           <span>Publicar Oferta Laboral</span>
         </Button>
       </div>
+      {/* 💼 PUENTE HIRE-TO-CONTRACT (CONVERSIÓN AL SOFTWARE ERP) */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-zinc-900 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-indigo-600/30 border border-indigo-400/20 text-indigo-400 shrink-0">
+            <FileText className="h-6 w-6" />
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block">
+              Módulo de Remuneraciones & Legal DT
+            </span>
+            <h4 className="text-sm font-black uppercase tracking-tight text-white">
+              ¿Ya seleccionaste a tu nuevo trabajador?
+            </h4>
+            <p className="text-xs text-zinc-300 font-medium leading-relaxed">
+              Genera su <strong>Contrato de Trabajo</strong> en PDF y activa sus liquidaciones automáticas con 14 días de prueba gratis.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/dashboard/payroll/contracts"
+          className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider px-5 h-11 shadow-md shrink-0 transition-all hover:scale-105 active:scale-95"
+        >
+          <span>Ir a Contratos de Trabajo ➔</span>
+        </Link>
+      </div>
 
       {/* 📋 LISTADO DE VACANTES */}
       {filteredJobs.length === 0 ? (
@@ -443,6 +469,15 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
                 >
                   <Eye className="h-3.5 w-3.5" />
                   <span>Ver en Portal</span>
+                </Link>
+
+                <Link
+                  href="/dashboard/payroll/contracts"
+                  className="inline-flex items-center justify-center rounded-xl h-9 px-3 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm gap-1.5 transition-all"
+                  title="Generar Contrato de Trabajo en el módulo de Nómina"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span>Generar Contrato ➔</span>
                 </Link>
 
                 <Button

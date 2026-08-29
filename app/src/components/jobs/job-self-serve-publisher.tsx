@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { 
   Building2, 
   MapPin, 
@@ -15,9 +16,12 @@ import {
   ArrowRight, 
   Loader2,
   ShieldCheck,
-  Send
+  Send,
+  UserCheck,
+  LogIn
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 const CITIES = ['Punta Arenas', 'Puerto Natales', 'Porvenir', 'Torres del Paine', 'Faena / Yacimiento', 'Todo Magallanes']
@@ -27,6 +31,7 @@ const SHIFTS = ['Lunes a Viernes (40 Horas)', 'Turno 7x7 Faena', 'Turno 14x14', 
 export function JobSelfServePublisher() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<any>(null)
   
   // Form State
   const [title, setTitle] = useState('')
@@ -42,6 +47,18 @@ export function JobSelfServePublisher() {
   const [contactWhatsapp, setContactWhatsapp] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [tier, setTier] = useState<'free' | 'basic' | 'featured' | 'faena'>('free')
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user)
+        if (user.email) {
+          setContactEmail(user.email)
+        }
+      }
+    })
+  }, [])
 
   const tiers = [
     {
@@ -59,39 +76,54 @@ export function JobSelfServePublisher() {
       price: 2990,
       priceLabel: '$2.990 CLP',
       badge: 'Mayor Visibilidad',
-      desc: 'Fijado en la primera posición de la bolsa durante todo el mes.',
-      color: 'amber',
+      desc: 'Fijado en la primera posición de la bolsa durante todo el mes para máxima atención.',
+      color: 'blue',
     },
     {
       id: 'featured',
-      name: 'Destacado + Redes Sociales',
+      name: 'Destacado + Redes',
       price: 4990,
       priceLabel: '$4.990 CLP',
-      badge: '⭐ Más Vendido',
-      desc: 'Incluye flyer HD generado automáticamente en Instagram y Facebook de ContaPymePUQ.',
-      color: 'primary',
+      badge: '⭐ Más Recomendado',
+      desc: 'Incluye diseño automático de flyer publicitario HD para Instagram y Facebook.',
+      color: 'emerald',
     },
     {
       id: 'faena',
       name: 'Faena / Gran Empresa',
       price: 9990,
       priceLabel: '$9.990 CLP',
-      badge: 'Urgente / Faena',
-      desc: 'Para empresas con alta urgencia de contratación y turnos especiales.',
+      badge: 'Faena & Gran Pyme',
+      desc: 'Para empresas con turnos 7x7/14x14, salmoneras, constructoras y alta urgencia.',
       color: 'indigo',
     },
   ]
 
+  // Validación preventiva Art. 2° Código del Trabajo
+  const checkDiscrimination = (text: string) => {
+    const forbidden = [
+      { regex: /\b(edad|a[ñn]os)\b/i, reason: 'Edad (Art. 2° DT)' },
+      { regex: /\b(buena presencia)\b/i, reason: 'Apariencia física (Art. 2° DT)' },
+      { regex: /\b(foto|fotograf[ií]a)\b/i, reason: 'Exigencia de fotografía' },
+      { regex: /\b(dicom|deudas)\b/i, reason: 'Antecedentes comerciales' },
+    ]
+    for (const f of forbidden) {
+      if (f.regex.test(text)) return f.reason
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title.trim() || !companyName.trim() || !description.trim()) {
-      toast.error('Por favor completa el cargo, la empresa y la descripción.')
+    const discIssue = checkDiscrimination(`${title} ${description} ${requirements}`)
+    if (discIssue) {
+      toast.error(`Aviso no cumple normativa laboral: Se detectó discriminación por ${discIssue}. Por favor corrígelo antes de continuar.`)
       return
     }
 
-    if (!contactWhatsapp.trim() && !contactEmail.trim()) {
-      toast.error('Ingresa al menos un WhatsApp o Email para que los postulantes te contacten.')
+    if (!title.trim() || !companyName.trim() || !description.trim()) {
+      toast.error('Por favor completa el título, empresa y descripción.')
       return
     }
 
@@ -102,10 +134,9 @@ export function JobSelfServePublisher() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          itemType: 'job_post',
+          itemType: 'job_posting',
           itemTier: tier,
-          contactEmail,
-          contactPhone: contactWhatsapp,
+          contactEmail: contactEmail || (user?.email || ''),
           jobData: {
             title,
             company_name: companyName,
@@ -113,12 +144,13 @@ export function JobSelfServePublisher() {
             sector,
             job_type: jobType,
             work_shift: workShift,
-            salary_min: salaryMin ? parseInt(salaryMin) : null,
-            salary_max: salaryMax ? parseInt(salaryMax) : null,
+            salary_min: salaryMin ? Number(salaryMin) : null,
+            salary_max: salaryMax ? Number(salaryMax) : null,
             description,
-            requirements: requirements ? requirements.split('\n').filter(r => r.trim().length > 0) : [],
+            requirements: requirements ? requirements.split('\n').filter(Boolean) : [],
+            benefits: [],
             contact_whatsapp: contactWhatsapp,
-            contact_email: contactEmail,
+            contact_email: contactEmail || (user?.email || ''),
           }
         })
       })
@@ -126,15 +158,19 @@ export function JobSelfServePublisher() {
       const data = await res.json()
 
       if (!data.success) {
-        toast.error(data.error || 'Error al procesar la publicación.')
+        toast.error(data.error || 'Error al procesar el aviso.')
         setLoading(false)
         return
       }
 
-      // Si es GRATIS ($0), redirigir directamente al éxito
+      // Si es GRATIS ($0), redirigir directamente al dashboard si está autenticado o al éxito
       if (data.is_free) {
         toast.success('¡Aviso publicado con éxito!')
-        router.push(`/checkout/success?slug=${data.job_slug}`)
+        if (user) {
+          router.push('/dashboard/empleos')
+        } else {
+          router.push(`/checkout/success?slug=${data.job_slug}`)
+        }
         return
       }
 
@@ -159,6 +195,52 @@ export function JobSelfServePublisher() {
       {/* COLUMNA IZQUIERDA: FORMULARIO (7/12) */}
       <div className="lg:col-span-7 space-y-6">
         
+        {/* Banner de Estado de Autenticación */}
+        {user ? (
+          <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between gap-3 text-emerald-950">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <UserCheck className="h-4 w-4" />
+              </div>
+              <div className="text-xs">
+                <span className="font-black uppercase tracking-wider block text-emerald-900">
+                  Sesión Iniciada ({user.email})
+                </span>
+                <p className="text-[11px] text-emerald-700 font-medium">
+                  Tu aviso quedará vinculado a tu panel para que puedas editarlo, pausarlo o darlo de baja cuando contrates.
+                </p>
+              </div>
+            </div>
+            <Link href="/dashboard/empleos" className="text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white px-3 py-1.5 rounded-xl shrink-0 hover:bg-emerald-700">
+              Ver Panel ➔
+            </Link>
+          </div>
+        ) : (
+          <div className="p-4 rounded-3xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-indigo-950">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <LogIn className="h-4 w-4" />
+              </div>
+              <div className="text-xs">
+                <strong className="font-black uppercase tracking-wider block text-indigo-900">
+                  ¿Tienes cuenta en ContaPymePUQ?
+                </strong>
+                <p className="text-[11px] text-indigo-700 font-medium">
+                  Inicia sesión para gestionar, pausar y editar tu vacante cuando ya hayas contratado.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/login?next=/publicar-empleo" className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-indigo-700">
+                Iniciar Sesión
+              </Link>
+              <Link href="/register?next=/publicar-empleo" className="text-[10px] font-black uppercase tracking-wider bg-white border border-indigo-200 text-indigo-900 px-3 py-1.5 rounded-xl hover:bg-indigo-50">
+                Crear Cuenta
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Bloque 1: Datos Principales */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
           <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
@@ -184,7 +266,7 @@ export function JobSelfServePublisher() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Nombre de la Empresa o Local *
+                  Nombre de la Empresa o Empleador *
                 </label>
                 <input
                   type="text"
@@ -198,7 +280,7 @@ export function JobSelfServePublisher() {
 
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Ubicación / Ciudad *
+                  Comuna o Ubicación *
                 </label>
                 <select
                   value={location}
@@ -213,7 +295,7 @@ export function JobSelfServePublisher() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Sector o Rubro
+                  Sector o Rubro *
                 </label>
                 <select
                   value={sector}
@@ -226,7 +308,7 @@ export function JobSelfServePublisher() {
 
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Jornada / Turno
+                  Jornada o Turno *
                 </label>
                 <select
                   value={workShift}
@@ -242,35 +324,35 @@ export function JobSelfServePublisher() {
 
         {/* Bloque 2: Sueldo y Descripción */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
-          <div className="flex items-center gap-2 text-emerald-700 font-black text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
             <DollarSign className="h-4 w-4" />
-            <span>2. Remuneración y Descripción del Puesto</span>
+            <span>2. Renta y Detalle de la Oferta</span>
           </div>
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Sueldo Líquido Ofrecido ($ CLP)
+                  Sueldo Líquido Estimado ($CLP)
                 </label>
                 <input
                   type="number"
                   value={salaryMin}
                   onChange={e => setSalaryMin(e.target.value)}
-                  placeholder="Ej: 650000 (Opcional)"
+                  placeholder="Ej: 650000"
                   className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Sueldo Máximo (Banda salarial)
+                  Sueldo Máximo / Bonos (Opcional)
                 </label>
                 <input
                   type="number"
                   value={salaryMax}
                   onChange={e => setSalaryMax(e.target.value)}
-                  placeholder="Ej: 800000 (Opcional)"
+                  placeholder="Ej: 800000"
                   className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
               </div>
@@ -278,14 +360,14 @@ export function JobSelfServePublisher() {
 
             <div>
               <label className="text-xs font-bold text-foreground block mb-1.5">
-                Descripción de Funciones *
+                Descripción del Trabajo y Funciones *
               </label>
               <textarea
                 required
                 rows={4}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="Describe las tareas principales, horarios y ambiente de trabajo..."
+                placeholder="Describe las tareas diarias, horario exacto, lugar de trabajo y ambiente..."
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium leading-relaxed"
               />
             </div>
@@ -298,27 +380,28 @@ export function JobSelfServePublisher() {
                 rows={3}
                 value={requirements}
                 onChange={e => setRequirements(e.target.value)}
-                placeholder="Ej: Experiencia de 1 año en ventas&#10;Licencia de conducir clase B&#10;Manejo de sistema POS"
+                placeholder="Ej: Experiencia de 1 año en ventas\nLicencia clase B vigente\nResidencia en Punta Arenas"
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium leading-relaxed"
               />
             </div>
           </div>
         </div>
 
-        {/* Bloque 3: Contacto Directo */}
+        {/* Bloque 3: Canales de Postulación Directa */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
-          <div className="flex items-center gap-2 text-indigo-700 font-black text-xs uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
             <Phone className="h-4 w-4" />
-            <span>3. Datos para Recepción de Postulaciones</span>
+            <span>3. Canales de Postulación Directa</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold text-foreground block mb-1.5">
-                WhatsApp de Postulación (Recomendado)
+                WhatsApp para Recibir CVs *
               </label>
               <input
                 type="text"
+                required
                 value={contactWhatsapp}
                 onChange={e => setContactWhatsapp(e.target.value)}
                 placeholder="+56912345678"
@@ -328,13 +411,13 @@ export function JobSelfServePublisher() {
 
             <div>
               <label className="text-xs font-bold text-foreground block mb-1.5">
-                Email de Contacto
+                Email de Contacto / Facturación
               </label>
               <input
                 type="email"
                 value={contactEmail}
                 onChange={e => setContactEmail(e.target.value)}
-                placeholder="empleos@tuempresa.cl"
+                placeholder="rrhh@tuempresa.cl"
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
               />
             </div>
@@ -343,13 +426,12 @@ export function JobSelfServePublisher() {
 
       </div>
 
-      {/* COLUMNA DERECHA: SELECCIÓN DE PLAN & PREVISUALIZACIÓN (5/12) */}
+      {/* COLUMNA DERECHA: SELECCIÓN DE PLAN Y BOTÓN DE PAGO (5/12) */}
       <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
         
-        {/* Selector de Plan */}
         <div className="p-6 rounded-3xl bg-white border border-border shadow-xl space-y-4">
           <span className="text-[10px] font-black uppercase tracking-widest text-primary block">
-            Selecciona tu Nivel de Publicación
+            Selecciona el Tipo de Publicación
           </span>
 
           <div className="space-y-3">
@@ -382,12 +464,12 @@ export function JobSelfServePublisher() {
             })}
           </div>
 
-          <div className="pt-4 border-t border-zinc-100">
+          <div className="pt-4 border-t border-zinc-100 space-y-2">
             <Button
               type="submit"
               disabled={loading}
               size="lg"
-              className="w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.02] active:scale-95"
+              className="w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/25 transition-all hover:scale-[1.02] active:scale-95"
             >
               {loading ? (
                 <>
@@ -395,16 +477,17 @@ export function JobSelfServePublisher() {
                 </>
               ) : tier === 'free' ? (
                 <>
-                  <Send className="w-4 h-4 mr-2" /> Publicar Gratis Ahora ($0)
+                  <Send className="w-4 h-4 mr-2" /> Publicar Aviso Gratis ($0) ➔
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" /> Continuar a Mercado Pago ➔
+                  <Sparkles className="w-4 h-4 mr-2" /> Pagar con Mercado Pago ➔
                 </>
               )}
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground font-medium pt-2">
-              🔒 Cumplimiento estricto del Art. 2° del Código del Trabajo
+            
+            <p className="text-[10px] text-center text-muted-foreground font-medium">
+              🔒 Cumplimiento estricto Art. 2° Código del Trabajo
             </p>
           </div>
         </div>

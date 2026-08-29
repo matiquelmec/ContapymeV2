@@ -255,26 +255,34 @@ export async function getCompanyJobsAction() {
       if (m.organizations?.rut) allowedRuts.add(m.organizations.rut.trim())
     })
 
-    // Si el usuario no tiene empresa u organización creada, no debe ver vacantes de terceros en su panel
-    if (allowedNames.size === 0 && allowedRuts.size === 0) {
-      return { success: true, data: [] }
-    }
-
-    const namesList = Array.from(allowedNames)
-    const rutsList = Array.from(allowedRuts)
+    const userEmail = user.email ? user.email.trim() : ''
 
     let query = adminDb
       .from('job_postings')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (namesList.length > 0 && rutsList.length > 0) {
-      query = query.or(`company_name.in.(${namesList.map((n) => `"${n}"`).join(',')}),company_rut.in.(${rutsList.map((r) => `"${r}"`).join(',')})`)
-    } else if (namesList.length > 0) {
-      query = query.in('company_name', namesList)
-    } else {
-      query = query.in('company_rut', rutsList)
+    const filters: string[] = []
+
+    if (allowedNames.size > 0) {
+      const namesList = Array.from(allowedNames).map((n) => `company_name.eq."${n}"`)
+      filters.push(...namesList)
     }
+
+    if (allowedRuts.size > 0) {
+      const rutsList = Array.from(allowedRuts).map((r) => `company_rut.eq."${r}"`)
+      filters.push(...rutsList)
+    }
+
+    if (userEmail) {
+      filters.push(`contact_email.ilike.${userEmail}`)
+    }
+
+    if (filters.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    query = query.or(filters.join(','))
 
     const { data, error } = await query
 
