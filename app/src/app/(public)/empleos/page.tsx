@@ -70,11 +70,11 @@ export default async function JobsPage() {
             </div>
 
             <Link
-              href="/dashboard/empleos"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-wider px-5 h-11 shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95 shrink-0"
+              href="/publicar-empleo"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider px-5 h-11 shadow-lg shadow-emerald-600/25 transition-all hover:scale-105 active:scale-95 shrink-0"
             >
               <Briefcase className="h-4 w-4" />
-              <span>+ Publicar Oferta Laboral</span>
+              <span>+ Publicar Oferta ($0 / Destacado)</span>
               <ArrowRight className="h-3.5 w-3.5 ml-1" />
             </Link>
           </div>

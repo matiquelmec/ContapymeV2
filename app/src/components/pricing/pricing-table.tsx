@@ -126,14 +126,14 @@ export function PricingTable() {
     },
   ]
 
-  // 2. Planes Publicación Aislada de Empleo
+  // 2. Planes Publicación Aislada de Empleo (Precios Justos & Freemium)
   const jobPlans = [
     {
-      name: 'Aviso Estándar',
-      price: 9990,
-      period: 'Pago único (30 días)',
-      desc: 'Publica tu vacante en minutos con postulación directa por WhatsApp.',
-      badge: 'Económico',
+      name: 'Básico Comunitario',
+      price: 0,
+      period: '100% GRATIS (30 días)',
+      desc: 'Publica tu vacante en minutos con postulación directa por WhatsApp y Google for Jobs.',
+      badge: 'Comunitario',
       popular: false,
       features: [
         'Activo por 30 días en ContaEmpleos',
@@ -142,41 +142,56 @@ export function PricingTable() {
         'Validación Art. 2° Código del Trabajo',
         'Calculadora de Sueldo Líquido integrada',
       ],
-      ctaText: 'Publicar Aviso ($9.990)',
-      href: '/empleos',
+      ctaText: 'Publicar Gratis ($0)',
+      href: '/publicar-empleo',
     },
     {
-      name: 'Aviso Destacado + Redes',
-      price: 19990,
+      name: 'Destacado con Pin',
+      price: 2990,
       period: 'Pago único (30 días)',
-      desc: 'Máxima visibilidad con flyer publicitario en redes sociales de ContaPymePUQ.',
-      badge: 'Más Vendido',
+      desc: 'Fijado en la primera posición de la bolsa durante todo el mes para máxima atención.',
+      badge: 'Mayor Visibilidad',
+      popular: false,
+      features: [
+        'Todo lo del Aviso Básico Comunitario',
+        'Fijado en los primeros lugares de la lista',
+        'Badge visual distintivo "Destacado"',
+        'Prioridad en búsquedas de Google',
+      ],
+      ctaText: 'Publicar con Pin ($2.990)',
+      href: '/publicar-empleo',
+    },
+    {
+      name: 'Destacado + Redes Sociales',
+      price: 4990,
+      period: 'Pago único (30 días)',
+      desc: 'Incluye diseño automático de flyer publicitario HD para Instagram y Facebook.',
+      badge: '⭐ Más Recomendado',
       popular: true,
       features: [
-        'Todo lo del Aviso Estándar',
-        'Fijado en los primeros lugares de la bolsa',
-        'Diseño automático de flyer HD para Instagram & Facebook',
+        'Todo lo del Aviso Destacado con Pin',
+        'Flyer HD automático para Instagram & Facebook',
         'Difusión en grupos de empleo de Magallanes',
         'Sello visual "Urgente / Destacado"',
       ],
-      ctaText: 'Publicar Destacado ($19.990)',
-      href: '/empleos',
+      ctaText: 'Publicar con Redes ($4.990)',
+      href: '/publicar-empleo',
     },
     {
-      name: 'Pack Pyme 3 Empleos',
-      price: 39990,
-      period: '3 Avisos Destacados',
-      desc: 'Para empresas con contrataciones recurrentes durante el año.',
-      badge: 'Ahorra $20.000',
+      name: 'Faena / Gran Empresa',
+      price: 9990,
+      period: 'Pago único (Faena/Urgente)',
+      desc: 'Para empresas con turnos 7x7/14x14, salmoneras, constructoras y alta urgencia.',
+      badge: 'Faena & Gran Pyme',
       popular: false,
       features: [
-        '3 Avisos Destacados con difusión en redes ($13.330 c/u)',
-        'Válidos para usar durante 6 meses',
-        'Soporte prioritario para redacción del aviso',
-        'Reporte de postulaciones recibidas',
+        'Todo lo del Aviso con Redes Sociales',
+        'Avisos ilimitados para faena y turnos',
+        'Difusión masiva en toda la Patagonia',
+        'Soporte prioritario de redacción',
       ],
-      ctaText: 'Comprar Pack 3 Avisos',
-      href: '/contacto',
+      ctaText: 'Publicar Faena ($9.990)',
+      href: '/publicar-empleo',
     },
   ]
 
@@ -511,7 +526,7 @@ export function PricingTable() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch max-w-6xl mx-auto">
             {jobPlans.map((plan, idx) => (
               <div
                 key={idx}
