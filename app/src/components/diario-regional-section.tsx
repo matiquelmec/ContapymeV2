@@ -179,7 +179,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                     Hemeroteca
                   </Button>
                 </Link>
-                <Link href="/contacto" className="w-full sm:w-auto">
+                <Link href="/anunciar" className="w-full sm:w-auto">
                   <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest border border-dashed border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
                     Anuncia
                   </Button>
