@@ -16,7 +16,8 @@ import {
   Shield,
   HelpCircle,
   Clock,
-  Briefcase
+  Briefcase,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
