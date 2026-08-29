@@ -17,7 +17,7 @@ export const navigationGroups = [
     items: [
       { name: 'Mis Empleos', href: '/dashboard/empleos', icon: Briefcase },
       { name: 'Mis Comunicados', href: '/dashboard/noticias', icon: Newspaper },
-      { name: 'Banners & Publicidad', href: '/anunciar', icon: Megaphone },
+      { name: 'Banners & Publicidad', href: '/dashboard/publicidad', icon: Megaphone },
     ]
   },
   {

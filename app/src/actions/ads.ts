@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 export interface AdBanner {
   id: string
@@ -13,6 +14,7 @@ export interface AdBanner {
   status: 'active' | 'expired' | 'pending'
   starts_at?: string
   expires_at?: string
+  created_at?: string
 }
 
 /**
@@ -37,7 +39,28 @@ export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' 
     if (error || !data) return null
     return data as AdBanner
   } catch (err) {
-    // Si no existe la tabla o hay error, fallback elegante
     return null
+  }
+}
+
+/**
+ * Obtiene todos los banners gestionados en el panel de control.
+ */
+export async function getCompanyAdBannersAction() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, data: [] }
+
+    const adminDb = createAdminClient()
+    const { data, error } = await adminDb
+      .from('ad_banners')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error || !data) return { success: true, data: [] }
+    return { success: true, data: (data as AdBanner[]) || [] }
+  } catch (err: any) {
+    return { success: false, error: err.message, data: [] }
   }
 }
