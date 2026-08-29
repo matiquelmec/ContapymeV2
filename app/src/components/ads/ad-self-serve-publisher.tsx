@@ -16,7 +16,9 @@ import {
   UserCheck,
   LogIn,
   UserPlus,
-  Lock
+  Lock,
+  Calendar,
+  CheckCircle2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,6 +43,7 @@ export function AdSelfServePublisher() {
   const [slot, setSlot] = useState<'sidebar' | 'calculator' | 'header'>(
     initialSlot === 'sidebar' || initialSlot === 'header' ? initialSlot : 'calculator'
   )
+  const [duration, setDuration] = useState<'monthly' | 'semiannual' | 'annual'>('monthly')
   const [sponsorName, setSponsorName] = useState('')
   const [title, setTitle] = useState('')
   const [imageUrl, setImageUrl] = useState('')
@@ -49,7 +52,6 @@ export function AdSelfServePublisher() {
   const [contactEmail, setContactEmail] = useState('')
 
   useEffect(() => {
-    // Restaurar borrador de localStorage si existe
     try {
       const saved = localStorage.getItem('draft_ad_banner')
       if (saved) {
@@ -61,6 +63,7 @@ export function AdSelfServePublisher() {
         if (d.contactPhone) setContactPhone(d.contactPhone)
         if (d.contactEmail) setContactEmail(d.contactEmail)
         if (d.slot) setSlot(d.slot)
+        if (d.duration) setDuration(d.duration)
       }
     } catch (e) {}
 
@@ -78,35 +81,52 @@ export function AdSelfServePublisher() {
   const saveDraft = () => {
     try {
       localStorage.setItem('draft_ad_banner', JSON.stringify({
-        sponsorName, title, imageUrl, targetUrl, contactPhone, contactEmail, slot
+        sponsorName, title, imageUrl, targetUrl, contactPhone, contactEmail, slot, duration
       }))
     } catch (e) {}
   }
+
+  const basePrices = {
+    sidebar: 39990,
+    calculator: 49990,
+    header: 59990,
+  }
+
+  const calculateTotal = (slotId: 'sidebar' | 'calculator' | 'header', cycle: 'monthly' | 'semiannual' | 'annual') => {
+    const base = basePrices[slotId]
+    if (cycle === 'monthly') return { total: base, monthlyEquivalent: base, discount: 0, days: 30 }
+    if (cycle === 'semiannual') {
+      const total = Math.round(base * 6 * 0.85) // 15% OFF
+      return { total, monthlyEquivalent: Math.round(total / 6), discount: 15, days: 180 }
+    }
+    // annual (25% OFF = 3 meses gratis)
+    const total = Math.round(base * 12 * 0.75)
+    return { total, monthlyEquivalent: Math.round(total / 12), discount: 25, days: 365 }
+  }
+
+  const selectedPricing = calculateTotal(slot, duration)
 
   const slots = [
     {
       id: 'sidebar',
       name: 'Banner Lateral en Noticias',
-      price: 39990,
-      priceLabel: '$39.990/mes (~$1.333/día)',
-      desc: 'Formato vertical (300x250 o 300x600 px). Visible en todos los artículos del Diario Regional.',
+      basePrice: 39990,
+      desc: 'Formato vertical (300x250 o 300x600 px). Visible en todos los artículos y portada del Diario Regional.',
       badge: 'Diario Regional',
     },
     {
       id: 'calculator',
       name: 'Banner Calculadora de Sueldos',
-      price: 49990,
-      priceLabel: '$49.990/mes (~$1.666/día)',
+      basePrice: 49990,
       desc: 'La página #1 de Magallanes en Google. Público de alta intención: contadores, Pymes y trabajadores.',
       badge: '⭐ Mayor Tráfico',
     },
     {
       id: 'header',
       name: 'Mega Banner Superior (Header)',
-      price: 59990,
-      priceLabel: '$59.990/mes (~$1.999/día)',
-      desc: 'Formato horizontal (728x90 o 970x90 px). Ubicación de máxima presencia en la cabecera.',
-      badge: 'Máxima Visibilidad',
+      basePrice: 59990,
+      desc: 'Formato horizontal (728x90 o 970x90 px). Ubicación de máxima presencia en la cabecera de todo el portal.',
+      badge: '👑 Máxima Visibilidad',
     },
   ]
 
@@ -120,6 +140,7 @@ export function AdSelfServePublisher() {
         body: JSON.stringify({
           itemType: 'ad_banner',
           itemTier: slot,
+          duration,
           contactEmail: contactEmail || (user?.email || ''),
           contactPhone,
           adData: {
@@ -128,6 +149,9 @@ export function AdSelfServePublisher() {
             image_url: imageUrl,
             target_url: targetUrl,
             position: slot === 'sidebar' ? 'news_sidebar' : slot === 'header' ? 'header_top' : 'calculator',
+            duration_cycle: duration,
+            duration_days: selectedPricing.days,
+            amount_clp: selectedPricing.total,
           }
         })
       })
@@ -140,7 +164,6 @@ export function AdSelfServePublisher() {
         return
       }
 
-      // Limpiar borrador de localStorage
       try { localStorage.removeItem('draft_ad_banner') } catch (e) {}
 
       if (data.init_point) {
@@ -165,7 +188,6 @@ export function AdSelfServePublisher() {
       return
     }
 
-    // Si el usuario no ha iniciado sesión, abrimos el modal invitándolo a registrarse
     if (!user) {
       saveDraft()
       setIsAuthModalOpen(true)
@@ -288,7 +310,7 @@ export function AdSelfServePublisher() {
                   />
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Recomendación: Ancho 300px o 728px, peso menor a 150KB para carga ultrarrápida.
+                  Recomendación: Header (728x90 o 970x90 px), Sidebar/Calculadora (300x250 o 300x600 px). Peso &lt; 150KB.
                 </p>
               </div>
 
@@ -340,44 +362,112 @@ export function AdSelfServePublisher() {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: SELECCIÓN DE ESPACIO Y PAGO (5/12) */}
+        {/* COLUMNA DERECHA: SELECCIÓN DE ESPACIO, DURACIÓN Y PAGO (5/12) */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
-          <div className="p-6 rounded-3xl bg-white border border-border shadow-xl space-y-4">
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block">
-              2. Selecciona la Ubicación del Banner
-            </span>
+          <div className="p-6 rounded-3xl bg-white border border-border shadow-xl space-y-5">
+            
+            {/* Selector de Duración / Ciclo */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">
+                  2. Duración de la Campaña
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Hasta 25% OFF
+                </span>
+              </div>
 
-            <div className="space-y-3">
-              {slots.map(s => {
-                const isSelected = slot === s.id
-                return (
-                  <label
-                    key={s.id}
-                    onClick={() => setSlot(s.id as any)}
-                    className={`block p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-amber-500 bg-amber-50/50 shadow-md'
-                        : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-amber-600 bg-amber-600' : 'border-zinc-300'}`}>
-                          {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'monthly', label: '1 Mes', desc: '30 Días', badge: null },
+                  { id: 'semiannual', label: '6 Meses', desc: '180 Días', badge: '-15%' },
+                  { id: 'annual', label: '12 Meses', desc: '365 Días', badge: '3 Meses Gratis' },
+                ].map(d => {
+                  const isSel = duration === d.id
+                  return (
+                    <button
+                      type="button"
+                      key={d.id}
+                      onClick={() => setDuration(d.id as any)}
+                      className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                        isSel
+                          ? 'border-amber-600 bg-amber-50 text-amber-950 shadow-sm'
+                          : 'border-zinc-200 hover:border-zinc-300 text-muted-foreground'
+                      }`}
+                    >
+                      <div className="text-xs font-black uppercase leading-tight">{d.label}</div>
+                      <div className="text-[10px] font-bold opacity-80">{d.desc}</div>
+                      {d.badge && (
+                        <div className="text-[8.5px] font-black uppercase text-emerald-700 bg-emerald-100 rounded mt-1 py-0.5">
+                          {d.badge}
                         </div>
-                        <span className="text-xs font-black uppercase text-foreground">{s.name}</span>
-                      </div>
-                      <span className="text-xs font-black text-foreground">{s.priceLabel.split(' ')[0]}</span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground font-medium pl-6 pt-1 leading-snug">
-                      {s.desc}
-                    </p>
-                  </label>
-                )
-              })}
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-zinc-100 space-y-2">
+            {/* Selector de Posición */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block">
+                3. Ubicación del Banner
+              </span>
+
+              <div className="space-y-3">
+                {slots.map(s => {
+                  const isSelected = slot === s.id
+                  const pricing = calculateTotal(s.id as any, duration)
+
+                  return (
+                    <label
+                      key={s.id}
+                      onClick={() => setSlot(s.id as any)}
+                      className={`block p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-amber-500 bg-amber-50/50 shadow-md'
+                          : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-amber-600 bg-amber-600' : 'border-zinc-300'}`}>
+                            {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                          </div>
+                          <span className="text-xs font-black uppercase text-foreground">{s.name}</span>
+                        </div>
+                        <span className="text-xs font-black text-foreground">
+                          ${pricing.total.toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground font-medium pl-6 pt-1 leading-snug">
+                        {s.desc}
+                      </p>
+                      {duration !== 'monthly' && (
+                        <div className="pl-6 pt-1 text-[10px] font-bold text-emerald-700">
+                          Equivale a ${pricing.monthlyEquivalent.toLocaleString('es-CL')}/mes ({pricing.discount}% de ahorro)
+                        </div>
+                      )}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Total y Botón de Pago */}
+            <div className="pt-4 border-t border-zinc-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-muted-foreground">Total a Pagar:</span>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-foreground">
+                    ${selectedPricing.total.toLocaleString('es-CL')} CLP
+                  </span>
+                  <span className="text-[10px] font-bold text-muted-foreground block">
+                    {duration === 'monthly' ? 'Por 30 días de difusión' : duration === 'semiannual' ? 'Por 180 días de difusión' : 'Por 365 días de difusión (1 año)'}
+                  </span>
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 disabled={loading}
@@ -390,14 +480,14 @@ export function AdSelfServePublisher() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 mr-2" /> Pagar Reserva con Mercado Pago ➔
+                    <Sparkles className="w-4 h-4 mr-2" /> Pagar con Mercado Pago ➔
                   </>
                 )}
               </Button>
               
               <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground font-medium pt-1">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Activación automática por 30 días con Webpay / Débito / Crédito</span>
+                <span>Activación automática e inmediata con Webpay / Débito / Crédito</span>
               </div>
             </div>
           </div>
@@ -405,7 +495,7 @@ export function AdSelfServePublisher() {
 
       </form>
 
-      {/* 🔒 MODAL DE INVITACIÓN A REGISTRO / LOGIN PARA GESTIONAR PUBLICIDAD */}
+      {/* 🔒 MODAL DE INVITACIÓN A REGISTRO / LOGIN */}
       <Dialog open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen}>
         <DialogContent className="w-[95vw] sm:max-w-md rounded-3xl bg-white p-6 sm:p-8 space-y-6 text-center">
           <div className="h-16 w-16 rounded-full bg-amber-50 text-amber-600 border-2 border-amber-200 flex items-center justify-center mx-auto shadow-inner">

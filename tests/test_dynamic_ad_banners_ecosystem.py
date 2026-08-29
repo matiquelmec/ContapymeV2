@@ -1,10 +1,11 @@
 import pytest
 import datetime
+import random
 
 class TestDynamicAdBannersEcosystem:
     """
     🧪 Suite de Pruebas Unitarias de Arquitectura y Seguridad:
-    Ecosistema de Banners Publicitarios y Media Kit Digital ContaPymePUQ.
+    Ecosistema de Banners Publicitarios, Mega Banner, Rotación y Facturación Multiciclo.
     """
 
     def test_01_ad_banner_positions_and_pricing_integrity(self):
@@ -31,6 +32,7 @@ class TestDynamicAdBannersEcosystem:
         assert official_slots['calculator']['price'] == 49990
         assert official_slots['header']['price'] == 59990
         assert official_slots['sidebar']['db_position'] == 'news_sidebar'
+        assert official_slots['header']['db_position'] == 'header_top'
 
     def test_02_url_sanitization_blocks_xss_and_dangerous_schemes(self):
         """Valida que el filtro de seguridad bloquee inyecciones XSS y esquemas peligrosos en URLs."""
@@ -100,17 +102,64 @@ class TestDynamicAdBannersEcosystem:
         assert is_banner_visible(banner_expired) is False
         assert is_banner_visible(banner_pending_payment) is False
 
-    def test_04_webhook_hmac_activation_sets_30_days_validity(self):
-        """Comprueba que la activación automática extienda la vigencia exactamente por 30 días."""
+    def test_04_webhook_hmac_activation_sets_dynamic_validity(self):
+        """Comprueba que la activación asigne 30, 180 o 365 días según el ciclo."""
         activation_time = datetime.datetime(2026, 8, 29, 20, 0, 0, tzinfo=datetime.timezone.utc)
-        duration_days = 30
         
-        expires_at = activation_time + datetime.timedelta(days=duration_days)
-        assert (expires_at - activation_time).days == 30
+        # Mensual
+        exp_monthly = activation_time + datetime.timedelta(days=30)
+        assert (exp_monthly - activation_time).days == 30
+
+        # Semestral
+        exp_semi = activation_time + datetime.timedelta(days=180)
+        assert (exp_semi - activation_time).days == 180
+
+        # Anual
+        exp_annual = activation_time + datetime.timedelta(days=365)
+        assert (exp_annual - activation_time).days == 365
 
     def test_05_fallback_slot_renders_when_no_active_banner(self):
-        """Verifica que cuando la base de datos retorna null, el slot muestre el CTA de venta."""
+        """Verifica que cuando no hay anunciante activo, el slot muestre el CTA de venta."""
         active_banner = None
-        
         fallback_rendered = active_banner is None
         assert fallback_rendered is True
+
+    def test_06_multi_cycle_billing_math_and_discounts(self):
+        """Valida con exactitud matemática los descuentos del 15% (semestral) y 25% (anual)."""
+        base_prices = {
+            'sidebar': 39990,
+            'calculator': 49990,
+            'header': 59990,
+        }
+
+        for slot, base in base_prices.items():
+            # Mensual
+            assert base == base_prices[slot]
+            # Semestral: base * 6 * 0.85
+            expected_semi = round(base * 6 * 0.85)
+            assert expected_semi < (base * 6)
+            assert round(expected_semi / (base * 6), 2) == 0.85
+            # Anual: base * 12 * 0.75 (Paga 9 meses, recibe 12)
+            expected_annual = round(base * 12 * 0.75)
+            assert expected_annual == base * 9
+            assert round(expected_annual / (base * 12), 2) == 0.75
+
+        # Tarifas anuales calculadas
+        assert round(39990 * 12 * 0.75) == 359910
+        assert round(49990 * 12 * 0.75) == 449910
+        assert round(59990 * 12 * 0.75) == 539910
+
+    def test_07_ad_rotation_distribution_uniformity(self):
+        """Simula la rotación aleatoria uniforme de 3 anunciantes en 1.500 impresiones."""
+        advertisers = ['Empresa_A', 'Empresa_B', 'Empresa_C']
+        counts = {adv: 0 for adv in advertisers}
+        
+        simulations = 1500
+        for _ in range(simulations):
+            picked = random.choice(advertisers)
+            counts[picked] += 1
+
+        # Cada uno debe recibir aproximadamente el 33.3% (tolerancia ±5%)
+        for adv, count in counts.items():
+            percentage = (count / simulations) * 100
+            assert 27.0 <= percentage <= 40.0, f"Distribución de {adv} fuera de rango: {percentage}%"

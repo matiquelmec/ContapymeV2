@@ -9,6 +9,7 @@ import { getLatestIndicators } from "@/actions/indicators";
 import { FacturinChat } from "@/components/facturin-chat";
 import { WhatsAppIcon, InstagramIcon } from "@/components/social-icons";
 import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
+import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
 
 export default async function PublicLayout({
   children,
@@ -70,6 +71,13 @@ export default async function PublicLayout({
           </div>
         </div>
       </header>
+
+      {/* ===== MEGA BANNER CABECERA PORTAL (HEADER TOP) ===== */}
+      <div className="w-full bg-zinc-100/40 border-b border-border/30 py-2.5">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-5xl">
+          <AdBannerSlot position="header_top" className="w-full shadow-sm" />
+        </div>
+      </div>
 
       <main className="flex-1">{children}</main>
 

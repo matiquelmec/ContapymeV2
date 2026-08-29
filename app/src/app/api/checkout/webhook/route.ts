@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
                 status: 'active',
                 amount_clp: meta.amount_clp || 39990,
                 starts_at: new Date().toISOString(),
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                expires_at: new Date(Date.now() + (Number(meta.duration_days) || 30) * 24 * 60 * 60 * 1000).toISOString(),
               })
-            console.log(`✅ Banner publicitario activado exitosamente por pago MP ${id}`)
+            console.log(`✅ Banner publicitario activado (${meta.duration_days || 30} días) exitosamente por pago MP ${id}`)
           } catch (e) {
             console.warn('Tabla ad_banners no lista para inserción directa:', e)
           }

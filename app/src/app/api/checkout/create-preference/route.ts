@@ -213,15 +213,31 @@ export async function POST(req: NextRequest) {
     // 3. Manejo de Banners Publicitarios (Media Kit Digital)
     if (itemType === 'ad_banner' && body.adData) {
       const { adData } = body
-      let amount = 49990
-      let title = 'Banner Calculadora de Sueldos ($49.990/mes)'
+      const cycle = body.duration || adData.duration_cycle || 'monthly'
 
-      if (itemTier === 'sidebar') {
-        amount = 39990
-        title = 'Banner Lateral en Noticias ($39.990/mes)'
-      } else if (itemTier === 'header') {
-        amount = 59990
-        title = 'Mega Banner Superior Header ($59.990/mes)'
+      let baseMonthly = 49990
+      let positionName = 'Calculadora de Sueldos'
+
+      if (itemTier === 'sidebar' || adData.position === 'news_sidebar') {
+        baseMonthly = 39990
+        positionName = 'Lateral en Noticias'
+      } else if (itemTier === 'header' || adData.position === 'header_top') {
+        baseMonthly = 59990
+        positionName = 'Mega Banner Superior Header'
+      }
+
+      let amount = baseMonthly
+      let durationDays = 30
+      let cycleLabel = 'Plan Mensual (30 Días)'
+
+      if (cycle === 'semiannual') {
+        amount = Math.round(baseMonthly * 6 * 0.85) // 15% OFF
+        durationDays = 180
+        cycleLabel = 'Plan Semestral (180 Días • 15% OFF)'
+      } else if (cycle === 'annual') {
+        amount = Math.round(baseMonthly * 12 * 0.75) // 25% OFF / 3 meses gratis
+        durationDays = 365
+        cycleLabel = 'Plan Anual (365 Días • 3 Meses Gratis)'
       }
 
       // Sanitizar target_url (Anti-XSS / Anti-Open Redirect Malicioso)
@@ -239,10 +255,10 @@ export async function POST(req: NextRequest) {
       const preferenceRes = await createMercadoPagoPreference({
         items: [{
           id: bannerRefId,
-          title: `${title} - ${adData.sponsor_name}`,
+          title: `Banner ${positionName} - ${cycleLabel} - ${adData.sponsor_name}`,
           quantity: 1,
           unit_price: amount,
-          description: `Espacio Publicitario 30 días en ContaPymePUQ (${adData.sponsor_name})`,
+          description: `Espacio Publicitario ${cycleLabel} en ContaPymePUQ (${adData.sponsor_name})`,
         }],
         payerEmail: contactEmail || 'contacto@contapymepuq.cl',
         payerName: adData.sponsor_name,
@@ -256,6 +272,8 @@ export async function POST(req: NextRequest) {
           image_url: adData.image_url,
           target_url: targetUrl,
           amount_clp: amount,
+          duration_cycle: cycle,
+          duration_days: durationDays,
         },
       })
 

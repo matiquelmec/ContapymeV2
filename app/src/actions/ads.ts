@@ -33,11 +33,12 @@ export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' 
       .lte('starts_at', now)
       .gte('expires_at', now)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    if (error || !data) return null
-    return data as AdBanner
+    if (error || !data || data.length === 0) return null
+
+    // Rotación Equitativa de Impresiones (Ad-Rotation)
+    const selectedIndex = Math.floor(Math.random() * data.length)
+    return data[selectedIndex] as AdBanner
   } catch (err) {
     return null
   }
