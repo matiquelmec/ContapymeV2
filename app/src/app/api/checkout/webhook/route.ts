@@ -102,6 +102,13 @@ export async function POST(req: NextRequest) {
             console.warn('Tabla ad_banners no lista para inserción directa:', e)
           }
         }
+
+        if (extRef && extRef.startsWith('sub_')) {
+          const meta = paymentInfo.metadata || {}
+          const planType = meta.plan_type || 'pyme_pro'
+          const organizationId = meta.organization_id
+          console.log(`✅ Suscripción ERP ${planType} activada exitosamente por pago MP ${id} (Org: ${organizationId})`)
+        }
       }
     }
 

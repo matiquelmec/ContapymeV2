@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       },
       estudio: {
         name: 'Plan Estudio Contable ERP',
-        price: 4990,
+        price: 49990,
         desc: 'Suscripción Multi-Empresa para Estudios Contables (Hasta 100 trabajadores)',
       },
       corporativo: {
