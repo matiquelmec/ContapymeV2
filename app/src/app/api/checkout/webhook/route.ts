@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { mpPayment } from '@/lib/mercadopago'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+function verifySignature(req: NextRequest, dataId: string): boolean {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET || process.env.MP_WEBHOOK_SECRET
+  if (!secret) return true
+
+  const xSignature = req.headers.get('x-signature')
+  if (!xSignature) return true
+
+  try {
+    const parts = xSignature.split(',')
+    let ts = ''
+    let hash = ''
+    for (const part of parts) {
+      const [k, v] = part.split('=')
+      if (k.trim() === 'ts') ts = v.trim()
+      if (k.trim() === 'v1') hash = v.trim()
+    }
+
+    if (!ts || !hash) return true
+
+    const manifest = `id:${dataId};request-id:${req.headers.get('x-request-id') || ''};ts:${ts};`
+    const hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex')
+
+    return hmac === hash
+  } catch (err) {
+    console.warn('Error verificando x-signature:', err)
+    return true
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,8 +38,11 @@ export async function POST(req: NextRequest) {
     const topic = url.searchParams.get('topic') || url.searchParams.get('type')
     const id = url.searchParams.get('id') || url.searchParams.get('data.id')
 
-    if (topic === 'payment' && id) {
-      // 1. Obtener detalles del pago desde Mercado Pago
+    if ((topic === 'payment' || topic === 'merchant_order') && id) {
+      // 1. Verificación opcional de firma HMAC
+      verifySignature(req, id)
+
+      // 2. Obtener detalles del pago desde Mercado Pago
       const paymentInfo = await mpPayment.get({ id })
       
       if (paymentInfo.status === 'approved') {
