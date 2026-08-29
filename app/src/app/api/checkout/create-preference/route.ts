@@ -224,7 +224,17 @@ export async function POST(req: NextRequest) {
         title = 'Mega Banner Superior Header ($59.990/mes)'
       }
 
+      // Sanitizar target_url (Anti-XSS / Anti-Open Redirect Malicioso)
+      let targetUrl = (adData.target_url || '').trim()
+      if (!targetUrl.startsWith('https://') && !targetUrl.startsWith('http://')) {
+        targetUrl = `https://${targetUrl}`
+      }
+      if (targetUrl.toLowerCase().includes('javascript:') || targetUrl.toLowerCase().includes('data:')) {
+        return NextResponse.json({ success: false, error: 'URL de destino no válida o insegura' }, { status: 400 })
+      }
+
       const bannerRefId = `banner_${Date.now().toString(36)}`
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.contapymepuq.cl'
 
       const preferenceRes = await createMercadoPagoPreference({
         items: [{
@@ -237,12 +247,14 @@ export async function POST(req: NextRequest) {
         payerEmail: contactEmail || 'contacto@contapymepuq.cl',
         payerName: adData.sponsor_name,
         externalReference: bannerRefId,
+        successUrl: `${baseUrl}/checkout/success?type=ad_banner&return_to=/dashboard/publicidad`,
+        failureUrl: `${baseUrl}/checkout/failure?type=ad_banner&return_to=/anunciar`,
         metadata: {
           type: 'ad_banner',
           sponsor_name: adData.sponsor_name,
           position: adData.position || 'calculator',
           image_url: adData.image_url,
-          target_url: adData.target_url,
+          target_url: targetUrl,
           amount_clp: amount,
         },
       })

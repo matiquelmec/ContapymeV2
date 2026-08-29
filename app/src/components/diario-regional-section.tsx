@@ -20,6 +20,7 @@ import { GlobalMarketPanel } from "@/components/global-market-panel";
 import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
 import { NewsCardSkeleton, SmallNewsCardSkeleton } from "@/components/skeleton-loader";
+import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
 interface NewsArticle {
@@ -342,74 +343,8 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                         </div>
                      </div>
 
-                     {/* Ad 1: Zona Franca */}
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/60 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-                        <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all duration-500" />
-                        <div className="relative space-y-3">
-                           <div className="flex items-center justify-between">
-                              <span className="text-[8px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded">
-                                 Alianza Comercial
-                              </span>
-                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Patrocinado</span>
-                           </div>
-                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-                              Zona Franca <br/><span className="text-primary font-serif">Punta Arenas</span>
-                           </h5>
-                           <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
-                              El polo comercial libre de impuestos más grande de la Patagonia. Encuentra tecnología y retail.
-                           </p>
-                           <Link href="/contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-primary pt-2 hover:underline">
-                              <span>Ver Catálogo</span>
-                              <ArrowUpRight className="h-3 w-3" />
-                           </Link>
-                        </div>
-                     </div>
-
-                     {/* Ad 2: Cerveza Austral */}
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/60 shadow-md relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-                        <div className="absolute -top-12 -right-12 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-all duration-500" />
-                        <div className="relative space-y-3">
-                           <div className="flex items-center justify-between">
-                              <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/5 px-2 py-0.5 rounded">
-                                 Gastronomía Local
-                              </span>
-                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Patrocinado</span>
-                           </div>
-                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-                              Cerveza Austral <br/><span className="text-emerald-600 font-serif">Origen Patagónico</span>
-                           </h5>
-                           <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed line-clamp-2">
-                              Elaborada con las aguas más puras del fin del mundo desde 1896.
-                           </p>
-                           <Link href="/contacto" className="inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-emerald-600 pt-2 hover:underline">
-                              <span>Conocer Más</span>
-                              <ArrowUpRight className="h-3 w-3" />
-                           </Link>
-                        </div>
-                     </div>
-
-                     {/* Ad 3: Austral Inversiones */}
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 space-y-4 relative overflow-hidden group shadow-md hover:shadow-lg transition-all duration-300">
-                        <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-all duration-500" />
-                        <div className="relative space-y-2.5">
-                           <div className="flex items-center justify-between">
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary px-2 py-0.5 bg-primary/10 rounded-full">
-                                 Publicidad
-                              </span>
-                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">Patrocinado</span>
-                           </div>
-                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-                              Austral <span className="font-serif italic text-primary">Inversiones</span>
-                           </h5>
-                           <p className="text-[9.5px] font-semibold text-muted-foreground/70 leading-relaxed italic">
-                              "Optimizamos la gestión patrimonial y tributaria en Magallanes."
-                           </p>
-                       <Link href="/contacto" className="inline-flex items-center justify-between w-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest rounded-lg h-8 px-4 hover:shadow-md transition-all">
-                              <span>Consultar</span>
-                              <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
-                           </Link>
-                        </div>
-                     </div>
+                     {/* 📢 Banner Publicitario Dinámico de la Barra Lateral */}
+                     <AdBannerSlot position="news_sidebar" className="w-full" />
                   </div>
                </div>
             </div>
