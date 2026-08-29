@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { 
   Sparkles, 
-  Clock, 
   CreditCard, 
   ShieldCheck, 
   CheckCircle2, 
   Building2, 
   ChevronRight, 
   Loader2,
-  X,
-  Zap
+  Zap,
+  Rocket
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,9 +27,6 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
   const [loading, setLoading] = useState(false)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<'emprendedor' | 'pyme_pro' | 'estudio' | 'corporativo'>('pyme_pro')
-  
-  // Cuenta regresiva calculada (14 días por defecto para cuentas nuevas)
-  const [daysRemaining, setDaysRemaining] = useState(14)
 
   const plans = [
     {
@@ -97,32 +93,32 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-900 transition-all hover:scale-105 active:scale-95 shadow-sm group">
-        <div className="h-2 w-2 rounded-full bg-amber-500 animate-ping shrink-0" />
-        <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+      <DialogTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-950 transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer">
+        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+        <Rocket className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         <div className="text-left leading-none">
-          <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 block">
-            Prueba Gratuita
+          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 block">
+            Acceso Lanzamiento
           </span>
           <span className="text-[11px] font-bold text-foreground">
-            {daysRemaining} días restantes
+            100% Habilitado
           </span>
         </div>
-        <span className="ml-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-primary text-white shadow-sm group-hover:bg-primary/90">
-          Pagar Plan ➔
+        <span className="ml-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-emerald-700 text-white shadow-sm group-hover:bg-emerald-800 transition-colors">
+          Ver Planes ➔
         </span>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-6 sm:p-8 bg-white border border-border">
         <DialogHeader className="text-center space-y-3 pb-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest mx-auto">
-            <Sparkles className="w-3.5 h-3.5" /> Suscripción Oficial ContaPymePUQ
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase tracking-widest mx-auto">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Periodo Exclusivo de Lanzamiento Regional
           </div>
           <DialogTitle className="text-2xl sm:text-3xl font-black uppercase italic tracking-tight text-foreground">
-            Elige tu Plan de Software ERP & Nómina
+            Acceso Completo y Planes Oficiales
           </DialogTitle>
-          <p className="text-xs text-muted-foreground font-medium max-w-lg mx-auto">
-            Paga en pesos chilenos vía <strong>Mercado Pago / Webpay</strong> con Débito, Redcompra, CuentaRUT o Tarjeta de Crédito. Sin amarras ni contratos forzados.
+          <p className="text-xs text-muted-foreground font-medium max-w-lg mx-auto leading-relaxed">
+            Tu cuenta cuenta actualmente con <strong>acceso completo a todos los módulos</strong>. Conoce nuestros planes para formalizar tu suscripción o apoyar el ecosistema cuando lo desees.
           </p>
 
           {/* Toggle Mensual / Anual */}
@@ -133,7 +129,7 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
             <button
               type="button"
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-              className={`w-12 h-6 rounded-full p-1 transition-colors ${billingCycle === 'annual' ? 'bg-emerald-600' : 'bg-zinc-300'}`}
+              className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${billingCycle === 'annual' ? 'bg-emerald-600' : 'bg-zinc-300'}`}
             >
               <div className={`w-4 h-4 rounded-full bg-white transition-transform ${billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-0'}`} />
             </button>
@@ -143,59 +139,80 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
           </div>
         </DialogHeader>
 
-        {/* Grid de 4 Planes */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+        {/* Tarjetas de Planes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-4">
           {plans.map((p) => {
+            const finalPrice = billingCycle === 'annual' ? Math.round(p.price * 0.8) : p.price
             const isSelected = selectedPlan === p.id
-            const price = billingCycle === 'annual' ? Math.round(p.price * 0.8) : p.price
 
             return (
               <div
                 key={p.id}
                 onClick={() => setSelectedPlan(p.id as any)}
-                className={`p-5 rounded-3xl border-2 flex flex-col justify-between transition-all cursor-pointer relative ${
-                  isSelected
-                    ? 'border-primary bg-primary/5 shadow-xl ring-2 ring-primary/20 scale-[1.02]'
-                    : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
+                className={`relative flex flex-col justify-between p-5 rounded-3xl border-2 transition-all cursor-pointer ${
+                  isSelected 
+                    ? 'border-primary bg-primary/5 shadow-xl scale-[1.02]' 
+                    : 'border-border bg-white hover:border-zinc-300 hover:shadow-md'
                 }`}
               >
                 {p.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest shadow-sm">
-                    {p.badge}
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase tracking-widest shadow-md">
+                    Recomendado
                   </div>
                 )}
 
                 <div className="space-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
-                    {p.badge}
-                  </span>
-                  <h4 className="text-base font-black uppercase text-foreground leading-tight">
-                    {p.name}
-                  </h4>
-                  <div className="text-2xl font-black text-foreground">
-                    ${price.toLocaleString('es-CL')}
-                    <span className="text-[10px] text-muted-foreground font-bold lowercase">/mes</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800">
+                      {p.badge}
+                    </span>
+                    {isSelected && (
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground font-medium leading-snug">
-                    {p.desc}
-                  </p>
+
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-tight text-foreground">
+                      {p.name}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground font-medium pt-1 leading-snug">
+                      {p.desc}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="pt-4 mt-2 border-t border-zinc-200/60">
+                <div className="pt-4 border-t border-border/60 mt-4 space-y-3">
+                  <div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-black text-foreground">
+                        ${finalPrice.toLocaleString('es-CL')}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-bold">/mes</span>
+                    </div>
+                    {billingCycle === 'annual' && (
+                      <span className="text-[9px] text-emerald-700 font-bold block">
+                        Facturado anualmente (Ahorras 2 meses)
+                      </span>
+                    )}
+                  </div>
+
                   <Button
-                    type="button"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePay(p.id)
+                    }}
                     disabled={loading}
-                    onClick={() => handlePay(p.id)}
-                    className={`w-full h-10 rounded-xl text-xs font-black uppercase tracking-wider ${
+                    className={`w-full rounded-2xl h-10 text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/25'
-                        : 'bg-zinc-200 hover:bg-primary hover:text-white text-zinc-800'
+                        ? 'bg-primary hover:bg-primary/90 text-white shadow-md'
+                        : 'bg-zinc-100 hover:bg-zinc-200 text-foreground'
                     }`}
                   >
-                    {loading && selectedPlan === p.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                    {loading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      'Pagar Plan ➔'
+                      'Suscribirse ➔'
                     )}
                   </Button>
                 </div>
@@ -204,11 +221,15 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
           })}
         </div>
 
-        <div className="pt-4 text-center">
-          <p className="text-[10px] text-muted-foreground font-medium flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            Transacción procesada por Mercado Pago Chile con cifrado bancario SSL de 256 bits.
-          </p>
+        {/* Garantías y Seguridad */}
+        <div className="p-4 rounded-2xl bg-zinc-50 border border-border/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground font-medium">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Pagos seguros procesados en Chile por <strong>Mercado Pago</strong>.</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>✨ Cancela o cambia de plan cuando quieras.</span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
