@@ -52,12 +52,12 @@ export async function POST(req: NextRequest) {
         if (extRef && extRef.startsWith('job_')) {
           const jobId = extRef.replace('job_', '')
           
-          // Activar y destacar el aviso de empleo
+          // Activar y verificar el aviso de empleo
           await supabase
             .from('job_postings')
             .update({
               status: 'active',
-              is_featured: true,
+              is_verified: true,
               updated_at: new Date().toISOString(),
             })
             .eq('id', jobId)

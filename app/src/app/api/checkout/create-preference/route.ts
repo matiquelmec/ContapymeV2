@@ -74,11 +74,10 @@ export async function POST(req: NextRequest) {
           benefits: Array.isArray(jobData.benefits) ? jobData.benefits : [],
           contact_whatsapp: jobData.contact_whatsapp,
           contact_email: contactEmail || jobData.contact_email,
-          source_name: 'ContaEmpleos Self-Serve',
+          source_name: isFree ? 'ContaEmpleos (Gratis)' : `ContaEmpleos (${title})`,
+          source_url: 'https://www.contapymepuq.cl/publicar-empleo',
           is_verified: true,
-          status: isFree ? 'active' : 'active', // Activo de inmediato o tras pago
-          tier: itemTier || 'free',
-          is_featured: isFeatured,
+          status: 'active',
           published_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
