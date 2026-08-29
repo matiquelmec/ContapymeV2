@@ -287,13 +287,14 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
             className="pl-11 h-11 rounded-2xl bg-zinc-50 border-zinc-200 text-xs font-medium"
           />
         </div>
-        <Button
-          onClick={() => setIsFormOpen(true)}
-          className="rounded-2xl h-11 px-5 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white gap-2 shadow-md shadow-primary/20 shrink-0 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Nuevo Comunicado de Prensa</span>
-        </Button>
+        <Link href="/publicar-comunicado">
+          <Button
+            className="rounded-2xl h-11 px-5 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white gap-2 shadow-md shadow-primary/20 shrink-0 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nuevo Comunicado de Prensa</span>
+          </Button>
+        </Link>
       </div>
 
       {/* 📋 LISTADO DE NOTICIAS */}
@@ -310,12 +311,13 @@ export function DashboardNewsClient({ initialNews, companyName }: DashboardNewsC
               Publica notas de prensa, inauguraciones, promociones y publirreportajes en el Diario Regional de Punta Arenas.
             </p>
           </div>
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="rounded-2xl text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Redactar Primer Comunicado
-          </Button>
+          <Link href="/publicar-comunicado">
+            <Button
+              className="rounded-2xl text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Redactar Primer Comunicado
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">

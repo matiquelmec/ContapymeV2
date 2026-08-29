@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards, Briefcase, Newspaper } from 'lucide-react'
+import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards, Briefcase, Newspaper, Megaphone } from 'lucide-react'
 
 export const navigationGroups = [
   {
@@ -17,6 +17,7 @@ export const navigationGroups = [
     items: [
       { name: 'Mis Empleos', href: '/dashboard/empleos', icon: Briefcase },
       { name: 'Mis Comunicados', href: '/dashboard/noticias', icon: Newspaper },
+      { name: 'Banners & Publicidad', href: '/anunciar', icon: Megaphone },
     ]
   },
   {

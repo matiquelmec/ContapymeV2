@@ -364,13 +364,14 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
             className="pl-11 h-11 rounded-2xl bg-zinc-50 border-zinc-200 text-xs font-medium"
           />
         </div>
-        <Button
-          onClick={() => setIsFormOpen(true)}
-          className="rounded-2xl h-11 px-5 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white gap-2 shadow-md shadow-primary/20 shrink-0 cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Publicar Oferta Laboral</span>
-        </Button>
+        <Link href="/publicar-empleo">
+          <Button
+            className="rounded-2xl h-11 px-5 text-xs font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-white gap-2 shadow-md shadow-primary/20 shrink-0 cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Publicar Oferta Laboral</span>
+          </Button>
+        </Link>
       </div>
       {/* 💼 PUENTE HIRE-TO-CONTRACT (CONVERSIÓN AL SOFTWARE ERP) */}
       <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-zinc-900 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -412,12 +413,13 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
               Publica tu primera vacante en ContaEmpleos Magallanes y genera automáticamente kits publicitarios para redes sociales con tu logo y colores.
             </p>
           </div>
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="rounded-2xl text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Publicar Primera Oferta
-          </Button>
+          <Link href="/publicar-empleo">
+            <Button
+              className="rounded-2xl text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Publicar Primera Oferta
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
