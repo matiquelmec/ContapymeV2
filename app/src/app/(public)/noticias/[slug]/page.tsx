@@ -110,6 +110,12 @@ export default async function NewsPage({ params }: Props) {
     articleSection: news.category || "Regional",
     keywords: news.seo_keywords || "noticias magallanes, punta arenas",
     inLanguage: "es-CL",
+    isAccessibleForFree: true,
+    isPartOf: {
+      "@type": ["CreativeWork", "Product"],
+      name: "ContaPymePUQ Diario Regional",
+      productID: "CAowzMLhCw:openaccess"
+    },
     speakable: {
       "@type": "SpeakableSpecification",
       cssSelector: ["h1", ".news-summary", "article p"]

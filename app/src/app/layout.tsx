@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -117,6 +118,25 @@ export default function RootLayout({
             className: "font-sans",
           }}
         />
+        {/* 📰 Google Reader Revenue Manager / Subscribe with Google (SwG Basic) */}
+        <Script
+          async
+          type="application/javascript"
+          src="https://news.google.com/swg/js/v1/swg-basic.js"
+          strategy="afterInteractive"
+        />
+        <Script id="google-swg-basic" strategy="afterInteractive">
+          {`
+            (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
+              basicSubscriptions.init({
+                type: "NewsArticle",
+                isPartOfType: ["Product"],
+                isPartOfProductId: "CAowzMLhCw:openaccess",
+                clientOptions: { theme: "light", lang: "es" },
+              });
+            });
+          `}
+        </Script>
       </body>
     </html>
   );
