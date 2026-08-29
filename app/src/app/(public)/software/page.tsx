@@ -53,7 +53,7 @@ export default function SoftwarePage() {
               y Escalabilidad <span className="text-muted-foreground/35">Organizacional.</span>
             </h1>
             <p className="max-w-2xl text-lg sm:text-xl md:text-2xl font-medium text-muted-foreground italic leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-              Diseñado para el Contador Moderno en la Región de Magallanes. Integración total con noticias regionales y gestión contable de alto rendimiento.
+              Diseñado para empresas, pymes y contadores en la Región de Magallanes. Integración total con facturación SII, remuneraciones LRE y noticias económicas en tiempo real.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
               <Link href="/dashboard">

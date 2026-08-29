@@ -39,16 +39,16 @@ export default function CrearEmpresaPage() {
       <section className="relative pt-16 pb-20 overflow-hidden border-b border-border/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[10px] font-black uppercase tracking-[0.3em]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[10px] font-black uppercase tracking-[0.3em] animate-in fade-in slide-in-from-top-4 duration-700">
               <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Formalización Empresarial Magallanes
             </div>
             
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.9] text-foreground">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.9] text-foreground animate-in fade-in slide-in-from-bottom-4 duration-700">
               Crea tu Empresa en Punta Arenas <br />
               por solo <span className="text-emerald-600 font-serif">$35.000 CLP</span>
             </h1>
 
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
               Te acompañamos en todo el proceso legal: redacción de estatutos, constitución en Empresa en un Día, firma electrónica e inicio de actividades en el SII.
             </p>
           </div>

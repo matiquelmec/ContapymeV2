@@ -38,15 +38,15 @@ export default async function NewsArchivePage() {
         {/* Título Institucional y CTA */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-[0.3em]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-[0.3em] animate-in fade-in slide-in-from-top-4 duration-700">
               <Newspaper className="h-3 w-3" /> Hemeroteca Regional & Diario de Magallanes
             </div>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.88] text-foreground">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.88] text-foreground animate-in fade-in slide-in-from-left-6 duration-700">
               Diario Regional <br />
-              <span className="text-primary font-serif">Punta Arenas & Antártica.</span>
+              <span className="text-primary font-serif">de Magallanes</span> <span className="text-muted-foreground/35">& Finanzas Australes.</span>
             </h1>
-            <p className="text-muted-foreground font-medium text-sm sm:text-base max-w-xl leading-relaxed">
-              Información económica, actualidad, convenios y comunicados oficiales de las empresas de la región austral.
+            <p className="text-muted-foreground font-medium text-sm sm:text-base max-w-xl leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+              Información económica, inversiones, convenios y actualidad de las empresas y la comunidad de la región austral.
             </p>
           </div>
 

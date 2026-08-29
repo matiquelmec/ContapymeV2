@@ -151,16 +151,16 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
         <div className="flex flex-col md:flex-row items-end justify-between mb-20 gap-8" suppressHydrationWarning>
             <div className="space-y-6 relative">
                <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
-               <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-primary/80 mb-2 italic">
+               <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-primary/80 mb-2 italic animate-in fade-in slide-in-from-top-4 duration-700">
                  <span className="w-10 h-[1px] bg-primary/50" />
-                 <Landmark className="h-3 w-3 animate-pulse" /> Portal de Noticias Institucional Contapymepuq
+                 <Landmark className="h-3 w-3 animate-pulse" /> Diario & Portal Económico de la Patagonia
                </div>
-               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground text-shadow-sm">
-                 Diario <span className="text-primary italic font-serif">Punta Arenas</span> <br />
-                 <span className="text-muted-foreground/30">& Financiero Regional.</span>
+               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground text-shadow-sm animate-in fade-in slide-in-from-left-6 duration-700">
+                 Diario Regional <br />
+                 <span className="text-primary italic font-serif">de Magallanes</span> <span className="text-muted-foreground/35">& Finanzas Australes.</span>
                </h2>
-               <p className="text-muted-foreground font-medium italic text-sm sm:text-lg leading-relaxed max-w-lg">
-                 Información estratégica para el contador chileno, con el balance perfecto entre economía regional y global.
+               <p className="text-muted-foreground font-medium italic text-sm sm:text-lg leading-relaxed max-w-xl animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+                 Información estratégica para emprendedores, empresas y la comunidad de Magallanes. El pulso diario de nuestra economía, inversiones regionales y actualidad global.
                </p>
             </div>
              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">

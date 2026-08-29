@@ -77,16 +77,16 @@ export default function NosotrosPage() {
         
         {/* ===== HERO: MANIFIESTO Y PROPÓSITO ===== */}
         <div className="space-y-6 sm:space-y-8 text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.3em] text-primary animate-in fade-in slide-in-from-top-4 duration-700">
             <Sparkles className="h-3.5 w-3.5" /> Arquitectura Estratégica & Manifiesto
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.92] text-foreground">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.92] text-foreground animate-in fade-in slide-in-from-bottom-4 duration-700">
               Tú haz crecer tu negocio. <br />
               <span className="text-primary font-serif">Nosotros nos encargamos de los números.</span>
             </h1>
-            <p className="text-base sm:text-xl text-muted-foreground font-medium max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-xl text-muted-foreground font-medium max-w-3xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
               ContaPymePUQ nació para derribar las barreras burocráticas y conectar el motor productivo de Magallanes: desde la formalización legal de una empresa, hasta la gestión contable, la contratación de talento y la información económica regional.
             </p>
           </div>
