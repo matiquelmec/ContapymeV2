@@ -17,6 +17,8 @@ import {
   Globe 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EcosystemFlywheel } from "@/components/about/ecosystem-flywheel";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 export const metadata: Metadata = {
   title: "Manifiesto Institucional: Misión y Visión | ContaPymePUQ",
@@ -64,17 +66,12 @@ export default function NosotrosPage() {
   };
 
   return (
-    <div className="relative py-12 sm:py-20 overflow-hidden selection:bg-primary/20">
+    <AuroraBackground className="relative py-12 sm:py-20 selection:bg-primary/20">
       {/* Schema.org AboutPage Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
-      {/* Fondos de luz ambiental */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent pointer-events-none -z-10 blur-3xl" />
-      <div className="absolute top-1/3 right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[140px] -z-10 pointer-events-none opacity-50" />
-      <div className="absolute bottom-1/4 left-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[140px] -z-10 pointer-events-none opacity-40" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-6xl space-y-16 sm:space-y-24">
         
@@ -173,61 +170,7 @@ export default function NosotrosPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* Pilar 1: Gestión y Formalización */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-4 flex flex-col justify-between hover:shadow-xl transition-all">
-              <div className="space-y-3">
-                <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-600 w-fit">
-                  <Building2 className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-foreground">
-                  1. Formalización & Gestión ERP
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Creación de empresas en 24h ($35.000), facturación electrónica DTE ilimitada, contabilidad IFRS y liquidaciones de sueldo automáticas bajo la Ley 40 Horas.
-                </p>
-              </div>
-              <Link href="/software" className="inline-flex items-center gap-1.5 text-xs font-black text-primary hover:underline uppercase tracking-wider pt-2">
-                <span>Explorar Software ERP</span> <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-
-            {/* Pilar 2: Empleabilidad y Selección */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-4 flex flex-col justify-between hover:shadow-xl transition-all">
-              <div className="space-y-3">
-                <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 w-fit">
-                  <Briefcase className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-foreground">
-                  2. ContaEmpleos Magallanes
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Bolsa de trabajo hiperlocal de fricción cero. Postulación directa por WhatsApp, estimador de sueldo líquido en vivo y certificación de legalidad bajo el Art. 2° DT.
-                </p>
-              </div>
-              <Link href="/empleos" className="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600 hover:underline uppercase tracking-wider pt-2">
-                <span>Ver Bolsa de Empleos</span> <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-
-            {/* Pilar 3: Información y Trascendencia */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-4 flex flex-col justify-between hover:shadow-xl transition-all">
-              <div className="space-y-3">
-                <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 w-fit">
-                  <Newspaper className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-foreground">
-                  3. Diario Regional & Indicadores
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Periodismo de inteligencia económica: cobertura en tiempo real de salmonicultura, hidrógeno verde, logística antártica, comercio y cotizaciones de divisas.
-                </p>
-              </div>
-              <Link href="/noticias" className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-600 hover:underline uppercase tracking-wider pt-2">
-                <span>Leer Diario Regional</span> <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
+          <EcosystemFlywheel />
         </div>
 
         {/* ===== VALORES NUCLEARES (ASHRIDGE FIT) ===== */}
@@ -309,6 +252,6 @@ export default function NosotrosPage() {
         </div>
 
       </div>
-    </div>
+    </AuroraBackground>
   );
 }

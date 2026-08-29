@@ -1,66 +1,87 @@
-import Link from "next/link";
 import { MapPin, Zap } from "lucide-react";
 import { ContactForm } from "@/components/contact-form";
 import { WhatsAppIcon, InstagramIcon } from "@/components/social-icons";
+import { LiveSupportBadge } from "@/components/contact/live-support-badge";
+import { AuroraBackground } from "@/components/ui/aurora-background";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contacto & Soporte Contable en Punta Arenas | Contapymepuq",
+  description: "Contáctanos para soporte técnico, formalización de empresas, software ERP y asesoría tributaria en Magallanes y Punta Arenas.",
+  keywords: [
+    "contacto contapyme punta arenas",
+    "soporte contable magallanes",
+    "contador punta arenas telefono",
+  ],
+  alternates: {
+    canonical: "https://www.contapymepuq.cl/contacto",
+  },
+};
 
 export default function ContactoPage() {
   return (
-    <section className="py-24 bg-background scroll-mt-32">
-      <div className="container mx-auto px-6 lg:px-12">
-        <div className="relative bg-gradient-to-br from-primary/[0.04] via-zinc-50/50 to-primary/[0.08] border border-primary/10 rounded-[3rem] p-8 sm:p-12 lg:p-20 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.06)] overflow-hidden">
-          {/* Auroras Patagónicas Decorativas */}
-          <div className="absolute -top-20 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[100px] -z-0 pointer-events-none" />
-          <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-emerald-500/8 rounded-full blur-[100px] -z-0 pointer-events-none" />
-
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    <AuroraBackground className="py-16 sm:py-24 scroll-mt-32">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="relative bg-white/90 border border-border/80 rounded-[3rem] p-8 sm:p-12 lg:p-20 shadow-2xl overflow-hidden">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.25em] text-primary">
-                <MapPin className="h-3 w-3" /> Soporte Local e Inmediato
+              <div className="space-y-3">
+                <LiveSupportBadge />
+                <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-foreground leading-[1.05]">
+                  ¿Necesitas <span className="text-primary font-serif">Soporte Regional</span> <br />en Magallanes?
+                </h1>
+                <p className="text-muted-foreground text-sm sm:text-base font-medium leading-relaxed max-w-lg">
+                  Nuestro equipo técnico y contable está radicado en Punta Arenas para brindarte una respuesta instantánea y personalizada a la realidad fiscal y laboral de tu empresa en el extremo sur.
+                </p>
               </div>
-              <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-foreground leading-[1.05]">
-                ¿Necesitas <span className="text-primary italic">Soporte Regional</span> <br />en Magallanes?
-              </h3>
-              <p className="text-muted-foreground text-sm sm:text-base font-bold italic leading-relaxed max-w-lg">
-                Nuestro equipo técnico está basado en Punta Arenas para brindarte una respuesta instantánea y personalizada a la realidad fiscal y administrativa de tu empresa en el extremo sur.
-              </p>
 
-              <div className="flex flex-col gap-5 pt-4">
-                <div className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
-                  <div className="p-3.5 bg-primary/10 text-primary rounded-2xl border border-primary/20 shadow-sm shrink-0">
+              <div className="flex flex-col gap-4 pt-2">
+                <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/30 border border-border/60 transition-all hover:bg-muted/60">
+                  <div className="p-3 bg-primary/10 text-primary rounded-xl shrink-0">
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Dirección Corporativa</span>
-                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground">Las Malvas 2775, Punta Arenas.</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Dirección Corporativa</span>
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground">Las Malvas 2775, Punta Arenas, Chile.</span>
                   </div>
                 </div>
 
-                <a href="https://wa.me/56944444565" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
-                  <div className="p-3.5 bg-emerald-500/10 text-emerald-600 rounded-2xl border border-emerald-500/20 shadow-sm shrink-0">
+                <a 
+                  href="https://wa.me/56944444565" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 transition-all hover:bg-emerald-500/10"
+                >
+                  <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl shrink-0">
                     <WhatsAppIcon className="h-5 w-5 fill-current" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">WhatsApp Directo</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">WhatsApp Directo</span>
                     <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-600">+56 9 4444 4565</span>
                   </div>
                 </a>
 
-                <a href="https://www.instagram.com/contapyme.puq" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
-                  <div className="p-3.5 bg-pink-500/10 text-pink-600 rounded-2xl border border-pink-500/20 shadow-sm shrink-0">
+                <a 
+                  href="https://www.instagram.com/contapyme.puq" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-pink-500/5 border border-pink-500/20 transition-all hover:bg-pink-500/10"
+                >
+                  <div className="p-3 bg-pink-500/10 text-pink-600 rounded-xl shrink-0">
                     <InstagramIcon className="h-5 w-5 fill-current" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Instagram Oficial</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Instagram Oficial</span>
                     <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-pink-600">@contapyme.puq</span>
                   </div>
                 </a>
 
-                <div className="flex items-center gap-4 transition-transform hover:translate-x-1 duration-300">
-                  <div className="p-3.5 bg-primary/10 text-primary rounded-2xl border border-primary/20 shadow-sm shrink-0">
+                <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/30 border border-border/60 transition-all hover:bg-muted/60">
+                  <div className="p-3 bg-primary/10 text-primary rounded-xl shrink-0">
                     <Zap className="h-5 w-5" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 leading-none mb-1">Correo Electrónico</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">Correo Electrónico</span>
                     <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-primary">contacto@contapymepuq.cl</span>
                   </div>
                 </div>
@@ -71,6 +92,6 @@ export default function ContactoPage() {
           </div>
         </div>
       </div>
-    </section>
+    </AuroraBackground>
   );
 }

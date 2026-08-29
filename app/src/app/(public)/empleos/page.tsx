@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getRegionalJobs, getJobsStats } from "@/actions/jobs";
 import { JobsBoardClient } from "@/components/jobs/jobs-board-client";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 import type { Metadata } from "next";
 
@@ -33,11 +34,7 @@ export default async function JobsPage() {
   const stats = await getJobsStats();
 
   return (
-    <div className="relative py-12 sm:py-16 overflow-hidden">
-      {/* Fondo sutil con destello de marca */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none -z-10" />
-      <div className="absolute top-20 right-[-10%] w-[450px] h-[450px] bg-primary/10 rounded-full blur-[130px] -z-10 pointer-events-none opacity-50" />
-
+    <AuroraBackground className="py-12 sm:py-16">
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-6xl space-y-12">
         {/* ===== HERO PRINCIPAL ===== */}
         <div className="space-y-6">
@@ -86,6 +83,6 @@ export default async function JobsPage() {
         {/* ===== TABLERO INTERACTIVO DE EMPLEOS ===== */}
         <JobsBoardClient initialJobs={jobs} />
       </div>
-    </div>
+    </AuroraBackground>
   );
 }

@@ -17,6 +17,7 @@ import {
   Scale,
   DollarSign
 } from "lucide-react";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 export const metadata: Metadata = {
   title: "Calculadora de Sueldo Líquido y Bruto Chile 2026 (Gratis) | ContaPymePUQ",
@@ -156,7 +157,7 @@ export default async function CalculadoraPublicaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-primary/20">
+    <AuroraBackground className="min-h-screen flex flex-col selection:bg-primary/20">
       {/* 🤖 SCHEMA.ORG STRUCTURED DATA: WebApplication, FAQPage & BreadcrumbList */}
       <script
         type="application/ld+json"
@@ -470,6 +471,6 @@ export default async function CalculadoraPublicaPage() {
 
         </div>
       </main>
-    </div>
+    </AuroraBackground>
   );
 }
