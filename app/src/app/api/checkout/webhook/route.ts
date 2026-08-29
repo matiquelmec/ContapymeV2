@@ -58,11 +58,49 @@ export async function POST(req: NextRequest) {
             .update({
               status: 'active',
               is_verified: true,
+              published_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
             .eq('id', jobId)
 
-          console.log(`✅ Empleo ${jobId} activado y destacado exitosamente por pago MP ${id}`)
+          console.log(`✅ Empleo ${jobId} activado y verificado exitosamente por pago MP ${id}`)
+        }
+
+        if (extRef && extRef.startsWith('news_')) {
+          const newsId = extRef.replace('news_', '')
+          
+          // Publicar y verificar la nota de prensa
+          await supabase
+            .from('regional_news')
+            .update({
+              published_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', newsId)
+
+          console.log(`✅ Noticia ${newsId} publicada exitosamente por pago MP ${id}`)
+        }
+
+        if (extRef && extRef.startsWith('banner_')) {
+          const meta = paymentInfo.metadata || {}
+          try {
+            await supabase
+              .from('ad_banners')
+              .insert({
+                position: meta.position || 'calculator',
+                sponsor_name: meta.sponsor_name || paymentInfo.payer?.first_name || 'Anunciante',
+                title: `Publicidad ${meta.sponsor_name || 'Comercial'}`,
+                image_url: meta.image_url || '',
+                target_url: meta.target_url || '#',
+                status: 'active',
+                amount_clp: meta.amount_clp || 39990,
+                starts_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              })
+            console.log(`✅ Banner publicitario activado exitosamente por pago MP ${id}`)
+          } catch (e) {
+            console.warn('Tabla ad_banners no lista para inserción directa:', e)
+          }
         }
       }
     }

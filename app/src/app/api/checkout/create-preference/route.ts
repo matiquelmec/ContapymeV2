@@ -76,9 +76,9 @@ export async function POST(req: NextRequest) {
           contact_email: contactEmail || jobData.contact_email,
           source_name: isFree ? 'ContaEmpleos (Gratis)' : `ContaEmpleos (${title})`,
           source_url: 'https://www.contapymepuq.cl/publicar-empleo',
-          is_verified: true,
-          status: 'active',
-          published_at: new Date().toISOString(),
+          is_verified: isFree,
+          status: isFree ? 'active' : 'pending_payment',
+          published_at: isFree ? new Date().toISOString() : null,
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
           source_name: newsData.company_name || 'Publirreportaje Comercial',
           source_url: 'https://www.contapymepuq.cl/noticias',
           is_featured: itemTier === 'featured' || itemTier === 'campaign',
-          published_at: new Date().toISOString(),
+          published_at: null,
         })
         .select()
         .single()
