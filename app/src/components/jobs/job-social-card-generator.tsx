@@ -48,6 +48,34 @@ interface JobSocialCardGeneratorProps {
 type AspectRatio = 'square' | 'story'
 type ThemeMode = 'white' | 'dark'
 
+
+// 🏷️ Extractor Inteligente de Beneficios Laborales para Micro-Chips
+function extractJobBenefitChips(job: JobPosting): string[] {
+  const chips: string[] = []
+  const fullText = `${job.title} ${job.description || ''} ${(job.requirements || []).join(' ')} ${job.work_shift || ''}`.toLowerCase()
+  
+  if (fullText.includes('colación') || fullText.includes('almuerzo') || fullText.includes('casino') || fullText.includes('comida')) {
+    chips.push('☕ Colación')
+  }
+  if (fullText.includes('traslado') || fullText.includes('acercamiento') || fullText.includes('movilización') || fullText.includes('bus')) {
+    chips.push('🚐 Traslado')
+  }
+  if (fullText.includes('indefinido') || fullText.includes('planta') || fullText.includes('estable')) {
+    chips.push('⚡ Indefinido')
+  }
+  if (fullText.includes('seguro') || fullText.includes('salud') || fullText.includes('mutual')) {
+    chips.push('🏥 Seguro')
+  }
+  if (fullText.includes('zona franca') || fullText.includes('puq') || fullText.includes('punta arenas')) {
+    chips.push('📍 Magallanes')
+  }
+  if (fullText.includes('inmediata') || fullText.includes('urgente')) {
+    chips.push('🔥 Incorp. Inmediata')
+  }
+  
+  return chips.slice(0, 3)
+}
+
 export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [copiedType, setCopiedType] = useState<string | null>(null)
@@ -675,28 +703,61 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                       {job.title}
                     </h3>
 
-                    {/* Cápsula de Sueldo y Turno */}
-                    <div className="flex flex-wrap gap-1 pt-0.5 w-full min-w-0">
-                      {job.salary_raw && (
+                    {/* 💰 PÍLDORA DE SUELDO MAGNÉTICA (IMÁN DE CLICS) */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 w-full min-w-0">
+                      {job.salary_raw ? (
                         <div
-                          className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-white px-2.5 py-0.5 rounded-lg shadow-2xs shrink-0"
-                          style={{ backgroundColor: theme === 'white' ? brandPalette.accentHex : '#059669' }}
+                          className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-black text-white px-3 py-1 rounded-xl shadow-md shrink-0 border border-white/20"
+                          style={{ 
+                            background: theme === 'white' 
+                              ? `linear-gradient(135deg, ${brandPalette.accentHex} 0%, #059669 100%)` 
+                              : 'linear-gradient(135deg, #10B981 0%, #047857 100%)' 
+                          }}
                         >
-                          <DollarSign className="h-2.5 w-2.5 shrink-0" />
+                          <span className="text-sm">💰</span>
                           <span>{job.salary_raw}</span>
                         </div>
+                      ) : (
+                        <div className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-xl shrink-0 ${
+                          theme === 'white' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-emerald-950/80 text-emerald-200 border border-emerald-800'
+                        }`}>
+                          <span>💼 Renta Acorde al Mercado</span>
+                        </div>
                       )}
+                      
                       {job.work_shift && (
-                        <div className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider shrink-0 ${
+                        <div className={`flex items-center gap-1 text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider shrink-0 ${
                           theme === 'white'
-                            ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
-                            : 'bg-indigo-950 text-indigo-200 border border-indigo-700/60'
+                            ? 'bg-slate-100 text-slate-800 border border-slate-200'
+                            : 'bg-slate-800 text-slate-200 border border-slate-700'
                         }`}>
                           <Clock className="h-2.5 w-2.5 shrink-0" />
                           <span>{job.work_shift}</span>
                         </div>
                       )}
                     </div>
+
+                    {/* 🏷️ MICRO-CHIPS DE BENEFICIOS LABORALES DESTACADOS */}
+                    {(() => {
+                      const benefitChips = extractJobBenefitChips(job)
+                      if (!benefitChips.length) return null
+                      return (
+                        <div className="flex flex-wrap gap-1 pt-0.5 w-full min-w-0">
+                          {benefitChips.map((chip, cIdx) => (
+                            <span
+                              key={cIdx}
+                              className={`text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-lg shrink-0 ${
+                                theme === 'white'
+                                  ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                                  : 'bg-amber-950/80 text-amber-200 border border-amber-800/60'
+                              }`}
+                            >
+                              {chip}
+                            </span>
+                          ))}
+                        </div>
+                      )
+                    })()}
 
                     {/* Requisitos principales */}
                     {job.requirements && job.requirements.length > 0 && (
@@ -730,19 +791,26 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                       : 'bg-slate-900/90 border border-slate-700/90'
                   }`}>
                     <div className="space-y-0.2 min-w-0 flex-1">
-                      <span
-                        className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block"
-                        style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
-                      >
-                        Postulación Rápida
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block"
+                          style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
+                        >
+                          Postulación Rápida
+                        </span>
+                        <span className={`text-[7px] font-bold px-1 rounded ${
+                          theme === 'white' ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-950 text-emerald-300'
+                        }`}>
+                          ✓ 100% Gratuita
+                        </span>
+                      </div>
                       <p className={`text-[9.5px] sm:text-[11px] truncate font-mono font-bold ${
                         theme === 'white' ? 'text-slate-900' : 'text-white'
                       }`}>
                         {job.contact_email ? `✉️ ${job.contact_email}` : (job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : '🌐 contapymepuq.cl')}
                       </p>
                       <p className={`text-[7.5px] ${theme === 'white' ? 'text-slate-500' : 'text-slate-300'} truncate`}>
-                        Escanea el QR o usa el enlace directo.
+                        Escanea con tu cámara o usa el enlace.
                       </p>
                     </div>
                     <img
@@ -755,16 +823,26 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                     />
                   </div>
 
-                  {/* 5. CALLOUT EXCLUSIVO PARA HISTORIAS DE INSTAGRAM */}
+                  {/* 5. 🎯 ZONA INTERACTIVA PARA EL STICKER DE ENLACE (HISTORIAS 9:16) */}
                   {aspectRatio === 'story' && (
-                    <div className={`p-1.5 rounded-lg border flex items-center justify-center gap-1.5 text-center relative z-10 ${
+                    <div className={`p-2 rounded-xl border-2 border-dashed flex items-center justify-between gap-2 text-center relative z-10 ${
                       theme === 'white'
-                        ? 'bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 border-rose-400/30 text-rose-700'
-                        : 'bg-gradient-to-r from-rose-950/80 via-pink-950/80 to-amber-950/80 border-rose-500/50 text-rose-200'
+                        ? 'bg-emerald-50/80 border-emerald-500/60 text-emerald-950'
+                        : 'bg-emerald-950/60 border-emerald-500/70 text-emerald-100'
                     }`}>
-                      <LinkIcon className="h-3 w-3 text-rose-500 shrink-0" />
-                      <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider truncate">
-                        👆 TOCA EL STICKER DE ENLACE ARRIBA
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-base shrink-0">🔗</span>
+                        <div className="text-left min-w-0">
+                          <span className="text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider block truncate">
+                            Pega aquí el Sticker de Enlace
+                          </span>
+                          <span className="text-[7.5px] font-bold text-emerald-700 dark:text-emerald-300 block truncate">
+                            Toca para postular directamente
+                          </span>
+                        </div>
+                      </div>
+                      <span className="bg-emerald-600 text-white text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg shrink-0 shadow-2xs">
+                        POSTULAR ➔
                       </span>
                     </div>
                   )}
