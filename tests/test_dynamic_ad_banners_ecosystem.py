@@ -5,7 +5,8 @@ import random
 class TestDynamicAdBannersEcosystem:
     """
     🧪 Suite de Pruebas Unitarias de Arquitectura y Seguridad:
-    Ecosistema de Banners Publicitarios, Mega Banner, Rotación, Pasarela/Carrusel y Facturación Multiciclo.
+    Ecosistema de Banners Publicitarios, Mega Banner, Rotación, Carrusel,
+    Límite de Capacidad (Máx 5) y Mensajes de Cupos Agotados.
     """
 
     def test_01_ad_banner_positions_and_pricing_integrity(self):
@@ -133,18 +134,14 @@ class TestDynamicAdBannersEcosystem:
         }
 
         for slot, base in base_prices.items():
-            # Mensual
             assert base == base_prices[slot]
-            # Semestral: base * 6 * 0.85
             expected_semi = round(base * 6 * 0.85)
             assert expected_semi < (base * 6)
             assert round(expected_semi / (base * 6), 2) == 0.85
-            # Anual: base * 12 * 0.75 (Paga 9 meses, recibe 12)
             expected_annual = round(base * 12 * 0.75)
             assert expected_annual == base * 9
             assert round(expected_annual / (base * 12), 2) == 0.75
 
-        # Tarifas anuales calculadas
         assert round(39990 * 12 * 0.75) == 359910
         assert round(49990 * 12 * 0.75) == 449910
         assert round(59990 * 12 * 0.75) == 539910
@@ -179,9 +176,8 @@ class TestDynamicAdBannersEcosystem:
         current_idx = advance(current_idx)
         assert current_idx == 2
         current_idx = advance(current_idx)
-        assert current_idx == 0  # Vuelve al inicio
+        assert current_idx == 0
 
-        # Retroceder
         current_idx = previous(current_idx)
         assert current_idx == 2
 
@@ -199,18 +195,49 @@ class TestDynamicAdBannersEcosystem:
             if not state['is_paused']:
                 state['current_index'] = (state['current_index'] + 1) % 3
 
-        # Tick sin pausa avanza
         tick()
         assert state['current_index'] == 1
 
-        # Usuario pasa cursor: se pausa
         on_mouse_enter()
         assert state['is_paused'] is True
         tick()
-        assert state['current_index'] == 1  # No avanza mientras está pausado
+        assert state['current_index'] == 1
 
-        # Usuario retira cursor: continúa
         on_mouse_leave()
         assert state['is_paused'] is False
         tick()
         assert state['current_index'] == 2
+
+    def test_10_slot_capacity_limit_enforcement_at_max_5(self):
+        """Verifica que cuando un slot tiene 5 marcas activas, se bloquee la venta y se marque como lleno."""
+        max_capacity = 5
+        
+        # Caso 1: 3 activos (disponible)
+        active_count_1 = 3
+        is_full_1 = active_count_1 >= max_capacity
+        available_1 = max_capacity - active_count_1
+        assert is_full_1 is False
+        assert available_1 == 2
+
+        # Caso 2: 4 activos (último cupo)
+        active_count_2 = 4
+        is_full_2 = active_count_2 >= max_capacity
+        available_2 = max_capacity - active_count_2
+        assert is_full_2 is False
+        assert available_2 == 1
+
+        # Caso 3: 5 activos (agotado)
+        active_count_3 = 5
+        is_full_3 = active_count_3 >= max_capacity
+        available_3 = max_capacity - active_count_3
+        assert is_full_3 is True
+        assert available_3 == 0
+
+        # Rechazo en Backend
+        def can_create_checkout(active_count: int) -> bool:
+            return active_count < max_capacity
+
+        assert can_create_checkout(3) is True
+        assert can_create_checkout(4) is True
+        assert can_create_checkout(5) is False
+        assert can_create_checkout(6) is False

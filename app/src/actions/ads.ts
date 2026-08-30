@@ -55,6 +55,61 @@ export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' 
   }
 }
 
+export interface SlotAvailability {
+  position: 'calculator' | 'news_sidebar' | 'header_top'
+  count: number
+  max: number
+  available: number
+  isFull: boolean
+  nextAvailableDate?: string | null
+}
+
+/**
+ * Consulta en tiempo real la disponibilidad y cupos restantes de cada ubicación publicitaria (Máx 5 por slot).
+ */
+export async function getAdSlotsAvailabilityAction(): Promise<Record<string, SlotAvailability>> {
+  try {
+    const supabase = createAdminClient()
+    const now = new Date().toISOString()
+
+    const { data } = await supabase
+      .from('ad_banners')
+      .select('position, expires_at')
+      .eq('status', 'active')
+      .lte('starts_at', now)
+      .gte('expires_at', now)
+      .order('expires_at', { ascending: true })
+
+    const slots: ('calculator' | 'news_sidebar' | 'header_top')[] = ['calculator', 'news_sidebar', 'header_top']
+    const result: Record<string, SlotAvailability> = {}
+    const maxPerSlot = 5
+
+    for (const s of slots) {
+      const activeForSlot = (data || []).filter(item => item.position === s)
+      const count = activeForSlot.length
+      const isFull = count >= maxPerSlot
+      const nextAvailableDate = isFull && activeForSlot.length > 0 ? activeForSlot[0].expires_at : null
+
+      result[s] = {
+        position: s,
+        count,
+        max: maxPerSlot,
+        available: Math.max(0, maxPerSlot - count),
+        isFull,
+        nextAvailableDate,
+      }
+    }
+
+    return result
+  } catch (e) {
+    return {
+      calculator: { position: 'calculator', count: 0, max: 5, available: 5, isFull: false },
+      news_sidebar: { position: 'news_sidebar', count: 0, max: 5, available: 5, isFull: false },
+      header_top: { position: 'header_top', count: 0, max: 5, available: 5, isFull: false },
+    }
+  }
+}
+
 /**
  * Obtiene todos los banners gestionados en el panel de control.
  */

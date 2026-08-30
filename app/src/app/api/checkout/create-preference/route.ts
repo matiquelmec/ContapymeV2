@@ -240,6 +240,25 @@ export async function POST(req: NextRequest) {
         cycleLabel = 'Plan Anual (365 Días • 3 Meses Gratis)'
       }
 
+      // Validar Límite de Capacidad (Máximo 5 anunciantes por ubicación)
+      const targetPosition = adData.position || 'calculator'
+      const supabase = createAdminClient()
+      const now = new Date().toISOString()
+      const { count: activeCount } = await supabase
+        .from('ad_banners')
+        .select('*', { count: 'exact', head: true })
+        .eq('position', targetPosition)
+        .eq('status', 'active')
+        .lte('starts_at', now)
+        .gte('expires_at', now)
+
+      if (activeCount !== null && activeCount >= 5) {
+        return NextResponse.json({
+          success: false,
+          error: 'Esta ubicación publicitaria ha alcanzado su capacidad máxima (5 marcas activas) para proteger la visibilidad. Por favor selecciona otro espacio o intenta más adelante.'
+        }, { status: 400 })
+      }
+
       // Sanitizar target_url (Anti-XSS / Anti-Open Redirect Malicioso)
       let targetUrl = (adData.target_url || '').trim()
       if (!targetUrl.startsWith('https://') && !targetUrl.startsWith('http://')) {

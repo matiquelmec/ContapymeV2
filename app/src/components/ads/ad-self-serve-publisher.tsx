@@ -18,6 +18,8 @@ import {
   UserPlus,
   Lock,
   Calendar,
+  AlertTriangle,
+  Flame,
   CheckCircle2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +31,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { getAdSlotsAvailabilityAction, SlotAvailability } from '@/actions/ads'
 import { toast } from 'sonner'
 
 export function AdSelfServePublisher() {
@@ -51,7 +54,18 @@ export function AdSelfServePublisher() {
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
 
+  const [availability, setAvailability] = useState<Record<string, SlotAvailability>>({
+    calculator: { position: 'calculator', count: 0, max: 5, available: 5, isFull: false },
+    news_sidebar: { position: 'news_sidebar', count: 0, max: 5, available: 5, isFull: false },
+    header_top: { position: 'header_top', count: 0, max: 5, available: 5, isFull: false },
+  })
+
   useEffect(() => {
+    // Cargar disponibilidad en tiempo real
+    getAdSlotsAvailabilityAction().then(res => {
+      if (res) setAvailability(res)
+    })
+
     try {
       const saved = localStorage.getItem('draft_ad_banner')
       if (saved) {
@@ -99,16 +113,20 @@ export function AdSelfServePublisher() {
       const total = Math.round(base * 6 * 0.85) // 15% OFF
       return { total, monthlyEquivalent: Math.round(total / 6), discount: 15, days: 180 }
     }
-    // annual (25% OFF = 3 meses gratis)
-    const total = Math.round(base * 12 * 0.75)
+    const total = Math.round(base * 12 * 0.75) // 25% OFF
     return { total, monthlyEquivalent: Math.round(total / 12), discount: 25, days: 365 }
   }
 
   const selectedPricing = calculateTotal(slot, duration)
 
+  // Mapear id a la clave de disponibilidad
+  const slotDbKey = slot === 'sidebar' ? 'news_sidebar' : slot === 'header' ? 'header_top' : 'calculator'
+  const currentSlotAvail = availability[slotDbKey] || { isFull: false, available: 5, count: 0, max: 5 }
+
   const slots = [
     {
       id: 'sidebar',
+      dbKey: 'news_sidebar',
       name: 'Banner Lateral en Noticias',
       basePrice: 39990,
       desc: 'Formato vertical (300x250 o 300x600 px). Visible en todos los artículos y portada del Diario Regional.',
@@ -116,6 +134,7 @@ export function AdSelfServePublisher() {
     },
     {
       id: 'calculator',
+      dbKey: 'calculator',
       name: 'Banner Calculadora de Sueldos',
       basePrice: 49990,
       desc: 'La página #1 de Magallanes en Google. Público de alta intención: contadores, Pymes y trabajadores.',
@@ -123,6 +142,7 @@ export function AdSelfServePublisher() {
     },
     {
       id: 'header',
+      dbKey: 'header_top',
       name: 'Mega Banner Superior (Header)',
       basePrice: 59990,
       desc: 'Formato horizontal (728x90 o 970x90 px). Ubicación de máxima presencia en la cabecera de todo el portal.',
@@ -131,6 +151,11 @@ export function AdSelfServePublisher() {
   ]
 
   const executeCheckout = async () => {
+    if (currentSlotAvail.isFull) {
+      toast.error('Esta ubicación publicitaria ya no tiene cupos disponibles.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -182,6 +207,11 @@ export function AdSelfServePublisher() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (currentSlotAvail.isFull) {
+      toast.error('Esta ubicación está 100% ocupada. Por favor selecciona otra ubicación con cupos disponibles.')
+      return
+    }
 
     if (!sponsorName.trim() || !imageUrl.trim() || !targetUrl.trim()) {
       toast.error('Por favor completa el nombre de tu empresa, la imagen y el enlace de destino.')
@@ -408,7 +438,7 @@ export function AdSelfServePublisher() {
               </div>
             </div>
 
-            {/* Selector de Posición */}
+            {/* Selector de Posición con Control de Capacidad */}
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block">
                 3. Ubicación del Banner
@@ -418,21 +448,28 @@ export function AdSelfServePublisher() {
                 {slots.map(s => {
                   const isSelected = slot === s.id
                   const pricing = calculateTotal(s.id as any, duration)
+                  const slotAvail = availability[s.dbKey] || { isFull: false, available: 5, count: 0, max: 5 }
 
                   return (
                     <label
                       key={s.id}
                       onClick={() => setSlot(s.id as any)}
-                      className={`block p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                        isSelected
+                      className={`block p-4 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                        slotAvail.isFull
+                          ? 'border-zinc-200 bg-zinc-100/70 opacity-80 cursor-not-allowed'
+                          : isSelected
                           ? 'border-amber-500 bg-amber-50/50 shadow-md'
                           : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5">
-                          <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-amber-600 bg-amber-600' : 'border-zinc-300'}`}>
-                            {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                          <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                            isSelected && !slotAvail.isFull
+                              ? 'border-amber-600 bg-amber-600'
+                              : 'border-zinc-300'
+                          }`}>
+                            {isSelected && !slotAvail.isFull && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                           </div>
                           <span className="text-xs font-black uppercase text-foreground">{s.name}</span>
                         </div>
@@ -440,19 +477,56 @@ export function AdSelfServePublisher() {
                           ${pricing.total.toLocaleString('es-CL')}
                         </span>
                       </div>
+
                       <p className="text-[11px] text-muted-foreground font-medium pl-6 pt-1 leading-snug">
                         {s.desc}
                       </p>
-                      {duration !== 'monthly' && (
-                        <div className="pl-6 pt-1 text-[10px] font-bold text-emerald-700">
-                          Equivale a ${pricing.monthlyEquivalent.toLocaleString('es-CL')}/mes ({pricing.discount}% de ahorro)
-                        </div>
-                      )}
+
+                      {/* Badges Dinámicos de Disponibilidad / Escasez */}
+                      <div className="pl-6 pt-2 flex items-center justify-between gap-2">
+                        {slotAvail.isFull ? (
+                          <div className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">
+                            <Lock className="h-3 w-3" /> CUPOS AGOTADOS (5/5 Ocupados)
+                          </div>
+                        ) : slotAvail.available === 1 ? (
+                          <div className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md animate-pulse">
+                            <Flame className="h-3 w-3 text-amber-600" /> ¡Último Cupo Disponible!
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> {slotAvail.available} de 5 Cupos Libres
+                          </div>
+                        )}
+
+                        {duration !== 'monthly' && (
+                          <span className="text-[9.5px] font-bold text-emerald-700">
+                            ~${pricing.monthlyEquivalent.toLocaleString('es-CL')}/mes (-{pricing.discount}%)
+                          </span>
+                        )}
+                      </div>
                     </label>
                   )
                 })}
               </div>
             </div>
+
+            {/* ALERTA DE CUPOS AGOTADOS SI EL SLOT SELECCIONADO ESTÁ LLENO */}
+            {currentSlotAvail.isFull && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1 text-xs">
+                <div className="flex items-center gap-1.5 font-black uppercase tracking-wider text-rose-800">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+                  <span>Ubicación 100% Reservada</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-rose-800">
+                  Esta posición alcanzó el límite de 5 marcas activas para garantizar máxima visibilidad. Por favor selecciona otra ubicación con cupos libres.
+                  {currentSlotAvail.nextAvailableDate && (
+                    <span className="block font-semibold pt-0.5">
+                      Próxima liberación estimada: {new Date(currentSlotAvail.nextAvailableDate).toLocaleDateString('es-CL')}.
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
 
             {/* Total y Botón de Pago */}
             <div className="pt-4 border-t border-zinc-100 space-y-3">
@@ -470,13 +544,21 @@ export function AdSelfServePublisher() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || currentSlotAvail.isFull}
                 size="lg"
-                className="w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-xl shadow-amber-600/25 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                className={`w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-xl ${
+                  currentSlotAvail.isFull
+                    ? 'bg-zinc-400 text-white cursor-not-allowed shadow-none'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/25 hover:scale-[1.02] active:scale-95 cursor-pointer'
+                }`}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando Orden...
+                  </>
+                ) : currentSlotAvail.isFull ? (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" /> Ubicación Agotada (Selecciona Otra)
                   </>
                 ) : (
                   <>
