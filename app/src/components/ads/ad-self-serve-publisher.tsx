@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -20,7 +20,11 @@ import {
   Calendar,
   AlertTriangle,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  UploadCloud,
+  X,
+  FileCheck,
+  Zap
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,7 +35,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
-import { getAdSlotsAvailabilityAction, SlotAvailability } from '@/actions/ads'
+import { getAdSlotsAvailabilityAction, uploadAdBannerImageAction, SlotAvailability } from '@/actions/ads'
+import { compressImage } from '@/lib/media/image-compressor'
 import { toast } from 'sonner'
 
 export function AdSelfServePublisher() {
@@ -54,6 +59,12 @@ export function AdSelfServePublisher() {
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
 
+  // Estado de carga y compresión WebP
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [compressionRatio, setCompressionRatio] = useState<string | null>(null)
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [availability, setAvailability] = useState<Record<string, SlotAvailability>>({
     calculator: { position: 'calculator', count: 0, max: 5, available: 5, isFull: false },
     news_sidebar: { position: 'news_sidebar', count: 0, max: 5, available: 5, isFull: false },
@@ -61,7 +72,6 @@ export function AdSelfServePublisher() {
   })
 
   useEffect(() => {
-    // Cargar disponibilidad en tiempo real
     getAdSlotsAvailabilityAction().then(res => {
       if (res) setAvailability(res)
     })
@@ -100,6 +110,49 @@ export function AdSelfServePublisher() {
     } catch (e) {}
   }
 
+  // Manejador de subida y compresión WebP
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor selecciona un archivo de imagen válido (JPG, PNG o WebP).')
+      return
+    }
+
+    setIsUploadingImage(true)
+    const toastId = toast.loading('Comprimiendo creatividad y optimizando a WebP...')
+
+    try {
+      const targetMaxWidth = slot === 'header' ? 1200 : 800
+      const { file: compressedFile, ratio, compressedSize } = await compressImage(file, {
+        maxWidth: targetMaxWidth,
+        quality: 0.85,
+        format: 'image/webp'
+      })
+
+      const formData = new FormData()
+      formData.append('file', compressedFile)
+
+      const res = await uploadAdBannerImageAction(formData)
+
+      if (res.success && res.url) {
+        setImageUrl(res.url)
+        setCompressionRatio(ratio)
+        const sizeKb = Math.round(compressedSize / 1024)
+        toast.success(`Banner optimizado a WebP (${sizeKb} KB, -${ratio} peso) y cargado con éxito. 🚀`, { id: toastId })
+      } else {
+        toast.error(res.error || 'Error al subir la imagen.', { id: toastId })
+      }
+    } catch (err: any) {
+      console.error(err)
+      toast.error('Error al optimizar imagen: ' + (err.message || 'Error desconocido'), { id: toastId })
+    } finally {
+      setIsUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const basePrices = {
     sidebar: 39990,
     calculator: 49990,
@@ -118,8 +171,6 @@ export function AdSelfServePublisher() {
   }
 
   const selectedPricing = calculateTotal(slot, duration)
-
-  // Mapear id a la clave de disponibilidad
   const slotDbKey = slot === 'sidebar' ? 'news_sidebar' : slot === 'header' ? 'header_top' : 'calculator'
   const currentSlotAvail = availability[slotDbKey] || { isFull: false, available: 5, count: 0, max: 5 }
 
@@ -214,7 +265,7 @@ export function AdSelfServePublisher() {
     }
 
     if (!sponsorName.trim() || !imageUrl.trim() || !targetUrl.trim()) {
-      toast.error('Por favor completa el nombre de tu empresa, la imagen y el enlace de destino.')
+      toast.error('Por favor completa el nombre de tu empresa, sube la imagen del banner y define el enlace de destino.')
       return
     }
 
@@ -291,7 +342,7 @@ export function AdSelfServePublisher() {
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-5">
             <div className="flex items-center gap-2 text-amber-600 font-black text-xs uppercase tracking-wider">
               <Megaphone className="h-4 w-4" />
-              <span>1. Datos de tu Marca y Anuncio</span>
+              <span>1. Datos de tu Marca y Creatividad</span>
             </div>
 
             <div className="space-y-4">
@@ -324,24 +375,105 @@ export function AdSelfServePublisher() {
                 </div>
               </div>
 
+              {/* 🖼️ ZONA DE SUBIDA CON COMPRESIÓN WEBP AUTOMÁTICA */}
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  URL de la Imagen del Banner (JPG/PNG/WebP) *
+                  Imagen o Banner Publicitario *
                 </label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                  <input
-                    type="url"
-                    required
-                    value={imageUrl}
-                    onChange={e => setImageUrl(e.target.value)}
-                    placeholder="https://ejemplo.com/banner-magallanes.webp"
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
-                  />
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png, image/jpeg, image/webp, image/gif"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {imageUrl ? (
+                  <div className="relative rounded-2xl border-2 border-amber-500/50 bg-amber-50/20 p-3 space-y-2">
+                    <div className="relative rounded-xl overflow-hidden bg-black/5 max-h-48 flex items-center justify-center">
+                      <img
+                        src={imageUrl}
+                        alt="Vista Previa Banner"
+                        className="max-h-48 w-auto object-contain rounded-lg shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageUrl('')
+                          setCompressionRatio(null)
+                        }}
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center transition-all cursor-pointer shadow-md"
+                        title="Eliminar y cambiar imagen"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] px-1">
+                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                        <Zap className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Optimizado a WebP {compressionRatio ? `(-${compressionRatio} peso)` : ''}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-amber-700 hover:text-amber-900 font-bold underline cursor-pointer"
+                      >
+                        Cambiar archivo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-zinc-300 hover:border-amber-500 bg-zinc-50/70 hover:bg-amber-50/30 rounded-2xl p-6 text-center cursor-pointer transition-all space-y-2 group"
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                      {isUploadingImage ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        <UploadCloud className="h-6 w-6" />
+                      )}
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-black text-foreground">
+                        {isUploadingImage ? 'Comprimiendo y Subiendo...' : 'Haz clic para seleccionar o arrastra tu Banner'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground font-medium">
+                        JPG, PNG o WebP. Se comprime automáticamente a WebP ultraligero sin perder nitidez.
+                      </p>
+                    </div>
+
+                    <div className="pt-1 text-[10px] text-amber-800 font-bold">
+                      Formatos: Header (728x90 / 970x90 px) • Sidebar / Calculadora (300x250 o 300x600 px)
+                    </div>
+                  </div>
+                )}
+
+                {/* Opción para ingresar URL manual si es agencia */}
+                <div className="pt-2 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[10.5px] text-muted-foreground hover:text-foreground underline font-medium cursor-pointer"
+                  >
+                    {showUrlInput ? 'Ocultar ingreso de URL manual' : '¿Prefieres ingresar una URL externa directa?'}
+                  </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1.5">
-                  Recomendación: Header (728x90 o 970x90 px), Sidebar/Calculadora (300x250 o 300x600 px). Peso &lt; 150KB.
-                </p>
+
+                {showUrlInput && (
+                  <div className="pt-2 space-y-1">
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={e => setImageUrl(e.target.value)}
+                      placeholder="https://ejemplo.com/banner-magallanes.webp"
+                      className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -544,7 +676,7 @@ export function AdSelfServePublisher() {
 
               <Button
                 type="submit"
-                disabled={loading || currentSlotAvail.isFull}
+                disabled={loading || currentSlotAvail.isFull || isUploadingImage}
                 size="lg"
                 className={`w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-xl ${
                   currentSlotAvail.isFull
@@ -555,6 +687,10 @@ export function AdSelfServePublisher() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando Orden...
+                  </>
+                ) : isUploadingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Optimizando Banner...
                   </>
                 ) : currentSlotAvail.isFull ? (
                   <>

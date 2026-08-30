@@ -131,3 +131,43 @@ export async function getCompanyAdBannersAction() {
     return { success: false, error: err.message, data: [] }
   }
 }
+
+/**
+ * Sube una imagen de banner comprimida en WebP al almacenamiento de Supabase.
+ */
+export async function uploadAdBannerImageAction(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File
+    if (!file) {
+      return { success: false, error: 'No se detectó ningún archivo.' }
+    }
+
+    const fileExt = file.name.split('.').pop() || 'webp'
+    const fileName = `ad_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+    
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const supabaseAdmin = createAdminClient()
+    
+    const { error } = await supabaseAdmin.storage
+      .from('news_images')
+      .upload(fileName, buffer, {
+        contentType: file.type || 'image/webp',
+        upsert: true
+      })
+
+    if (error) {
+      throw error
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('news_images')
+      .getPublicUrl(fileName)
+
+    return { success: true, url: publicUrl }
+  } catch (err: any) {
+    console.error('[uploadAdBannerImageAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error al subir la imagen.' }
+  }
+}
