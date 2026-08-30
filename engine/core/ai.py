@@ -100,7 +100,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
         "full_content": "Cuerpo completo de la noticia.",
         "is_featured": boolean,
         "brand_name": "Nombre de la marca o entidad involucrada si aplica (ej: EDELMAG, ENAP, SII), de lo contrario null",
-        "visual_prompt": "Descripción visual detallada en inglés para generación fotográfica documental en Magallanes (35mm lens, realistic news photography).",
+        "visual_prompt": "Detailed visual description in English for authentic editorial press photography in Magallanes, Chile (e.g. 'Documentary press photo of cargo trucks in Punta Arenas port, overcast Magallanes cold sky, shot on 35mm lens, natural daylight'). Do NOT include cartoon, 3d, or CGI terms.",
         "seo_keywords": "Palabras clave separadas por comas (máximo 5) relevantes para SEO.",
         "seo_description": "Meta descripción breve de menos de 160 caracteres."
     }}
