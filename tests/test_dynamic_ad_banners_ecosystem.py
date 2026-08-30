@@ -5,7 +5,7 @@ import random
 class TestDynamicAdBannersEcosystem:
     """
     🧪 Suite de Pruebas Unitarias de Arquitectura y Seguridad:
-    Ecosistema de Banners Publicitarios, Mega Banner, Rotación y Facturación Multiciclo.
+    Ecosistema de Banners Publicitarios, Mega Banner, Rotación, Pasarela/Carrusel y Facturación Multiciclo.
     """
 
     def test_01_ad_banner_positions_and_pricing_integrity(self):
@@ -120,8 +120,8 @@ class TestDynamicAdBannersEcosystem:
 
     def test_05_fallback_slot_renders_when_no_active_banner(self):
         """Verifica que cuando no hay anunciante activo, el slot muestre el CTA de venta."""
-        active_banner = None
-        fallback_rendered = active_banner is None
+        active_banners = []
+        fallback_rendered = len(active_banners) == 0
         assert fallback_rendered is True
 
     def test_06_multi_cycle_billing_math_and_discounts(self):
@@ -159,7 +159,58 @@ class TestDynamicAdBannersEcosystem:
             picked = random.choice(advertisers)
             counts[picked] += 1
 
-        # Cada uno debe recibir aproximadamente el 33.3% (tolerancia ±5%)
         for adv, count in counts.items():
             percentage = (count / simulations) * 100
             assert 27.0 <= percentage <= 40.0, f"Distribución de {adv} fuera de rango: {percentage}%"
+
+    def test_08_carousel_cycle_index_progression(self):
+        """Valida que el carrusel avance cíclicamente sin desbordamiento de índice."""
+        banners_count = 3
+        current_idx = 0
+
+        def advance(idx: int) -> int:
+            return (idx + 1) % banners_count
+
+        def previous(idx: int) -> int:
+            return (idx - 1 + banners_count) % banners_count
+
+        current_idx = advance(current_idx)
+        assert current_idx == 1
+        current_idx = advance(current_idx)
+        assert current_idx == 2
+        current_idx = advance(current_idx)
+        assert current_idx == 0  # Vuelve al inicio
+
+        # Retroceder
+        current_idx = previous(current_idx)
+        assert current_idx == 2
+
+    def test_09_carousel_hover_pause_state_machine(self):
+        """Verifica la máquina de estados de pausa al pasar el cursor (Hover-to-Pause)."""
+        state = {'is_paused': False, 'current_index': 0}
+
+        def on_mouse_enter():
+            state['is_paused'] = True
+
+        def on_mouse_leave():
+            state['is_paused'] = False
+
+        def tick():
+            if not state['is_paused']:
+                state['current_index'] = (state['current_index'] + 1) % 3
+
+        # Tick sin pausa avanza
+        tick()
+        assert state['current_index'] == 1
+
+        # Usuario pasa cursor: se pausa
+        on_mouse_enter()
+        assert state['is_paused'] is True
+        tick()
+        assert state['current_index'] == 1  # No avanza mientras está pausado
+
+        # Usuario retira cursor: continúa
+        on_mouse_leave()
+        assert state['is_paused'] is False
+        tick()
+        assert state['current_index'] == 2

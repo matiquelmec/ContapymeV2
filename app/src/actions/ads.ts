@@ -18,9 +18,9 @@ export interface AdBanner {
 }
 
 /**
- * Obtiene el banner activo para una posición publicitaria específica.
+ * Obtiene todos los banners activos para una posición publicitaria específica (para Pasarela / Carrusel).
  */
-export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' | 'header_top'): Promise<AdBanner | null> {
+export async function getActiveAdBanners(position: 'calculator' | 'news_sidebar' | 'header_top'): Promise<AdBanner[]> {
   try {
     const supabase = createAdminClient()
     const now = new Date().toISOString()
@@ -34,11 +34,22 @@ export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' 
       .gte('expires_at', now)
       .order('created_at', { ascending: false })
 
-    if (error || !data || data.length === 0) return null
+    if (error || !data) return []
+    return data as AdBanner[]
+  } catch (err) {
+    return []
+  }
+}
 
-    // Rotación Equitativa de Impresiones (Ad-Rotation)
-    const selectedIndex = Math.floor(Math.random() * data.length)
-    return data[selectedIndex] as AdBanner
+/**
+ * Obtiene el banner activo para una posición publicitaria específica.
+ */
+export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' | 'header_top'): Promise<AdBanner | null> {
+  try {
+    const banners = await getActiveAdBanners(position)
+    if (banners.length === 0) return null
+    const selectedIndex = Math.floor(Math.random() * banners.length)
+    return banners[selectedIndex]
   } catch (err) {
     return null
   }
