@@ -1,14 +1,14 @@
 # <p align="center">💎 CONTAPYMEPUQ 💎</p>
 <p align="center">
-  <strong>Ecosistema Contable, Informativo y Laboral Descentralizado de Magallanes (v16.0)</strong>
+  <strong>Ecosistema Contable, Informativo, Laboral y Publicitario de Magallanes (v20.0)</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-16.0--Certified-blue?style=for-the-badge&logo=opsgenie&logoColor=white&color=0D6EFD" alt="Version 16.0">
-  <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white&color=3776AB" alt="Python 3.12">
-  <img src="https://img.shields.io/badge/Next.js-16.3.3-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16.3.3">
+  <img src="https://img.shields.io/badge/Version-20.0--Certified-blue?style=for-the-badge&logo=opsgenie&logoColor=white&color=0D6EFD" alt="Version 20.0">
+  <img src="https://img.shields.io/badge/Tests-202_PASSED-emerald?style=for-the-badge&logo=pytest&logoColor=white&color=10B981" alt="202 Tests Passed">
+  <img src="https://img.shields.io/badge/Next.js-16.3.3_Turbopack-black?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16.3.3">
+  <img src="https://img.shields.io/badge/MercadoPago-Checkout_Pro-009EE3?style=for-the-badge&logo=mercadopago&logoColor=white" alt="Mercado Pago">
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-green?style=for-the-badge&logo=supabase&logoColor=white&color=3ECF8E" alt="Supabase">
-  <img src="https://img.shields.io/badge/Security-0_Vulnerabilities-emerald?style=for-the-badge&logo=snyk&logoColor=white" alt="0 Vulnerabilities">
 </p>
 
 <p align="center">
@@ -19,103 +19,87 @@
 
 ## 📖 Descripción General
 
-**Contapymepuq** es la plataforma líder de Software as a Service (SaaS) contable, informativo y laboral descentralizado, construida específicamente para responder a las exigencias operativas, tributarias y productivas de la región de **Magallanes y de la Antártica Chilena**.
+**ContaPymePUQ** es el ecosistema digital líder para la región de **Magallanes y de la Antártica Chilena**, integrando cuatro motores productivos de alto impacto:
 
-Este ecosistema integra cuatro pilares fundamentales:
-1. **ERP & Contabilidad Austral:** Facturación Electrónica DTE (SII), Nómina con Ley 40 Horas / Ley Karin y Conciliación Bancaria con cadena de integridad criptográfica SHA-256.
-2. **ContaEmpleos Magallanes (`/empleos`):** Bolsa de trabajo regional auditada bajo el **Artículo 2° del Código del Trabajo** con estimador previsional de sueldo líquido.
-3. **Generador Publicitario de Co-Branding con IA:** Extracción cromática automática de logos de empresas y generación determinista de anuncios para **Nano Banana 2 (Gemini 3.1 Flash Image)** en formatos **Post 1:1** e **Historia 9:16**.
-4. **Diario Regional Descentralizado (`/noticias`):** Noticias locales verificadas, indicadores macroeconómicos y meteorología austral en tiempo real.
+1. **🏢 ERP & Contabilidad Austral:** Facturación Electrónica DTE (SII), Nómina legal con **Ley 40 Horas / Ley Karin**, generación del **Libro de Remuneraciones Electrónico (LRE)** para la DT y Conciliación Bancaria con cadena criptográfica SHA-256.
+2. **💼 ContaEmpleos Magallanes (`/empleos` y `/publicar-empleo`):** Bolsa laboral regional de autoservicio (Self-Serve) con auditoría bajo el **Art. 2° del Código del Trabajo**, cálculo de sueldo líquido y pagos automáticos con Mercado Pago.
+3. **🎨 Generador Publicitario Co-Branding con IA:** Cuantización cromática de logos vía Canvas y generación determinista de piezas en formato **Post 1:1** e **Historia 9:16** con especificación para **Nano Banana 2 (Gemini 3.1 Flash Image)**.
+4. **📰 Diario Regional & Media Kit Publicitario (`/noticias`, `/anunciar` y `/dashboard/publicidad`):**
+   * Portal de noticias con deduplicación semántica y publirreportajes pagados.
+   * **Mega Banner Header**, Banner en Calculadora y Banner Lateral con **Carrusel Inteligente (6s)** y pausa en hover.
+   * **Control de Capacidad (Máx 5 marcas)** con badges de escasez (`🔥 ¡Último Cupo!`, `🔒 CUPOS AGOTADOS`).
+   * **Subida de Archivos con Compresión WebP en el navegador** (-80% peso).
 
 ---
 
-## 📊 Flujo de Datos y Arquitectura del Sistema
+## 📊 Arquitectura del Ecosistema
 
 ```mermaid
 graph TD
-    A[👤 Usuario / Empresa / Postulante] -->|1. Consulta Empleos / DTE / Noticias| B[🎨 Frontend Next.js 16.3.3]
-    B -->|2. Extracción Cromática de Logo Canvas| C[🎨 Color Extractor Engine]
-    B -->|3. Server Actions & APIs| D{¿Tipo de Solicitud?}
-    D -->|ERP & Fiscal| E[⚙️ FastAPI Engine Backend]
-    D -->|Empleos & Noticias| F[(🔥 Supabase PostgreSQL DB)]
-    E -->|Firma Digital XML & Hash SHA-256| G[🇨🇱 SII / DT]
-    F -->|Políticas RLS & Inmutabilidad| H[🔒 Aislamiento Multi-Tenant]
-    B -->|4. Generación JSON SSoT| I[🤖 Nano Banana 2 / Gemini 3.1 Flash Image]
-    I -->|5. Renderizado Publicitario HD| J[📱 Anuncios 1:1 Post & 9:16 Instagram Stories]
+    A[👤 Usuario / Empresa / Anunciante] --> B[🎨 Frontend Next.js 16.3.3 App Router]
+    
+    B --> C{Módulos de la Plataforma}
+    
+    C -->|🏢 ERP & Nómina| D[⚙️ Motor Previsional Ley 40h / LRE / DTE]
+    C -->|💼 Bolsa de Empleos| E[💼 ContaEmpleos Self-Serve + Art. 2° DT]
+    C -->|📰 Diario Regional| F[📰 Publirreportajes & Prensa Local]
+    C -->|📢 Publicidad & Banners| G[🎠 Pasarela/Carrusel 6s + WebP Dropzone]
+    
+    E --> H[💳 Pasarela Mercado Pago Checkout Pro]
+    F --> H
+    G --> H
+    
+    H --> I[⚡ Webhook con Firma Criptográfica HMAC SHA-256]
+    I --> J[(🔥 Supabase PostgreSQL con RLS Multi-Tenant)]
 ```
 
 ---
 
 ## 🛠️ Especificación de Stack Tecnológico
 
-| Capa / Componente | Tecnologías Clave | Propósito en el Ecosistema |
+| Capa / Componente | Tecnologías Clave | Propósito |
 | :--- | :--- | :--- |
-| **Frontend UI/UX** | Next.js 16.3.3 (App Router), React 19, TypeScript, Tailwind CSS, Base UI | Portal público, catálogo de empleos, generador social y dashboard ERP. |
-| **Backend Engine** | Python 3.12, FastAPI, Uvicorn, Pydantic v2, APScheduler | Motores de cálculo previsional, workers de ingesta y auditoría legal. |
-| **Persistencia** | Supabase PostgreSQL, Row Level Security (RLS) | Base de datos relacional multi-tenant con seguridad a nivel de fila. |
-| **Branding & IA** | HTML5 Canvas Color Quantization, Gemini 3.1 Flash Image Spec | Extracción automática de paletas corporativas y prompts de grado de estudio. |
-| **Criptografía** | SHA-256 Hash Chaining, cryptography (PyCA) | Encadenamiento inmutable de DTEs y certificados de verificación pública. |
+| **Frontend Web** | Next.js 16.3.3 (Turbopack), React 19, TypeScript, Tailwind CSS, Lucide | 61 rutas en producción: portales públicos, carrusel de banners y dashboard empresarial. |
+| **Backend & Workers** | Python 3.12, FastAPI, Pydantic v2, APScheduler | Motores de cálculo previsional, ingesta de noticias, auditoría legal y RCV. |
+| **Base de Datos** | Supabase PostgreSQL, Row Level Security (RLS) | Almacenamiento seguro multi-tenant con partición por organización. |
+| **Pasarela de Pagos** | Mercado Pago Checkout Pro + Webhooks HMAC | Cobros automatizados en empleos, publirreportajes, banners y suscripciones ERP. |
+| **Compresión & Media** | HTML5 Canvas Client-Side, WebP Image Compressor | Reducción de 70%-90% de peso de imágenes antes de subir a Storage. |
+| **Test Suite** | Pytest (202 tests) + Next.js Typecheck | Validación integral de algoritmos fiscales, seguridad y estados. |
 
 ---
 
-## 📁 Arquitectura del Repositorio
+## 🚀 Inicio Rápido
+
+Para levantar el entorno completo local:
+
+```powershell
+# Iniciar Frontend Next.js y Engine FastAPI
+.\start.ps1
+```
+
+* **Frontend Web:** `http://localhost:3000`
+* **Engine API & Swagger:** `http://localhost:8000/docs`
+* **Ejecutar Pruebas Unitarias:** `python -m pytest tests/ -v`
+
+---
+
+## 📁 Estructura del Repositorio
 
 ```text
 Contapymepuq/
-├── app/                      # 🎨 Frontend Web (Next.js 16.3.3)
-│   ├── public/branding/      # Kits de marca oficiales y especificaciones JSON
+├── app/                        # 🎨 Frontend Web Next.js 16.3.3
 │   ├── src/
-│   │   ├── actions/          # Server Actions (Empleos, Documentos, Parámetros)
-│   │   ├── app/              # Rutas físicas (/empleos, /noticias, /dashboard, /verify)
-│   │   ├── components/       # Componentes UI (Generador social, calculadoras, filtros)
-│   │   └── lib/branding/     # color-extractor.ts (Extracción cromática de logos)
+│   │   ├── actions/            # Server Actions (Ads, Empleos, Noticias, Nómina)
+│   │   ├── app/                # 61 Rutas (Dashboard, Empleos, Noticias, Anunciar, Checkout)
+│   │   ├── components/         # Componentes UI (Carrusel, Publicador, Calculadora, Sidebar)
+│   │   └── lib/media/          # image-compressor.ts (Compresión WebP en navegador)
 │   └── package.json
-├── engine/                   # ⚙️ Motor de Procesamiento (Python FastAPI)
-│   ├── api/routers/          # Controladores REST protegidos por JWT
-│   ├── calculators/          # Motor de remuneraciones y liquidaciones chilenas
-│   ├── workers/              # job_worker.py & news_worker.py (Ingesta periódica y auditoría)
-│   ├── core/                 # DTE, base de datos y utilidades criptográficas
-│   └── requirements.txt
-├── supabase/                 # 🔥 Base de Datos & Despliegue
-│   ├── migrations/           # Migraciones SQL cronológicas (job_postings, news, RLS)
-│   └── snapshots/            # Esquemas relacionales históricos
-├── tests/                    # 🧪 Test Suite Integral
-│   ├── test_job_banner_generation.py  # Pruebas de esquemas Nano Banana y branding
-│   └── test_jobs_pipeline_and_compliance.py  # Pruebas de cumplimiento legal Art. 2° DT
-├── start.ps1                 # 🚀 Script de inicio del ecosistema local
-└── BLUEPRINT_MAESTRO.md      # 🎯 Fuente Única de Verdad (SSoT) de Arquitectura
+├── engine/                     # ⚙️ Motor Backend Python FastAPI
+├── docs/                       # 📚 Documentación Maestra y Auditoría Institucional
+├── tests/                      # 🧪 Suite de 202 Pruebas Unitarias
+│   ├── test_dynamic_ad_banners_ecosystem.py  # Tests de Banners, Rotación y Capacidad
+│   ├── test_jobs_pipeline_and_compliance.py   # Tests Art. 2° DT
+│   └── test_mercadopago_checkout_and_orders.py# Tests Webhooks y Pagos
+├── BLUEPRINT_MAESTRO.md        # 🎯 SSoT de Arquitectura y Roadmap
+└── README.md                   # 📖 Presentación General del Proyecto
 ```
-
----
-
-## ✨ Características Principales (Features v16.0)
-
-*   **💼 ContaEmpleos Magallanes:**
-    *   Filtros inteligentes por Comuna (Punta Arenas, Puerto Natales, Porvenir, Faena).
-    *   Auditoría de legalidad bajo el Artículo 2° del Código del Trabajo (anti-discriminación).
-    *   Estimación de Sueldo Líquido con cálculo de descuentos previsionales chilenos.
-*   **🎨 Kit de Publicidad & Co-Branding con IA:**
-    *   Carga de logotipos de empresas y extracción automática de códigos HEX corporativos.
-    *   Renderizado en vivo en formato **Post 1:1** e **Historia 9:16**.
-    *   Pestaña `[JSON Nano Banana]` con la especificación completa para Gemini 3.1 Flash Image.
-    *   Copia automática de URL para el **Sticker de Enlace de Instagram** y Web Share API.
-*   **🔒 Multi-Tenant Nivel Dios:** RLS activo en todas las tablas transaccionales.
-*   **📜 Portal de Verificación Pública (`/verify/[id]`):** Validación inmutable mediante códigos QR de contratos, liquidaciones y balances contables.
-
----
-
-## 🧪 Verificación y Calidad
-
-```bash
-# Ejecutar pruebas unitarias de backend y branding
-python -m pytest tests/ -v
-
-# Validar tipado TypeScript
-cd app && npx tsc --noEmit
-
-# Compilación de producción en Next.js
-npm run build
-```
-
----
-© 2026 Contapymepuq — Todos los derechos reservados. Magallanes y de la Antártica Chilena.
