@@ -78,19 +78,20 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     Hechos reportados: {str(content)[0:3500]}
 
     REGLAS DE ORO EDITORIALES (BLINDAJE FACTUAL Y ANTI-PLAGIO):
-    1. REESCRITURA ORIGINAL (CERO PLAGIO): Redacta la noticia con tu propia estructura sintáctica y vocabulario ejecutivo. No copies frases completas de la fuente. Transforma la información en una pieza periodística original de Contapymepuq.
-    2. FIDELIDAD FACTUAL ESTRICTA (CERO ALUCINACIÓN): 
+    1. IDIOMA 100% ESPAÑOL DE CHILE (OBLIGATORIO): Todo el contenido, titular, resumen y cuerpo DEBEN estar estrictamente en español. Si la fuente o el titular capturado viene en inglés u otro idioma, tradúcelo y adáptalo completamente al español formal de Chile. Queda estrictamente prohibido devolver títulos o textos en inglés.
+    2. REESCRITURA ORIGINAL (CERO PLAGIO): Redacta la noticia con tu propia estructura sintáctica y vocabulario ejecutivo. No copies frases completas de la fuente. Transforma la información en una pieza periodística original de Contapymepuq.
+    3. FIDELIDAD FACTUAL ESTRICTA (CERO ALUCINACIÓN): 
        - Cíñete ÚNICA Y EXCLUSIVAMENTE a los hechos, cifras, lugares, nombres y procedimientos descritos en el texto base.
        - NUNCA inventes, supongas ni extrapoles argumentos de defensa, descargos de abogados, motivos personales ni justificaciones de las partes involucradas si no están explícitamente detallados en el texto.
        - Si la noticia menciona una investigación o denuncia (ej. Aduanas, PDI, SII, Fiscalía), expón los hechos objetivos de forma neutral, sin calificar ni inventar explicaciones de los acusados o instituciones.
-    3. LONGITUD PROPORCIONAL Y SIN RELLENO: Desarrolla el texto de manera concisa y sustanciosa, proporcional a la cantidad de información real del texto base. No agregues párrafos vacíos o redundantes para inflar el texto.
-    4. TONO: Ejecutivo, sobrio, formal e institucional.
-    5. ESTRUCTURA REQUERIDA:
-       - 'title': Titular profesional (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
-       - 'summary': Resumen ejecutivo directo de 2 a 3 oraciones con los puntos clave.
-       - 'full_content': Redacción fluida y completa dividida en párrafos bien estructurados con análisis del contexto regional/económico cuando aplique.
-    6. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
-    7. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples (').
+    4. LONGITUD PROPORCIONAL Y SIN RELLENO: Desarrolla el texto de manera concisa y sustanciosa, proporcional a la cantidad de información real del texto base. No agregues párrafos vacíos o redundantes para inflar el texto.
+    5. TONO: Ejecutivo, sobrio, formal e institucional.
+    6. ESTRUCTURA REQUERIDA:
+       - 'title': Titular profesional en español (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
+       - 'summary': Resumen ejecutivo directo en español de 2 a 3 oraciones con los puntos clave.
+       - 'full_content': Redacción fluida y completa en español dividida en párrafos bien estructurados con análisis del contexto regional/económico cuando aplique.
+    7. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
+    8. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples (').
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:
     {{

@@ -111,9 +111,57 @@ function generateNewsAnalysis(article: NewsArticle) {
   return { impact, advice };
 }
 
+const CLIENT_UNIQUE_FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1280&fit=crop&q=80"
+];
+
+/** 🛡️ Filtro de Cero Imágenes Duplicadas en Tiempo de Renderizado */
+export function ensureUniqueNewsImages(hero: NewsArticle | null, secondary: NewsArticle[]): { hero: NewsArticle | null; secondary: NewsArticle[] } {
+  const seenImages = new Set<string>();
+  
+  const cleanHero = hero ? { ...hero } : null;
+  if (cleanHero && cleanHero.image_url) {
+    seenImages.add(cleanHero.image_url);
+  }
+
+  const cleanSecondary = secondary.map((item, idx) => {
+    let currentImg = item.image_url;
+    
+    // Si la imagen ya fue usada en el hero o en un artículo anterior del feed
+    if (!currentImg || seenImages.has(currentImg) || currentImg === "/news-placeholder.png") {
+      const fallback = CLIENT_UNIQUE_FALLBACK_IMAGES.find(img => !seenImages.has(img)) 
+        || CLIENT_UNIQUE_FALLBACK_IMAGES[idx % CLIENT_UNIQUE_FALLBACK_IMAGES.length];
+      currentImg = fallback;
+    }
+    
+    seenImages.add(currentImg);
+    return { ...item, image_url: currentImg };
+  });
+
+  return { hero: cleanHero, secondary: cleanSecondary };
+}
+
 export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRegionalSectionProps) {
   const [analyzedNews, setAnalyzedNews] = useState<NewsArticle | null>(null);
-  const { hero: heroNews, secondary: secondaryNews } = newsRelevanceScoring(initialNews);
+  const rawScoring = newsRelevanceScoring(initialNews);
+  const { hero: heroNews, secondary: secondaryNews } = ensureUniqueNewsImages(rawScoring.hero, rawScoring.secondary);
 
   /** 🛡️ Protocolo de Veracidad Absoluta */
   const isDataReady = Array.isArray(indicators) && indicators.length > 0;

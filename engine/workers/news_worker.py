@@ -242,13 +242,15 @@ async def _fetch_and_process_news():
         logger.warning("[News Worker] ⚠️ No se encontraron noticias nuevas en las fuentes RSS.")
         return {"total": 0}
 
-    # 2. Obtener historial reciente para deduplicación exacta y semántica
+    # 2. Obtener historial reciente para deduplicación exacta, semántica y visual
     existing_articles = []
+    used_images_in_cycle = set()
     try:
-        existing_res = db.table("regional_news").select("source_url, normalized_title, title, summary, content").order("published_at", desc=True).limit(60).execute()
+        existing_res = db.table("regional_news").select("source_url, normalized_title, title, summary, content, image_url").order("published_at", desc=True).limit(60).execute()
         existing_articles = existing_res.data or []
         existing_urls = [n["source_url"] for n in existing_articles if n.get("source_url")]
         existing_titles = [n["normalized_title"] for n in existing_articles if n.get("normalized_title")]
+        used_images_in_cycle = {n["image_url"] for n in existing_articles[:20] if n.get("image_url")}
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener datos existentes: {e}")
         existing_urls, existing_titles, existing_articles = [], [], []
@@ -402,11 +404,14 @@ async def _fetch_and_process_news():
                     logger.info(f"[News Worker] Usando imagen original del RSS.")
                     image_url = await download_and_upload_image(original_img)
             
-            # Prioridad 4: Stock Profesional (Ahora asíncrono y seguro)
+            # Prioridad 4: Stock Profesional con Anti-Colisión (Ahora asíncrono y seguro)
             if not image_url or "placeholder" in image_url:
                 category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
-                image_url = await get_category_fallback_url(category, ai_data.get("title", ""))
+                image_url = await get_category_fallback_url(category, ai_data.get("title", ""), exclude_urls=list(used_images_in_cycle))
                 logger.info(f"[News Worker] Usando stock seguro en Supabase para: {category}")
+
+            if image_url:
+                used_images_in_cycle.add(image_url)
 
             # Formatear Fecha
             pub_date_iso = datetime.now().isoformat()
