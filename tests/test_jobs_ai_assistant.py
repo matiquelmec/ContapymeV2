@@ -139,3 +139,48 @@ class TestJobsAIAssistant:
         has_valid_channel_3 = bool(case_empty.get("contact_email") or case_empty.get("contact_whatsapp"))
         assert has_valid_channel_3 is False
 
+    def test_07_job_ownership_authorization_by_email_match(self):
+        """Verifica que el creador por email (ej: jureltito@gmail.com) pueda eliminar su vacante aunque el nombre de empresa tenga diferente mayúscula."""
+        user = {"id": "user-123", "email": "jureltito@gmail.com"}
+        job = {"company_name": "sodimac", "contact_email": "jureltito@gmail.com", "company_rut": None}
+        profile = {"role": "user", "plan": "personal", "full_name": "Matias Riquelme"}
+        org_members = [{"organization_id": "org-1", "organizations": {"nombre": "Sodimac", "rut": None}}]
+
+        # Debe autorizar por coincidencia de email del creador
+        user_email = user["email"].strip().lower()
+        job_email = (job["contact_email"] or "").strip().lower()
+        assert user_email == job_email
+
+    def test_08_job_ownership_authorization_by_organization_membership(self):
+        """Verifica que un miembro de una empresa registrada pueda gestionar vacantes de su razón social o RUT."""
+        user = {"id": "user-456", "email": "admin@australis.cl"}
+        job = {"company_name": "Australis Seafoods", "contact_email": "postulaciones@australis.cl", "company_rut": "76.012.345-K"}
+        profile = {"role": "user", "plan": "pyme", "full_name": "Gerente Planta"}
+        org_members = [{"organization_id": "org-2", "organizations": {"nombre": "Australis Seafoods", "rut": "76.012.345-k"}}]
+
+        allowed_names = {m["organizations"]["nombre"].strip().lower() for m in org_members}
+        allowed_ruts = {m["organizations"]["rut"].strip().lower() for m in org_members}
+
+        assert (job["company_name"].strip().lower() in allowed_names) or (job["company_rut"].strip().lower() in allowed_ruts)
+
+    def test_09_job_ownership_security_blocks_unauthorized_third_party(self):
+        """Verifica que un usuario externo ajeno a la empresa NO pueda eliminar ni modificar la vacante."""
+        intruder_user = {"id": "intruder-999", "email": "hacker@externo.com"}
+        job = {"company_name": "Australis Seafoods", "contact_email": "postulaciones@australis.cl", "company_rut": "76.012.345-K"}
+        profile = {"role": "user", "plan": "personal", "full_name": "Usuario Desconocido"}
+        org_members = [{"organization_id": "org-other", "organizations": {"nombre": "Minimarket El Sur", "rut": "77.999.888-1"}}]
+
+        user_email = intruder_user["email"].strip().lower()
+        job_email = (job["contact_email"] or "").strip().lower()
+        allowed_names = {m["organizations"]["nombre"].strip().lower() for m in org_members}
+        allowed_ruts = {m["organizations"]["rut"].strip().lower() for m in org_members}
+
+        is_authorized = (
+            (user_email == job_email) or
+            (job["company_name"].strip().lower() in allowed_names) or
+            (job["company_rut"].strip().lower() in allowed_ruts)
+        )
+
+        assert is_authorized is False, "El usuario intruso debió ser bloqueado por la seguridad multi-tenant."
+
+

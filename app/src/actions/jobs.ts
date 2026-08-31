@@ -397,6 +397,58 @@ export async function createJobAction(formData: {
   }
 }
 
+function checkJobOwnership(
+  user: { id: string; email?: string | null },
+  profile: { role?: string; plan?: string; full_name?: string | null } | null,
+  orgMembers: any[] | null,
+  job: { company_name?: string | null; company_rut?: string | null; contact_email?: string | null }
+): boolean {
+  const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+  if (isAdmin) return true
+
+  const userEmail = (user.email || '').trim().toLowerCase()
+  const jobEmail = (job.contact_email || '').trim().toLowerCase()
+  if (userEmail && jobEmail && userEmail === jobEmail) {
+    return true
+  }
+
+  const clean = (s?: string | null) =>
+    (s || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+
+  const jobCompany = clean(job.company_name)
+  const jobRut = clean(job.company_rut)
+
+  const allowedNames = new Set<string>()
+  const allowedRuts = new Set<string>()
+
+  if (profile?.full_name) {
+    allowedNames.add(clean(profile.full_name))
+  }
+
+  orgMembers?.forEach((m: any) => {
+    if (m.organizations?.nombre) {
+      allowedNames.add(clean(m.organizations.nombre))
+    }
+    if (m.organizations?.rut) {
+      allowedRuts.add(clean(m.organizations.rut))
+    }
+  })
+
+  if (jobCompany && allowedNames.has(jobCompany)) {
+    return true
+  }
+
+  if (jobRut && allowedRuts.has(jobRut)) {
+    return true
+  }
+
+  return false
+}
+
 /**
  * 🔄 Actualiza una vacante existente asegurando autorización multi-tenant.
  */
@@ -413,7 +465,7 @@ export async function updateJobAction(id: string, formData: Partial<JobPosting>)
     // 1. Obtener la vacante y verificar propiedad
     const { data: job, error: jobErr } = await adminDb
       .from('job_postings')
-      .select('id, company_name, company_rut')
+      .select('id, company_name, company_rut, contact_email')
       .eq('id', id)
       .single()
 
@@ -428,24 +480,14 @@ export async function updateJobAction(id: string, formData: Partial<JobPosting>)
       .eq('id', user.id)
       .single()
 
-    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+    const { data: orgMembers } = await adminDb
+      .from('organization_members')
+      .select('organization_id, organizations(nombre, rut)')
+      .eq('user_id', user.id)
 
-    if (!isAdmin) {
-      const { data: orgMembers } = await adminDb
-        .from('organization_members')
-        .select('organization_id, organizations(nombre, rut)')
-        .eq('user_id', user.id)
-
-      const allowedNames = new Set<string>()
-      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
-      orgMembers?.forEach((m: any) => {
-        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
-      })
-
-      const isOwner = allowedNames.has(job.company_name?.trim().toLowerCase())
-      if (!isOwner) {
-        return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para modificar vacantes de otra empresa.' }
-      }
+    const isAuthorized = checkJobOwnership(user, profile, orgMembers, job)
+    if (!isAuthorized) {
+      return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para modificar vacantes de otra empresa.' }
     }
 
     const { data, error } = await adminDb
@@ -484,7 +526,7 @@ export async function deleteJobAction(id: string) {
     // 1. Obtener la vacante
     const { data: job, error: jobErr } = await adminDb
       .from('job_postings')
-      .select('id, company_name, company_rut')
+      .select('id, company_name, company_rut, contact_email')
       .eq('id', id)
       .single()
 
@@ -499,24 +541,14 @@ export async function deleteJobAction(id: string) {
       .eq('id', user.id)
       .single()
 
-    const isAdmin = (profile?.role || '').toLowerCase() === 'admin' || (profile?.plan || '').toLowerCase() === 'consorcio'
+    const { data: orgMembers } = await adminDb
+      .from('organization_members')
+      .select('organization_id, organizations(nombre, rut)')
+      .eq('user_id', user.id)
 
-    if (!isAdmin) {
-      const { data: orgMembers } = await adminDb
-        .from('organization_members')
-        .select('organization_id, organizations(nombre, rut)')
-        .eq('user_id', user.id)
-
-      const allowedNames = new Set<string>()
-      if (profile?.full_name) allowedNames.add(profile.full_name.trim().toLowerCase())
-      orgMembers?.forEach((m: any) => {
-        if (m.organizations?.nombre) allowedNames.add(m.organizations.nombre.trim().toLowerCase())
-      })
-
-      const isOwner = allowedNames.has(job.company_name?.trim().toLowerCase())
-      if (!isOwner) {
-        return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para eliminar vacantes de otra empresa.' }
-      }
+    const isAuthorized = checkJobOwnership(user, profile, orgMembers, job)
+    if (!isAuthorized) {
+      return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para eliminar vacantes de otra empresa.' }
     }
 
     const { error } = await adminDb
