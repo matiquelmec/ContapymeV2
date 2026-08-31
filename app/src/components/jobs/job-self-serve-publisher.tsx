@@ -20,7 +20,9 @@ import {
   UserCheck,
   LogIn,
   UserPlus,
-  Lock
+  Lock,
+  Wand2,
+  MessageCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +33,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
+import { generateJobPostingAIAction } from '@/actions/jobs'
 import { toast } from 'sonner'
 
 const CITIES = ['Punta Arenas', 'Puerto Natales', 'Porvenir', 'Torres del Paine', 'Faena / Yacimiento', 'Todo Magallanes']
@@ -57,6 +60,7 @@ export function JobSelfServePublisher() {
   const [contactWhatsapp, setContactWhatsapp] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [tier, setTier] = useState<'free' | 'basic' | 'featured' | 'faena'>('free')
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
 
   useEffect(() => {
     // Restaurar borrador de localStorage si existe
@@ -139,6 +143,51 @@ export function JobSelfServePublisher() {
   ]
 
   // Validación preventiva Art. 2° Código del Trabajo
+
+  const handleGenerateAI = async () => {
+    const rawNotes = description.trim() || title.trim() || requirements.trim()
+    if (!rawNotes || rawNotes.length < 5) {
+      toast.info('Escribe una breve idea o título del cargo', {
+        description: 'Ingresa al menos 1 o 2 frases en la descripción o título para que la IA estructure el perfil.'
+      })
+      return
+    }
+
+    setIsGeneratingAI(true)
+    toast.loading('Copiloto de Selección IA redactando la oferta laboral...', { id: 'ai-job-gen' })
+
+    try {
+      const res = await generateJobPostingAIAction({
+        rawNotes,
+        companyName: companyName.trim() || undefined,
+        location,
+        sector
+      })
+
+      if (res.success) {
+        if (res.title) setTitle(res.title)
+        if (res.description) setDescription(res.description)
+        if (res.requirements) setRequirements(res.requirements)
+        if (res.workShift) setWorkShift(res.workShift)
+        if (res.sector) setSector(res.sector)
+        if (res.location) setLocation(res.location)
+        if (res.salaryMin && res.salaryMin > 0) setSalaryMin(String(res.salaryMin))
+        if (res.salaryMax && res.salaryMax > 0) setSalaryMax(String(res.salaryMax))
+
+        toast.success('¡Perfil de cargo redactado con éxito!', {
+          id: 'ai-job-gen',
+          description: 'Funciones, requisitos y turno estructurados conforme al Código del Trabajo y Ley 40 Horas.'
+        })
+      } else {
+        toast.error(res.error || 'Error al generar la oferta laboral con IA', { id: 'ai-job-gen' })
+      }
+    } catch (err) {
+      toast.error('Fallo en la conexión con el copiloto de selección.', { id: 'ai-job-gen' })
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
   const checkDiscrimination = (text: string) => {
     const forbidden = [
       { regex: /\b(edad|a[ñn]os)\b/i, reason: 'Edad (Art. 2° DT)' },
@@ -305,9 +354,33 @@ export function JobSelfServePublisher() {
 
           {/* Bloque 1: Datos Principales */}
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
-            <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
-              <Building2 className="h-4 w-4" />
-              <span>1. Datos del Cargo y Empresa</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                <Building2 className="h-4 w-4" />
+                <span>1. Datos del Cargo y Empresa</span>
+              </div>
+
+              {/* BOTÓN ASISTENTE DE RECLUTAMIENTO IA */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAI}
+                disabled={isGeneratingAI}
+                className="rounded-2xl border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-800 font-black text-[11px] uppercase tracking-wider gap-1.5 shadow-2xs transition-all hover:scale-105"
+              >
+                {isGeneratingAI ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                    <span>Estructurando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>✨ Redactar Perfil con IA</span>
+                  </>
+                )}
+              </Button>
             </div>
 
             <div className="space-y-4">

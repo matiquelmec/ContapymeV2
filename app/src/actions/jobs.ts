@@ -536,3 +536,142 @@ export async function deleteJobAction(id: string) {
     return { success: false, error: err.message }
   }
 }
+
+/**
+ * 🤖 Asistente de Reclutamiento IA: Genera y optimiza perfiles de cargo y ofertas laborales en 1 clic.
+ */
+export async function generateJobPostingAIAction(params: {
+  rawNotes: string
+  companyName?: string
+  location?: string
+  sector?: string
+}): Promise<{
+  success: boolean
+  title?: string
+  description?: string
+  requirements?: string
+  benefits?: string
+  workShift?: string
+  sector?: string
+  location?: string
+  salaryMin?: number
+  salaryMax?: number
+  error?: string
+}> {
+  try {
+    const apiKey = process.env.GROQ_API_KEY || ''
+    if (!apiKey) {
+      return { success: false, error: 'Motor de inteligencia artificial no configurado (GROQ_API_KEY no disponible).' }
+    }
+
+    if (!params.rawNotes || params.rawNotes.trim().length < 5) {
+      return { success: false, error: 'Por favor ingresa una breve descripción o notas sobre la vacante que deseas publicar.' }
+    }
+
+    const systemPrompt = `
+Eres el Asistente Senior de Reclutamiento y Selección de ContaEmpleos Magallanes (Punta Arenas, Puerto Natales, Tierra del Fuego).
+Tu misión es transformar notas informales o ideas de un empleador en una OFERTA DE EMPLEO PROFESIONAL, atractiva y 100% en regla con el Código del Trabajo de Chile y la Ley de 40 Horas.
+
+REGLAS DE CUMPLIMIENTO LEGAL ESTRICTO (Código del Trabajo de Chile):
+1. PROHIBICIÓN DE DISCRIMINACIÓN (Art. 2°): NUNCA incluyas requisitos de edad ("entre 25 y 35 años"), apariencia física ("buena presencia"), fotografía en el CV, estado civil ("soltero/a") ni certificados comerciales (DICOM/Boletín comercial).
+2. LEY 40 HORAS: Toda jornada completa debe alinearse con la normativa legal vigente de reducción de jornada.
+3. CONTEXTO REGIONAL: Adapta el vocabulario y contexto a Magallanes (Punta Arenas, Puerto Natales, Porvenir, Faena, Estancia, etc.).
+
+SECTORES PERMITIDOS:
+- "Comercio & Retail"
+- "Gastronomía & Hotelería"
+- "Salmonicultura & Pesca"
+- "Logística & Transporte"
+- "Construcción & Minería"
+- "Administración & Finanzas"
+- "Salud & Servicios"
+- "Tecnología & Otros"
+
+TURNOS PERMITIDOS:
+- "Lunes a Viernes (40 Horas)"
+- "Turno 7x7 Faena"
+- "Turno 14x14"
+- "Turno 4x4"
+- "Turno Rotativo 6x1"
+- "Part-Time Fin de Semana"
+
+FORMATO DE SALIDA (JSON ÚNICAMENTE):
+Devuelve un objeto JSON con las siguientes propiedades:
+{
+  "title": "Titular del cargo profesional y claro",
+  "description": "Descripción atractiva del puesto, ambiente de trabajo y responsabilidades principales (2-3 párrafos)",
+  "requirements": "Lista de requisitos técnicos y habilidades en líneas separadas con guiones (-)",
+  "benefits": "Lista de beneficios laborales (colación, seguro, uniforme, estabilidad) en líneas con guiones (-)",
+  "workShift": "Uno de los turnos permitidos",
+  "sector": "Uno de los sectores permitidos",
+  "location": "Punta Arenas | Puerto Natales | Porvenir | Torres del Paine | Faena / Yacimiento | Todo Magallanes",
+  "salaryMin": número opcional si se deduce del texto o 0,
+  "salaryMax": número opcional si se deduce del texto o 0
+}
+`
+
+    const userPrompt = `
+Empresa: ${params.companyName || 'Empresa Empleadora'}
+Ubicación tentativa: ${params.location || 'Punta Arenas'}
+Sector tentativo: ${params.sector || 'Comercio & Retail'}
+Borrador de la vacante:
+"""
+${params.rawNotes}
+"""
+Redacta la oferta de empleo completa y estructurada en JSON.
+`
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 1200
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error('[Groq Job Copilot Error]:', errText)
+      return { success: false, error: 'El copiloto de selección no pudo procesar la solicitud en este momento.' }
+    }
+
+    const json = await response.json()
+    const rawContent = json.choices?.[0]?.message?.content || '{}'
+    const parsed = JSON.parse(rawContent)
+
+    // Validar y purgar patrones discriminatorios en el texto generado por seguridad
+    let cleanDesc = parsed.description || ''
+    let cleanReqs = parsed.requirements || ''
+    for (const dp of DISCRIMINATORY_PATTERNS) {
+      cleanDesc = cleanDesc.replace(dp.pattern, '')
+      cleanReqs = cleanReqs.replace(dp.pattern, '')
+    }
+
+    return {
+      success: true,
+      title: parsed.title,
+      description: cleanDesc.trim(),
+      requirements: cleanReqs.trim(),
+      benefits: parsed.benefits,
+      workShift: parsed.workShift || 'Lunes a Viernes (40 Horas)',
+      sector: parsed.sector || params.sector || 'Comercio & Retail',
+      location: parsed.location || params.location || 'Punta Arenas',
+      salaryMin: parsed.salaryMin || undefined,
+      salaryMax: parsed.salaryMax || undefined
+    }
+  } catch (err: any) {
+    console.error('[generateJobPostingAIAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error inesperado al generar la oferta laboral.' }
+  }
+}
+
