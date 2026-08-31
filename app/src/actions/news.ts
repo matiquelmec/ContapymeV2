@@ -710,33 +710,53 @@ ${params.rawNotes}
 Por favor redacta la nota de prensa completa en formato JSON.
 `
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.4,
-        max_tokens: 1200
-      })
-    })
+    const candidateModels = [
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'groq/compound',
+      'openai/gpt-oss-20b'
+    ]
 
-    if (!response.ok) {
-      const errText = await response.text()
-      console.error('[Groq AI Error]:', errText)
-      return { success: false, error: 'El asistente editorial no pudo procesar la solicitud en este momento.' }
+    let parsed: any = null
+    let lastError = ''
+
+    for (const model of candidateModels) {
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.4,
+            max_tokens: 1200
+          })
+        })
+
+        if (response.ok) {
+          const json = await response.json()
+          const rawContent = json.choices?.[0]?.message?.content || '{}'
+          parsed = JSON.parse(rawContent)
+          break
+        } else {
+          lastError = await response.text()
+          console.warn(`[Groq News AI Model ${model} failed]:`, lastError)
+        }
+      } catch (err: any) {
+        lastError = err.message
+      }
     }
 
-    const json = await response.json()
-    const rawContent = json.choices?.[0]?.message?.content || '{}'
-    const parsed = JSON.parse(rawContent)
+    if (!parsed || Object.keys(parsed).length === 0) {
+      return { success: false, error: 'El asistente editorial no pudo procesar la solicitud en este momento. Por favor inténtalo nuevamente.' }
+    }
 
     return {
       success: true,

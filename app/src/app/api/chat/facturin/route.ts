@@ -64,32 +64,51 @@ export async function POST(req: NextRequest) {
       })),
     ];
 
-    // Consultar a la API de Groq Cloud
-    const response = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        messages: apiMessages,
-        temperature: 0.5,
-        max_tokens: 500,
-      }),
-    });
+    const candidateModels = [
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.8-27b',
+      'groq/compound',
+      'openai/gpt-oss-20b'
+    ];
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[Facturin API] Error de API de Groq (${response.status}):`, errText);
-      return NextResponse.json(
-        { error: 'Error del motor de lenguaje de IA' },
-        { status: response.status }
-      );
+    let reply = '';
+    let lastError = '';
+
+    for (const model of candidateModels) {
+      try {
+        const response = await fetch(GROQ_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: apiMessages,
+            temperature: 0.5,
+            max_tokens: 600,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          reply = result.choices?.[0]?.message?.content || '';
+          if (reply) break;
+        } else {
+          lastError = await response.text();
+          console.warn(`[Facturin API] Model ${model} failed:`, lastError);
+        }
+      } catch (e: any) {
+        lastError = e.message;
+      }
     }
 
-    const result = await response.json();
-    const reply = result.choices?.[0]?.message?.content || 'Disculpa, no pude procesar tu respuesta.';
+    if (!reply) {
+      return NextResponse.json(
+        { error: 'Error al consultar el asistente de IA.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ reply });
   } catch (err: any) {
