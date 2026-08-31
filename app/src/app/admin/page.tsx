@@ -112,7 +112,7 @@ export default async function AdminPortalPage() {
   const [newsRes, jobsRes, profilesRes] = await Promise.all([
     supabase.from('regional_news').select('*').order('published_at', { ascending: false }),
     supabase.from('job_postings').select('*').order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, full_name, role, plan, created_at').order('created_at', { ascending: false }).limit(20),
+    supabase.from('profiles').select('id, full_name, role, plan, updated_at').order('updated_at', { ascending: false }).limit(20),
   ])
 
   const news = newsRes.data || []
@@ -138,17 +138,24 @@ export default async function AdminPortalPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden md:inline-block text-xs font-semibold text-slate-500 mr-2">
+          <div className="flex items-center gap-2.5">
+            <span className="hidden lg:inline-block text-xs font-semibold text-slate-500 mr-2">
               Superadmin: <strong className="text-slate-800 font-bold">{profile.full_name || 'Administrador'}</strong>
             </span>
             
+            <Link 
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-black text-xs px-3 h-8 shadow-2xs transition-all hover:scale-102 active:scale-98"
+            >
+              <span>📊 Ir al Dashboard ERP</span>
+            </Link>
+
             <Link 
               href="/"
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3 h-8 shadow-2xs transition-all hover:scale-102 active:scale-98"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Ver Portada</span>
+              <span className="hidden sm:inline">Ver Portada</span>
             </Link>
 
             <form action={signOut}>
