@@ -257,21 +257,13 @@ export async function deleteLiquidation(liquidationId: string) {
 export async function updateLiquidationStatus(liquidationId: string, newStatus: string, signature_base64?: string) {
   const supabase = await createClient()
 
-  if (!CLOSED_LIQUIDATION_STATUSES.includes(newStatus)) {
-    return { success: false, error: 'No se permite revertir una liquidacion cerrada a borrador.' }
-  }
-
   const { data: liquidation, error: fetchError } = await supabase
     .from('liquidations')
-    .select('status')
+    .select('id, organization_id, status')
     .eq('id', liquidationId)
     .single()
 
   if (fetchError) return { success: false, error: fetchError.message }
-
-  if (CLOSED_LIQUIDATION_STATUSES.includes(liquidation?.status)) {
-    return { success: false, error: 'La liquidacion ya se encuentra aprobada o cerrada.' }
-  }
 
   const { error } = await supabase
     .from('liquidations')
@@ -282,6 +274,55 @@ export async function updateLiquidationStatus(liquidationId: string, newStatus: 
     .eq('id', liquidationId)
 
   if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/payroll')
+  revalidatePath(`/dashboard/payroll/liquidations/${liquidationId}`)
+  
+  return { success: true }
+}
+
+export async function revertLiquidationToDraft(liquidationId: string, reason?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: liquidation, error: fetchError } = await supabase
+    .from('liquidations')
+    .select('id, organization_id, status, folio_number')
+    .eq('id', liquidationId)
+    .single()
+
+  if (fetchError) return { success: false, error: fetchError.message }
+
+  // Revertir a estado borrador y limpiar firma anterior
+  const { error } = await supabase
+    .from('liquidations')
+    .update({ 
+      status: 'borrador',
+      signature_base64: null
+    })
+    .eq('id', liquidationId)
+
+  if (error) return { success: false, error: error.message }
+
+  // Registrar en audit_logs para trazabilidad y cumplimiento legal
+  try {
+    await supabase
+      .from('audit_logs')
+      .insert({
+        organization_id: liquidation.organization_id,
+        user_id: user?.id,
+        action: 'LIQUIDATION_REVERTED_TO_DRAFT',
+        entity_type: 'liquidation',
+        entity_id: liquidationId,
+        metadata: {
+          previous_status: liquidation.status,
+          folio_number: liquidation.folio_number,
+          reason: reason || 'Reabierto por el usuario para corrección de haberes/descuentos'
+        }
+      })
+  } catch (logErr) {
+    console.warn('Advertencia registrando log de reapertura:', logErr)
+  }
 
   revalidatePath('/dashboard/payroll')
   revalidatePath(`/dashboard/payroll/liquidations/${liquidationId}`)

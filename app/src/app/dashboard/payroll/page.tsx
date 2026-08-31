@@ -33,6 +33,7 @@ import { DeleteEmployeeButton } from './delete-employee-button'
 import { EditEmployeeButton } from './edit-employee-button'
 import { DeleteLiquidationButton } from './delete-liquidation-button'
 import { ApproveLiquidationButton } from './approve-liquidation-button'
+import { ReopenLiquidationButton } from './reopen-liquidation-button'
 import { PayrollPeriodSelector } from './payroll-period-selector'
 import { BulkLiquidationsButton } from './bulk-liquidations-button'
 import { BulkEmailLiquidationsButton } from './bulk-email-liquidations-button'
@@ -437,6 +438,9 @@ async function LiquidationsTable({ orgId, year, month }: { orgId: string, year: 
                     </span>
                     {liq.status === 'borrador' && (
                       <ApproveLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
+                    )}
+                    {closedStatuses.includes(liq.status) && (
+                      <ReopenLiquidationButton id={liq.id} employeeName={`${liq.employees?.nombres} ${liq.employees?.apellido_paterno}`} />
                     )}
                     <Link href={`/dashboard/payroll/liquidations/${liq.folio_number || liq.id}`}>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 text-primary">
