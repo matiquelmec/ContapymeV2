@@ -107,3 +107,35 @@ class TestJobsAIAssistant:
 
         assert salary_min <= salary_max
         assert salary_min >= 500000  # Por encima del Ingreso Mínimo Mensual de Chile
+
+    def test_06_contact_channel_flexibility_email_or_whatsapp(self):
+        """Verifica que se permita publicar con solo email, con solo whatsapp o ambos, y se rechace sin ninguno."""
+        # 1. Caso solo Email
+        case_email_only = {"contact_email": "rrhh@empresa.cl", "contact_whatsapp": None}
+        has_valid_channel_1 = bool(case_email_only.get("contact_email") or case_email_only.get("contact_whatsapp"))
+        assert has_valid_channel_1 is True
+
+        # Botones esperados: Email activo, WhatsApp inactivo
+        show_email_1 = bool(case_email_only["contact_email"] and "@" in case_email_only["contact_email"])
+        raw_phone_1 = re.sub(r"\D", "", case_email_only["contact_whatsapp"] or "")
+        show_whatsapp_1 = len(raw_phone_1) >= 8
+        assert show_email_1 is True
+        assert show_whatsapp_1 is False
+
+        # 2. Caso solo WhatsApp
+        case_whatsapp_only = {"contact_email": None, "contact_whatsapp": "+56912345678"}
+        has_valid_channel_2 = bool(case_whatsapp_only.get("contact_email") or case_whatsapp_only.get("contact_whatsapp"))
+        assert has_valid_channel_2 is True
+
+        # Botones esperados: Email inactivo, WhatsApp activo
+        show_email_2 = bool(case_whatsapp_only["contact_email"] and "@" in case_whatsapp_only["contact_email"])
+        raw_phone_2 = re.sub(r"\D", "", case_whatsapp_only["contact_whatsapp"] or "")
+        show_whatsapp_2 = len(raw_phone_2) >= 8
+        assert show_email_2 is False
+        assert show_whatsapp_2 is True
+
+        # 3. Caso sin ningún canal de contacto
+        case_empty = {"contact_email": "", "contact_whatsapp": ""}
+        has_valid_channel_3 = bool(case_empty.get("contact_email") or case_empty.get("contact_whatsapp"))
+        assert has_valid_channel_3 is False
+

@@ -281,6 +281,11 @@ export function JobSelfServePublisher() {
       return
     }
 
+    if (!contactWhatsapp.trim() && !contactEmail.trim() && !user?.email) {
+      toast.error('Debes ingresar al menos un canal de contacto (WhatsApp o Email) para que los postulantes puedan comunicarse.')
+      return
+    }
+
     // Si el usuario no ha iniciado sesión, abrimos el modal invitándolo a registrarse
     if (!user) {
       saveDraft()
@@ -524,29 +529,36 @@ export function JobSelfServePublisher() {
 
           {/* Bloque 3: Canales de Postulación Directa */}
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
-            <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
-              <Phone className="h-4 w-4" />
-              <span>3. Canales de Postulación Directa</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                <Phone className="h-4 w-4" />
+                <span>3. Canales de Postulación Directa (Al menos uno)</span>
+              </div>
+              <span className="text-[10px] font-bold text-muted-foreground bg-zinc-100 px-2.5 py-0.5 rounded-full">
+                WhatsApp o Email
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  WhatsApp para Recibir CVs *
+                  WhatsApp para Recibir CVs (Opcional)
                 </label>
                 <input
                   type="text"
-                  required
                   value={contactWhatsapp}
                   onChange={e => setContactWhatsapp(e.target.value)}
                   placeholder="+56912345678"
                   className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Si lo indicas, se mostrará el botón directo de WhatsApp.
+                </p>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-foreground block mb-1.5">
-                  Email de Contacto / Facturación
+                  Email para Postulaciones / CVs (Opcional)
                 </label>
                 <input
                   type="email"
@@ -555,6 +567,16 @@ export function JobSelfServePublisher() {
                   placeholder="rrhh@tuempresa.cl"
                   className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Si lo indicas, los postulantes te enviarán sus CVs por correo.
+                </p>
+              </div>
+
+              <div className="col-span-full">
+                <p className="text-[11px] text-zinc-500 bg-zinc-50 border border-zinc-200 p-2.5 rounded-xl flex items-center gap-1.5">
+                  <span>💡</span>
+                  <span>Debes ingresar <strong>al menos un canal de contacto</strong> (WhatsApp o Email) para que los postulantes se comuniquen contigo.</span>
+                </p>
               </div>
             </div>
           </div>
