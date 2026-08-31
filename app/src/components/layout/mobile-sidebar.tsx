@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { navigationGroups } from './sidebar'
+import { navigationGroups, isSidebarItemActive } from './sidebar'
 import { Button } from '@/components/ui/button'
 
 export function MobileSidebar() {
@@ -65,11 +65,7 @@ export function MobileSidebar() {
                     </h4>
                     <div className="space-y-1">
                       {group.items.map((item) => {
-                        const isActive = item.href === '/' 
-                          ? pathname === '/' 
-                          : item.href === '/dashboard' 
-                            ? pathname === '/dashboard' 
-                            : pathname.startsWith(item.href)
+                        const isActive = isSidebarItemActive(item.href, pathname)
                         return (
                           <Link
                             key={item.name}

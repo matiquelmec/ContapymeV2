@@ -24,51 +24,77 @@ export const navigationGroups = [
   {
     title: "Tributario & RCV",
     items: [
-      { name: 'Registro RCV', href: '/tributario/registro-rcv', icon: FileText },
-      { name: 'Facturación (DTE)', href: '/tributario/facturacion-dte', icon: Box },
-      { name: 'Contabilidad (F29)', href: '/tributario/contabilidad-f29', icon: Calculator },
-      { name: 'Análisis F29', href: '/tributario/analisis-f29', icon: BarChart3 },
+      { name: 'Registro RCV', href: '/dashboard/accounting/rcv', icon: FileText },
+      { name: 'Facturación (DTE)', href: '/dashboard/billing', icon: Box },
+      { name: 'Contabilidad (F29)', href: '/dashboard/accounting/f29-comparative', icon: Calculator },
+      { name: 'Análisis F29', href: '/dashboard/accounting/reports', icon: BarChart3 },
     ]
   },
   {
     title: "Contabilidad Financiera",
     items: [
-      { name: 'Plan de Cuentas', href: '/contabilidad/plan-de-cuentas', icon: Settings2 },
-      { name: 'Libro Diario', href: '/contabilidad/libro-diario', icon: BookOpen },
-      { name: 'Libro Mayor', href: '/contabilidad/libro-mayor', icon: Layers },
-      { name: 'Balance de Comprobación', href: '/contabilidad/balance-de-comprobacion', icon: Scale },
-      { name: 'Cierre de Periodos', href: '/contabilidad/cierre-de-periodos', icon: CalendarIcon },
-      { name: 'Tesorería', href: '/tesoreria', icon: WalletCards },
-      { name: 'Conciliación Bancaria', href: '/conciliacion-bancaria', icon: Landmark },
-      { name: 'Reportes Financieros', href: '/contabilidad/reportes-financieros', icon: BarChart3 },
-      { name: 'Config. de Cuentas', href: '/contabilidad/configuracion-de-cuentas', icon: Settings },
+      { name: 'Plan de Cuentas', href: '/dashboard/accounting/chart-of-accounts', icon: Settings2 },
+      { name: 'Libro Diario', href: '/dashboard/accounting/journal', icon: BookOpen },
+      { name: 'Libro Mayor', href: '/dashboard/accounting/ledger', icon: Layers },
+      { name: 'Balance de Comprobación', href: '/dashboard/accounting/trial-balance', icon: Scale },
+      { name: 'Cierre de Periodos', href: '/dashboard/accounting/periods', icon: CalendarIcon },
+      { name: 'Tesorería', href: '/dashboard/treasury', icon: WalletCards },
+      { name: 'Conciliación Bancaria', href: '/dashboard/reconciliation', icon: Landmark },
+      { name: 'Reportes Financieros', href: '/dashboard/accounting/reports', icon: BarChart3 },
+      { name: 'Config. de Cuentas', href: '/dashboard/accounting/config', icon: Settings },
     ]
   },
   {
     title: "Recursos Humanos (RRHH)",
     items: [
-      { name: 'Remuneraciones', href: '/rrhh/remuneraciones', icon: Users },
-      { name: 'Gestión de Vacaciones', href: '/rrhh/gestion-de-vacaciones', icon: CalendarIcon },
-      { name: 'Contratos', href: '/rrhh/contratos', icon: ClipboardList },
-      { name: 'Finiquitos', href: '/rrhh/finiquitos', icon: FileText },
-      { name: 'Libro LRE', href: '/rrhh/libro-lre', icon: FileSpreadsheet },
-      { name: 'Config. Previsional', href: '/rrhh/configuracion-previsional', icon: Shield },
+      { name: 'Remuneraciones', href: '/dashboard/payroll', icon: Users },
+      { name: 'Gestión de Vacaciones', href: '/dashboard/payroll/vacations', icon: CalendarIcon },
+      { name: 'Contratos', href: '/dashboard/payroll/contracts', icon: ClipboardList },
+      { name: 'Finiquitos', href: '/dashboard/payroll/terminations', icon: FileText },
+      { name: 'Libro LRE', href: '/dashboard/payroll/lre', icon: FileSpreadsheet },
+      { name: 'Config. Previsional', href: '/dashboard/payroll/settings', icon: Shield },
     ]
   },
   {
     title: "Activos Fijos",
     items: [
-      { name: 'Inventario y Depreciación', href: '/activos-fijos', icon: Box },
+      { name: 'Inventario y Depreciación', href: '/dashboard/assets', icon: Box },
     ]
   },
   {
     title: "Administración B2B",
     items: [
-      { name: 'Configuración de Empresa', href: '/configuracion-empresa', icon: UserCog },
+      { name: 'Configuración de Empresa', href: '/dashboard/settings', icon: UserCog },
       { name: 'Consola Superadmin', href: '/dashboard/admin', icon: Shield },
     ]
   }
 ]
+
+export const allNavigationHrefs = navigationGroups.flatMap(g => g.items.map(i => i.href))
+
+export function isSidebarItemActive(itemHref: string, currentPathname: string, allHrefs: string[] = allNavigationHrefs): boolean {
+  if (itemHref === '/') {
+    return currentPathname === '/'
+  }
+  if (itemHref === '/dashboard') {
+    return currentPathname === '/dashboard'
+  }
+  if (currentPathname === itemHref) {
+    return true
+  }
+  if (currentPathname.startsWith(itemHref + '/')) {
+    const hasMoreSpecificMatch = allHrefs.some(
+      (otherHref) =>
+        otherHref !== itemHref &&
+        otherHref !== '/' &&
+        otherHref !== '/dashboard' &&
+        (currentPathname === otherHref || currentPathname.startsWith(otherHref + '/')) &&
+        otherHref.length > itemHref.length
+    )
+    return !hasMoreSpecificMatch
+  }
+  return false
+}
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -99,11 +125,7 @@ export function Sidebar() {
             </h4>
             <div className="space-y-1">
               {group.items.map((item) => {
-                const isActive = item.href === '/' 
-                  ? pathname === '/' 
-                  : item.href === '/dashboard' 
-                    ? pathname === '/dashboard' 
-                    : pathname.startsWith(item.href)
+                const isActive = isSidebarItemActive(item.href, pathname)
                 return (
                   <Link
                     key={item.name}
