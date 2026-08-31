@@ -1,5 +1,6 @@
 // Service Worker de Alto Rendimiento - ContaPymePUQ Desktop & Offline First 2026
-const CACHE_NAME = 'contapymepuq-v1-cache';
+const CACHE_NAME = 'contapymepuq-v2-cache';
+const STATIC_CACHE_NAME = 'contapymepuq-static-v2';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -24,7 +25,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keyList) => {
       return Promise.all(
         keyList.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key !== STATIC_CACHE_NAME) {
             console.log('[ServiceWorker] Limpiando caché antigua:', key);
             return caches.delete(key);
           }
@@ -39,10 +40,33 @@ self.addEventListener('fetch', (event) => {
   
   if (request.method !== 'GET' || !request.url.startsWith('http')) return;
   
+  // Excluir pasarelas de pago y autenticación para seguridad estricta
   if (request.url.includes('/api/checkout') || request.url.includes('/auth/v1')) {
     return;
   }
 
+  const url = new URL(request.url);
+
+  // ESTRATEGIA 1: Cache-First / Stale-While-Revalidate para chunks estáticos de Next.js, fuentes e imágenes
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.match(/\.(png|jpg|jpeg|svg|webp|avif|woff2|woff|css|js)$/i)) {
+    event.respondWith(
+      caches.open(STATIC_CACHE_NAME).then(async (cache) => {
+        const cachedResponse = await cache.match(request);
+        const fetchPromise = fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(() => null);
+
+        // Retornar caché inmediatamente si existe, o esperar a la red
+        return cachedResponse || fetchPromise || new Response('', { status: 404 });
+      })
+    );
+    return;
+  }
+
+  // ESTRATEGIA 2: Network-First con Fallback para páginas y rutas dinámicas
   event.respondWith(
     fetch(request)
       .then((networkResponse) => {

@@ -2,10 +2,25 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  compress: true,
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb', // Permitir subida de imágenes hasta 10MB
     },
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'recharts',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-popover',
+      'sonner',
+      'clsx',
+      'tailwind-merge'
+    ],
   },
   images: {
     formats: ['image/avif', 'image/webp'],

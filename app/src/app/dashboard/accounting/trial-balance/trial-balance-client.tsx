@@ -36,8 +36,6 @@ import { refreshAccountBalances, getBalancesFromMaterializedView } from "@/actio
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { fCurrency } from "@/lib/utils";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 export default function TrialBalanceClient({ organizationId }: { organizationId: string }) {
   const [data, setData] = useState<any[]>([]);
@@ -189,6 +187,10 @@ export default function TrialBalanceClient({ organizationId }: { organizationId:
     if (archive) setIsArchiving(true);
     
     try {
+      const { jsPDF } = await import("jspdf");
+      const autoTableModule = await import("jspdf-autotable");
+      const autoTable = (autoTableModule.default || autoTableModule) as any;
+
       const doc = new jsPDF();
       
       // Calcular hash SHA-256 real sobre los datos del balance para integridad forense
