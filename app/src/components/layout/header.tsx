@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { getUserOrganizations, setActiveOrganization, getActiveOrganizationId } from '@/actions/organizations'
 import { toast } from 'sonner'
 import { useRouter, usePathname } from 'next/navigation'
-import { Plus, Menu } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Menu, Globe } from 'lucide-react'
 import { NewCompanyModal } from './new-company-modal'
 import { MobileSidebar } from './mobile-sidebar'
 import { SubscriptionBadge } from '@/components/subscription/subscription-badge'
@@ -96,7 +97,18 @@ export function Header() {
           </Select>
         </div>
       </div>
-      <div className="flex items-center gap-2.5 sm:gap-4" suppressHydrationWarning={true}>
+      <div className="flex items-center gap-2.5 sm:gap-3" suppressHydrationWarning={true}>
+        {/* Acceso Directo a la Portada / Sitio Web */}
+        <Link 
+          href="/" 
+          prefetch={true}
+          title="Ver Portada y Diario Regional"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50/80 hover:bg-zinc-100 hover:border-primary/40 text-foreground text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95"
+        >
+          <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="hidden md:inline">Ver Portada</span>
+        </Link>
+
         <DesktopInstallButton />
         <SubscriptionBadge organizationId={activeOrgId} />
         
