@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { 
   Newspaper, 
   Building2, 
@@ -14,10 +15,17 @@ import {
   Loader2,
   CheckCircle2,
   Send,
-  ShieldCheck
+  ShieldCheck,
+  UploadCloud,
+  X,
+  FileCheck,
+  Zap,
+  MessageCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { compressImage } from '@/lib/media/image-compressor'
+import { uploadNewsImageAction } from '@/actions/news'
 
 const CATEGORIES = [
   { id: 'REGIONAL', label: 'Actualidad Regional & Pymes' },
@@ -40,6 +48,12 @@ export function NewsSelfServePublisher() {
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [tier, setTier] = useState<'standard' | 'featured' | 'campaign'>('featured')
+
+  // Image Upload & WebP Compressor State
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [compressionRatio, setCompressionRatio] = useState<string | null>(null)
+  const [showUrlInput, setShowUrlInput] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const tiers = [
     {
@@ -67,6 +81,53 @@ export function NewsSelfServePublisher() {
       desc: 'Publirreportaje de portada permanente + banner publicitario lateral activo por 15 días.',
     },
   ]
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor selecciona un archivo de imagen válido (JPG, PNG, WebP).')
+      return
+    }
+
+    setIsUploadingImage(true)
+    setCompressionRatio(null)
+
+    try {
+      // 1. Compresión WebP en cliente (1600px max, 16:9 ratio)
+      const compressed = await compressImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+        format: 'image/webp'
+      })
+
+      setCompressionRatio(compressed.ratio)
+      toast.info(`✨ Imagen comprimida a WebP (${compressed.ratio} menos peso)`, {
+        description: `De ${(compressed.originalSize / 1024 / 1024).toFixed(2)} MB a ${(compressed.compressedSize / 1024).toFixed(0)} KB con máxima nitidez.`
+      })
+
+      // 2. Subida a Supabase Storage
+      const formData = new FormData()
+      formData.append('file', compressed.file)
+
+      const res = await uploadNewsImageAction(formData)
+
+      if (res.success && res.url) {
+        setImageUrl(res.url)
+        toast.success('¡Imagen de portada subida y optimizada exitosamente!')
+      } else {
+        toast.error(res.error || 'Error al subir la imagen')
+      }
+    } catch (err: any) {
+      console.error('Error al procesar imagen:', err)
+      toast.error('Error al comprimir o subir la imagen.')
+    } finally {
+      setIsUploadingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -176,17 +237,149 @@ export function NewsSelfServePublisher() {
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-foreground block mb-1.5">
-                URL de Imagen Destacada (Opcional - Formato HD)
-              </label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={e => setImageUrl(e.target.value)}
-                placeholder="https://ejemplo.com/foto-noticia.jpg (Dejar vacío para usar foto representativa)"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-              />
+            {/* SECCIÓN DE SUBIDA Y COMPRESIÓN DE IMAGEN DESTACADA */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-indigo-600" />
+                  <span>Imagen Destacada / Portada (Compresor WebP Integrado)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowUrlInput(!showUrlInput)}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 underline"
+                >
+                  {showUrlInput ? '« Subir archivo desde PC/Móvil' : 'O pegar enlace URL »'}
+                </button>
+              </div>
+
+              {showUrlInput ? (
+                <div className="space-y-1.5">
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={e => setImageUrl(e.target.value)}
+                    placeholder="https://ejemplo.com/foto-noticia.jpg"
+                    className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  />
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Pega el enlace directo a una imagen pública en formato HD.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileSelect} 
+                    accept="image/png, image/jpeg, image/webp, image/jpg" 
+                    className="hidden" 
+                  />
+
+                  {imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-indigo-200 bg-zinc-900 group">
+                      <div className="relative h-48 w-full">
+                        <Image 
+                          src={imageUrl} 
+                          alt="Vista previa de noticia" 
+                          fill 
+                          className="object-cover transition-transform group-hover:scale-105"
+                          unoptimized
+                        />
+                      </div>
+                      
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingImage}
+                          className="rounded-xl text-xs font-bold bg-white text-zinc-900 shadow-md"
+                        >
+                          Cambiar Foto
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => { setImageUrl(''); setCompressionRatio(null); }}
+                          className="rounded-xl text-xs font-bold"
+                        >
+                          <X className="w-4 h-4 mr-1" /> Eliminar
+                        </Button>
+                      </div>
+
+                      {compressionRatio && (
+                        <div className="absolute bottom-3 left-3 bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
+                          <Zap className="w-3 h-3 text-amber-300" />
+                          <span>Optimizada WebP ({compressionRatio} peso)</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                        isUploadingImage 
+                          ? 'border-indigo-400 bg-indigo-50/50' 
+                          : 'border-zinc-300 hover:border-indigo-500 hover:bg-indigo-50/20 bg-zinc-50/50'
+                      }`}
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-black text-indigo-950 uppercase tracking-tight">
+                              Comprimiendo y convirtiendo a WebP...
+                            </p>
+                            <p className="text-[10px] text-indigo-600 font-medium">
+                              Reduciendo peso sin perder calidad fotográfica
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                            <UploadCloud className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-foreground">
+                              Haz clic para subir o arrastra la foto del reportaje
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              Formatos JPG, PNG o WebP. El compresor optimizará el peso automáticamente.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Asistencia de Diseño y Redacción Concierge WhatsApp */}
+                  <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-2xl flex items-start gap-3 text-left">
+                    <div className="p-2 bg-emerald-600 text-white rounded-xl shrink-0 mt-0.5 shadow-xs">
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-emerald-950">
+                        ¿Prefieres que nosotros diseñemos la portada y redactemos el reportaje?
+                      </p>
+                      <p className="text-[11px] text-emerald-800 leading-relaxed font-medium">
+                        Envíanos tus fotos y datos a nuestro equipo editorial por WhatsApp:{' '}
+                        <a 
+                          href="https://wa.me/56944444565?text=%C2%A1Hola!%20Me%20gustar%C3%ADa%20que%20ustedes%20dise%C3%B1en%20la%20portada%20y%20redacten%20el%20comunicado%20de%20mi%20empresa%20en%20ContaPymePUQ."
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-black text-emerald-900 underline hover:text-emerald-700"
+                        >
+                          +56 9 4444 4565
+                        </a>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -218,7 +411,7 @@ export function NewsSelfServePublisher() {
                 WhatsApp / Teléfono de Contacto
               </label>
               <input
-                type="text"
+                type="tel"
                 value={contactPhone}
                 onChange={e => setContactPhone(e.target.value)}
                 placeholder="+56912345678"
@@ -232,6 +425,7 @@ export function NewsSelfServePublisher() {
               </label>
               <input
                 type="email"
+                required
                 value={contactEmail}
                 onChange={e => setContactEmail(e.target.value)}
                 placeholder="prensa@tuempresa.cl"
@@ -246,62 +440,73 @@ export function NewsSelfServePublisher() {
       {/* COLUMNA DERECHA: SELECCIÓN DE PLAN Y CHECKOUT (5/12) */}
       <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
         
-        <div className="p-6 rounded-3xl bg-white border border-border shadow-xl space-y-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 block">
-            Selecciona el Tipo de Cobertura
-          </span>
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-6">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 block">
+              Selecciona el Tipo de Cobertura
+            </span>
+          </div>
 
+          {/* Planes */}
           <div className="space-y-3">
             {tiers.map(t => {
               const isSelected = tier === t.id
               return (
-                <label
+                <div
                   key={t.id}
                   onClick={() => setTier(t.id as any)}
-                  className={`block p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-indigo-600 bg-indigo-50/50 shadow-md'
-                      : 'border-zinc-200 hover:border-zinc-300 bg-zinc-50/50'
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                    isSelected 
+                      ? 'border-indigo-600 bg-indigo-50/40 shadow-md shadow-indigo-600/10' 
+                      : 'border-zinc-200 bg-zinc-50/50 hover:border-zinc-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-zinc-300'}`}>
-                        {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-zinc-400'
+                      }`}>
+                        {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                       </div>
-                      <span className="text-xs font-black uppercase text-foreground">{t.name}</span>
+                      <strong className="text-xs font-black uppercase tracking-tight text-foreground">
+                        {t.name}
+                      </strong>
                     </div>
-                    <span className="text-xs font-black text-foreground">{t.priceLabel}</span>
+                    <span className="text-xs font-black text-indigo-600 font-mono">
+                      {t.priceLabel}
+                    </span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground font-medium pl-6 pt-1 leading-snug">
+
+                  <p className="text-[11px] text-muted-foreground font-medium pl-6 leading-relaxed">
                     {t.desc}
                   </p>
-                </label>
+                </div>
               )
             })}
           </div>
 
-          <div className="pt-4 border-t border-zinc-100">
-            <Button
-              type="submit"
-              disabled={loading}
-              size="lg"
-              className="w-full h-14 rounded-2xl text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-95"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" /> Pagar y Publicar con Mercado Pago ➔
-                </>
-              )}
-            </Button>
-            <p className="text-[10px] text-center text-muted-foreground font-medium pt-2">
-              🔒 Indexación automática en Google News y Google Discover
-            </p>
-          </div>
+          {/* Botón Pagar con Mercado Pago */}
+          <Button
+            type="submit"
+            disabled={loading || isUploadingImage}
+            className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generando Orden Segura...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Pagar y Publicar con Mercado Pago ➔
+              </>
+            )}
+          </Button>
+
+          <p className="text-[10px] text-center text-muted-foreground font-semibold flex items-center justify-center gap-1.5">
+            <span>🔒 Indexación automática en Google News y Google Discover</span>
+          </p>
         </div>
 
       </div>
