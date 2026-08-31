@@ -769,6 +769,34 @@ export function PricingTable() {
               </div>
             ))}
           </div>
+
+          {/* 🎨 CONCIERGE WHATSAPP PUBLICITARIO */}
+          <div className="max-w-5xl mx-auto p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-zinc-900 border-2 border-emerald-500/40 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 shrink-0">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                  🎨 Diseño de Banner & Gestión de Marca
+                </div>
+                <h4 className="text-base sm:text-lg font-black uppercase tracking-tight text-white">
+                  ¿Quieres que diseñemos tu banner y gestionemos tu publicidad?
+                </h4>
+                <p className="text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed max-w-2xl">
+                  Si no cuentas con diseñador gráfico, nuestro equipo crea tu creatividad personalizada con tu logo y colores corporativos, y se encarga de optimizar tu presencia en el portal de Magallanes.
+                </p>
+              </div>
+            </div>
+            <a
+              href={`https://wa.me/56944444565?text=${encodeURIComponent("¡Hola! Me gustaría que ustedes diseñen el banner publicitario y se encarguen de la publicidad de mi marca en ContaPymePUQ.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider px-6 h-12 shadow-xl shadow-emerald-500/20 shrink-0 transition-all hover:scale-105 active:scale-95 cursor-pointer w-full md:w-auto"
+            >
+              <span>💬 Contactar por WhatsApp ➔</span>
+            </a>
+          </div>
         </div>
       )}
 

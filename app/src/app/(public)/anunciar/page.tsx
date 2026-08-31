@@ -27,6 +27,34 @@ export default function AnunciarPage() {
           </p>
         </div>
 
+        {/* 🎨 SERVICIO CONCIERGE DE DISEÑO PUBLICITARIO POR WHATSAPP */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-zinc-900 border-2 border-emerald-500/40 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 shrink-0">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+                🎨 Servicio de Diseño Incluido
+              </div>
+              <h3 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">
+                ¿No tienes diseñador? ¡Nosotros creamos tu banner con tu marca!
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed max-w-2xl">
+                Envíanos tu logo, colores y la oferta o mensaje que deseas promocionar. Nuestro equipo diseña tu banner en alta resolución y se encarga de publicar y gestionar toda la pauta de tu marca.
+              </p>
+            </div>
+          </div>
+          <a
+            href={`https://wa.me/56944444565?text=${encodeURIComponent("¡Hola! Me gustaría que ustedes diseñen el banner publicitario y se encarguen de la publicidad con mi marca en ContaPymePUQ.")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider px-6 h-13 shadow-xl shadow-emerald-500/20 shrink-0 transition-all hover:scale-105 active:scale-95 cursor-pointer w-full md:w-auto"
+          >
+            <span>💬 Diseñar mi Banner por WhatsApp ➔</span>
+          </a>
+        </div>
+
         {/* Formulario */}
         <Suspense fallback={<div className="p-8 text-center text-xs font-bold text-muted-foreground">Cargando formulario...</div>}>
           <AdSelfServePublisher />

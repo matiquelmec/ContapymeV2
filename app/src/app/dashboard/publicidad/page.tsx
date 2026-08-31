@@ -73,6 +73,29 @@ export default async function DashboardPublicidadPage() {
         </p>
       </div>
 
+      {/* 🎨 Banner Concierge WhatsApp para Clientes del Dashboard */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-zinc-900 border border-emerald-500/30 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
+            🎨 ¿Necesitas que diseñemos tu Banner?
+          </span>
+          <h3 className="text-sm sm:text-base font-black text-white">
+            Nosotros creamos tu creatividad con tu logo y gestionamos tu publicidad
+          </h3>
+          <p className="text-xs text-zinc-300 font-medium max-w-xl">
+            Si no tienes diseñador gráfico, nuestro equipo crea tu banner a medida y optimizado en WebP. Escríbenos directamente por WhatsApp.
+          </p>
+        </div>
+        <a
+          href={`https://wa.me/56944444565?text=${encodeURIComponent("¡Hola! Tengo cuenta en ContaPymePUQ y me gustaría que ustedes diseñen el banner publicitario y gestionen la pauta de mi marca.")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black text-xs uppercase tracking-wider shrink-0 transition-all hover:scale-105 active:scale-95 shadow-md"
+        >
+          <span>💬 Contactar por WhatsApp ➔</span>
+        </a>
+      </div>
+
       <DashboardAdsClient initialBanners={initialBanners} />
     </div>
   )

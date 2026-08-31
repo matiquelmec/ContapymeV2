@@ -173,15 +173,26 @@ export function AdBannerSlot({ position, className = '' }: AdBannerSlotProps) {
         {slotInfo.price}
       </div>
 
-      <div className="pt-1">
+      <div className="pt-1 flex flex-col sm:flex-row items-center justify-center gap-2">
         <Link
           href={`/anunciar?slot=${slotInfo.slotParam}`}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs uppercase tracking-wider px-5 h-10 shadow-md shadow-amber-600/20 transition-all hover:scale-105 active:scale-95"
         >
-          <span>Reservar Este Espacio</span>
+          <span>Reservar Espacio</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
+        <a
+          href={`https://wa.me/56944444565?text=${encodeURIComponent("¡Hola! Me gustaría que ustedes diseñen el banner y se encarguen de la publicidad con mi marca en ContaPymePUQ.")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 text-emerald-900 font-black text-[11px] uppercase tracking-wider px-4 h-10 transition-all hover:scale-105"
+        >
+          <span>💬 Diseñar con mi Marca</span>
+        </a>
       </div>
+      <p className="text-[10px] text-muted-foreground font-medium">
+        ¿No tienes diseñador? ¡Nosotros creamos tu banner y gestionamos tu campaña!
+      </p>
     </div>
   )
 }

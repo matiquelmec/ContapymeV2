@@ -452,7 +452,22 @@ export function AdSelfServePublisher() {
                   </div>
                 )}
 
-                {/* Opción para ingresar URL manual si es agencia */}
+                {/* Opción para ingresar URL manual o pedir diseño por WhatsApp */}
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-2.5 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-950">
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-emerald-900">
+                    <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>¿No tienes banner listo? <strong>Nosotros lo diseñamos con tu marca.</strong></span>
+                  </div>
+                  <a
+                    href={`https://wa.me/56944444565?text=${encodeURIComponent("¡Hola! Estoy publicando un anuncio en ContaPymePUQ y me gustaría que ustedes diseñen el banner con mi marca.")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10.5px] uppercase tracking-wider shrink-0 transition-all cursor-pointer shadow-xs"
+                  >
+                    <span>Pedir Diseño por WhatsApp 💬</span>
+                  </a>
+                </div>
+
                 <div className="pt-2 text-right">
                   <button
                     type="button"
