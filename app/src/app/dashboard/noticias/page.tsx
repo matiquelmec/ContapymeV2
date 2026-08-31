@@ -42,10 +42,10 @@ export default async function DashboardNoticiasPage() {
             </div>
           </div>
           <Link
-            href="/admin"
+            href="/dashboard/admin"
             className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider px-4 py-2.5 shrink-0 shadow-md shadow-indigo-600/20 transition-all hover:scale-105 active:scale-95"
           >
-            <span>Consola Superadmin (/admin)</span>
+            <span>Consola Superadmin</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>

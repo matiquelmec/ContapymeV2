@@ -51,10 +51,10 @@ export default async function DashboardPublicidadPage() {
             </div>
           </div>
           <Link
-            href="/admin"
+            href="/dashboard/admin"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black uppercase tracking-wider shrink-0 transition-all"
           >
-            <span>Consola Superadmin (Admin)</span>
+            <span>Consola Superadmin</span>
             <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
