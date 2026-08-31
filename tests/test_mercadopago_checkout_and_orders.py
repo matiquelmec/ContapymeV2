@@ -27,8 +27,21 @@ JOB_TIER_PRICES = {
     'faena': 9990
 }
 
+SUBSCRIPTION_PLANS = {
+    'emprendedor': {'name': 'Plan Emprendedor ERP', 'price': 9990},
+    'pyme_pro': {'name': 'Plan Pyme Pro ERP', 'price': 24990},
+    'estudio': {'name': 'Plan Estudio Contable ERP', 'price': 49990},
+    'corporativo': {'name': 'Plan Corporativo ERP', 'price': 89990}
+}
+
 def calculate_tier_price(tier: str) -> int:
     return JOB_TIER_PRICES.get(tier, 0)
+
+def calculate_subscription_price(plan_type: str, billing_cycle: str = 'monthly') -> int:
+    plan = SUBSCRIPTION_PLANS.get(plan_type, SUBSCRIPTION_PLANS['emprendedor'])
+    if billing_cycle == 'annual':
+        return round(plan['price'] * 12 * 0.8)
+    return plan['price']
 
 def verify_mp_webhook_signature(secret_key: str, data_id: str, signature: str) -> bool:
     expected = hmac.new(
@@ -98,3 +111,40 @@ class TestMercadoPagoCheckoutAndOrders:
             order["paid_at"] = "2026-08-29T18:00:00Z"
             
         assert order["status"] == "paid"
+
+    def test_08_subscription_monthly_pricing_matrix(self):
+        """Valida que todos los planes SaaS mensuales coincidan exactamente con la matriz oficial"""
+        assert calculate_subscription_price('emprendedor', 'monthly') == 9990
+        assert calculate_subscription_price('pyme_pro', 'monthly') == 24990
+        assert calculate_subscription_price('estudio', 'monthly') == 49990
+        assert calculate_subscription_price('corporativo', 'monthly') == 89990
+
+    def test_09_subscription_annual_discount_calculation(self):
+        """Valida el cálculo del 20% de descuento en suscripciones anuales"""
+        # Emprendedor anual: 9990 * 12 * 0.8 = 95904
+        assert calculate_subscription_price('emprendedor', 'annual') == 95904
+        # Pyme Pro anual: 24990 * 12 * 0.8 = 239904
+        assert calculate_subscription_price('pyme_pro', 'annual') == 239904
+
+    def test_10_webhook_external_reference_parser(self):
+        """Valida que el webhook decodifique correctamente el tipo de recurso y el ID correspondiente"""
+        def parse_ext_ref(ext_ref: str):
+            if ext_ref.startswith('sub_'):
+                parts = ext_ref.split('_')
+                return {'type': 'subscription', 'org_id': parts[1], 'plan': '_'.join(parts[2:]) if len(parts) > 2 else 'pyme_pro'}
+            elif ext_ref.startswith('job_'):
+                return {'type': 'job', 'job_id': ext_ref.replace('job_', '')}
+            elif ext_ref.startswith('banner_'):
+                return {'type': 'banner', 'banner_id': ext_ref.replace('banner_', '')}
+            elif ext_ref.startswith('news_'):
+                return {'type': 'news', 'news_id': ext_ref.replace('news_', '')}
+            return {'type': 'unknown'}
+
+        sub_parsed = parse_ext_ref('sub_org123_pyme_pro')
+        assert sub_parsed['type'] == 'subscription'
+        assert sub_parsed['org_id'] == 'org123'
+        assert sub_parsed['plan'] == 'pyme_pro'
+
+        job_parsed = parse_ext_ref('job_550e8400-e29b-41d4-a716-446655440000')
+        assert job_parsed['type'] == 'job'
+        assert job_parsed['job_id'] == '550e8400-e29b-41d4-a716-446655440000'
