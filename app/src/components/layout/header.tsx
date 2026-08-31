@@ -12,6 +12,7 @@ import { Plus, Menu } from 'lucide-react'
 import { NewCompanyModal } from './new-company-modal'
 import { MobileSidebar } from './mobile-sidebar'
 import { SubscriptionBadge } from '@/components/subscription/subscription-badge'
+import { DesktopInstallButton } from '@/components/desktop/desktop-install-button'
 
 export function Header() {
   const [organizations, setOrganizations] = useState<any[]>([])
@@ -95,7 +96,8 @@ export function Header() {
           </Select>
         </div>
       </div>
-      <div className="flex items-center gap-3 sm:gap-4" suppressHydrationWarning={true}>
+      <div className="flex items-center gap-2.5 sm:gap-4" suppressHydrationWarning={true}>
+        <DesktopInstallButton />
         <SubscriptionBadge organizationId={activeOrgId} />
         
         <Button 
