@@ -657,4 +657,99 @@ export async function getCompanyNewsAction() {
   }
 }
 
+/**
+ * 🤖 Asistente Editorial con IA: Redacta y optimiza notas de prensa y publirreportajes profesionales.
+ */
+export async function generatePressReleaseAIAction(params: {
+  rawNotes: string
+  companyName?: string
+  category?: string
+}): Promise<{
+  success: boolean
+  title?: string
+  summary?: string
+  content?: string
+  category?: string
+  error?: string
+}> {
+  try {
+    const apiKey = process.env.GROQ_API_KEY || ''
+    if (!apiKey) {
+      return { success: false, error: 'Motor de redacción IA no disponible (GROQ_API_KEY no configurada).' }
+    }
+
+    if (!params.rawNotes || params.rawNotes.trim().length < 5) {
+      return { success: false, error: 'Por favor ingresa al menos unas breves notas o ideas para que el asistente pueda redactar.' }
+    }
+
+    const systemPrompt = `
+Eres el Editor Jefe y Periodista Senior del Diario Regional ContaPymePUQ en Punta Arenas, Magallanes.
+Tu misión es transformar notas breves, borradores o ideas comerciales de un emprendedor o empresa en una NOTA DE PRENSA / PUBLIRREPORTAJE PROFESIONAL de alta calidad periodística, lista para ser publicada e indexada en Google News.
+
+REGLAS EDITORIALES OBLIGATORIAS:
+1. Idioma: Español de Chile, impecable ortografía y redacción periodística profesional (estructura de pirámide invertida).
+2. Tono: Informativo, corporativo, atractivo y positivo. Incorpora sutilmente el contexto regional magallánico (Punta Arenas, Puerto Natales, Tierra del Fuego, Patagonia Austral) si corresponde.
+3. Formato de Salida: Devuelve ÚNICAMENTE un objeto JSON válido con las siguientes claves:
+   - "title": Titular periodístico directo, potente y noticioso (máximo 90 caracteres).
+   - "summary": Bajada o resumen de 2 oraciones (máximo 250 caracteres).
+   - "content": Reportaje periodístico completo de 3 a 4 párrafos que incluya:
+      * Párrafo 1 (Entradilla/Lead): Qué sucede, quién es la empresa y qué novedad presenta.
+      * Párrafo 2 (Desarrollo y propuesta de valor): Detalles del servicio/producto y diferenciación en Magallanes.
+      * Párrafo 3 (Declaraciones/Cita): Una cita simulada profesional del representante o vocero entre comillas.
+      * Párrafo 4 (Cierre y datos útiles): Horarios, ubicación, canales de contacto y llamado a la comunidad.
+   - "category": Una de las siguientes: "REGIONAL", "FINANZAS", "INNOVACION", "GASTRONOMIA".
+`
+
+    const userPrompt = `
+Empresa / Entidad: ${params.companyName || 'Emprendimiento de Magallanes'}
+Categoría actual: ${params.category || 'REGIONAL'}
+Borrador o ideas del usuario:
+"""
+${params.rawNotes}
+"""
+Por favor redacta la nota de prensa completa en formato JSON.
+`
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 1200
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error('[Groq AI Error]:', errText)
+      return { success: false, error: 'El asistente editorial no pudo procesar la solicitud en este momento.' }
+    }
+
+    const json = await response.json()
+    const rawContent = json.choices?.[0]?.message?.content || '{}'
+    const parsed = JSON.parse(rawContent)
+
+    return {
+      success: true,
+      title: parsed.title,
+      summary: parsed.summary,
+      content: parsed.content,
+      category: parsed.category || params.category || 'REGIONAL'
+    }
+  } catch (err: any) {
+    console.error('[generatePressReleaseAIAction Error]:', err.message)
+    return { success: false, error: err.message || 'Error inesperado en el asistente de redacción.' }
+  }
+}
+
+
 

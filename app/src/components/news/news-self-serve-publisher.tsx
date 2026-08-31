@@ -20,12 +20,14 @@ import {
   X,
   FileCheck,
   Zap,
-  MessageCircle
+  MessageCircle,
+  Wand2,
+  Bot
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { compressImage } from '@/lib/media/image-compressor'
-import { uploadNewsImageAction } from '@/actions/news'
+import { uploadNewsImageAction, generatePressReleaseAIAction } from '@/actions/news'
 
 const CATEGORIES = [
   { id: 'REGIONAL', label: 'Actualidad Regional & Pymes' },
@@ -55,6 +57,9 @@ export function NewsSelfServePublisher() {
   const [showUrlInput, setShowUrlInput] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // AI Assistant State
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+
   const tiers = [
     {
       id: 'standard',
@@ -81,6 +86,45 @@ export function NewsSelfServePublisher() {
       desc: 'Publirreportaje de portada permanente + banner publicitario lateral activo por 15 días.',
     },
   ]
+
+  const handleGenerateAI = async () => {
+    const rawNotes = content.trim() || title.trim()
+    if (!rawNotes || rawNotes.length < 5) {
+      toast.info('Escribe una breve idea o borrador', {
+        description: 'Ingresa al menos 1 o 2 frases en el cuerpo de la noticia o título para que la IA pueda redactar.'
+      })
+      return
+    }
+
+    setIsGeneratingAI(true)
+    toast.loading('Asistente Editorial IA redactando tu reportaje...', { id: 'ai-news-gen' })
+
+    try {
+      const res = await generatePressReleaseAIAction({
+        rawNotes,
+        companyName: companyName.trim() || undefined,
+        category
+      })
+
+      if (res.success) {
+        if (res.title) setTitle(res.title)
+        if (res.summary) setSummary(res.summary)
+        if (res.content) setContent(res.content)
+        if (res.category) setCategory(res.category)
+
+        toast.success('¡Reportaje redactado con éxito!', {
+          id: 'ai-news-gen',
+          description: 'Hemos estructurado el titular, bajada periodística y cuerpo de la noticia conforme a Google News.'
+        })
+      } else {
+        toast.error(res.error || 'Error al generar la noticia con IA', { id: 'ai-news-gen' })
+      }
+    } catch (err) {
+      toast.error('Fallo en la conexión con el asistente editorial.', { id: 'ai-news-gen' })
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -188,9 +232,33 @@ export function NewsSelfServePublisher() {
       <div className="lg:col-span-7 space-y-6">
         
         <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border shadow-md space-y-5">
-          <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-wider">
-            <Newspaper className="h-4 w-4" />
-            <span>1. Titular y Contenido Noticioso</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-wider">
+              <Newspaper className="h-4 w-4" />
+              <span>1. Titular y Contenido Noticioso</span>
+            </div>
+
+            {/* BOTÓN ASISTENTE EDITORIAL CON IA */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateAI}
+              disabled={isGeneratingAI}
+              className="rounded-2xl border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-black text-[11px] uppercase tracking-wider gap-1.5 shadow-2xs transition-all hover:scale-105"
+            >
+              {isGeneratingAI ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                  <span>Redactando...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>✨ Redactar con IA</span>
+                </>
+              )}
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -383,15 +451,20 @@ export function NewsSelfServePublisher() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-foreground block mb-1.5">
-                Cuerpo del Reportaje / Noticia *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-foreground block">
+                  Cuerpo del Reportaje / Noticia *
+                </label>
+                <span className="text-[10px] text-indigo-600 font-bold italic">
+                  Tip: Puedes escribir ideas sueltas y pulsar "✨ Redactar con IA"
+                </span>
+              </div>
               <textarea
                 required
-                rows={6}
+                rows={7}
                 value={content}
                 onChange={e => setContent(e.target.value)}
-                placeholder="Escribe el detalle de la noticia, horario de atención, productos destacados, historia del emprendimiento..."
+                placeholder="Escribe aquí las ideas principales, novedades, horarios o historia. Si deseas, haz clic arriba en '✨ Redactar con IA' para que el asistente editorial le dé formato periodístico profesional..."
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium leading-relaxed"
               />
             </div>
@@ -488,7 +561,7 @@ export function NewsSelfServePublisher() {
           {/* Botón Pagar con Mercado Pago */}
           <Button
             type="submit"
-            disabled={loading || isUploadingImage}
+            disabled={loading || isUploadingImage || isGeneratingAI}
             className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
