@@ -28,21 +28,35 @@ import {
     ExternalLink,
     Loader2,
     PenTool,
-    CheckCircle2
+    CheckCircle2,
+    Plus,
+    UserPlus,
+    FileSignature,
+    Users
 } from 'lucide-react';
 import { toast } from "sonner";
 import Link from "next/link";
 import { generateContractAction } from "@/actions/documents";
-import { ModificationsDialog } from "@/components/modifications-dialog"
-import { SignaturePad } from "@/components/ui/signature-pad"
+import { ModificationsDialog } from "@/components/modifications-dialog";
+import { SignaturePad } from "@/components/ui/signature-pad";
+import { CreateEmployeeButton } from "../create-employee-button";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
-  DialogDescription
-} from "@/components/ui/dialog"
+  DialogDescription,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface Employee {
   id: string;
@@ -50,12 +64,14 @@ interface Employee {
   apellido_paterno: string;
   rut: string;
   cargo: string;
+  sueldo_base?: number;
+  activo?: boolean;
 }
 
 export default function ContractsClient({ 
   organizationId, 
   initialContracts,
-  employees,
+  employees = [],
   settings 
 }: { 
   organizationId: string, 
@@ -65,6 +81,7 @@ export default function ContractsClient({
 }) {
   const router = useRouter();
   const hasLegalRep = settings?.rep_legal_nombre && settings?.rep_legal_rut;
+  
   // Modificaciones state
   const [modTarget, setModTarget] = useState<{id: string, name: string, data: any} | null>(null);
   const [modOpen, setModOpen] = useState(false);
@@ -73,6 +90,10 @@ export default function ContractsClient({
   const [signatureOpen, setSignatureOpen] = useState(false);
   const [signingDoc, setSigningDoc] = useState<{id: string, employeeId: string, name: string, type?: string} | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // Estado para emisión rápida de contrato de empleado existente
+  const [emitDialogOpen, setEmitDialogOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
 
   useEffect(() => {
     setIsClient(true);
@@ -103,7 +124,6 @@ export default function ContractsClient({
   }, [initialContracts]);
 
   const activeContractsCount = useMemo(() => {
-    // Filtrar por empleados UNICOS, de tipo CONTRATO, y que estén ACTIVOS
     const uniqueActiveEmployees = new Set(
       processedContracts
         .filter(c => c.tipo_documento === 'contrato' && c.employees?.activo === true)
@@ -157,6 +177,19 @@ export default function ContractsClient({
     }
   };
 
+  const handleQuickEmit = async () => {
+    if (!selectedEmployeeId) {
+      toast.error("Por favor selecciona un colaborador para emitir su contrato.");
+      return;
+    }
+    const emp = employees.find(e => e.id === selectedEmployeeId);
+    const empName = emp ? `${emp.nombres} ${emp.apellido_paterno}` : "Colaborador";
+    
+    setEmitDialogOpen(false);
+    await handleDownload(selectedEmployeeId, `quick_${selectedEmployeeId}`, empName, 'contrato');
+    router.refresh();
+  };
+
   const onConfirmSigned = async (signatureDataUrl: string) => {
     if (!signingDoc) return;
     setIsFinishing(true);
@@ -200,6 +233,82 @@ export default function ContractsClient({
         </Card>
       )}
 
+      {/* ===== BARRA DE ACCIÓN Y GENERACIÓN DE CONTRATOS ===== */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-6 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-zinc-900 border border-emerald-500/20 shadow-xl text-white">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 shrink-0">
+            <FileSignature className="h-6 w-6" />
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Emisión Normativa DT</span>
+            <h3 className="text-base font-black uppercase tracking-tight text-white">Centro de Generación Documental</h3>
+            <p className="text-xs text-zinc-300 font-medium">Registra una nueva contratación o emite el contrato en Word/PDF de cualquier colaborador.</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          {/* Botón para emitir contrato de trabajador existente */}
+          <Button 
+            variant="outline"
+            onClick={() => setEmitDialogOpen(true)}
+            className="border-emerald-400/40 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl h-11 px-5 transition-all"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Emitir Contrato
+          </Button>
+
+          {/* Botón para ingresar nuevo trabajador y generar contrato */}
+          <CreateEmployeeButton />
+        </div>
+      </div>
+
+      {/* MODAL PARA EMISIÓN RÁPIDA DE CONTRATO */}
+      <Dialog open={emitDialogOpen} onOpenChange={setEmitDialogOpen}>
+        <DialogContent className="rounded-3xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+              <FileSignature className="h-5 w-5 text-emerald-600" />
+              Emitir Contrato de Trabajo
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Selecciona a un colaborador registrado para generar y descargar su contrato oficial (.docx) conforme al Código del Trabajo.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-wider">Seleccionar Colaborador</Label>
+              <Select value={selectedEmployeeId} onValueChange={(val) => setSelectedEmployeeId(val || "")}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Elige un colaborador..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {employees.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nombres} {emp.apellido_paterno} — {emp.cargo || "Sin cargo"} ({emp.rut})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setEmitDialogOpen(false)} className="rounded-xl text-xs font-bold uppercase">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleQuickEmit} 
+              disabled={!selectedEmployeeId}
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Generar y Descargar (.docx)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ===== CUADRO DE MANDO RÁPIDO ===== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <KPIItem 
@@ -229,13 +338,25 @@ export default function ContractsClient({
         />
       </div>
 
-      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-primary/10 transition-all">
-        <CardHeader className="bg-muted/5 border-b border-border p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <Card className="bg-card border-border shadow-2xl rounded-[2.5rem] overflow-hidden border-t-8 border-t-emerald-600/30 transition-all">
+        <CardHeader className="bg-muted/5 border-b border-border p-8 sm:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1">
             <CardTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Kardex de Documentos</CardTitle>
             <CardDescription className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] italic">
                 HISTORIAL DE CONTRATOS Y ANEXOS LEGALES GENERADOS POR EL SISTEMA
             </CardDescription>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setEmitDialogOpen(true)}
+              className="rounded-xl text-xs font-black uppercase tracking-wider border-border hover:bg-muted gap-2 h-10"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Emitir Contrato
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -270,7 +391,7 @@ export default function ContractsClient({
                           <Badge className={cn(
                               "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border w-fit",
                               contract.tipo_documento === 'contrato' 
-                                  ? "bg-blue-50 text-blue-700 border-blue-100" 
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
                                   : "bg-purple-50 text-purple-700 border-purple-100"
                           )}>
                               {contract.tipo_documento === 'contrato' ? '📜 CONTRATO BASE' : '📝 ANEXO LEGAL'}
@@ -320,6 +441,7 @@ export default function ContractsClient({
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 w-11 h-11 rounded-xl transition-all"
                             disabled={loadingId === contract.id}
                             onClick={() => handleDownload(contract.employee_id, contract.id, contract.employees?.apellido_paterno, contract.tipo_documento)}
+                            title="Descargar Contrato (.docx)"
                         >
                             {loadingId === contract.id ? (
                                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -333,11 +455,15 @@ export default function ContractsClient({
                 ))}
                 {initialContracts.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-20 text-muted-foreground border-border border-2 border-dashed m-10 rounded-[2rem] bg-muted/5">
-                        <div className="bg-muted/20 p-6 rounded-full inline-block mb-4">
-                            <History className="w-12 h-12 text-muted-foreground/20" />
+                    <TableCell colSpan={4} className="text-center py-16 text-muted-foreground border-border border-2 border-dashed m-6 rounded-[2rem] bg-muted/5">
+                        <div className="bg-emerald-500/10 p-5 rounded-full inline-block mb-3 text-emerald-600">
+                            <FileSignature className="w-10 h-10" />
                         </div>
-                        <p className="font-black uppercase text-sm tracking-[0.2em] opacity-40 italic italic">No hay registros documentales en esta empresa.</p>
+                        <h4 className="font-black uppercase text-sm tracking-wide text-foreground mb-1">No hay contratos generados aún</h4>
+                        <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">Ingresa a tu primer colaborador o emite el contrato para el personal existente.</p>
+                        <div className="flex justify-center gap-3">
+                          <CreateEmployeeButton />
+                        </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -350,45 +476,55 @@ export default function ContractsClient({
       {/* MODAL DE HISTORIAL Y MODIFICACIONES */}
       {modTarget && (
         <ModificationsDialog 
-          employeeId={modTarget.id}
-          employeeName={modTarget.name}
-          organizationId={organizationId}
-          currentData={modTarget.data}
-          isOpen={modOpen}
-          onClose={() => setModOpen(false)}
+            isOpen={modOpen} 
+            onClose={() => setModOpen(false)} 
+            employeeId={modTarget.id} 
+            employeeName={modTarget.name}
+            organizationId={organizationId}
         />
       )}
 
-      {/* ===== DIÁLOGO DE FIRMA TÁCTIL (REUTILIZABLE) ===== */}
+      {/* MODAL DE PROTOCOLIZACIÓN DIGITAL */}
       <Dialog open={signatureOpen} onOpenChange={setSignatureOpen}>
-        <DialogContent className="sm:max-w-xl bg-card border-border shadow-2xl rounded-[2.5rem] p-0 overflow-hidden ring-1 ring-black/5">
-            <div className="h-4 w-full bg-gradient-to-r from-emerald-600 via-emerald-300 to-transparent" />
-            <DialogHeader className="p-10 pb-6">
-                <div className="flex items-center gap-5">
-                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center">
-                        <PenTool className="h-6 w-6 text-emerald-600" />
+        <DialogContent className="max-w-xl p-8 rounded-[2.5rem] bg-card border-border shadow-2xl">
+            <DialogHeader className="space-y-2">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                        <PenTool className="w-6 h-6" />
                     </div>
-                    <div className="space-y-0.5">
-                        <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Sello Digital Corporativo</DialogTitle>
-                        <DialogDescription className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] italic">CERTIFICACIÓN DE DOCUMENTO — {signingDoc?.name}</DialogDescription>
+                    <div>
+                        <DialogTitle className="text-xl font-black tracking-tight uppercase">
+                            Protocolización y Firma Digital
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-muted-foreground uppercase font-bold tracking-widest">
+                            {signingDoc?.name} &bull; {signingDoc?.type?.toUpperCase()}
+                        </DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
-            <div className="p-10 pt-4">
-                <p className="text-[11px] text-muted-foreground font-bold italic mb-6 leading-relaxed opacity-60">
-                    Proceda a capturar la firma del colaborador. El sistema anexará un registro de integridad SHA-256 y un código QR de validación al documento final.
+
+            <div className="py-6 space-y-4">
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                    Dibuje la rúbrica del representante o trabajador en el recuadro inferior. 
+                    El sistema integrará este sello criptográfico en el documento final.
                 </p>
-                {isFinishing ? (
-                    <div className="flex flex-col items-center justify-center py-10 gap-4">
-                        <Loader2 className="h-10 w-10 animate-spin text-emerald-600 opacity-20" />
-                        <p className="font-black uppercase text-[10px] tracking-widest text-emerald-700 italic">Protocolizando Instrumento...</p>
-                    </div>
-                ) : (
+                <div className="border border-border/80 rounded-2xl overflow-hidden shadow-inner bg-white">
                     <SignaturePad onSave={onConfirmSigned} />
-                )}
+                </div>
             </div>
-            <DialogFooter className="p-10 pt-0">
-                <Button variant="ghost" onClick={() => setSignatureOpen(false)} className="w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest text-muted-foreground">CANCELAR SIGILO</Button>
+
+            <DialogFooter className="sm:justify-between items-center border-t border-border/50 pt-4">
+                <span className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Válido según Ley 19.799
+                </span>
+                <Button 
+                    variant="ghost" 
+                    onClick={() => setSignatureOpen(false)}
+                    disabled={isFinishing}
+                    className="rounded-xl font-black uppercase text-xs tracking-wider"
+                >
+                    Cancelar
+                </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -396,23 +532,20 @@ export default function ContractsClient({
   );
 }
 
-// ==========================================
-// HELPERS & SUBCOMPONENTS
-// ==========================================
 function KPIItem({ label, value, sub, icon, color, borderColor, suppressHydrationWarning }: any) {
     return (
-        <Card className={`bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 ${borderColor} group hover:scale-[1.02] transition-all`}>
+        <Card className={cn("bg-card border-border shadow-2xl rounded-3xl overflow-hidden border-l-8 group hover:scale-[1.02] transition-all", borderColor)}>
         <CardContent className="p-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mb-2 leading-none">{label}</p>
-              <p className={`text-3xl font-black tracking-tighter ${color}`} suppressHydrationWarning={suppressHydrationWarning}>
-                {value}
-              </p>
+              <p className={cn("text-3xl font-black tracking-tighter", color)} suppressHydrationWarning={suppressHydrationWarning}>{value}</p>
               {sub && <p className="text-[11px] text-muted-foreground/60 font-bold italic mt-2">{sub}</p>}
             </div>
-            <div className={`p-4 rounded-2xl bg-muted/30 border border-border group-hover:bg-primary/10 transition-colors ${color}`}>
-              {icon}
+            <div className={`p-4 rounded-2xl bg-muted/30 border border-border group-hover:bg-white transition-colors`}>
+              <div className={cn("w-8 h-8 opacity-60 group-hover:opacity-100 transition-opacity flex items-center justify-center", color)}>
+                {icon}
+              </div>
             </div>
           </div>
         </CardContent>

@@ -374,28 +374,28 @@ export function DashboardJobsClient({ initialJobs, companyName, companyRut }: Da
         </Link>
       </div>
       {/* 💼 PUENTE HIRE-TO-CONTRACT (CONVERSIÓN AL SOFTWARE ERP) */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-zinc-900 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-indigo-600/30 border border-indigo-400/20 text-indigo-400 shrink-0">
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-zinc-900 border border-emerald-500/30 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-400 shrink-0">
             <FileText className="h-6 w-6" />
           </div>
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block">
+          <div className="space-y-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">
               Módulo de Remuneraciones & Legal DT
             </span>
             <h4 className="text-sm font-black uppercase tracking-tight text-white">
               ¿Ya seleccionaste a tu nuevo trabajador?
             </h4>
-            <p className="text-xs text-zinc-300 font-medium leading-relaxed">
-              Genera su <strong>Contrato de Trabajo</strong> en PDF y activa sus liquidaciones automáticas con 14 días de prueba gratis.
+            <p className="text-xs text-zinc-300 font-medium leading-relaxed max-w-xl">
+              Ingresa su ficha laboral, genera su <strong>Contrato de Trabajo (.docx/PDF)</strong> conforme al Código del Trabajo y activa sus liquidaciones mensuales automáticas.
             </p>
           </div>
         </div>
         <Link
           href="/dashboard/payroll/contracts"
-          className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider px-5 h-11 shadow-md shrink-0 transition-all hover:scale-105 active:scale-95"
+          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider px-6 h-12 shadow-lg shadow-emerald-900/30 shrink-0 transition-all hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <span>Ir a Contratos de Trabajo ➔</span>
+          <span>Registrar y Generar Contrato ➔</span>
         </Link>
       </div>
 
