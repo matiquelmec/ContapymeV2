@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/v1/jobs/sync",
+      "schedule": "0 11 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

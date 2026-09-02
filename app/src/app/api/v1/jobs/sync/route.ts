@@ -5,10 +5,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
-export async function POST(req: NextRequest) {
+async function handleSync(req: NextRequest) {
+  const startMs = Date.now()
   try {
     const authHeader = req.headers.get('authorization') || ''
     const cronSecretHeader = req.headers.get('x-cron-secret') || ''
+    const vercelCronHeader = req.headers.get('x-vercel-cron') || ''
     const expectedSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
     let isAuthorized = false
@@ -20,6 +22,11 @@ export async function POST(req: NextRequest) {
       } else if (cronSecretHeader === expectedSecret) {
         isAuthorized = true
       }
+    }
+
+    // 2. Cabecera nativa Vercel Cron en entorno desplegado
+    if (!isAuthorized && vercelCronHeader === '1' && process.env.VERCEL) {
+      isAuthorized = true
     }
 
     // 2. Verificación por Sesión de Administrador
@@ -65,9 +72,17 @@ export async function POST(req: NextRequest) {
     revalidatePath('/dashboard/empleos')
     revalidatePath('/sitemap-jobs.xml')
 
+    const durationMs = Date.now() - startMs
+
     return NextResponse.json({
       success: true,
       message: 'Sincronización y ciclo de vida de empleos completado con éxito.',
+      metrics: {
+        inserted_count: syncResult.insertedCount,
+        skipped_count: syncResult.skippedCount,
+        expired_cleaned: cleanupResult.expiredCount,
+        duration_ms: durationMs,
+      },
       cleanup: cleanupResult,
       sync: syncResult,
       timestamp: new Date().toISOString()
@@ -79,4 +94,12 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function GET(req: NextRequest) {
+  return handleSync(req)
+}
+
+export async function POST(req: NextRequest) {
+  return handleSync(req)
 }
