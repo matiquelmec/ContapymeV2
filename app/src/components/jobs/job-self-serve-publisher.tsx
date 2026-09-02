@@ -53,6 +53,7 @@ export function JobSelfServePublisher() {
   const [sector, setSector] = useState('Comercio & Retail')
   const [jobType, setJobType] = useState('Jornada Completa')
   const [workShift, setWorkShift] = useState('Lunes a Viernes (40 Horas)')
+  const [salaryType, setSalaryType] = useState<'liquido' | 'bruto'>('liquido')
   const [salaryMin, setSalaryMin] = useState('')
   const [salaryMax, setSalaryMax] = useState('')
   const [description, setDescription] = useState('')
@@ -221,6 +222,11 @@ export function JobSelfServePublisher() {
             work_shift: workShift,
             salary_min: salaryMin ? Number(salaryMin) : null,
             salary_max: salaryMax ? Number(salaryMax) : null,
+            salary_raw: salaryMin
+              ? (salaryMax
+                  ? `$${Number(salaryMin).toLocaleString('es-CL')} - $${Number(salaryMax).toLocaleString('es-CL')} ${salaryType === 'liquido' ? 'Líquido' : 'Bruto'}`
+                  : `$${Number(salaryMin).toLocaleString('es-CL')} ${salaryType === 'liquido' ? 'Líquido' : 'Bruto'}`)
+              : null,
             description,
             requirements: requirements ? requirements.split('\n').filter(Boolean) : [],
             benefits: [],
@@ -470,29 +476,60 @@ export function JobSelfServePublisher() {
             </div>
 
             <div className="space-y-4">
+              {/* Selector de Modalidad de Renta */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground block">
+                  Modalidad de Renta Ofertada
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-2xl border border-zinc-200">
+                  <button
+                    type="button"
+                    onClick={() => setSalaryType('liquido')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      salaryType === 'liquido'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    💰 Sueldo Líquido (en bolsillo)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSalaryType('bruto')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      salaryType === 'bruto'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    💼 Sueldo Bruto (imponible)
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1.5">
-                    Sueldo Líquido Estimado ($CLP)
+                    {salaryType === 'liquido' ? 'Sueldo Líquido Ofrecido ($CLP)' : 'Sueldo Bruto Imponible ($CLP)'}
                   </label>
                   <input
                     type="number"
                     value={salaryMin}
                     onChange={e => setSalaryMin(e.target.value)}
-                    placeholder="Ej: 650000"
+                    placeholder={salaryType === 'liquido' ? 'Ej: 650000' : 'Ej: 800000'}
                     className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1.5">
-                    Sueldo Máximo / Bonos (Opcional)
+                    {salaryType === 'liquido' ? 'Sueldo Líquido Máximo / Bonos ($CLP)' : 'Sueldo Bruto Máximo ($CLP)'}
                   </label>
                   <input
                     type="number"
                     value={salaryMax}
                     onChange={e => setSalaryMax(e.target.value)}
-                    placeholder="Ej: 800000"
+                    placeholder={salaryType === 'liquido' ? 'Ej: 800000' : 'Ej: 1000000'}
                     className="w-full px-4 py-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                   />
                 </div>

@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
           work_shift: jobData.work_shift || 'Lunes a Viernes (40 Horas)',
           salary_min: jobData.salary_min ? Number(jobData.salary_min) : null,
           salary_max: jobData.salary_max ? Number(jobData.salary_max) : null,
+          salary_raw: jobData.salary_raw || (jobData.salary_min ? `$${Number(jobData.salary_min).toLocaleString('es-CL')} Líquido` : null),
           is_salary_public: Boolean(jobData.salary_min),
           description: jobData.description,
           requirements: Array.isArray(jobData.requirements) ? jobData.requirements : [],
