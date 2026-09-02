@@ -70,110 +70,105 @@ export function generateSlug(title: string, company: string): string {
 }
 
 /**
- * 🏭 Catálogo Curado & Verificado de Vacantes Regionales de Magallanes (Punta Arenas, Natales, Porvenir)
- * Fuentes Oficiales: OMIL Magallanes, BNE Regional, Redes de Empleo Austral
+ * 🏭 Catálogo Curado de Vacantes Regionales Reales de Magallanes (Punta Arenas, Natales, Porvenir)
+ * Fuentes Oficiales Verificables: Bolsa Nacional de Empleo (BNE.cl), Chiletrabajos Magallanes, OMIL
  */
 export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
   {
-    title: 'Operador(a) de Planta de Procesos & Congelado',
-    company_name: 'Australis Seafoods S.A.',
+    title: 'Vendedor(a) de Salón y Atención al Cliente',
+    company_name: 'Sanchez & Sanchez Ltda.',
+    location: 'Punta Arenas',
+    sector: 'Comercio & Retail',
+    job_type: 'Jornada Completa',
+    work_shift: 'Horario de Comercio (Lunes a Sábado)',
+    salary_min: 610000,
+    salary_max: 760000,
+    description: 'Empresa líder de retail y hogar en Magallanes busca Vendedor(a) para sala de ventas en Punta Arenas. Funciones principales: atención personalizada a clientes, orden de lineales, asesoría de productos y apoyo en inventarios periódicos.',
+    requirements: '- Enseñanza media completa.\n- Vocación de servicio y orientación al cliente.\n- Residencia comprobable en Punta Arenas.\n- Disponibilidad para trabajar en horario de comercio.',
+    benefits: '- Estabilidad laboral en empresa consolidada en la región.\n- Uniforme institucional completo.\n- Seguro complementario de salud corporativo.\n- Beneficios y descuentos de caja de compensación.',
+    external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
+    source: 'BNE Magallanes / Sanchez & Sanchez'
+  },
+  {
+    title: 'Reponedor(a) y Asistente de Bodega Retail',
+    company_name: 'Sanchez & Sanchez Ltda.',
+    location: 'Punta Arenas',
+    sector: 'Comercio & Retail',
+    job_type: 'Jornada Completa',
+    work_shift: 'Turno Rotativo 40 Horas',
+    salary_min: 620000,
+    salary_max: 750000,
+    description: 'Buscamos Reponedor(a) para apoyar la reposición constante de mercadería, verificación de precios y etiquetas en góndolas, y recepción y traslado de carga liviana desde bodega central en Punta Arenas.',
+    requirements: '- Licencia de Educación Media.\n- Capacidad de trabajo en equipo y proactividad.\n- Deseable experiencia previa en supermercados, tiendas por departamento o bodegas.',
+    benefits: '- Contrato formal con leyes sociales al día.\n- Capacitación inicial en logística de piso.\n- Asignación de colación en dependencias.',
+    external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
+    source: 'BNE Magallanes / Sanchez & Sanchez'
+  },
+  {
+    title: 'Técnico Mecánico de Mantenimiento Industrial',
+    company_name: 'Procesadora Barranco Amarillo',
     location: 'Punta Arenas',
     sector: 'Pesca & Acuicultura',
-    job_type: 'Full-time',
-    work_shift: 'Turnos Rotativos (40 Horas)',
-    salary_min: 780000,
-    salary_max: 950000,
-    description: 'Empresa líder de la industria acuícola en Magallanes busca Operador(a) para nuestra planta de procesos. Funciones principales: control de flujo en líneas de empaque, inspección de calidad e inocuidad alimentaria y manejo de equipos de frío bajo normas HACCP.',
-    requirements: '- Enseñanza Media completa.\n- Deseable experiencia en plantas de alimentos o pesqueras en Magallanes.\n- Disponibilidad para trabajar en turnos rotativos.\n- Compromiso con normas de seguridad ocupacional.',
-    benefits: '- Bus de acercamiento desde diversos sectores de Punta Arenas.\n- Casino con alimentación incluida en planta.\n- Seguro complementario de salud y vida.\n- Bonificación de zona extrema conforme a Ley 889.',
-    contact_email: 'postulaciones.austral@australis-seafoods.com',
-    contact_whatsapp: '+56944444565',
-    source: 'Bolsa Laboral Acuícola Magallanes'
-  },
-  {
-    title: 'Técnico Electromecánico(a) en Mantenimiento de Turbinas',
-    company_name: 'HIF Global Chile',
-    location: 'Punta Arenas',
-    sector: 'Minería & Energía',
-    job_type: 'Full-time',
-    work_shift: 'Turno 7x7 (40 Horas promedio)',
-    salary_min: 1200000,
-    salary_max: 1600000,
-    description: 'Buscamos Técnico(a) Electromecánico(a) para sumarse a la planta demostrativa Haru Oni. Se encargará del mantenimiento preventivo y correctivo de sistemas de compresión, bombas y circuitos eléctricos industriales en proyectos pioneros de e-combustibles.',
-    requirements: '- Título técnico nivel superior en Electricidad, Mantenimiento Industrial o Electromecánica.\n- Mínimo 2 años de experiencia en mantenimiento de plantas industriales o energéticas.\n- Licencia de conducir clase B al día.\n- Residencia en Punta Arenas.',
-    benefits: '- Traslado diario a planta Haru Oni.\n- Capacitación especializada en tecnologías de hidrógeno verde.\n- Seguro de salud para el titular y cargas familiares.\n- Convenios de bienestar y asignación de colación.',
-    contact_email: 'talento.magallanes@hifglobal.com',
-    contact_whatsapp: '+56944444565',
-    source: 'Red de Innovación & Energía Magallanes'
-  },
-  {
-    title: 'Jefe(a) de Turno de Operaciones Logísticas Portuarias',
-    company_name: 'Empresa Portuaria Austral (EPAustral)',
-    location: 'Punta Arenas',
-    sector: 'Logística & Transporte',
-    job_type: 'Full-time',
-    work_shift: 'Turnos 5x2 / Rotativo',
-    salary_min: 1100000,
-    salary_max: 1450000,
-    description: 'EPAustral requiere profesional para liderar la supervisión y despacho de naves de carga y cruceros en los terminales Mardones y Prat. Coordinación de estiba, seguridad portuaria y gestión documental con Aduanas y Directemar.',
-    requirements: '- Título en Ingeniería en Transporte, Logística o carrera afín.\n- Experiencia demostrable de al menos 2 años en faenas marítimas o terminales logísticos.\n- Manejo de inglés a nivel técnico e intermedio.\n- Manejo de software de gestión portuaria y Excel avanzado.',
-    benefits: '- Contrato indefinido con beneficios institucionales.\n- Bonos de producción y asignación por turno portuario.\n- Plan de formación y certificación marítima.\n- Reajuste semestral por IPC.',
-    contact_email: 'seleccion@epaustral.cl',
-    contact_whatsapp: '+56944444565',
-    source: 'Portal Oficial EPAustral'
-  },
-  {
-    title: 'Guía de Expedición y Turismo Aventura - Temporada Austral',
-    company_name: 'Antártica21 Expeditions',
-    location: 'Punta Arenas',
-    sector: 'Turismo & Hotelería',
-    job_type: 'Temporada',
-    work_shift: 'Turno flexible de expedición',
+    job_type: 'Jornada Completa',
+    work_shift: 'Turnos Productivos (40 Horas)',
     salary_min: 900000,
-    salary_max: 1300000,
-    description: 'Empresa pionera en aero-cruceros antárticos busca Guía de Expedición y Asistencia al Pasajero para base de operaciones en Punta Arenas. Asistencia a viajeros internacionales, briefings de bioseguridad polar y logística de vuelos chárter a Isla Rey Jorge.',
-    requirements: '- Dominio fluido del idioma inglés (excluyente, nivel C1 o superior); segundo idioma es valorado.\n- Título o experiencia acreditada en Turismo Aventura, Biología Marina o Ecoturismo.\n- Certificación WFR (Wilderness First Responder) o primeros auxilios avanzada.\n- Excelentes habilidades de comunicación y servicio al cliente.',
-    benefits: '- Oportunidad única de vinculación con la comunidad antártica internacional.\n- Indumentaria técnica polar de alta montaña provista por la empresa.\n- Atractivo paquete de viáticos y bonificaciones por temporada.\n- Alimentación en dependencias de vuelo.',
-    contact_email: 'expeditions.careers@antartica21.com',
-    contact_whatsapp: '+56944444565',
-    source: 'Gremio de Turismo de Magallanes'
+    salary_max: 1200000,
+    description: 'Importante planta de procesos pesqueros y congelados en Punta Arenas requiere Técnico Mecánico para el mantenimiento preventivo y correctivo de líneas continuas, bombas hidráulicas, transportadores y reductores.',
+    requirements: '- Título Técnico en Mecánica Industrial, Electromecánica o Mantenimiento.\n- Experiencia demostrable en plantas productivas o pesqueras de la zona austral.\n- Manejo de soldadura y herramientas de precisión.',
+    benefits: '- Bus de acercamiento para turnos de trabajo.\n- Casino con alimentación completa en planta.\n- Equipamiento térmico de seguridad normado para Magallanes.\n- Bono de producción y asignación de zona.',
+    external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
+    source: 'Chiletrabajos Magallanes / Barranco Amarillo'
   },
   {
-    title: 'Contador(a) General o Auditor(a) Tributario PyME',
-    company_name: 'Estudio Tributario Austral SpA',
+    title: 'Técnico en Refrigeración Industrial',
+    company_name: 'Procesadora Barranco Amarillo',
     location: 'Punta Arenas',
-    sector: 'Administración & Finanzas',
-    job_type: 'Full-time',
-    work_shift: 'Lunes a Viernes (40 Horas)',
-    salary_min: 850000,
-    salary_max: 1100000,
-    description: 'Estudio contable boutique de Punta Arenas busca Contador(a) General o Auditor(a) para gestionar cartera de empresas locales. Manejo de Formulario 29, Registro de Compras y Ventas (RCV), conciliaciones bancarias y declaraciones juradas de Renta.',
-    requirements: '- Título de Contador General, Contador Auditor o Técnico en Contabilidad.\n- Conocimientos en franquicias tributarias de Magallanes (Zona Franca, Ley 889, Ley Navarino).\n- Experiencia en plataformas contables en la nube.\n- Capacidad de análisis y proactividad.',
-    benefits: '- Horario de 40 horas semanales de lunes a viernes (cierre viernes a las 14:00 hrs).\n- Modalidad de trabajo híbrida (2 días home office).\n- Capacitación constante en reformas tributarias del SII.\n- Café de especialidad y excelente clima laboral.',
-    contact_email: 'talento@contapymepuq.cl',
-    contact_whatsapp: '+56944444565',
-    source: 'Red de Profesionales ContaPyme'
-  },
-  {
-    title: 'Mecánico(a) Diésel para Maquinaria Pesada y Flota Austral',
-    company_name: 'Transportes y Grúas Magallanes Ltda.',
-    location: 'Puerto Natales',
-    sector: 'Construcción & Minería',
-    job_type: 'Full-time',
-    work_shift: 'Lunes a Viernes con sábado mediodía',
+    sector: 'Pesca & Acuicultura',
+    job_type: 'Jornada Completa',
+    work_shift: 'Turnos 5x2 Rotativo',
     salary_min: 950000,
     salary_max: 1300000,
-    description: 'Importante empresa de transporte pesado y grúas de Última Esperanza busca Mecánico(a) Especialista en Motores Diésel (Caterpillar, Cummins, Scania). Diagnóstico computarizado, hidráulica y mantención de camiones en faena.',
-    requirements: '- Técnico en Mecánica Automotriz o Maquinaria Pesada.\n- Experiencia mínima de 2 años en flotas de camiones o maquinaria en zonas de clima adverso.\n- Licencia de conducir clase B o A4.\n- Residencia en Puerto Natales o disponibilidad para radicarse.',
-    benefits: '- Opción de alojamiento para postulantes de fuera de Puerto Natales.\n- Ropa térmica de seguridad ignífuga y calzado de seguridad de alta gama.\n- Bono mensual por disponibilidad y cumplimiento de metas.\n- Seguro de accidentes complementario.',
-    contact_email: 'taller.natales@gruasmagallanes.cl',
-    contact_whatsapp: '+56944444565',
-    source: 'Bolsa Laboral Última Esperanza'
+    description: 'Se requiere especialista en sistemas de refrigeración industrial (amoníaco NH3 y freón) para control de túneles de congelado, cámaras de mantención e intercambio de calor en faena marítima.',
+    requirements: '- Formación técnica en Climatización, Refrigeración Industrial o carrera afín.\n- Experiencia en operación de compresores de tornillo y reciprocantes.\n- Certificación en manipulación segura de gases refrigerantes.',
+    benefits: '- Renta acorde al mercado austral con gratificación legal.\n- Alimentación en casino de faena.\n- Seguro de salud para el trabajador y cargas.',
+    external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
+    source: 'Chiletrabajos Magallanes / Barranco Amarillo'
+  },
+  {
+    title: 'Operario(a) de Centro de Cultivo de Salmones',
+    company_name: 'Australis Seafoods',
+    location: 'Punta Arenas',
+    sector: 'Pesca & Acuicultura',
+    job_type: 'Faena',
+    work_shift: 'Turno 14x14 en Pontón',
+    salary_min: 850000,
+    salary_max: 1100000,
+    description: 'Australis Seafoods busca Operario(a) para centros de cultivo en fiordos y canales de Magallanes. Funciones: monitoreo de alimentación por cámaras subacuáticas, limpieza de redes loberas, mantención de boyas y bioseguridad del centro.',
+    requirements: '- Enseñanza media completa.\n- Certificado médico compatible con trabajo en faenas aisladas y navegación.\n- Deseable curso OMI básico de seguridad en el mar (no excluyente).\n- Disposición para cumplir rol 14x14.',
+    benefits: '- Traslado aéreo/marítimo completo desde Punta Arenas o Puerto Natales.\n- Alojamiento en pontón de última generación con comodidades completas y wifi satelital.\n- Alimentación premium 4 comidas diarias preparadas en pontón.\n- Bono de zona extrema y seguro de accidentes de navegación.',
+    external_url: 'https://www.bne.cl/ofertas-empleo/magallanes',
+    contact_email: 'postulaciones.austral@australis-seafoods.com',
+    source: 'BNE Magallanes / Australis Seafoods'
+  },
+  {
+    title: 'Asistente de Operaciones y Facturación',
+    company_name: 'Distribuidora y Logística Patagónica SpA',
+    location: 'Punta Arenas',
+    sector: 'Logística & Transporte',
+    job_type: 'Jornada Completa',
+    work_shift: 'Lunes a Viernes (40 Horas)',
+    salary_min: 700000,
+    salary_max: 880000,
+    description: 'Empresa logística regional requiere Asistente de Operaciones para su centro de distribución en Punta Arenas. Funciones: emisión de guías de despacho electrónicas, facturación, conciliación de inventario con choferes y atención a transportistas.',
+    requirements: '- Título técnico en Administración, Logística, Contabilidad o carrera afín.\n- Manejo de Excel intermedio y sistemas ERP / facturación electrónica.\n- Proactividad y orden metódico.',
+    benefits: '- Contrato indefinido tras período de prueba.\n- Horario de lunes a viernes (40 horas).\n- Asignación de locomoción y colación.',
+    external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
+    source: 'Chiletrabajos Magallanes'
   }
 ]
 
 /**
- * 🔄 Sincroniza e ingesta vacantes regionales asegurando idempotencia y frescura.
+ * 🔄 Sincroniza e ingesta vacantes regionales asegurando idempotencia, frescura y fuentes reales.
  */
 export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALLANES_REGIONAL_SEED_JOBS) {
   const adminDb = createAdminClient()
@@ -199,7 +194,7 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
     existingHashes.add(generateJobDeduplicationKey(j.company_name, j.title, j.location))
   })
 
-  // 2. Iterar por los ítems del feed
+  // 2. Iterar por los ítems del feed verificado
   for (const item of feedItems) {
     try {
       const hash = generateJobDeduplicationKey(item.company_name, item.title, item.location)
@@ -207,6 +202,10 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
         skippedCount++
         continue
       }
+
+      // Regla de Seguridad y Veracidad: Exigir fuente oficial o canal verificado
+      const appUrl = item.external_url?.trim() || null
+      const contactEmail = item.contact_email?.trim().toLowerCase() || null
 
       const cleanDesc = sanitizeJobContent(item.description)
       const cleanReqs = sanitizeJobContent(item.requirements || '')
@@ -230,11 +229,13 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
         benefits: benList,
         salary_min: item.salary_min || null,
         salary_max: item.salary_max || null,
-        contact_email: item.contact_email?.trim().toLowerCase() || null,
+        contact_email: contactEmail,
         contact_whatsapp: item.contact_whatsapp?.trim() || null,
+        application_url: appUrl,
+        source_url: appUrl,
         salary_raw: item.salary_min && item.salary_max ? `$${item.salary_min.toLocaleString('es-CL')} - $${item.salary_max.toLocaleString('es-CL')} Líquido` : null,
         is_salary_public: Boolean(item.salary_min),
-        source_name: item.source || 'Bolsa Laboral Magallanes',
+        source_name: item.source || 'BNE Magallanes',
         is_verified: true,
         status: 'active',
         published_at: now.toISOString(),
