@@ -63,6 +63,13 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith('/api/v1/jobs/sync')) {
+    const rate = checkRateLimit(`jobs_sync:${ip}`, 6, 5 * 60 * 1000)
+    if (!rate.allowed) {
+      return rateLimitResponse(rate.retryAfter, 'Sincronización de empleos en curso. Espera antes de volver a solicitar.')
+    }
+  }
+
   // 4. Supabase Session Management & Route Protection
   let supabaseResponse = NextResponse.next({ request })
 

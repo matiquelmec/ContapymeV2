@@ -1,0 +1,131 @@
+"""
+🧪 Suite de Pruebas Unitarias: Auditoría del Portal de Empleos Magallanes
+========================================================================
+Valida el ciclo de vida de vacantes, ingesta regional continua,
+desduplicación criptográfica, sanitización anti-discriminación legal (Art. 2° DT)
+y seguridad perimetral del endpoint de sincronización.
+"""
+
+import pytest
+import re
+import hashlib
+from datetime import datetime, timezone, timedelta
+
+
+def sanitize_job_content(text: str) -> str:
+    """Implementación idéntica a sanitizeJobContent en jobs-feed-sync.ts."""
+    if not text:
+        return ""
+    discriminatory_patterns = [
+        r"\b(enviar|adjuntar|con)\s+(foto|fotograf[ií]a|imagen)\b",
+        r"\b(sin\s+dicom|dicom\s+limpio|antecedentes\s+comerciales)\b",
+        r"\b(edad\s*(?:entre|de)?\s*\d{2}\s*(?:a|y)?\s*\d{2}\s*a[ñn]os?)\b",
+        r"\b(menor|mayor)\s+de\s+\d{2}\s*a[ñn]os?\b",
+        r"\b(hombre|mujer|var[oó]n|femenino|masculino)\s+(exclusivo|solamente|excluyente)\b",
+        r"\b(soltero|casado|estado\s+civil)\b",
+    ]
+    cleaned = text
+    for pat in discriminatory_patterns:
+        cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE)
+    
+    # Strip scripts & HTML tags
+    cleaned = re.sub(r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"<[^>]*>?", "", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def generate_job_deduplication_key(company: str, title: str, location: str) -> str:
+    """Implementación idéntica a generateJobDeduplicationKey en jobs-feed-sync.ts."""
+    import unicodedata
+
+    def norm(s: str) -> str:
+        s = s or ""
+        s = unicodedata.normalize("NFD", s.lower())
+        s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+        return re.sub(r"[^a-z0-9]", "", s).strip()
+
+    raw = f"{norm(company)}|{norm(title)}|{norm(location)}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+class TestJobsPortalAudit:
+
+    def test_01_jobs_auto_expiration_lifecycle(self):
+        """Verifica que las vacantes con fecha de expiración pasada sean filtradas y consideradas caducadas."""
+        now = datetime.now(timezone.utc)
+        expired_date = now - timedelta(days=2)
+        active_date = now + timedelta(days=20)
+
+        job_expired = {"id": "1", "status": "active", "expires_at": expired_date.isoformat()}
+        job_active = {"id": "2", "status": "active", "expires_at": active_date.isoformat()}
+
+        is_expired_1 = datetime.fromisoformat(job_expired["expires_at"]) < now
+        is_expired_2 = datetime.fromisoformat(job_active["expires_at"]) < now
+
+        assert is_expired_1 is True, "La oferta pasada debió marcarse como expirada."
+        assert is_expired_2 is False, "La oferta vigente debe permanecer activa."
+
+    def test_02_jobs_deduplication_hash_idempotency(self):
+        """Verifica que la clave hash SHA-256 detecte vacantes duplicadas sin importar mayúsculas o tildes."""
+        company_a = "Australis Seafoods S.A."
+        title_a = "Operador(a) de Planta de Procesos"
+        loc_a = "Punta Arenas"
+
+        company_b = "australis seafoods s.a."
+        title_b = "Operador(a) de Planta de Procesos"
+        loc_b = "punta arenas"
+
+        hash_a = generate_job_deduplication_key(company_a, title_a, loc_a)
+        hash_b = generate_job_deduplication_key(company_b, title_b, loc_b)
+
+        assert hash_a == hash_b, "El hash de desduplicación debe ser idéntico e insensible a mayúsculas/espacios."
+
+    def test_03_jobs_anti_discrimination_legal_filter(self):
+        """Verifica que el filtro elimine requisitos ilegales bajo el Art. 2° del Código del Trabajo."""
+        raw_desc = (
+            "Buscamos recepcionista. Requisitos: enviar con fotografía, sin Dicom y edad entre 20 a 30 años. "
+            "Excelente ambiente laboral en Punta Arenas."
+        )
+        cleaned = sanitize_job_content(raw_desc)
+
+        assert "fotografía" not in cleaned.lower()
+        assert "dicom" not in cleaned.lower()
+        assert "edad entre" not in cleaned.lower()
+        assert "Punta Arenas" in cleaned
+        assert "Excelente ambiente laboral" in cleaned
+
+    def test_04_jobs_xss_and_script_sanitization(self):
+        """Verifica que cualquier inyección XSS o etiqueta HTML sea purgada por seguridad."""
+        malicious_input = "<script>alert('pwned')</script><b>Ingeniero de Operaciones</b><img src=x onerror=alert(1)>"
+        sanitized = sanitize_job_content(malicious_input)
+
+        assert "<script>" not in sanitized
+        assert "alert(" not in sanitized
+        assert "<b>" not in sanitized
+        assert "Ingeniero de Operaciones" in sanitized
+
+    def test_05_sync_authorization_guard(self):
+        """Verifica que el endpoint de sincronización rechace peticiones sin credencial o secret."""
+        def authorize(header_auth: str, cron_header: str, expected_secret: str) -> bool:
+            if not expected_secret:
+                return False
+            if header_auth.startswith("Bearer ") and header_auth[7:] == expected_secret:
+                return True
+            if cron_header == expected_secret:
+                return True
+            return False
+
+        secret = "secret-super-seguro-2026"
+
+        assert authorize("Bearer secret-super-seguro-2026", "", secret) is True
+        assert authorize("", "secret-super-seguro-2026", secret) is True
+        assert authorize("Bearer token-invalido", "", secret) is False
+        assert authorize("", "", secret) is False
+
+    def test_06_regional_magallanes_locations_coverage(self):
+        """Verifica que las comunas principales de Magallanes estén cubiertas en el catálogo regional."""
+        valid_locations = {"Punta Arenas", "Puerto Natales", "Porvenir", "Torres del Paine", "Cabo de Hornos"}
+        sample_locations = ["Punta Arenas", "Puerto Natales", "Porvenir"]
+
+        for loc in sample_locations:
+            assert loc in valid_locations

@@ -241,9 +241,16 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                           </Link>
                         </h3>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 bg-zinc-100 rounded-lg text-zinc-700 shrink-0">
-                        {job.location}
-                      </span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 bg-zinc-100 rounded-lg text-zinc-700">
+                          {job.location}
+                        </span>
+                        {job.published_at && (new Date().getTime() - new Date(job.published_at).getTime()) < 48 * 60 * 60 * 1000 && (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-md shadow-xs">
+                            ✨ NUEVA
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Tags y Badges: Sueldo y Turno */}

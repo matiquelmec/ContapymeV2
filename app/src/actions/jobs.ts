@@ -122,6 +122,58 @@ export async function calculateNetSalaryEstimate(
 }
 
 /**
+ * 🧹 Limpieza y archivado automático de ofertas laborales expiradas.
+ */
+export async function cleanupExpiredJobsAction() {
+  try {
+    const adminDb = createAdminClient()
+    const nowIso = new Date().toISOString()
+
+    // Buscar empleos activos cuya fecha de expiración ya pasó
+    const { data: expiredJobs, error: findErr } = await adminDb
+      .from('job_postings')
+      .select('id, title, expires_at')
+      .eq('status', 'active')
+      .lt('expires_at', nowIso)
+
+    if (findErr) {
+      console.error('[cleanupExpiredJobsAction] Error buscando expirados:', findErr.message)
+      return { success: false, error: findErr.message, expiredCount: 0 }
+    }
+
+    if (!expiredJobs || expiredJobs.length === 0) {
+      return { success: true, expiredCount: 0, message: 'No hay empleos expirados pendientes.' }
+    }
+
+    const expiredIds = expiredJobs.map((j) => j.id)
+
+    const { error: updateErr } = await adminDb
+      .from('job_postings')
+      .update({ status: 'expired', updated_at: nowIso })
+      .in('id', expiredIds)
+
+    if (updateErr) {
+      console.error('[cleanupExpiredJobsAction] Error actualizando status:', updateErr.message)
+      return { success: false, error: updateErr.message, expiredCount: 0 }
+    }
+
+    revalidatePath('/empleos')
+    revalidatePath('/dashboard/empleos')
+    revalidatePath('/sitemap-jobs.xml')
+
+    return {
+      success: true,
+      expiredCount: expiredIds.length,
+      expiredIds,
+      message: `Se archivaron ${expiredIds.length} ofertas laborales expiradas.`
+    }
+  } catch (err: any) {
+    console.error('[cleanupExpiredJobsAction Error]:', err.message)
+    return { success: false, error: err.message, expiredCount: 0 }
+  }
+}
+
+/**
  * 📋 Obtiene la lista de ofertas laborales activas de Magallanes con filtros.
  */
 export async function getRegionalJobs(filters?: {
@@ -133,10 +185,12 @@ export async function getRegionalJobs(filters?: {
 }) {
   try {
     const supabase = createAdminClient()
+    const nowIso = new Date().toISOString()
     let query = supabase
       .from('job_postings')
       .select('*')
       .eq('status', 'active')
+      .gt('expires_at', nowIso)
       .order('published_at', { ascending: false })
 
     if (filters?.location && filters.location !== 'TODAS') {
