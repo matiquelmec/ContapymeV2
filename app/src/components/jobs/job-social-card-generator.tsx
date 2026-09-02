@@ -48,11 +48,26 @@ interface JobSocialCardGeneratorProps {
 type AspectRatio = 'square' | 'story'
 type ThemeMode = 'white' | 'dark'
 
+function getRequirementsArray(reqs: unknown): string[] {
+  if (!reqs) return []
+  if (Array.isArray(reqs)) return reqs.map(r => String(r).trim()).filter(Boolean)
+  if (typeof reqs === 'string') {
+    if (reqs.trim().startsWith('[') && reqs.trim().endsWith(']')) {
+      try {
+        const parsed = JSON.parse(reqs)
+        if (Array.isArray(parsed)) return parsed.map(r => String(r).trim()).filter(Boolean)
+      } catch (e) {}
+    }
+    return reqs.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+  }
+  return []
+}
 
 // 🏷️ Extractor Inteligente de Beneficios Laborales para Micro-Chips
 function extractJobBenefitChips(job: JobPosting): string[] {
   const chips: string[] = []
-  const fullText = `${job.title} ${job.description || ''} ${(job.requirements || []).join(' ')} ${job.work_shift || ''}`.toLowerCase()
+  const reqList = getRequirementsArray(job.requirements)
+  const fullText = `${job.title} ${job.description || ''} ${reqList.join(' ')} ${job.work_shift || ''}`.toLowerCase()
   
   if (fullText.includes('colación') || fullText.includes('almuerzo') || fullText.includes('casino') || fullText.includes('comida')) {
     chips.push('☕ Colación')
@@ -209,9 +224,12 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
       titulo_cargo: job.title,
       sueldo_destacado: job.salary_raw || "Remuneración acorde al mercado",
       jornada_turno: job.work_shift || "Jornada Completa",
-      requisitos_principales: (job.requirements && job.requirements.length > 0)
-        ? job.requirements.slice(0, aspectRatio === 'story' ? 4 : 2)
-        : ["Experiencia comprobable en el área", "Residencia en la Región de Magallanes", "Disponibilidad inmediata"],
+      requisitos_principales: (() => {
+        const reqs = getRequirementsArray(job.requirements)
+        return reqs.length > 0
+          ? reqs.slice(0, aspectRatio === 'story' ? 4 : 2)
+          : ["Experiencia comprobable en el área", "Residencia en la Región de Magallanes", "Disponibilidad inmediata"]
+      })(),
       contacto_directo: {
         whatsapp: job.contact_whatsapp ? `📲 WhatsApp: ${job.contact_whatsapp}` : null,
         email: job.contact_email ? `✉️ ${job.contact_email}` : null,
@@ -238,6 +256,7 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
   }
 
   // 2. Templates de texto para Redes
+  const promptReqList = getRequirementsArray(job.requirements)
   const whatsappCopy = `💼 *NUEVA OFERTA LABORAL EN MAGALLANES*
 📍 *Ubicación:* ${job.location}
 🏢 *Empresa:* ${job.company_name} ${job.is_verified ? '✅' : ''}
@@ -245,7 +264,7 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
 💰 *Sueldo:* ${job.salary_raw || 'A convenir'}
 ⏱️ *Jornada / Turno:* ${job.work_shift || 'Completa'}
 
-${job.requirements && job.requirements.length > 0 ? `📋 *Requisitos:*\n${job.requirements.slice(0, 4).map(r => `• ${r}`).join('\n')}\n` : ''}
+${promptReqList.length > 0 ? `📋 *Requisitos:*\n${promptReqList.slice(0, 4).map(r => `• ${r}`).join('\n')}\n` : ''}
 📲 *Revisa el detalle y postula directo aquí:*
 🔗 ${shareUrl}
 
@@ -760,28 +779,32 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
                     })()}
 
                     {/* Requisitos principales */}
-                    {job.requirements && job.requirements.length > 0 && (
-                      <div className={`space-y-0.5 w-full min-w-0 ${aspectRatio === 'story' ? 'pt-1 block' : 'pt-0.5 block'}`}>
-                        <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block ${
-                          theme === 'white' ? 'text-slate-500' : 'text-slate-300'
-                        }`}>
-                          Requisitos clave:
-                        </span>
-                        <div className="space-y-0.5 w-full min-w-0">
-                          {job.requirements.slice(0, aspectRatio === 'story' ? 4 : 2).map((req, idx) => (
-                            <div key={idx} className={`flex items-start gap-1 text-[9.5px] sm:text-[10.5px] font-bold leading-snug w-full min-w-0 ${
-                              theme === 'white' ? 'text-slate-700' : 'text-slate-100'
-                            }`}>
-                              <CheckCircle2
-                                className="h-3 w-3 shrink-0 mt-0.5"
-                                style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
-                              />
-                              <span className="break-words line-clamp-1 min-w-0 flex-1">{req}</span>
-                            </div>
-                          ))}
+                    {(() => {
+                      const reqs = getRequirementsArray(job.requirements)
+                      if (reqs.length === 0) return null
+                      return (
+                        <div className={`space-y-0.5 w-full min-w-0 ${aspectRatio === 'story' ? 'pt-1 block' : 'pt-0.5 block'}`}>
+                          <span className={`text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-wider block ${
+                            theme === 'white' ? 'text-slate-500' : 'text-slate-300'
+                          }`}>
+                            Requisitos clave:
+                          </span>
+                          <div className="space-y-0.5 w-full min-w-0">
+                            {reqs.slice(0, aspectRatio === 'story' ? 4 : 2).map((req, idx) => (
+                              <div key={idx} className={`flex items-start gap-1 text-[9.5px] sm:text-[10.5px] font-bold leading-snug w-full min-w-0 ${
+                                theme === 'white' ? 'text-slate-700' : 'text-slate-100'
+                              }`}>
+                                <CheckCircle2
+                                  className="h-3 w-3 shrink-0 mt-0.5"
+                                  style={{ color: theme === 'white' ? brandPalette.accentHex : '#34D399' }}
+                                />
+                                <span className="break-words line-clamp-1 min-w-0 flex-1">{req}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </div>
 
                   {/* 4. BLOQUE DE POSTULACIÓN Y CÓDIGO QR */}

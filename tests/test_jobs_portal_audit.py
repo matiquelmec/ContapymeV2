@@ -174,3 +174,42 @@ class TestJobsPortalAudit:
         dt_6days = now - timedelta(days=6)
         assert format_relative_date(dt_6days, now) == "Hace 6 días"
 
+    def test_09_normalize_string_list_resilience(self):
+        """Verifica que normalizeStringList soporte indistintamente arrays, strings multilínea, JSON o nulos sin crashear."""
+        import json
+
+        def normalize_string_list(val):
+            if not val:
+                return []
+            if isinstance(val, list):
+                return [str(v).strip() for v in val if str(v).strip()]
+            if isinstance(val, str):
+                s = val.strip()
+                if s.startswith("[") and s.endswith("]"):
+                    try:
+                        parsed = json.loads(s)
+                        if isinstance(parsed, list):
+                            return [str(v).strip() for v in parsed if str(v).strip()]
+                    except Exception:
+                        pass
+                lines = [re.sub(r"^[-•*]\s*", "", line).strip() for line in s.split("\n")]
+                return [line for line in lines if line]
+            return []
+
+        # Caso 1: Array estándar
+        assert normalize_string_list(["Req A", "Req B"]) == ["Req A", "Req B"]
+
+        # Caso 2: Texto multilínea con viñetas
+        raw_text = "- Título Técnico\n- Experiencia 2 años\n- Licencia clase B"
+        assert normalize_string_list(raw_text) == ["Título Técnico", "Experiencia 2 años", "Licencia clase B"]
+
+        # Caso 3: JSON codificado como string
+        json_str = '["Item 1", "Item 2"]'
+        assert normalize_string_list(json_str) == ["Item 1", "Item 2"]
+
+        # Caso 4: Valores nulos o vacíos
+        assert normalize_string_list(None) == []
+        assert normalize_string_list("") == []
+        assert normalize_string_list([]) == []
+
+

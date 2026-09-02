@@ -81,6 +81,28 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
   };
 }
 
+function normalizeStringList(value: unknown): string[] {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return value.map(v => String(v).trim()).filter(Boolean)
+  }
+  if (typeof value === 'string') {
+    if (value.trim().startsWith('[') && value.trim().endsWith(']')) {
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) {
+          return parsed.map(v => String(v).trim()).filter(Boolean)
+        }
+      } catch (e) {}
+    }
+    return value
+      .split('\n')
+      .map(line => line.replace(/^[-•*]\s*/, '').trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { slug } = await params;
   const jobRes = await getJobBySlug(slug);
@@ -90,12 +112,15 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     notFound();
   }
 
+  const requirementsList = normalizeStringList(job.requirements);
+  const benefitsList = normalizeStringList(job.benefits);
+
   // Schema.org JobPosting estructurado para Google for Jobs (Estándares 2026)
   const schemaOrgJob = {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
     "title": job.title,
-    "description": `<p>${job.description.replace(/\n/g, '<br/>')}</p>${job.requirements && job.requirements.length > 0 ? `<h3>Requisitos:</h3><ul>${job.requirements.map((r: string) => `<li>${r}</li>`).join('')}</ul>` : ''}${job.benefits && job.benefits.length > 0 ? `<h3>Beneficios:</h3><ul>${job.benefits.map((b: string) => `<li>${b}</li>`).join('')}</ul>` : ''}`,
+    "description": `<p>${job.description.replace(/\n/g, '<br/>')}</p>${requirementsList.length > 0 ? `<h3>Requisitos:</h3><ul>${requirementsList.map((r: string) => `<li>${r}</li>`).join('')}</ul>` : ''}${benefitsList.length > 0 ? `<h3>Beneficios:</h3><ul>${benefitsList.map((b: string) => `<li>${b}</li>`).join('')}</ul>` : ''}`,
     "identifier": {
       "@type": "PropertyValue",
       "name": job.company_name,
@@ -269,13 +294,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             </div>
 
             {/* Requisitos del Cargo */}
-            {job.requirements && job.requirements.length > 0 && (
+            {requirementsList.length > 0 && (
               <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-4 sm:space-y-5 box-border overflow-hidden">
                 <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest text-foreground flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> Requisitos y Competencias Técnicas
                 </h2>
                 <ul className="space-y-3">
-                  {job.requirements.map((req, idx) => (
+                  {requirementsList.map((req, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-muted-foreground font-medium">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                       <span className="break-words">{req}</span>
@@ -286,13 +311,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             )}
 
             {/* Beneficios */}
-            {job.benefits && job.benefits.length > 0 && (
+            {benefitsList.length > 0 && (
               <div className="p-5 sm:p-8 lg:p-10 rounded-3xl sm:rounded-[2.5rem] bg-white border border-border/70 shadow-sm space-y-4 sm:space-y-5 box-border overflow-hidden">
                 <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest text-foreground flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary shrink-0" /> Beneficios y Condiciones de Faena
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {job.benefits.map((ben, idx) => (
+                  {benefitsList.map((ben, idx) => (
                     <div key={idx} className="p-3.5 sm:p-4 rounded-2xl bg-zinc-50 border border-zinc-200/70 text-xs font-bold text-zinc-800 flex items-center gap-2.5 box-border min-w-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                       <span className="break-words">{ben}</span>

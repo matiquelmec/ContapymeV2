@@ -211,6 +211,9 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
       const cleanDesc = sanitizeJobContent(item.description)
       const cleanReqs = sanitizeJobContent(item.requirements || '')
       const cleanBenefits = sanitizeJobContent(item.benefits || '')
+      const toLines = (s: string) => s.split('\n').map(l => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+      const reqList = toLines(cleanReqs)
+      const benList = toLines(cleanBenefits)
       const slug = generateSlug(item.title, item.company_name)
 
       const payload = {
@@ -223,8 +226,8 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
         job_type: item.job_type.trim(),
         work_shift: item.work_shift || 'Lunes a Viernes (40 Horas)',
         description: cleanDesc,
-        requirements: cleanReqs,
-        benefits: cleanBenefits,
+        requirements: reqList,
+        benefits: benList,
         salary_min: item.salary_min || null,
         salary_max: item.salary_max || null,
         contact_email: item.contact_email?.trim().toLowerCase() || null,
