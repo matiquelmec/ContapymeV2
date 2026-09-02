@@ -51,6 +51,22 @@ const SECTORES = [
   'Construcción / Logística'
 ]
 
+function formatJobDate(dateStr?: string | null): string {
+  if (!dateStr) return 'Publicado recientemente'
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffHours < 1) return 'Publicado hace instantes'
+  if (diffHours < 24) return 'Publicado hoy'
+  if (diffDays === 1) return 'Publicado ayer'
+  if (diffDays < 7) return `Hace ${diffDays} días`
+
+  return `Publicado el ${date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}`
+}
+
 export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
   const [search, setSearch] = useState('')
   const [selectedComuna, setSelectedComuna] = useState('TODAS')
@@ -241,15 +257,21 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                           </Link>
                         </h3>
                       </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 bg-zinc-100 rounded-lg text-zinc-700">
-                          {job.location}
-                        </span>
-                        {job.published_at && (new Date().getTime() - new Date(job.published_at).getTime()) < 48 * 60 * 60 * 1000 && (
-                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-md shadow-xs">
-                            ✨ NUEVA
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-zinc-100 rounded-lg text-zinc-700">
+                            {job.location}
                           </span>
-                        )}
+                          {job.published_at && (new Date().getTime() - new Date(job.published_at).getTime()) < 48 * 60 * 60 * 1000 && (
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600 text-white rounded-md shadow-xs">
+                              ✨ NUEVA
+                            </span>
+                          )}
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground/80">
+                          <Calendar className="h-3 w-3 text-primary/70" />
+                          {formatJobDate(job.published_at || job.created_at)}
+                        </span>
                       </div>
                     </div>
 
@@ -280,8 +302,13 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
 
                   {/* Footer de la tarjeta con Botones de Acción Inteligentes */}
                   <div className="pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground/70">
-                      <span className="bg-zinc-100 px-2 py-0.5 rounded-md font-mono text-zinc-600">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground/80">
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5 text-primary" />
+                        {formatJobDate(job.published_at || job.created_at)}
+                      </span>
+                      <span className="text-zinc-300">•</span>
+                      <span className="bg-zinc-100 px-2 py-0.5 rounded-md text-[10px] font-mono text-zinc-600">
                         {job.source_name || 'BNE Magallanes'}
                       </span>
                     </div>

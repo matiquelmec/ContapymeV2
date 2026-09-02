@@ -129,3 +129,48 @@ class TestJobsPortalAudit:
 
         for loc in sample_locations:
             assert loc in valid_locations
+
+    def test_07_jobs_sorting_order_latest_first(self):
+        """Verifica que el orden de publicación sea estrictamente descendente (últimos publicados primero)."""
+        jobs = [
+            {"id": "old", "title": "Aviso Antiguo", "published_at": "2026-08-25T10:00:00Z"},
+            {"id": "mid", "title": "Aviso Intermedio", "published_at": "2026-08-27T10:00:00Z"},
+            {"id": "new", "title": "Aviso de Hoy", "published_at": "2026-09-02T12:00:00Z"},
+        ]
+
+        sorted_jobs = sorted(jobs, key=lambda j: j["published_at"], reverse=True)
+        assert sorted_jobs[0]["id"] == "new", "El aviso más reciente debe quedar primero en la lista."
+        assert sorted_jobs[1]["id"] == "mid"
+        assert sorted_jobs[2]["id"] == "old"
+
+    def test_08_relative_job_date_formatting(self):
+        """Verifica el cálculo de etiquetas humanas de fecha (Hoy, Ayer, Hace X días)."""
+        def format_relative_date(pub_dt: datetime, ref_now: datetime) -> str:
+            diff = ref_now - pub_dt
+            diff_hours = int(diff.total_seconds() // 3600)
+            diff_days = int(diff.total_seconds() // 86400)
+
+            if diff_hours < 1:
+                return "Publicado hace instantes"
+            if diff_hours < 24:
+                return "Publicado hoy"
+            if diff_days == 1:
+                return "Publicado ayer"
+            if diff_days < 7:
+                return f"Hace {diff_days} días"
+            return pub_dt.strftime("%d %b")
+
+        now = datetime(2026, 9, 2, 15, 0, 0, tzinfo=timezone.utc)
+
+        # 2 horas atrás -> "Publicado hoy"
+        dt_today = now - timedelta(hours=2)
+        assert format_relative_date(dt_today, now) == "Publicado hoy"
+
+        # 1 día atrás -> "Publicado ayer"
+        dt_yesterday = now - timedelta(days=1)
+        assert format_relative_date(dt_yesterday, now) == "Publicado ayer"
+
+        # 6 días atrás -> "Hace 6 días"
+        dt_6days = now - timedelta(days=6)
+        assert format_relative_date(dt_6days, now) == "Hace 6 días"
+

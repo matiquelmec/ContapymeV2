@@ -191,7 +191,7 @@ export async function getRegionalJobs(filters?: {
       .select('*')
       .eq('status', 'active')
       .gt('expires_at', nowIso)
-      .order('published_at', { ascending: false })
+      .order('published_at', { ascending: false, nullsFirst: false })
 
     if (filters?.location && filters.location !== 'TODAS') {
       query = query.ilike('location', `%${filters.location}%`)
