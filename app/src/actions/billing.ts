@@ -343,3 +343,78 @@ export async function retrySendToSII(organizationId: string, dteId: string) {
     return { success: false, error: parseError(err) }
   }
 }
+
+export async function getPurchaseOrders(organizationId: string) {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('*, purchase_order_items(*)')
+      .eq('organization_id', organizationId)
+      .order('numero', { ascending: false })
+
+    if (error) throw error
+    return { success: true, data: data || [] }
+  } catch (err: any) {
+    console.error('[Purchase Orders Get Error]:', err.message)
+    return { success: false, error: parseError(err), data: [] }
+  }
+}
+
+export async function createPurchaseOrder(payload: {
+  organization_id: string
+  cliente_rut: string
+  cliente_nombre: string
+  cliente_giro?: string
+  cliente_direccion?: string
+  condicion_pago?: string
+  observaciones?: string
+  fecha_entrega?: string
+  items: Array<{
+    descripcion: string
+    unidad?: string
+    cantidad: number
+    precio_unitario: number
+    descuento_pct?: number
+    afecto_iva?: boolean
+  }>
+}) {
+  try {
+    const response = await engineFetch('/api/v1/purchase-orders/create', {
+      method: 'POST',
+      body: payload
+    })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      return { success: false, error: parseError(errData.detail || 'Error al crear Orden de Compra') }
+    }
+
+    const data = await response.json()
+    revalidatePath('/dashboard/billing/purchase-orders')
+    return { success: true, data: data.purchase_order }
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}
+
+export async function convertPurchaseOrderToDTE(ocId: string, tipoDte: number = 33) {
+  try {
+    const response = await engineFetch(`/api/v1/purchase-orders/${ocId}/convert-to-dte?tipo_dte=${tipoDte}`, {
+      method: 'POST'
+    })
+
+    if (!response.ok) {
+      const errData = await response.json()
+      return { success: false, error: parseError(errData.detail || 'Error al convertir Orden de Compra a DTE') }
+    }
+
+    const data = await response.json()
+    revalidatePath('/dashboard/billing/purchase-orders')
+    revalidatePath('/dashboard/billing')
+    return { success: true, data }
+  } catch (err: any) {
+    return { success: false, error: parseError(err) }
+  }
+}
+

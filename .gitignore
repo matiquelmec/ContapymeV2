@@ -41,6 +41,10 @@ Thumbs.db
 *.log
 **/.pytest_cache/
 .pytest_cache/
+.coverage
+*.coverage
+coverage/
+.nyc_output/
 engine/output_images/
 .agent/
 .agents/

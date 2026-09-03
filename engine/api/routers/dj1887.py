@@ -6,6 +6,7 @@ import io
 import re
 from core.database import get_supabase
 from core.auth import verify_token, verify_org_role
+from core.utils.shared_utils import clean_rut_simple as clean_rut, clean_rut as format_rut
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
@@ -23,27 +24,6 @@ CODIGOS_AFP_SII = {
     "SIP":       "99",
     "IPS":       "99",
 }
-
-def clean_rut(rut: str) -> str:
-    """Elimina puntos y guion de un RUT."""
-    if not rut:
-        return ""
-    return re.sub(r'[^0-9kK]', '', rut)
-
-def format_rut(rut: str) -> str:
-    """Formatea un RUT como XX.XXX.XXX-X."""
-    cleaned = clean_rut(rut)
-    if len(cleaned) < 2:
-        return cleaned
-    body = cleaned[:-1]
-    dv = cleaned[-1].upper()
-    
-    formatted_body = ""
-    for i, char in enumerate(reversed(body)):
-        if i > 0 and i % 3 == 0:
-            formatted_body = "." + formatted_body
-        formatted_body = char + formatted_body
-    return f"{formatted_body}-{dv}"
 
 def calcular_datos_anuales(liquidations: list) -> list:
     """Agrupa liquidaciones del año por empleado y calcula acumulados anuales."""

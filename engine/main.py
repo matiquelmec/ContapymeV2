@@ -16,7 +16,7 @@ from api.routers import (
     rcv, accounting, dashboard_metrics,
     payroll_settings, lre, bank_reconciliation,
     audit, ml_classifier, dte, dj1887, previred_importer,
-    news, purchase_orders, jobs
+    news, purchase_orders, jobs, whatsapp, sii_defense
 )
 from workers.indicators_scheduler import start_scheduler, stop_scheduler
 from workers.news_worker import start_news_worker, stop_news_worker
@@ -94,6 +94,10 @@ app.include_router(previred_importer.router,   prefix="/api/v1/previred-importer
 app.include_router(news.router,                prefix="/api/v1/news",        tags=["Noticias Regionales (IA)"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(purchase_orders.router,     prefix="/api/v1/purchase-orders", tags=["Órdenes de Compra"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(jobs.router,                prefix="/api/v1/jobs",        tags=["ContaEmpleos Magallanes"], dependencies=[]) # Público para buscador y postulación
+app.include_router(whatsapp.router,            prefix="/api/v1/whatsapp",    tags=["Autoatención WhatsApp"], dependencies=[]) # Webhooks públicos y simulación
+app.include_router(sii_defense.router,         prefix="/api/v1/sii",         tags=["Defensa Tributaria SII"], dependencies=GLOBAL_DEPENDENCIES)
+
+
 
 
 # ─── Health ───────────────────────────────────────────────────────────────────

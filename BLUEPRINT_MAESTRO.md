@@ -1,7 +1,7 @@
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
-**Versión:** 20.0 (Ecosistema Integral: ERP, Diario Regional, ContaEmpleos & Media Kit Digital 👑)  
+**Versión:** 20.1 (Ecosistema Integral: ERP, Órdenes de Compra, Créditos CCAF, Diario Regional, ContaEmpleos & Media Kit Digital 👑)  
 **Estado:** Production & Audit-Ready 🚀  
-**Última Actualización:** Agosto 2026  
+**Última Actualización:** Septiembre 2026  
 
 ---
 
@@ -14,7 +14,7 @@
 > **PARA INICIAR EL SISTEMA LOCAL:** Ejecutar `.\start.ps1` desde la raíz del proyecto.
 > - Frontend: http://localhost:3000
 > - Engine API + Docs: http://localhost:8000/docs
-> - Suite de Pruebas: `python -m pytest tests/ -v` (202 Tests Aprobados)
+> - Suite de Pruebas: `python -m pytest tests/ -v` (281 Tests Aprobados al 100%)
 
 ---
 
@@ -119,4 +119,15 @@
 * [x] Carrusel visual inteligente con rotación de 6s y pausa automática en hover.
 * [x] Control estricto de capacidad máxima (5 marcas por slot) con badges de escasez y bloqueo de sobreventa.
 * [x] Dropzone con compresión WebP en el navegador (-80% peso) y subida a Supabase.
-* [x] Suite completa de **202 pruebas unitarias aprobadas al 100%**.
+* [x] Suite de 202 pruebas unitarias base aprobadas al 100%.
+
+### FASE 21: Saneamiento, Órdenes de Compra, Créditos CCAF & Consolidación Multi-Empresa — **COMPLETADO**
+* [x] Auditoría forense de 11 sistemas periféricos y migración ETL desde `remuneraciones.db`.
+* [x] Expansión del centro de datos Supabase: 37 organizaciones activas, 189 colaboradores, 400 liquidaciones históricas y 1.126 haberes desglosados.
+* [x] Creación de esquemas y migraciones SQL para `purchase_orders`, `purchase_order_items` y `payroll_loan_deductions`.
+* [x] Conexión real del frontend de Órdenes de Compra con Server Actions y emisión de Factura DTE con un solo clic.
+* [x] Eliminación de código muerto y scripts ajenos (`run_sync.js`, `query_supabase_js.js`, `news-mocks.ts`, `video-story-generator.ts`).
+* [x] Reubicación de guías técnicas a `docs/guides/` y formalización de Procedimientos Operativos Estándar de Seguridad (`docs/technical/security_and_compliance_sops.md`).
+* [x] Deduplicación del helper de RUT en `dj1887.py` hacia `core.utils.shared_utils`.
+* [x] Expansión de suite de pruebas a **281 pruebas unitarias (100% aprobadas)** y compilación limpia TypeScript.
+

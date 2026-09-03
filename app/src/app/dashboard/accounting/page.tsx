@@ -7,6 +7,7 @@ import {
   ShieldCheck, AlertTriangle, ExternalLink, FileBarChart2, Receipt
 } from 'lucide-react'
 import Link from 'next/link'
+import { SIIDefenseDialog } from './sii-defense-dialog'
 
 export default async function AccountingPage() {
   const supabase = await createClient()
@@ -46,11 +47,14 @@ export default async function AccountingPage() {
             Empresa Activa: <strong className="text-foreground not-italic">{activeOrgName}</strong>
           </p>
         </div>
-        <Link href="/dashboard/accounting/f29-comparative">
-          <Button className="h-14 rounded-3xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] px-10 shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all gap-3">
-            <History className="w-5 h-5" /> ANÁLISIS COMPARATIVO
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <SIIDefenseDialog organizationId={activeOrgId} activeOrgName={activeOrgName} />
+          <Link href="/dashboard/accounting/f29-comparative">
+            <Button className="h-14 rounded-3xl bg-primary text-primary-foreground font-black uppercase text-xs tracking-[0.2em] px-10 shadow-xl shadow-primary/20 hover:scale-[1.03] active:scale-95 transition-all gap-3">
+              <History className="w-5 h-5" /> ANÁLISIS COMPARATIVO
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />
