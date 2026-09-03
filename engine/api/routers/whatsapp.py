@@ -10,10 +10,12 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime, date
 import logging
 import re
+import os
 
 from core.database import get_supabase, get_pg_connection
 from core.auth import verify_token, verify_org_role
 from core.whatsapp.intent_engine import WhatsAppIntentEngine
+from core.whatsapp.provider_interface import MetaCloudWhatsAppProvider, MockWhatsAppProvider
 
 logger = logging.getLogger("whatsapp_router")
 router = APIRouter()
@@ -59,7 +61,6 @@ async def get_whatsapp_settings(
     if res.data:
         return {"success": True, "settings": res.data[0]}
         
-    # Configuración predeterminada (Inactiva por defecto)
     default_settings = {
         "organization_id": organization_id,
         "is_active": False,
@@ -104,7 +105,6 @@ async def simulate_whatsapp_message(
     await verify_org_role(payload.organization_id, auth=current_user)
     db = get_supabase()
     
-    # 1. Obtener configuración de la empresa
     cfg_res = db.table("whatsapp_org_settings").select("*").eq("organization_id", payload.organization_id).execute()
     cfg = cfg_res.data[0] if cfg_res.data else {
         "is_active": False,
@@ -114,7 +114,6 @@ async def simulate_whatsapp_message(
         "allow_certificate_download": True
     }
     
-    # 2. Buscar colaborador por teléfono o seleccionar el primer colaborador para la demo
     clean_phone = re.sub(r'[^0-9]', '', payload.phone_number)[-8:]
     emp_res = db.table("employees")\
         .select("id, rut, nombres, apellido_paterno, apellido_materno, cargo, fecha_ingreso, birth_date")\
@@ -124,7 +123,6 @@ async def simulate_whatsapp_message(
         
     emp = emp_res.data[0] if emp_res.data else None
     
-    # Si no coincide el teléfono en la simulación, tomar el primer colaborador para probar
     if not emp:
         fallback_res = db.table("employees").select("*").eq("organization_id", payload.organization_id).limit(1).execute()
         if fallback_res.data:
@@ -138,7 +136,6 @@ async def simulate_whatsapp_message(
             authenticated=False
         )
 
-    # 3. Clasificar intención
     intent = WhatsAppIntentEngine.classify_intent(payload.message)
     nombre = f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}".strip()
     
@@ -163,7 +160,7 @@ async def simulate_whatsapp_message(
         if liq_res.data:
             liq = liq_res.data[0]
             monto = f"${int(liq.get('sueldo_liquido', 0)):,}".replace(",", ".")
-            reply = f"✅ Tu liquidación del período {periodo} está disponible:\n\n• Folio: {liq.get('folio_number')}\n• Sueldo Líquido: {monto}\n• Estado: {liq.get('status').upper()}\n\nPuedes ver o descargar el documento a continuación:"
+            reply = f"✅ Tu liquidación del período {periodo} está disponible:\n\n• Folio: {liq.get('folio_number')}\n• Sueldo Líquido: {monto}\n• Estado: {str(liq.get('status')).upper()}\n\nPuedes ver o descargar el documento a continuación:"
             return WhatsAppSimulationResponse(
                 success=True,
                 intent=intent,
@@ -173,18 +170,18 @@ async def simulate_whatsapp_message(
                 action_performed="send_liquidation_pdf"
             )
         else:
-            # Fallback inteligente a la última liquidación registrada
             latest_res = db.table("liquidations")\
                 .select("id, folio_number, sueldo_liquido, periodo, status")\
                 .eq("employee_id", emp["id"])\
                 .order("periodo", desc=True)\
                 .limit(1)\
                 .execute()
+                
             if latest_res.data:
                 liq = latest_res.data[0]
-                per_str = str(liq.get("periodo"))[:7]
                 monto = f"${int(liq.get('sueldo_liquido', 0)):,}".replace(",", ".")
-                reply = f"ℹ️ No encontramos liquidación para {periodo}, pero aquí tienes tu **última liquidación disponible ({per_str})**:\n\n• Folio: {liq.get('folio_number')}\n• Sueldo Líquido: {monto}\n• Estado: {liq.get('status', '').upper()}\n\nPuedes ver o descargar el documento a continuación:"
+                periodo_real = str(liq.get("periodo"))[:7]
+                reply = f"ℹ️ Aún no se encuentra cerrada la liquidación de {periodo}, pero tienes disponible tu última liquidación cerrada ({periodo_real}):\n\n• Folio: {liq.get('folio_number')}\n• Sueldo Líquido: {monto}\n• Estado: {str(liq.get('status')).upper()}\n\nPuedes revisarla a continuación:"
                 return WhatsAppSimulationResponse(
                     success=True,
                     intent=intent,
@@ -193,13 +190,16 @@ async def simulate_whatsapp_message(
                     media_url=f"/dashboard/payroll/liquidations/{liq['id']}",
                     action_performed="send_liquidation_pdf"
                 )
-            return WhatsAppSimulationResponse(
-                success=True,
-                intent=intent,
-                reply_text="No encontramos liquidaciones registradas para tu perfil en el sistema.",
-                authenticated=True
-            )
-            
+            else:
+                reply = f"Hola {nombre}. Actualmente no registras liquidaciones aprobadas en el sistema para el período solicitado."
+                return WhatsAppSimulationResponse(
+                    success=True,
+                    intent=intent,
+                    reply_text=reply,
+                    authenticated=True,
+                    action_performed="none"
+                )
+                
     elif intent == "vacations":
         fing = emp.get("fecha_ingreso") or "2024-01-01"
         vac_res = db.table("vacation_requests")\
@@ -207,6 +207,7 @@ async def simulate_whatsapp_message(
             .eq("employee_id", emp["id"])\
             .eq("status", "approved")\
             .execute()
+            
         dias_tomados = sum(float(r.get("dias_solicitados") or 0) for r in (vac_res.data or []))
         vac_calc = WhatsAppIntentEngine.calculate_vacation_balance(fing, dias_tomados=dias_tomados, is_magallanes=True)
         reply = f"🌴 Saldo de Vacaciones al día de hoy:\n\n• Días acumulados: {vac_calc['dias_acumulados']} días hábiles\n• Días tomados: {vac_calc['dias_tomados']} días\n• Saldo disponible: {vac_calc['saldo_disponible']} días hábiles legales\n\n(Cálculo bajo el Estatuto Regional de Magallanes — Art. 67 inc. 2 del Código del Trabajo, base 20 días anuales)."
@@ -230,7 +231,7 @@ async def simulate_whatsapp_message(
         )
         
     elif intent == "riohs":
-        reply = f"📘 Consulta Laboral & Normativa:\n\nDe acuerdo al RIOHS de la empresa y la Ley Karin (Ley N° 21.643), la organización cuenta con un protocolo preventivo y canal de denuncia confidencial ante conductas de acoso laboral, sexual o violencia en el trabajo. Puedes contactar directamente a RRHH o canalizar tu solicitud por este medio."
+        reply = "📘 Consulta Laboral & Normativa:\n\nDe acuerdo al RIOHS de la empresa y la Ley Karin (Ley N° 21.643), la organización cuenta con un protocolo preventivo y canal de denuncia confidencial ante conductas de acoso laboral, sexual o violencia en el trabajo. Puedes contactar directamente a RRHH o canalizar tu solicitud por este medio."
         return WhatsAppSimulationResponse(
             success=True,
             intent=intent,
@@ -245,6 +246,155 @@ async def simulate_whatsapp_message(
         reply_text=f"Hola {nombre}. No entendí con claridad tu solicitud. Puedes escribirme 'liquidación', 'vacaciones', 'certificado' o hacer una pregunta sobre el reglamento interno.",
         authenticated=True
     )
+
+# ── PROCESAMIENTO ASÍNCRONO DE MENSAJES ENTRANTES REALES ───────────────────
+
+async def process_inbound_message(phone_number_id: str, sender_phone: str, message_text: str):
+    """
+    Procesa un mensaje entrante real desde Meta WhatsApp Cloud API y envía la respuesta automática.
+    """
+    db = get_supabase()
+    clean_phone = re.sub(r'[^0-9]', '', sender_phone)[-8:]
+    
+    settings_query = db.table("whatsapp_org_settings").select("*").eq("is_active", True)
+    if phone_number_id:
+        settings_query = settings_query.eq("phone_number_id", phone_number_id)
+    cfg_res = settings_query.limit(1).execute()
+    
+    if not cfg_res.data:
+        logger.warning(f"[WhatsApp] No hay configuración activa para phone_number_id: {phone_number_id}")
+        return
+        
+    cfg = cfg_res.data[0]
+    org_id = cfg["organization_id"]
+    access_token = cfg.get("access_token") or os.getenv("WHATSAPP_ACCESS_TOKEN")
+    
+    if not access_token:
+        logger.error(f"[WhatsApp] Falta access_token para organization_id: {org_id}")
+        return
+        
+    provider = MetaCloudWhatsAppProvider(phone_number_id=phone_number_id, access_token=access_token)
+    
+    emp_res = db.table("employees")\
+        .select("id, rut, nombres, apellido_paterno, apellido_materno, cargo, fecha_ingreso, birth_date")\
+        .eq("organization_id", org_id)\
+        .like("phone", f"%{clean_phone}%")\
+        .execute()
+        
+    emp = emp_res.data[0] if emp_res.data else None
+    
+    if not emp:
+        msg = f"Hola! Tu número ({sender_phone}) no figura registrado en el sistema de colaboradores de la empresa. Por favor comunícate con el área de Recursos Humanos para actualizar tu ficha personal."
+        await provider.send_text_message(sender_phone, msg)
+        return
+
+    nombre = f"{emp.get('nombres', '')} {emp.get('apellido_paterno', '')}".strip()
+    
+    session_res = db.table("whatsapp_sessions")\
+        .select("*")\
+        .eq("organization_id", org_id)\
+        .eq("phone_number", sender_phone)\
+        .execute()
+        
+    session = session_res.data[0] if session_res.data else None
+    is_authenticated = session.get("authenticated", False) if session else False
+    
+    digits_match = re.match(r'^\s*(\d{4})\s*$', message_text)
+    if digits_match:
+        input_digits = digits_match.group(1)
+        if WhatsAppIntentEngine.validate_2fa_pin(input_digits, emp.get("rut", "")):
+            db.table("whatsapp_sessions").upsert({
+                "organization_id": org_id,
+                "phone_number": sender_phone,
+                "employee_id": emp["id"],
+                "authenticated": True,
+                "last_interaction": datetime.utcnow().isoformat()
+            }).execute()
+            reply = f"✅ ¡Identidad verificada con éxito, {nombre}!\n\n¿En qué te puedo ayudar hoy?\n1️⃣ Escribe *'mi liquidación'* para ver tu sueldo\n2️⃣ Escribe *'mis vacaciones'* para consultar tus días disponibles en Magallanes\n3️⃣ Escribe *'certificado'* para obtener un certificado laboral\n4️⃣ Escribe tu consulta sobre el reglamento interno o Ley Karin"
+            await provider.send_text_message(sender_phone, reply)
+            return
+        else:
+            await provider.send_text_message(sender_phone, "❌ Los 4 dígitos ingresados no coinciden con tu RUT registrado. Por favor intenta nuevamente.")
+            return
+
+    if cfg.get("require_2fa", True) and not is_authenticated:
+        db.table("whatsapp_sessions").upsert({
+            "organization_id": org_id,
+            "phone_number": sender_phone,
+            "employee_id": emp["id"],
+            "authenticated": False,
+            "last_interaction": datetime.utcnow().isoformat()
+        }).execute()
+        solicitud_pin = f"¡Hola {nombre}! 👋 Por tu seguridad y privacidad laboral, por favor ingresa los *últimos 4 dígitos de tu RUT* (sin contar el dígito verificador) para validar tu identidad."
+        await provider.send_text_message(sender_phone, solicitud_pin)
+        return
+
+    intent = WhatsAppIntentEngine.classify_intent(message_text)
+    
+    if intent == "greeting":
+        reply = f"¡Hola {nombre}! 👋 Te doy la bienvenida al portal de autoatención de tu empresa.\n\nPuedes consultarme:\n1️⃣ *'mi liquidación'* para descargar tu colilla de sueldo\n2️⃣ *'mis vacaciones'* para consultar tu saldo legal\n3️⃣ *'certificado'* para constancia laboral\n4️⃣ Consultas sobre el reglamento interno (RIOHS) y Ley Karin"
+        await provider.send_text_message(sender_phone, reply)
+        
+    elif intent == "liquidation":
+        periodo = WhatsAppIntentEngine.extract_period_from_text(message_text)
+        liq_res = db.table("liquidations")\
+            .select("id, folio_number, sueldo_liquido, periodo, status")\
+            .eq("employee_id", emp["id"])\
+            .eq("periodo", f"{periodo}-01")\
+            .execute()
+            
+        liq = liq_res.data[0] if liq_res.data else None
+        if not liq:
+            latest_res = db.table("liquidations")\
+                .select("id, folio_number, sueldo_liquido, periodo, status")\
+                .eq("employee_id", emp["id"])\
+                .order("periodo", desc=True)\
+                .limit(1)\
+                .execute()
+            if latest_res.data:
+                liq = latest_res.data[0]
+                periodo = str(liq.get("periodo"))[:7]
+                
+        if liq:
+            monto = f"${int(liq.get('sueldo_liquido', 0)):,}".replace(",", ".")
+            frontend_base = os.getenv("FRONTEND_URL", "https://contapymepuq.vercel.app")
+            liq_url = f"{frontend_base}/dashboard/payroll/liquidations/{liq['id']}"
+            reply = f"✅ Tu liquidación del período {periodo} está disponible:\n\n• Folio: {liq.get('folio_number')}\n• Sueldo Líquido: {monto}\n• Estado: {str(liq.get('status')).upper()}\n\n🔗 Puedes ver y descargar tu documento oficial aquí:\n{liq_url}"
+            await provider.send_text_message(sender_phone, reply)
+        else:
+            await provider.send_text_message(sender_phone, f"Hola {nombre}. No encontramos liquidaciones emitidas actualmente en el sistema para tu perfil.")
+            
+    elif intent == "vacations":
+        fing = emp.get("fecha_ingreso") or "2024-01-01"
+        vac_res = db.table("vacation_requests")\
+            .select("dias_solicitados")\
+            .eq("employee_id", emp["id"])\
+            .eq("status", "approved")\
+            .execute()
+        dias_tomados = sum(float(r.get("dias_solicitados") or 0) for r in (vac_res.data or []))
+        vac_calc = WhatsAppIntentEngine.calculate_vacation_balance(fing, dias_tomados=dias_tomados, is_magallanes=True)
+        reply = f"🌴 Saldo de Vacaciones al día de hoy ({nombre}):\n\n• Días acumulados: {vac_calc['dias_acumulados']} días hábiles\n• Días tomados: {vac_calc['dias_tomados']} días\n• Saldo disponible: {vac_calc['saldo_disponible']} días hábiles legales\n\n(Cálculo bajo el Estatuto Regional de Magallanes — Art. 67 inc. 2 del Código del Trabajo, base 20 días anuales)."
+        await provider.send_text_message(sender_phone, reply)
+        
+    elif intent == "certificate":
+        reply = f"📄 Certificado de Antigüedad Laboral ({nombre}):\n\n• RUT: {emp.get('rut')}\n• Cargo: {emp.get('cargo', 'Colaborador')}\n• Fecha Ingreso: {emp.get('fecha_ingreso')}\n\nPuedes descargar tu constancia con sello de validación desde el portal de la empresa."
+        await provider.send_text_message(sender_phone, reply)
+        
+    elif intent == "riohs":
+        reply = "📘 Consulta Laboral & Normativa:\n\nDe acuerdo al RIOHS de la empresa y la Ley Karin (Ley N° 21.643), la organización cuenta con un protocolo preventivo y canal de denuncia confidencial ante conductas de acoso laboral, sexual o violencia en el trabajo. Puedes contactar directamente a RRHH o canalizar tu solicitud por este medio."
+        await provider.send_text_message(sender_phone, reply)
+        
+    else:
+        await provider.send_text_message(sender_phone, f"Hola {nombre}. No entendí con claridad tu solicitud. Puedes escribirme 'liquidación', 'vacaciones', 'certificado' o hacer una pregunta sobre el reglamento interno.")
+
+    db.table("whatsapp_message_logs").insert({
+        "organization_id": org_id,
+        "sender_phone": sender_phone,
+        "direction": "inbound",
+        "message_text": message_text,
+        "intent_detected": intent,
+        "status": "processed"
+    }).execute()
 
 # ── WEBHOOK OFICIAL DE META WHATSAPP CLOUD API ───────────────────────────────
 
@@ -263,10 +413,35 @@ async def verify_webhook(
 @router.post("/webhook")
 async def receive_whatsapp_message(request: Request):
     """
-    Endpoint receptor de mensajes entrantes desde WhatsApp.
-    Si el módulo está inactivo en la organización, descarta y retorna 200 OK.
+    Endpoint receptor de mensajes entrantes desde Meta WhatsApp Cloud API.
+    Procesa el mensaje del colaborador, evalúa la intención con el IntentEngine
+    y despacha la respuesta automática vía MetaCloudWhatsAppProvider.
     """
     body = await request.json()
     logger.info(f"[WhatsApp Webhook Inbound]: {body}")
-    # Retornar 200 OK para confirmar recepción a Meta
+    
+    try:
+        entries = body.get("entry", [])
+        for entry in entries:
+            changes = entry.get("changes", [])
+            for change in changes:
+                val = change.get("value", {})
+                messages = val.get("messages", [])
+                metadata = val.get("metadata", {})
+                phone_number_id = metadata.get("phone_number_id")
+                
+                for msg in messages:
+                    sender_phone = msg.get("from")
+                    msg_type = msg.get("type")
+                    msg_body = ""
+                    if msg_type == "text":
+                        msg_body = msg.get("text", {}).get("body", "").strip()
+                    elif msg_type == "interactive":
+                        msg_body = msg.get("interactive", {}).get("button_reply", {}).get("title", "")
+                        
+                    if sender_phone and msg_body:
+                        await process_inbound_message(phone_number_id, sender_phone, msg_body)
+    except Exception as e:
+        logger.error(f"[WhatsApp Webhook Error]: {e}", exc_info=True)
+        
     return {"status": "received"}
