@@ -131,3 +131,20 @@
 * [x] Deduplicación del helper de RUT en `dj1887.py` hacia `core.utils.shared_utils`.
 * [x] Expansión de suite de pruebas a **281 pruebas unitarias (100% aprobadas)** y compilación limpia TypeScript.
 
+### FASE 22: Portal de Autoatención Laboral WhatsApp & Asistente Legal Tributario SII — **COMPLETADO**
+* [x] **Autoatención Laboral vía WhatsApp (`/dashboard/payroll/whatsapp`):**
+  - Esquema en Supabase: `whatsapp_org_settings`, `whatsapp_sessions`, `whatsapp_message_logs` activado en las 37 empresas.
+  - Clasificador NLP de intenciones (liquidación, vacaciones, certificados, RIOHS/Ley Karin).
+  - Cálculo de vacaciones ajustado a la normativa regional de Magallanes (20 días hábiles / Art. 67 inc. 2 Código del Trabajo).
+  - Verificación 2FA por últimos 4 dígitos del RUT y consulta de solicitudes aprobadas reales.
+  - Simulador interactivo en vivo (Sandbox) en el panel administrativo.
+  - 22 pruebas unitarias en `test_whatsapp_bot_intents.py`.
+* [x] **Asistente Legal Tributario y Generador de Escritos SII (.docx):**
+  - Esquema en Supabase: `sii_defense_documents` con aislamiento multi-tenant RLS.
+  - Generador DOCX formal con tipografía reglamentaria (Times New Roman 11pt, márgenes 3.5cm/3.0cm) dirigido al Director Regional del SII Magallanes (Punta Arenas).
+  - Cobertura de las 4 causas críticas: Boletas vs Facturas (Art. 53 Ley IVA), Citación Art. 63, Rectificatoria F29 (Art. 127 CT) y Condonación Circular 50.
+  - Integración en frontend con Next.js BFF Route Handler (`/api/sii/generate`) y modal interactivo en `/dashboard/accounting`.
+  - Normalización de cabeceras HTTP y blindaje contra accesos cruzados (403 Forbidden).
+  - 6 pruebas unitarias en `test_sii_defense_generator.py` y suite global de **312 tests aprobados al 100%**.
+
+
