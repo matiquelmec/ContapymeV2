@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getF29History } from "@/actions/f29";
 import F29ComparativeClient from "./f29-comparative-client";
 import { LineChart } from "lucide-react";
+import { SIIDefenseDialog } from "../sii-defense-dialog";
 
 export default async function F29ComparativePage() {
   const supabase = await createClient();
@@ -35,6 +36,7 @@ export default async function F29ComparativePage() {
             Visualización de tendencias tributarias y métricas de salud fiscal a lo largo de periodos históricos.
           </p>
         </div>
+        <SIIDefenseDialog organizationId={activeOrgId} />
       </div>
 
       <div className="h-px bg-gradient-to-r from-primary/20 via-border to-transparent" />

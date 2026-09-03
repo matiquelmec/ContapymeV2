@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards, Briefcase, Newspaper, Megaphone, Globe } from 'lucide-react'
+import { FileText, Users, TrendingUp, Settings, BookOpen, Layers, Scale, Landmark, Shield, ClipboardList, FileSpreadsheet, Settings2, BarChart3, Calculator, Box, UserCog, Calendar as CalendarIcon, WalletCards, Briefcase, Newspaper, Megaphone, Globe, ShoppingBag, MessageSquare } from 'lucide-react'
 
 export const navigationGroups = [
   {
@@ -26,8 +26,9 @@ export const navigationGroups = [
     items: [
       { name: 'Registro RCV', href: '/dashboard/accounting/rcv', icon: FileText },
       { name: 'Facturación (DTE)', href: '/dashboard/billing', icon: Box },
-      { name: 'Contabilidad (F29)', href: '/dashboard/accounting/f29-comparative', icon: Calculator },
-      { name: 'Análisis F29', href: '/dashboard/accounting/reports', icon: BarChart3 },
+      { name: 'Órdenes de Compra', href: '/dashboard/billing/purchase-orders', icon: ShoppingBag },
+      { name: 'Auditoría F29', href: '/dashboard/accounting', icon: Calculator },
+      { name: 'Comparativo F29', href: '/dashboard/accounting/f29-comparative', icon: BarChart3 },
     ]
   },
   {
@@ -48,6 +49,7 @@ export const navigationGroups = [
     title: "Recursos Humanos (RRHH)",
     items: [
       { name: 'Remuneraciones', href: '/dashboard/payroll', icon: Users },
+      { name: 'Autoatención WhatsApp', href: '/dashboard/payroll/whatsapp', icon: MessageSquare },
       { name: 'Gestión de Vacaciones', href: '/dashboard/payroll/vacations', icon: CalendarIcon },
       { name: 'Contratos', href: '/dashboard/payroll/contracts', icon: ClipboardList },
       { name: 'Finiquitos', href: '/dashboard/payroll/terminations', icon: FileText },
