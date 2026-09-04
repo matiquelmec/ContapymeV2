@@ -93,10 +93,10 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-950 transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer">
+      <DialogTrigger className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-950 transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer">
         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
         <Rocket className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-        <div className="text-left leading-none">
+        <div className="text-left leading-none hidden sm:block">
           <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 block">
             Acceso Lanzamiento
           </span>
@@ -104,8 +104,9 @@ export function SubscriptionBadge({ organizationId }: { organizationId?: string 
             100% Habilitado
           </span>
         </div>
-        <span className="ml-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-emerald-700 text-white shadow-sm group-hover:bg-emerald-800 transition-colors">
-          Ver Planes ➔
+        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-emerald-700 text-white shadow-sm group-hover:bg-emerald-800 transition-colors shrink-0">
+          <span className="hidden sm:inline">Ver Planes ➔</span>
+          <span className="sm:hidden">Planes</span>
         </span>
       </DialogTrigger>
 
