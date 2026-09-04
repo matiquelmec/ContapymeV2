@@ -74,6 +74,106 @@ async def process_f29(payload: ProcessF29Request, current_user: dict = Depends(v
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+class AuditF29Request(BaseModel):
+    organization_id: str
+    periodo: str
+
+@router.post("/audit-against-rcv")
+async def audit_f29_against_rcv(payload: AuditF29Request, current_user: dict = Depends(verify_token)):
+    """
+    Auditoría Preventiva F29 ↔ RCV (Pre-SII Shield).
+    Cruza el formulario declarado contra las ventas y compras reales registradas.
+    """
+    db = get_supabase()
+    org_id = payload.organization_id
+    periodo = payload.periodo # ej: '2026-05'
+
+    # 1. Obtener F29 declarado
+    f29_res = db.table("f29_forms").select("*").eq("organization_id", org_id).eq("periodo", periodo).maybe_single().execute()
+    f29 = f29_res.data
+
+    # 2. Fechas del periodo
+    start_date = f"{periodo}-01"
+    parts = periodo.split("-")
+    last_day = calendar.monthrange(int(parts[0]), int(parts[1]))[1]
+    end_date = f"{periodo}-{last_day}"
+
+    # 3. Ventas y Compras reales del RCV
+    sales_res = db.table("sales_records") \
+        .select("monto_neto, monto_iva, monto_total") \
+        .eq("organization_id", org_id) \
+        .gte("fecha_docto", start_date) \
+        .lte("fecha_docto", end_date) \
+        .execute()
+
+    purchases_res = db.table("purchase_records") \
+        .select("monto_neto, monto_iva, monto_total, monto_iva_recuperable") \
+        .eq("organization_id", org_id) \
+        .gte("fecha_docto", start_date) \
+        .lte("fecha_docto", end_date) \
+        .execute()
+
+    rcv_sales_net = sum(int(s.get("monto_neto") or 0) for s in (sales_res.data or []))
+    rcv_sales_iva = sum(int(s.get("monto_iva") or 0) for s in (sales_res.data or []))
+
+    rcv_purch_net = sum(int(p.get("monto_neto") or 0) for p in (purchases_res.data or []))
+    rcv_purch_iva = sum(int(p.get("monto_iva_recuperable") or p.get("monto_iva") or 0) for p in (purchases_res.data or []))
+
+    f29_sales_net = int(f29.get("ventas_netas") or 0) if f29 else 0
+    f29_debito = int(f29.get("debito_fiscal") or 0) if f29 else 0
+    f29_credito = int(f29.get("credito_fiscal") or 0) if f29 else 0
+    f29_total_pagar = int(f29.get("total_a_pagar") or 0) if f29 else 0
+
+    diff_sales_net = f29_sales_net - rcv_sales_net
+    diff_debito = f29_debito - rcv_sales_iva
+    diff_credito = f29_credito - rcv_purch_iva
+
+    # Diagnóstico de Riesgo Fiscal
+    risk_level = "CONSISTENT"
+    risk_notes = []
+
+    if not f29:
+        risk_level = "PENDING_F29"
+        risk_notes.append("No se registra F29 subido para este período en el sistema.")
+    else:
+        if abs(diff_debito) > 5000:
+            risk_level = "HIGH_RISK"
+            risk_notes.append(f"Discrepancia en Débito Fiscal: ${diff_debito:,.0f} CLP respecto al RCV emitido.")
+        if abs(diff_credito) > 5000:
+            if risk_level != "HIGH_RISK": risk_level = "MEDIUM_RISK"
+            risk_notes.append(f"Discrepancia en Crédito Fiscal: ${diff_credito:,.0f} CLP respecto al RCV de compras.")
+        if abs(diff_sales_net) > 10000:
+            risk_notes.append(f"Diferencia en Ventas Netas: ${diff_sales_net:,.0f} CLP.")
+
+    if not risk_notes:
+        risk_notes.append("Consistencia total (100% Match): Débitos y Créditos coinciden exactamente con el RCV.")
+
+    return {
+        "success": True,
+        "periodo": periodo,
+        "f29_declared": {
+            "ventas_netas": f29_sales_net,
+            "debito_fiscal": f29_debito,
+            "credito_fiscal": f29_credito,
+            "total_a_pagar": f29_total_pagar,
+        },
+        "rcv_actual": {
+            "ventas_netas": rcv_sales_net,
+            "debito_fiscal": rcv_sales_iva,
+            "credito_fiscal": rcv_purch_iva,
+            "purchases_net": rcv_purch_net
+        },
+        "variance": {
+            "sales_net": diff_sales_net,
+            "debito_fiscal": diff_debito,
+            "credito_fiscal": diff_credito
+        },
+        "audit": {
+            "risk_level": risk_level, # CONSISTENT, MEDIUM_RISK, HIGH_RISK, PENDING_F29
+            "notes": risk_notes
+        }
+    }
+
 @router.delete("/{organization_id}/{f29_id}")
 async def delete_f29_record(organization_id: str, f29_id: str, current_user: dict = Depends(verify_token)):
     db = get_supabase()
@@ -100,6 +200,16 @@ async def delete_f29_record(organization_id: str, f29_id: str, current_user: dic
             db.table("accounting_events").delete().eq("id", event_id).execute()
 
     return {"success": True, "message": "F29 y su reversión del Asiento Diario/Mayor eliminados sincronizadamente."}
+
+@router.delete("/{f29_id}")
+async def delete_f29_record_by_id(f29_id: str, current_user: dict = Depends(verify_token)):
+    """Ruta de compatibilidad para borrado directo con ID resolviendo organización del registro"""
+    db = get_supabase()
+    f29_check = db.table("f29_forms").select("organization_id, periodo").eq("id", f29_id).execute()
+    if not f29_check.data:
+        raise HTTPException(status_code=404, detail="Registro de F29 no encontrado.")
+    org_id = f29_check.data[0]["organization_id"]
+    return await delete_f29_record(organization_id=org_id, f29_id=f29_id, current_user=current_user)
 
 @router.get("/analysis/history")
 async def get_f29_history(organization_id: str, limit: int = 12, current_user: dict = Depends(verify_token)):

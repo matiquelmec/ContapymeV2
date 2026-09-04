@@ -102,3 +102,57 @@ export async function getF29List(organizationId: string) {
   if (error) return []
   return data
 }
+
+/**
+ * Server Action Seguro: Eliminar registro histórico F29 y revertir su asiento contable
+ */
+export async function deleteF29Action(f29Id: string, organizationId?: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) return { success: false, error: 'Sesión inválida.' }
+
+  try {
+    const url = organizationId 
+      ? `/api/v1/f29/${organizationId}/${f29Id}`
+      : `/api/v1/f29/${f29Id}`
+
+    const res = await engineFetch(url, { method: 'DELETE' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Error al eliminar F29.' }))
+      return { success: false, error: parseError(err.detail || 'Fallo al eliminar.') }
+    }
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: 'Motor fuera de línea.' }
+  }
+}
+
+/**
+ * Server Action: Auditoría Preventiva F29 vs RCV (Pre-SII Shield)
+ */
+export async function auditF29AgainstRCVAction(periodo: string, organizationId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) return { success: false, error: 'Sesión inválida.' }
+
+  try {
+    const res = await engineFetch(`/api/v1/f29/audit-against-rcv`, {
+      method: 'POST',
+      body: JSON.stringify({
+        organization_id: organizationId,
+        periodo: periodo
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Error en auditoría cruzada.' }))
+      return { success: false, error: parseError(err.detail || 'Fallo en cálculo.') }
+    }
+
+    const data = await res.json()
+    return data
+  } catch (err) {
+    return { success: false, error: 'Motor Python fuera de línea.' }
+  }
+}

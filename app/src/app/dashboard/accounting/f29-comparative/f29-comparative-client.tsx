@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { deleteF29Action, auditF29AgainstRCVAction } from "@/actions/f29";
 
 export default function F29ComparativeClient({ 
   organizationId, 
@@ -25,6 +26,8 @@ export default function F29ComparativeClient({
   const [history, setHistory] = useState(initialData.history || []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialData.history?.map((h: any) => h.id) || []));
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [auditingPeriod, setAuditingPeriod] = useState<string | null>(null);
+  const [auditResults, setAuditResults] = useState<Record<string, any>>({});
 
   useEffect(() => {
     setIsMounted(true);
@@ -35,17 +38,33 @@ export default function F29ComparativeClient({
     
     try {
       setIsDeleting(id);
-      const res = await fetch(`http://localhost:8000/api/v1/f29/${id}`, { method: 'DELETE' });
-      if (res.ok) {
+      const res = await deleteF29Action(id, organizationId);
+      if (res.success) {
         setHistory(history.filter((h: any) => h.id !== id));
         const newSelected = new Set(selectedIds);
         newSelected.delete(id);
         setSelectedIds(newSelected);
+      } else {
+        alert(res.error || "No se pudo eliminar el F29.");
       }
     } catch (error) {
       console.error("Error al eliminar:", error);
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleAudit = async (periodo: string) => {
+    try {
+      setAuditingPeriod(periodo);
+      const res = await auditF29AgainstRCVAction(periodo, organizationId);
+      if (res && res.success) {
+        setAuditResults((prev) => ({ ...prev, [periodo]: res }));
+      }
+    } catch (err) {
+      console.error("Error en auditoría cruzada:", err);
+    } finally {
+      setAuditingPeriod(null);
     }
   };
 
@@ -425,24 +444,46 @@ export default function F29ComparativeClient({
                         </div>
                      </td>
                      <td className="py-6 px-10">
-                        <div className="flex justify-center">
-                            <Badge className={`text-[9px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-[1rem] border shadow-sm ${
-                              item.extraction_method === 'ocr_vision' 
-                                ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              {item.extraction_method === 'ocr_vision' ? "Engine v4 AI" : "Data Nativa SII"}
-                            </Badge>
-                        </div>
+                        <div className="flex flex-col items-center gap-1.5">
+                             <Badge className={`text-[9px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-[1rem] border shadow-sm ${
+                               item.extraction_method === 'ocr_vision' 
+                                 ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                             }`}>
+                               {item.extraction_method === 'ocr_vision' ? "Engine v4 AI" : "Data Nativa SII"}
+                             </Badge>
+                             {auditResults[item.periodo] && (
+                               <Badge className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border ${
+                                 auditResults[item.periodo].audit?.risk_level === 'CONSISTENT'
+                                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                   : auditResults[item.periodo].audit?.risk_level === 'HIGH_RISK'
+                                   ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+                                   : 'bg-amber-100 text-amber-800 border-amber-300'
+                               }`}>
+                                 {auditResults[item.periodo].audit?.risk_level === 'CONSISTENT' ? '✓ RCV Match 100%' : '⚠ Diferencia RCV'}
+                               </Badge>
+                             )}
+                         </div>
                      </td>
                      <td className="py-6 px-10 text-right">
-                        <button 
-                          onClick={() => handleDelete(item.id)}
-                          disabled={isDeleting === item.id}
-                          className="p-3 text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-50 transition-all rounded-2xl border border-transparent hover:border-rose-100 shadow-none hover:shadow-xl hover:shadow-rose-100/30"
-                        >
-                          {isDeleting === item.id ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                           <button 
+                             onClick={() => handleAudit(item.periodo)}
+                             disabled={auditingPeriod === item.periodo}
+                             title="Auditar preventivamente contra RCV"
+                             className="p-3 text-muted-foreground/50 hover:text-indigo-600 hover:bg-indigo-50 transition-all rounded-2xl border border-transparent hover:border-indigo-100"
+                           >
+                             {auditingPeriod === item.periodo ? <RefreshCw className="h-4 w-4 animate-spin text-indigo-600" /> : <ShieldCheck className="h-4 w-4" />}
+                           </button>
+                           <button 
+                             onClick={() => handleDelete(item.id)}
+                             disabled={isDeleting === item.id}
+                             title="Eliminar registro"
+                             className="p-3 text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-50 transition-all rounded-2xl border border-transparent hover:border-rose-100 shadow-none hover:shadow-xl hover:shadow-rose-100/30"
+                           >
+                             {isDeleting === item.id ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
+                           </button>
+                        </div>
                      </td>
                    </tr>
                  ))}

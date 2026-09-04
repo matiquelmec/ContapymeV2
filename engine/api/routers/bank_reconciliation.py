@@ -187,18 +187,59 @@ async def suggest_matches(organization_id: str, bank_account_id: str, current_us
         .eq("organization_id", organization_id).eq("account_id", chart_id).eq("is_reconciled", False).execute().data or []
 
     suggestions = []
+    used_journal_ids = set()
+
     for b in bank_lines:
         b_monto = b["monto"]
         b_fecha = pd.to_datetime(b["fecha"])
+        matched = False
+
+        # 1. Matching Exacto
         for j in journal_lines:
+            if j["id"] in used_journal_ids:
+                continue
             j_monto = int(abs(float(j["monto"])))
             j_fecha = pd.to_datetime(j["journal_entries"]["fecha"])
             diff_days = abs((b_fecha - j_fecha).days)
+
             if b_monto == j_monto and diff_days <= 5:
                 suggestions.append({
-                    "bank_line": b, "journal_line": j, "confidence": "high" if diff_days <= 1 else "medium"
+                    "bank_line": b,
+                    "journal_line": j,
+                    "match_type": "exact",
+                    "confidence": "high" if diff_days <= 1 else "medium",
+                    "fee_difference": 0
                 })
+                used_journal_ids.add(j["id"])
+                matched = True
                 break
+
+        # 2. Smart Matching con Tolerancia de Comisión (ej: Transbank/Pasarelas 1% - 3.5%)
+        if not matched and b.get("tipo") == "abono":
+            for j in journal_lines:
+                if j["id"] in used_journal_ids:
+                    continue
+                j_monto = int(abs(float(j["monto"])))
+                j_fecha = pd.to_datetime(j["journal_entries"]["fecha"])
+                diff_days = abs((b_fecha - j_fecha).days)
+
+                if diff_days <= 4 and j_monto > b_monto:
+                    diff_pct = (j_monto - b_monto) / j_monto
+                    # Tolerancia típica de comisión de adquirencia
+                    if 0.008 <= diff_pct <= 0.04:
+                        fee = j_monto - b_monto
+                        suggestions.append({
+                            "bank_line": b,
+                            "journal_line": j,
+                            "match_type": "commission_adjusted",
+                            "confidence": "medium",
+                            "fee_difference": fee,
+                            "estimated_fee_pct": round(diff_pct * 100, 2),
+                            "notes": f"Abono neto con descuento estimado de comisión ({round(diff_pct * 100, 1)}% = ${fee:,.0f} CLP)"
+                        })
+                        used_journal_ids.add(j["id"])
+                        break
+
     return suggestions
 
 @router.get("/pending-lines/{bank_account_id}")
