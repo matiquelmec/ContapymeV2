@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { 
   Brain, Activity, Target, AlertCircle, 
-  Trophy, RefreshCw
+  Trophy, RefreshCw, Rocket
 } from 'lucide-react'
 import { getExecutiveMetrics, getRegionalNews } from '@/actions/dashboard'
 import { NewsDetailModal } from '@/components/news-detail-modal'
@@ -18,10 +18,11 @@ import { CashFlowSankey } from './components/cash-flow-sankey'
 import { RegionalNewsFeed } from './components/regional-news-feed'
 
 const ASSESSMENT_STYLES = {
-  EXCELLENT: { bg: 'bg-emerald-50', border: 'border-t-emerald-500', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: Trophy },
-  GOOD:      { bg: 'bg-blue-50',    border: 'border-t-blue-500',    text: 'text-blue-700',    badge: 'bg-blue-100 text-blue-700 border-blue-200',       icon: Target },
-  AVERAGE:   { bg: 'bg-amber-50',   border: 'border-t-amber-500',   text: 'text-amber-700',   badge: 'bg-amber-100 text-amber-700 border-amber-200',     icon: Activity },
-  CRITICAL:  { bg: 'bg-rose-50',    border: 'border-t-rose-500',    text: 'text-rose-700',    badge: 'bg-rose-100 text-rose-700 border-rose-200',        icon: AlertCircle },
+  EXCELLENT:      { bg: 'bg-emerald-50', border: 'border-t-emerald-500', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: Trophy },
+  GOOD:           { bg: 'bg-blue-50',    border: 'border-t-blue-500',    text: 'text-blue-700',    badge: 'bg-blue-100 text-blue-700 border-blue-200',       icon: Target },
+  AVERAGE:        { bg: 'bg-amber-50',   border: 'border-t-amber-500',   text: 'text-amber-700',   badge: 'bg-amber-100 text-amber-700 border-amber-200',     icon: Activity },
+  CRITICAL:       { bg: 'bg-rose-50',    border: 'border-t-rose-500',    text: 'text-rose-700',    badge: 'bg-rose-100 text-rose-700 border-rose-200',        icon: AlertCircle },
+  PREOPERATIONAL: { bg: 'bg-indigo-50',  border: 'border-t-indigo-500',  text: 'text-indigo-700',  badge: 'bg-indigo-100 text-indigo-700 border-indigo-200',   icon: Rocket },
 }
 
 import { useQuery } from '@tanstack/react-query'

@@ -56,116 +56,160 @@ async def get_executive_metrics(
 
         print(f"[FASTAPI DASHBOARD] Calculando métricas pesadas para ORG: {req.organization_id} | AÑO: {req.year}")
 
-        # 2. Obtener Datos (Ventas, Compras y Remuneraciones)
-        sales_res = db.table("sales_records") \
-            .select("monto_neto, fecha_docto") \
-            .eq("organization_id", req.organization_id) \
-            .gte("fecha_docto", start_date) \
-            .lte("fecha_docto", end_date) \
-            .execute()
-        
-        purchases_res = db.table("purchase_records") \
-            .select("monto_neto, fecha_docto") \
-            .eq("organization_id", req.organization_id) \
-            .gte("fecha_docto", start_date) \
-            .lte("fecha_docto", end_date) \
-            .execute()
+        # 2. Intentar llamar al procedimiento RPC optimizado en PostgreSQL
+        db_aggregates = None
+        try:
+            rpc_res = db.rpc("get_organization_financial_aggregates", {
+                "p_organization_id": req.organization_id,
+                "p_year": req.year
+            }).execute()
+            if rpc_res.data:
+                db_aggregates = rpc_res.data
+        except Exception as rpc_err:
+            print(f"[FASTAPI DASHBOARD] Fallback RPC a queries regulares: {rpc_err}")
 
-        payroll_res = db.table("liquidations") \
-            .select("total_haberes_brutos, afc_empresa, sis_empresa, periodo") \
-            .eq("organization_id", req.organization_id) \
-            .gte("periodo", f"{req.year}-01-01") \
-            .lte("periodo", f"{req.year}-12-31") \
-            .execute()
+        if db_aggregates and "totals" in db_aggregates:
+            # Vía Rápida: 1 sola llamada de red con respuesta ya computada
+            totals = db_aggregates.get("totals") or {}
+            total_sales = int(totals.get("total_sales") or 0)
+            total_purchases = int(totals.get("total_purchases") or 0)
+            total_payroll = int(totals.get("total_payroll") or 0)
 
-        # 3. Procesar Tendencia Mensual (O(N))
-        sales_by_month = [0] * 13
-        purch_by_month = [0] * 13
-        payroll_by_month = [0] * 13
+            assets_data = db_aggregates.get("assets") or {}
+            total_assets_value = int(assets_data.get("total_value") or 0)
+            acc_depreciation = int(assets_data.get("total_depreciation") or 0)
 
-        for s in sales_res.data:
-            try:
-                m = int(s["fecha_docto"].split("-")[1])
-                sales_by_month[m] += int(s["monto_neto"] or 0)
-            except: pass
-
-        for p in purchases_res.data:
-            try:
-                m = int(p["fecha_docto"].split("-")[1])
-                purch_by_month[m] += int(p["monto_neto"] or 0)
-            except: pass
-
-        for py in payroll_res.data:
-            try:
-                m = int(py["periodo"].split("-")[1])
-                # El costo real para la empresa es Haberes Brutos + Cargas (SIS, AFC)
-                costo = int(py["total_haberes_brutos"] or 0) + int(py["afc_empresa"] or 0) + int(py["sis_empresa"] or 0)
-                payroll_by_month[m] += costo
-            except: pass
-
-        total_sales = sum(sales_by_month)
-        total_purchases = sum(purch_by_month)
-        total_payroll = sum(payroll_by_month)
-
-        monthly_trend = []
-        for month in range(1, 13):
-            # Margen Operativo Mensual = Ventas - (Compras + Remuneraciones)
-            op_margin = sales_by_month[month] - (purch_by_month[month] + payroll_by_month[month])
-            monthly_trend.append({
-                "month": calendar.month_abbr[month],
-                "sales": sales_by_month[month],
-                "purchases": purch_by_month[month],
-                "payroll": payroll_by_month[month],
-                "margin": op_margin
-            })
-
-        # 4. Activos Fijos y Depreciación (Impacto Financiero)
-        assets_res = db.table("fixed_assets") \
-            .select("valor_adquisicion, depreciacion_acumulada") \
-            .eq("organization_id", req.organization_id) \
-            .execute()
+            raw_trend = db_aggregates.get("trend") or []
+            monthly_trend = []
+            for t in raw_trend:
+                monthly_trend.append({
+                    "month": t.get("month_name") or calendar.month_abbr[int(t.get("month_num", 1))],
+                    "sales": int(t.get("sales") or 0),
+                    "purchases": int(t.get("purchases") or 0),
+                    "payroll": int(t.get("payroll") or 0),
+                    "margin": int(t.get("margin") or 0)
+                })
+        else:
+            # Vía Fallback tradicional
+            sales_res = db.table("sales_records") \
+                .select("monto_neto, fecha_docto") \
+                .eq("organization_id", req.organization_id) \
+                .gte("fecha_docto", start_date) \
+                .lte("fecha_docto", end_date) \
+                .execute()
             
-        total_assets_value = sum([a["valor_adquisicion"] for a in assets_res.data]) if assets_res.data else 0
-        acc_depreciation = sum([a["depreciacion_acumulada"] for a in assets_res.data]) if assets_res.data else 0
-        
-        # Depreciación del ejercicio (Estimación: Vida útil promedio 5-10 años)
-        # Esto afecta al EBIT, pero se suma de nuevo para el EBITDA.
+            purchases_res = db.table("purchase_records") \
+                .select("monto_neto, fecha_docto") \
+                .eq("organization_id", req.organization_id) \
+                .gte("fecha_docto", start_date) \
+                .lte("fecha_docto", end_date) \
+                .execute()
+
+            payroll_res = db.table("liquidations") \
+                .select("total_haberes_brutos, afc_empresa, sis_empresa, periodo") \
+                .eq("organization_id", req.organization_id) \
+                .gte("periodo", f"{req.year}-01-01") \
+                .lte("periodo", f"{req.year}-12-31") \
+                .execute()
+
+            sales_by_month = [0] * 13
+            purch_by_month = [0] * 13
+            payroll_by_month = [0] * 13
+
+            for s in sales_res.data:
+                try:
+                    m = int(s["fecha_docto"].split("-")[1])
+                    sales_by_month[m] += int(s["monto_neto"] or 0)
+                except: pass
+
+            for p in purchases_res.data:
+                try:
+                    m = int(p["fecha_docto"].split("-")[1])
+                    purch_by_month[m] += int(p["monto_neto"] or 0)
+                except: pass
+
+            for py in payroll_res.data:
+                try:
+                    m = int(py["periodo"].split("-")[1])
+                    costo = int(py["total_haberes_brutos"] or 0) + int(py["afc_empresa"] or 0) + int(py["sis_empresa"] or 0)
+                    payroll_by_month[m] += costo
+                except: pass
+
+            total_sales = sum(sales_by_month)
+            total_purchases = sum(purch_by_month)
+            total_payroll = sum(payroll_by_month)
+
+            monthly_trend = []
+            for month in range(1, 13):
+                op_margin = sales_by_month[month] - (purch_by_month[month] + payroll_by_month[month])
+                monthly_trend.append({
+                    "month": calendar.month_abbr[month],
+                    "sales": sales_by_month[month],
+                    "purchases": purch_by_month[month],
+                    "payroll": payroll_by_month[month],
+                    "margin": op_margin
+                })
+
+            assets_res = db.table("fixed_assets") \
+                .select("valor_adquisicion, depreciacion_acumulada") \
+                .eq("organization_id", req.organization_id) \
+                .execute()
+                
+            total_assets_value = sum([a["valor_adquisicion"] for a in assets_res.data]) if assets_res.data else 0
+            acc_depreciation = sum([a["depreciacion_acumulada"] for a in assets_res.data]) if assets_res.data else 0
+
+        # Depreciación del ejercicio estimada
         annual_depreciation_expense = int(total_assets_value / 8) if total_assets_value > 0 else 0
 
-        # 5. Cálculos de Negocio (Standard IFRS/Management)
-        # Gross Margin = Ventas - Compras (Directas)
+        # 3. Cálculos Financieros IFRS
         gross_margin = total_sales - total_purchases
-        
-        # EBITDA = Gross Margin - Operating Expenses (Payroll)
-        # Nota: La depreciación NO se resta para el EBITDA, pero el payroll SÍ.
         ebitda = gross_margin - total_payroll
-        
         margin_percentage = (gross_margin / total_sales * 100) if total_sales > 0 else 0
         ebitda_margin = (ebitda / total_sales * 100) if total_sales > 0 else 0
 
-        # Evaluación General Profesional (Mapeada a Enums del Frontend)
+        # 4. Evaluación Asistida y Contextual de la Salud del Negocio
         overall_assessment = "AVERAGE"
-        if total_sales == 0 and total_payroll > 0:
-            overall_assessment = "CRITICAL"
+        score = 0
+
+        if total_sales == 0 and (total_payroll > 0 or total_purchases > 0):
+            # Caso "Inversiones Riquelme": Empresa en fase de inversión o arranque operativo
+            overall_assessment = "PREOPERATIONAL"
+            score = 30  # Puntaje base de estructuración corporativa
+        elif total_sales == 0 and total_payroll == 0 and total_purchases == 0:
+            overall_assessment = "AVERAGE"
+            score = 50
         elif ebitda_margin > 25:
             overall_assessment = "EXCELLENT"
+            score = int((margin_percentage * 0.4) + (ebitda_margin * 0.6))
         elif ebitda > 0:
             overall_assessment = "GOOD"
+            score = int((margin_percentage * 0.4) + (ebitda_margin * 0.6))
         else:
             overall_assessment = "CRITICAL"
+            score = max(5, int(margin_percentage * 0.3))
 
-        # Score ponderado (Ventas, Margen y EBITDA)
-        score = 0
-        if total_sales > 0:
-            score = int((margin_percentage * 0.4) + (ebitda_margin * 0.6))
         score = min(100, max(0, score))
 
-        # 6. Metadata de la Organización
+        # 5. Metadata de la Organización
         org_name = "Organización"
         try:
             org_info = db.table("organizations").select("nombre").eq("id", req.organization_id).single().execute()
             if org_info.data: org_name = org_info.data["nombre"]
         except: pass
+
+        # 6. Insights Consultivos Dinámicos
+        insights = [
+            f"Ventas totales del periodo: ${total_sales:,.0f} CLP.",
+            f"EBITDA ({'Operativo' if ebitda > 0 else 'Déficit'}): ${ebitda:,.0f} CLP.",
+            f"Carga laboral anual: ${total_payroll:,.0f} CLP." if total_payroll > 0 else "No se registra gasto en remuneraciones.",
+        ]
+
+        if overall_assessment == "PREOPERATIONAL":
+            insights.append("Fase Preoperativa / Inversión: Registra costos de capital humano sin ventas emitidas. Sincronice su RCV para regularizar.")
+        elif total_sales == 0:
+            insights.append("Alerta: Sin emisión de facturación en el período fiscal.")
+        else:
+            insights.append("Flujo operativo transaccional en curso.")
 
         final_result = {
             "year": req.year,
@@ -188,12 +232,7 @@ async def get_executive_metrics(
             "executiveSummary": {
                 "overallAssessment": overall_assessment,
                 "score": score,
-                "insights": [
-                    f"Ventas totales del periodo: ${total_sales:,.0f} CLP.",
-                    f"EBITDA ({'Operativo' if ebitda > 0 else 'Déficit'}): ${ebitda:,.0f} CLP.",
-                    f"Carga laboral anual: ${total_payroll:,.0f} CLP." if total_payroll > 0 else "No se registra gasto en remuneraciones.",
-                    f"Alerta: Operando sin ingresos en el periodo." if total_sales == 0 and (total_payroll > 0 or total_purchases > 0) else "Flujo operativo detectado."
-                ]
+                "insights": insights
             }
         }
 
@@ -205,3 +244,4 @@ async def get_executive_metrics(
     except Exception as e:
         print(f"[DASHBOARD ERROR] {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error al calcular métricas: {str(e)}")
+

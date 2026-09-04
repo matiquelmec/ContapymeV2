@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { signInWithEmail } from '@/actions/auth'
@@ -63,6 +64,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 defaultValue={initialEmail}
                 placeholder="contador@empresa.cl"
                 required
+                autoComplete="username"
                 className="h-11 bg-background border-input focus:ring-primary focus:border-primary transition-all"
               />
             </div>
@@ -70,12 +72,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <Label htmlFor="password" className="text-foreground/70 text-xs font-semibold uppercase tracking-wider">
                 Contraseña
               </Label>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
                 className="h-11 bg-background border-input focus:ring-primary focus:border-primary transition-all"
               />
             </div>

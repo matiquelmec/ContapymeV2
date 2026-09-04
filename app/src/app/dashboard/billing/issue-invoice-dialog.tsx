@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
     Dialog, 
     DialogContent, 
@@ -88,7 +88,20 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
         onAction: undefined as (() => void) | undefined
     });
 
+    const [loadingPredictive, setLoadingPredictive] = useState(false);
+    const rutTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const rutCacheRef = React.useRef<Record<string, { razon_social?: string; giro?: string; direccion?: string; comuna?: string }>>({});
+
     const supabase = createClient();
+
+    // Limpiar timeout si el componente se desmonta
+    React.useEffect(() => {
+        return () => {
+            if (rutTimeoutRef.current) {
+                clearTimeout(rutTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleRUTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = e.target.value;
@@ -98,13 +111,33 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
         const formatted = formatRUT(cleaned);
         setReceptor(prev => ({ ...prev, rut: formatted }));
 
+        // Cancelar búsqueda anterior en vuelo si el usuario sigue tipeando
+        if (rutTimeoutRef.current) {
+            clearTimeout(rutTimeoutRef.current);
+        }
+
         if (validateRUT(cleaned)) {
-            // Debounce manual
-            const timeoutId = setTimeout(async () => {
+            const normalizedSearch = normalizeRUT(cleaned);
+
+            // 1. Revisar si ya está en caché local de sesión para respuesta instantánea (0ms)
+            if (rutCacheRef.current[normalizedSearch]) {
+                const cached = rutCacheRef.current[normalizedSearch];
+                setReceptor(prev => ({
+                    ...prev,
+                    razon_social: cached.razon_social || prev.razon_social,
+                    giro: cached.giro || prev.giro || '',
+                    direccion: cached.direccion || '',
+                    comuna: cached.comuna || ''
+                }));
+                return;
+            }
+
+            // 2. Debounce optimizado a 400ms para consulta a base de datos
+            rutTimeoutRef.current = setTimeout(async () => {
+                setLoadingPredictive(true);
                 try {
-                    const normalizedSearch = normalizeRUT(cleaned);
-                    // Consultar último DTE emitido a este RUT en dte_issued para autocompletar dirección, comuna, giro y razón social
-                    const { data, error } = await supabase
+                    // Consultar último DTE emitido a este RUT en dte_issued
+                    const { data } = await supabase
                         .from('dte_issued')
                         .select('receptor_razon_social, receptor_giro, receptor_direccion, receptor_comuna')
                         .eq('receptor_rut', normalizedSearch)
@@ -113,12 +146,19 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                         .maybeSingle();
 
                     if (data) {
-                        setReceptor(prev => ({ 
-                            ...prev, 
-                            razon_social: data.receptor_razon_social || prev.razon_social,
-                            giro: data.receptor_giro || prev.giro || '',
+                        const hit = {
+                            razon_social: data.receptor_razon_social || '',
+                            giro: data.receptor_giro || '',
                             direccion: data.receptor_direccion || '',
                             comuna: data.receptor_comuna || ''
+                        };
+                        rutCacheRef.current[normalizedSearch] = hit;
+                        setReceptor(prev => ({ 
+                            ...prev, 
+                            razon_social: hit.razon_social || prev.razon_social,
+                            giro: hit.giro || prev.giro,
+                            direccion: hit.direccion || '',
+                            comuna: hit.comuna || ''
                         }));
                     } else {
                         // Fallback a sales_records
@@ -131,15 +171,17 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                             .maybeSingle();
 
                         if (salesData?.receptor_razon_social) {
+                            const hit = { razon_social: salesData.receptor_razon_social };
+                            rutCacheRef.current[normalizedSearch] = hit;
                             setReceptor(prev => ({ ...prev, razon_social: salesData.receptor_razon_social }));
                         }
                     }
                 } catch (err) {
                     console.error("Error looking up rich receptor details:", err);
+                } finally {
+                    setLoadingPredictive(false);
                 }
-            }, 500);
-
-            return () => clearTimeout(timeoutId);
+            }, 400);
         }
     };
 
@@ -326,6 +368,8 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                     <div className="relative">
                                         <Input id="field_77_123_456_k" name="field_77_123_456_k" 
                                             placeholder="77.123.456-K" 
+                                            autoComplete="off"
+                                            inputMode="text"
                                             className={cn(
                                                 "rounded-xl border-slate-200 h-12 bg-slate-50/50 focus:bg-white font-mono",
                                                 validateRUT(receptor.rut) && "border-emerald-200 bg-emerald-50/20"
@@ -333,7 +377,7 @@ export function IssueInvoiceDialog({ open, onOpenChange, organizationId }: Issue
                                             value={receptor.rut}
                                             onChange={handleRUTChange}
                                         />
-                                        {loading && <Loader2 className="absolute right-3 top-3.5 w-5 h-5 animate-spin text-slate-300" />}
+                                        {loadingPredictive && <Loader2 className="absolute right-3 top-3.5 w-5 h-5 animate-spin text-primary" />}
                                     </div>
                                 </div>
                                 <div className="md:col-span-8 space-y-2">

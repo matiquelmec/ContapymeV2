@@ -21,7 +21,7 @@ export interface MonthlyTrend {
 }
 
 export interface ExecutiveSummary {
-  overallAssessment: 'EXCELLENT' | 'GOOD' | 'AVERAGE' | 'CRITICAL'
+  overallAssessment: 'EXCELLENT' | 'GOOD' | 'AVERAGE' | 'CRITICAL' | 'PREOPERATIONAL'
   score: number
   insights: string[]
 }

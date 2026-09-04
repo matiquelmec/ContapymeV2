@@ -23,7 +23,7 @@ export const monthlyTrendSchema = z.object({
 })
 
 export const executiveSummarySchema = z.object({
-  overallAssessment: z.enum(['EXCELLENT', 'GOOD', 'AVERAGE', 'CRITICAL']),
+  overallAssessment: z.enum(['EXCELLENT', 'GOOD', 'AVERAGE', 'CRITICAL', 'PREOPERATIONAL']),
   score: z.number(),
   insights: z.array(z.string()),
 })

@@ -120,20 +120,34 @@ function calculateSMCConfluence(prices: number[], highs: number[], lows: number[
   return { confluence, logic, verdict }
 }
 
+let cachedIndicators: { data: any[]; timestamp: number } | null = null
+const MEMORY_CACHE_TTL = 15 * 60 * 1000 // 15 minutos en memoria del worker Next.js
+
 /**
  * Obtiene los indicadores económicos y telemetría de Supabase.
  * Gatilla una actualización en segundo plano si están desactualizados.
  */
 export async function getLatestIndicators() {
+  const now = Date.now()
+
+  // 1. Amortización en memoria para eliminar el escaneo secuencial en cada petición
+  if (cachedIndicators && now - cachedIndicators.timestamp < MEMORY_CACHE_TTL) {
+    return { success: true, data: cachedIndicators.data }
+  }
+
   const supabase = await createClient()
   try {
     const { data, error } = await supabase
       .from('economic_indicators')
       .select('*')
       .order('updated_at', { ascending: false })
+      .limit(30) // Solo necesitamos los más recientes por indicador
     
     if (error) {
       console.error('[DATABASE ERROR] Fallo al obtener indicadores:', error.message)
+      if (cachedIndicators) {
+        return { success: true, data: cachedIndicators.data }
+      }
       return { success: false, error: 'No se pudieron obtener indicadores.', data: [] }
     }
 
@@ -145,6 +159,11 @@ export async function getLatestIndicators() {
       }
     }
     const indicators = Array.from(latestByCode.values())
+
+    cachedIndicators = {
+      data: indicators,
+      timestamp: now
+    }
 
     // Verificar si los datos están desactualizados
     let shouldSync = false

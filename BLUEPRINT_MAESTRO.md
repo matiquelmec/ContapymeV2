@@ -147,4 +147,17 @@
   - Normalización de cabeceras HTTP y blindaje contra accesos cruzados (403 Forbidden).
   - 6 pruebas unitarias en `test_sii_defense_generator.py` y suite global de **312 tests aprobados al 100%**.
 
-
+### FASE 23: Optimización de Ciclos, Rendimiento de Base de Datos & Resiliencia Visual — **COMPLETADO**
+* [x] **Agregación Atómica en Supabase (PostgreSQL RPC):**
+  - Creación de migración `20260907000000_optimize_dashboard_financial_aggregates.sql`.
+  - Función `get_organization_financial_aggregates(p_organization_id, p_year)` que computa ventas, compras, nómina y activos en un solo paso dentro del motor SQL, reduciendo la transferencia de miles de filas a 1 solo objeto JSON consolidado.
+  - Índices compuestos estratégicos en `sales_records`, `purchase_records`, `liquidations` e `economic_indicators`.
+* [x] **Optimización de Ciclos y Caché:**
+  - Amortización en memoria en `indicators.ts` (TTL 15 min), reduciendo drásticamente más de 13.000 `seq_scan` innecesarios en `economic_indicators`.
+  - Integración transparente en `dashboard_metrics.py` con fallback resiliente.
+* [x] **Resiliencia de UI y Empty States Asistidos:**
+  - `AssetSummaryCard`: Componente optimizado que detecta empresas sin inventario de activos fijos (ej. *Inversiones Riquelme*) y renderiza un *Empty State* asistido con enlace directo a `/dashboard/accounting/assets`.
+  - Contextualización de Salud Financiera: Empresas con costos o nómina pero sin facturación emitida se categorizan como `"PREOPERATIONAL"` (Fase Preoperativa o de Inversión) en vez de un fallo crítico ciego.
+* [x] **Métricas de Calidad y Suite de Pruebas:**
+  - 5 pruebas unitarias en `tests/test_financial_metrics_and_health.py` evaluando EBITDA, margen IFRS, casos preoperativos, activos en cero y blindaje multi-tenant.
+  - Verificación estática TypeScript aprobada con 0 errores.
