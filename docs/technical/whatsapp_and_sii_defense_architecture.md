@@ -13,7 +13,8 @@ Brindar a los 189 colaboradores de las 37 empresas clientes de Magallanes un can
 Para proteger la privacidad de las liquidaciones y datos sensibles, el motor implementa un handshake criptográfico y contextual:
 1. **Identificación Inicial:** El colaborador envía un mensaje desde su número telefónico. El sistema consulta `employees.telefono` filtrado por la organización activa.
 2. **Desafío 2FA:** Antes de despachar liquidaciones o certificados, el bot solicita los **últimos 4 dígitos del RUT** del colaborador (sin dígito verificador).
-3. **Validación:** Se normaliza el RUT almacenado (`re.sub(r'[^0-9kK]', '', rut)`) y se comparan los 4 dígitos precedentes al guion. Al coincidir, la sesión en `whatsapp_sessions` queda autenticada (`authenticated = true`) por 15 minutos.
+3. **Validación:** Se normaliza el RUT almacenado (`re.sub(r'[^0-9kK]', '', rut)`) y se comparan los 4 dígitos precedentes al guion. Al coincidir, la sesión en `whatsapp_sessions` queda autenticada (`is_authenticated = true`, `auth_stage = 'authenticated'`) y se reinician los intentos fallidos.
+4. **Protección contra Fuerza Bruta:** Cada intento inválido incrementa `failed_attempts`. Al acumular 3 intentos erróneos, la sesión se bloquea fijando `locked_until = now() + INTERVAL '30 minutes'`, impidiendo consultas no autorizadas.
 
 ```mermaid
 sequenceDiagram

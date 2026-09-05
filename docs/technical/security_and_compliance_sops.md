@@ -17,6 +17,9 @@ Este documento formaliza los Procedimientos Operativos Estándar (SOP) aplicados
 * **SOP-SEC-04:** Sellado Temporal y Cadena de Integridad SHA-256 (Ledger Inmutable)
 * **SOP-SEC-05:** Compliance Laboral, Ley Karin y Auditoría Salarial
 * **SOP-SEC-06:** Regulación de Deducciones por Créditos Sociales CCAF (Tope 15%)
+* **SOP-SEC-07:** Blindaje Anti-Duplicidad en Facturación de Órdenes de Compra (HTTP 409 Conflict)
+* **SOP-SEC-08:** Cuadratura Aritmética de Nómina y Centralización al Libro Mayor
+* **SOP-SEC-09:** Blindaje contra Ataques de Fuerza Bruta en Autoatención Laboral WhatsApp
 
 ---
 
@@ -106,3 +109,44 @@ Cumplir con el Artículo 22 de la Ley N° 18.833 sobre retenciones y descuentos 
 1. **Límite de Descuento Legal:** El monto descontado por créditos sociales no puede superar el **15% de la remuneración líquida** del colaborador, a menos que exista mandato expreso del trabajador bajo condiciones autorizadas.
 2. **Control de Amortización:** La tabla `payroll_loan_deductions` mantiene el conteo estricto `cuota_actual` vs. `num_cuotas`. Al cumplirse la última cuota, el sistema marca el descuento como `inactivo` impidiendo cobros indebidos.
 3. **Declaración en Previred:** Los montos retenidos se consolidan en los campos correspondientes del archivo de remuneraciones Previred para su pago directo a la Caja de Compensación.
+
+---
+
+## 🧾 SOP-SEC-07: Blindaje Anti-Duplicidad en Facturación de Órdenes de Compra (HTTP 409 Conflict)
+
+### Objetivo
+Evitar la doble facturación de órdenes de compra para impedir la duplicación fraudulenta o accidental del débito fiscal IVA ante el Servicio de Impuestos Internos (SII).
+
+### Procedimiento
+1. **Verificación de Estado Previo:** Antes de invocar el motor de timbraje `DTELogic`, el sistema verifica si la Orden de Compra (`purchase_orders`) tiene estado `facturada` o cuenta con un `folio_dte` existente.
+2. **Respuesta Fail-Closed:** Ante reintentos de facturación, se aborta la operación arrojando `HTTP 409 Conflict`, bloqueando la emisión de un nuevo DTE ante el SII.
+3. **Manejo de Factura Exenta (DTE 34):** Cuando el tipo de documento emitido corresponde a un DTE 34, el sistema fuerza estrictamente `tasa_iva = 0.0` y `monto_iva = 0`.
+4. **Trazabilidad SII:** Toda factura generada a partir de una orden de compra inyecta automáticamente la referencia normativa SII Código 801 (Orden de Compra), consignando número y fecha.
+
+---
+
+## ⚖️ SOP-SEC-08: Cuadratura Aritmética de Nómina y Centralización al Libro Mayor
+
+### Objetivo
+Garantizar la regla contable de la partida doble `Total Debe == Total Haber` sin discrepancias al generar el asiento de centralización de remuneraciones.
+
+### Procedimiento
+1. **Mapeo Obligatorio de Contrapartidas de Descuento:**
+   * `1.1.04.001`: Anticipos al Personal (Activo / Por Cobrar)
+   * `1.1.04.002`: Préstamos al Personal (Activo / Por Cobrar)
+   * `2.1.04.007`: Créditos CCAF por Pagar (Pasivo / Por Pagar a la Caja)
+   * `2.1.04.008`: Retenciones Judiciales / Alimentos por Pagar (Pasivo)
+   * `2.1.04.009`: Otros Descuentos por Pagar (Pasivo)
+2. **Validación de Integridad:** Se calcula el total de cargos y abonos. Si la discrepancia es estrictamente menor a $10 por efectos de redondeo, se balancea en sueldos por pagar (`2.1.04.001`). Si el descuadre supera $10, la transacción se aborta con `HTTP 400 Bad Request` protegiendo la integridad del Libro Mayor.
+
+---
+
+## 🤖 SOP-SEC-09: Blindaje contra Ataques de Fuerza Bruta en Autoatención WhatsApp
+
+### Objetivo
+Prevenir ataques automatizados de adivinación de PIN o números de identidad de colaboradores a través del portal conversacional de autoatención.
+
+### Procedimiento
+1. **Contador de Intentos en Sesión:** La tabla `whatsapp_sessions` monitorea el atributo `failed_attempts` por cada par `(phone_number, organization_id)`.
+2. **Bloqueo Temporal Inmutable:** Si un usuario acumula 3 intentos fallidos consecutivos al ingresar los dígitos de verificación 2FA, el sistema registra una marca temporal `locked_until = now() + INTERVAL '30 minutes'`.
+3. **Rechazo con Notificación:** Mientras `now() < locked_until`, el motor rechaza cualquier procesamiento de intenciones sensibles (liquidaciones, vacaciones, certificados) y notifica al usuario el tiempo restante de bloqueo.
