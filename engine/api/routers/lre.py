@@ -20,7 +20,7 @@ import csv
 import logging
 from core.database import get_supabase
 from core.utils.shared_utils import clean_rut_simple as clean_rut
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.payroll_status import closed_liquidation_statuses
 from calculators.national_params import get_tramo_asignacion
 from openpyxl import Workbook
@@ -128,6 +128,7 @@ class LREGenerateRequest(BaseModel):
 @router.get("/list")
 async def list_lre(organization_id: str, current_user: dict = Depends(verify_token)):
     """Lista libros LRE. Consulta directa a DB (sin caché) para evitar IDs obsoletos."""
+    await verify_org_role(organization_id, auth=current_user)
     db = get_supabase()
     try:
         res = db.table("payroll_books") \
@@ -146,6 +147,7 @@ async def list_lre(organization_id: str, current_user: dict = Depends(verify_tok
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 @router.post("/generate")
 async def generate_lre(req: LREGenerateRequest, current_user: dict = Depends(verify_token)):
+    await verify_org_role(req.organization_id, required_roles=["owner", "admin", "accountant"], auth=current_user)
     db = get_supabase()
     org_id = req.organization_id
     # Normalizar periodo: siempre YYYY-MM-DD para la DB
@@ -300,14 +302,17 @@ async def export_lre(book_id: str, current_user: dict = Depends(verify_token)):
             )
         book = book_res.data[0]
         
-        # 2. Recuperar detalles por trabajador
+        # 2. Validar pertenencia a la organización (Anti-IDOR / Multi-tenant isolation)
+        org_id = book.get("organization_id")
+        await verify_org_role(org_id, auth=current_user)
+
+        # 3. Recuperar detalles por trabajador
         details = db.table("payroll_book_details") \
             .select("*") \
             .eq("payroll_book_id", book_id) \
             .execute().data or []
         
-        # 3. Recuperar configuración organizacional (Mutual, CCAF)
-        org_id = book.get("organization_id")
+        # 4. Recuperar configuración organizacional (Mutual, CCAF)
         settings_res = db.table("organization_payroll_settings") \
             .select("*") \
             .eq("organization_id", org_id) \
@@ -539,6 +544,10 @@ async def export_lre_excel(book_id: str, current_user: dict = Depends(verify_tok
             )
         book = book_res.data[0]
         
+        # Validar pertenencia a la organización (Anti-IDOR / Multi-tenant isolation)
+        org_id = book.get("organization_id")
+        await verify_org_role(org_id, auth=current_user)
+
         # 2. Recuperar detalles por trabajador
         details = db.table("payroll_book_details") \
             .select("*") \

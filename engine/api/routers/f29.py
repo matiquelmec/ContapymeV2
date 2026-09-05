@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from parsers.f29_plumber import parse_f29_pdf
 from core.database import get_supabase
-from core.auth import verify_token
+from core.auth import verify_token, verify_org_role
 from core.logger import log_activity, log_system_error
 from api.routers.accounting import get_accounting_config
 
@@ -39,6 +39,7 @@ class F29Response(BaseModel):
 
 @router.post("/process", response_model=F29Response)
 async def process_f29(payload: ProcessF29Request, current_user: dict = Depends(verify_token)):
+    await verify_org_role(payload.org_id, auth=current_user)
     db = get_supabase()
     if not payload.storage_path.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Documento inválido. Se requiere un PDF del F29.")
@@ -84,6 +85,7 @@ async def audit_f29_against_rcv(payload: AuditF29Request, current_user: dict = D
     Auditoría Preventiva F29 ↔ RCV (Pre-SII Shield).
     Cruza el formulario declarado contra las ventas y compras reales registradas.
     """
+    await verify_org_role(payload.organization_id, auth=current_user)
     db = get_supabase()
     org_id = payload.organization_id
     periodo = payload.periodo # ej: '2026-05'
@@ -176,6 +178,7 @@ async def audit_f29_against_rcv(payload: AuditF29Request, current_user: dict = D
 
 @router.delete("/{organization_id}/{f29_id}")
 async def delete_f29_record(organization_id: str, f29_id: str, current_user: dict = Depends(verify_token)):
+    await verify_org_role(organization_id, required_roles=["owner", "admin", "accountant"], auth=current_user)
     db = get_supabase()
     
     # 1. Obtener Periodo
@@ -213,6 +216,7 @@ async def delete_f29_record_by_id(f29_id: str, current_user: dict = Depends(veri
 
 @router.get("/analysis/history")
 async def get_f29_history(organization_id: str, limit: int = 12, current_user: dict = Depends(verify_token)):
+    await verify_org_role(organization_id, auth=current_user)
     cache_key = f"f29_hist_{organization_id}_{limit}"
     cached = _get_f29_cache(cache_key)
     if cached: return cached
@@ -284,6 +288,7 @@ async def centralize_f29(req: CentralizeF29Request, current_user: dict = Depends
     Centraliza automáticamente el F29 en el Libro Mayor.
     Genera el Asiento Contable Provisión F29 idempóticamente.
     """
+    await verify_org_role(req.org_id, required_roles=["owner", "admin", "accountant"], auth=current_user)
     db = get_supabase()
     
     try:

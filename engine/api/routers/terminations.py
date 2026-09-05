@@ -32,6 +32,7 @@ class TerminationRequest(BaseModel):
     viaticos: int = 0
     prestamo_ccaf: int = 0
     anticipo_sueldo: int = 0
+    descuento_afc_patronal: int = 0
     banco_transferencia: Optional[str] = ""
     tipo_cuenta: Optional[str] = ""
     cuenta_transferencia: Optional[str] = ""
@@ -144,6 +145,11 @@ async def calculate_termination(
             tope_90_uf = int(uf_value * 90)
             base_indemnizacion = min(base_calculo, tope_90_uf)
             monto_anos_servicio = base_indemnizacion * time_stats["severance_years"]
+            
+            # FRANQUICIA ART. 13 LEY 19.728: Imputación del aporte patronal al seguro de cesantía (Art. 161)
+            descuento_afc = max(0, getattr(req, "descuento_afc_patronal", 0) or 0)
+            if descuento_afc > 0:
+                monto_anos_servicio = max(0, monto_anos_servicio - descuento_afc)
  
         monto_mes_aviso = 0
         if requires_notice and not req.aviso_previo:
@@ -164,11 +170,24 @@ async def calculate_termination(
             req.viaticos
         )
         
-        # Descuentos de finiquito
-        total_descuentos_finiquito = req.prestamo_ccaf + req.anticipo_sueldo
+        # 🛡️ DEDUCCIONES PREVISIONALES SOBRE DÍAS TRABAJADOS (Evitar pagar sueldo bruto sin retenciones)
+        imponible_dias_trabajados = pending_salary_amount + req.pending_overtime_amount + req.other_bonuses
+        from calculators.national_params import get_afp_comision
+        afp_code = (emp.get("afp") or "HABITAT").upper()
+        tasa_afp = 10.0 + get_afp_comision(afp_code)
+        tasa_salud = 7.0
+        tasa_afc = 0.6 if (emp.get("tipo_contrato") or "indefinido").lower() == "indefinido" and emp.get("afc_active", True) else 0.0
+
+        descuento_afp_finiquito = int(round(imponible_dias_trabajados * (tasa_afp / 100.0)))
+        descuento_salud_finiquito = int(round(imponible_dias_trabajados * (tasa_salud / 100.0)))
+        descuento_afc_finiquito = int(round(imponible_dias_trabajados * (tasa_afc / 100.0)))
+        total_leyes_sociales_finiquito = descuento_afp_finiquito + descuento_salud_finiquito + descuento_afc_finiquito
+
+        # Descuentos de finiquito (no legales + cotizaciones legales del mes)
+        total_descuentos_finiquito = req.prestamo_ccaf + req.anticipo_sueldo + total_leyes_sociales_finiquito
         
         # Total líquido final de finiquito
-        total_liquido_finiquito = total_haberes_finiquito - total_descuentos_finiquito
+        total_liquido_finiquito = max(0, total_haberes_finiquito - total_descuentos_finiquito)
         
         termination_data = {
             "organization_id": req.organization_id,
@@ -181,6 +200,8 @@ async def calculate_termination(
             "monto_indemnizacion_anos": int(monto_anos_servicio),
             "monto_mes_aviso": int(monto_mes_aviso),
             "total_finiquito": int(total_liquido_finiquito),
+            "total_leyes_sociales": int(total_leyes_sociales_finiquito),
+            "descuento_afc_patronal": int(getattr(req, "descuento_afc_patronal", 0) or 0),
             "status": "borrador",
             "worked_days_last_month": worked_days_last_month,
             "pending_salary_amount": pending_salary_amount,

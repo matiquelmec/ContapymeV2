@@ -297,33 +297,79 @@ async def process_inbound_message(phone_number_id: str, sender_phone: str, messa
         .execute()
         
     session = session_res.data[0] if session_res.data else None
-    is_authenticated = session.get("authenticated", False) if session else False
+    is_authenticated = session.get("is_authenticated", False) if session else False
+    failed_attempts = session.get("failed_attempts", 0) if session else 0
+    locked_until_str = session.get("locked_until") if session else None
+
+    # Verificar si el usuario está bloqueado por fuerza bruta
+    if locked_until_str:
+        try:
+            locked_until = datetime.fromisoformat(locked_until_str.replace("Z", "+00:00"))
+            if datetime.now(locked_until.tzinfo) < locked_until:
+                minutos_restantes = max(1, int((locked_until - datetime.now(locked_until.tzinfo)).total_seconds() / 60))
+                await provider.send_text_message(
+                    sender_phone,
+                    f"🔒 Tu cuenta ha sido bloqueada temporalmente por múltiples intentos fallidos. Intenta nuevamente en {minutos_restantes} minutos o comunícate con RRHH."
+                )
+                return
+        except Exception as lock_err:
+            logger.warn(f"[WhatsApp] Error al evaluar locked_until: {lock_err}")
     
     digits_match = re.match(r'^\s*(\d{4})\s*$', message_text)
     if digits_match:
         input_digits = digits_match.group(1)
-        if WhatsAppIntentEngine.validate_2fa_pin(input_digits, emp.get("rut", "")):
+        if WhatsAppIntentEngine.validate_2fa_response(input_digits, emp):
             db.table("whatsapp_sessions").upsert({
                 "organization_id": org_id,
                 "phone_number": sender_phone,
                 "employee_id": emp["id"],
-                "authenticated": True,
-                "last_interaction": datetime.utcnow().isoformat()
+                "is_authenticated": True,
+                "auth_stage": "authenticated",
+                "failed_attempts": 0,
+                "locked_until": None,
+                "last_interaction_at": datetime.utcnow().isoformat()
             }).execute()
             reply = f"✅ ¡Identidad verificada con éxito, {nombre}!\n\n¿En qué te puedo ayudar hoy?\n1️⃣ Escribe *'mi liquidación'* para ver tu sueldo\n2️⃣ Escribe *'mis vacaciones'* para consultar tus días disponibles en Magallanes\n3️⃣ Escribe *'certificado'* para obtener un certificado laboral\n4️⃣ Escribe tu consulta sobre el reglamento interno o Ley Karin"
             await provider.send_text_message(sender_phone, reply)
             return
         else:
-            await provider.send_text_message(sender_phone, "❌ Los 4 dígitos ingresados no coinciden con tu RUT registrado. Por favor intenta nuevamente.")
-            return
+            new_failed = failed_attempts + 1
+            upsert_payload = {
+                "organization_id": org_id,
+                "phone_number": sender_phone,
+                "employee_id": emp["id"],
+                "is_authenticated": False,
+                "auth_stage": "awaiting_2fa",
+                "failed_attempts": new_failed,
+                "last_interaction_at": datetime.utcnow().isoformat()
+            }
+            if new_failed >= 3:
+                from datetime import timedelta
+                lock_time = datetime.utcnow() + timedelta(minutes=30)
+                upsert_payload["locked_until"] = lock_time.isoformat()
+                db.table("whatsapp_sessions").upsert(upsert_payload).execute()
+                await provider.send_text_message(
+                    sender_phone,
+                    "🔒 Has superado el límite de 3 intentos de verificación. Por tu seguridad laboral, tu acceso ha sido bloqueado por 30 minutos."
+                )
+                return
+            else:
+                db.table("whatsapp_sessions").upsert(upsert_payload).execute()
+                intentos_restantes = 3 - new_failed
+                await provider.send_text_message(
+                    sender_phone,
+                    f"❌ Los 4 dígitos ingresados no coinciden con tu registro. Te quedan {intentos_restantes} intento(s) antes del bloqueo de seguridad."
+                )
+                return
 
     if cfg.get("require_2fa", True) and not is_authenticated:
         db.table("whatsapp_sessions").upsert({
             "organization_id": org_id,
             "phone_number": sender_phone,
             "employee_id": emp["id"],
-            "authenticated": False,
-            "last_interaction": datetime.utcnow().isoformat()
+            "is_authenticated": False,
+            "auth_stage": "awaiting_2fa",
+            "last_interaction_at": datetime.utcnow().isoformat()
         }).execute()
         solicitud_pin = f"¡Hola {nombre}! 👋 Por tu seguridad y privacidad laboral, por favor ingresa los *últimos 4 dígitos de tu RUT* (sin contar el dígito verificador) para validar tu identidad."
         await provider.send_text_message(sender_phone, solicitud_pin)

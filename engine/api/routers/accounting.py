@@ -113,7 +113,12 @@ def get_accounting_config(db, org_id: str, module: str, tx_type: str):
             "liability_salud_code": "2.1.04.005", "liability_salud_name": "Salud por Pagar",
             "liability_afc_code": "2.1.04.006", "liability_afc_name": "AFC por Pagar",
             "liability_tax_code": "2.1.03.001", "liability_tax_name": "Impuesto Único Retenido por Pagar",
-            "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar"
+            "liability_net_code": "2.1.04.001", "liability_net_name": "Sueldos por Pagar",
+            "asset_advance_code": "1.1.04.001", "asset_advance_name": "Anticipos al Personal",
+            "asset_loan_code": "1.1.04.002", "asset_loan_name": "Préstamos al Personal",
+            "liability_ccaf_code": "2.1.04.007", "liability_ccaf_name": "Créditos CCAF por Pagar",
+            "liability_judicial_code": "2.1.04.008", "liability_judicial_name": "Retenciones Judiciales por Pagar",
+            "liability_other_deductions_code": "2.1.04.009", "liability_other_deductions_name": "Otros Descuentos por Pagar"
         }
     elif module == 'assets':
         default_config = {
@@ -437,6 +442,11 @@ async def generate_from_payroll(
         t_afc = 0
         t_impuestos = 0
         t_liquido = 0
+        t_anticipos = 0
+        t_prestamos = 0
+        t_ccaf = 0
+        t_ret_judicial = 0
+        t_otros_desc = 0
 
         # Sumarización
         for liq in liquidations:
@@ -447,7 +457,7 @@ async def generate_from_payroll(
             afc_emp = int(liq.get("afc_empresa", 0) or 0)
             t_leyes_empresa += (sis + afc_emp)
             
-            # Pasivos
+            # Pasivos legales
             afp_total = int(liq.get("afp", 0) or 0) + int(liq.get("afp_comision", 0) or 0) + sis
             t_afp += afp_total
             
@@ -458,6 +468,26 @@ async def generate_from_payroll(
             
             t_impuestos += int(liq.get("impuesto_unico", 0) or 0)
             t_liquido += int(liq.get("sueldo_liquido", 0) or 0)
+
+            # Desglose de otros descuentos para garantizar cuadratura contable estricta
+            snapshot = liq.get("calculation_snapshot") or {}
+            c_anticipo = int(liq.get("anticipo", 0) or snapshot.get("anticipo", 0) or 0)
+            c_prestamo = int(liq.get("prestamo", 0) or snapshot.get("prestamo", 0) or 0)
+            c_ccaf = int(liq.get("credito_ccaf", 0) or snapshot.get("credito_ccaf", 0) or 0)
+            c_judicial = int(liq.get("retencion_judicial", 0) or snapshot.get("retencion_judicial", 0) or 0)
+            c_varios = int(snapshot.get("otros_descuentos_varios", 0) or 0)
+
+            # Conciliar si existen 'otros_descuentos' adicionales no desglosados
+            otros_tot = int(liq.get("otros_descuentos", 0) or 0)
+            desglosado = c_anticipo + c_prestamo + c_ccaf + c_judicial + c_varios
+            if otros_tot > desglosado:
+                c_varios += (otros_tot - desglosado)
+
+            t_anticipos += c_anticipo
+            t_prestamos += c_prestamo
+            t_ccaf += c_ccaf
+            t_ret_judicial += c_judicial
+            t_otros_desc += c_varios
 
         # Auto-crear las cuentas contables de nómina si no existen (RPC robusta con ON CONFLICT)
         try:
@@ -482,7 +512,7 @@ async def generate_from_payroll(
                 "tipo": "debe", "monto": t_leyes_empresa
             })
 
-        # --- ABONOS (Haber - Pasivos) ---
+        # --- ABONOS (Haber - Pasivos y Contrapartidas de Descuento) ---
         if t_afp > 0:
             lines_to_insert.append({
                 "cuenta_codigo": config.get("liability_afp_code", "2.1.04.004"), 
@@ -512,6 +542,38 @@ async def generate_from_payroll(
                 "cuenta_codigo": config.get("liability_net_code", "2.1.04.001"), 
                 "cuenta_nombre": config.get("liability_net_name", "Sueldos por Pagar"), 
                 "tipo": "haber", "monto": t_liquido
+            })
+
+        # Líneas de Haber para otros descuentos (recuperación de anticipos y pasivos CCAF/judiciales)
+        if t_anticipos > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config.get("asset_advance_code", "1.1.04.001"),
+                "cuenta_nombre": config.get("asset_advance_name", "Anticipos al Personal"),
+                "tipo": "haber", "monto": t_anticipos
+            })
+        if t_prestamos > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config.get("asset_loan_code", "1.1.04.002"),
+                "cuenta_nombre": config.get("asset_loan_name", "Préstamos al Personal"),
+                "tipo": "haber", "monto": t_prestamos
+            })
+        if t_ccaf > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config.get("liability_ccaf_code", "2.1.04.007"),
+                "cuenta_nombre": config.get("liability_ccaf_name", "Créditos CCAF por Pagar"),
+                "tipo": "haber", "monto": t_ccaf
+            })
+        if t_ret_judicial > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config.get("liability_judicial_code", "2.1.04.008"),
+                "cuenta_nombre": config.get("liability_judicial_name", "Retenciones Judiciales por Pagar"),
+                "tipo": "haber", "monto": t_ret_judicial
+            })
+        if t_otros_desc > 0:
+            lines_to_insert.append({
+                "cuenta_codigo": config.get("liability_other_deductions_code", "2.1.04.009"),
+                "cuenta_nombre": config.get("liability_other_deductions_name", "Otros Descuentos por Pagar"),
+                "tipo": "haber", "monto": t_otros_desc
             })
 
         # --- VALIDACION DE CUADRATURA ESTRICTA ---

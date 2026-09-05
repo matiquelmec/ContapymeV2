@@ -148,11 +148,19 @@ async def convert_oc_to_dte(
     if not oc:
         raise HTTPException(status_code=404, detail="Orden de Compra no encontrada")
 
+    # 🛡️ BLINDAJE ANTI-DUPLICIDAD: Evitar doble facturación y duplicidad de débito fiscal IVA
+    if oc.get("estado") == "facturada" or oc.get("folio_dte"):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Conflicto: La Orden de Compra N° {oc.get('numero')} ya fue facturada (Folio DTE {oc.get('folio_dte')}). No se permite facturar dos veces para proteger el crédito fiscal."
+        )
+
     await verify_org_role(oc["organization_id"], required_roles=["owner", "admin", "accountant"], auth=auth)
 
     try:
         logic = DTELogic(oc["organization_id"])
 
+        is_exenta = (int(tipo_dte) == 34)
         items_dict = []
         for it in oc.get("purchase_order_items", []):
             subtotal = int(round(it["cantidad"] * it["precio_unitario"] * (1 - it["descuento_pct"] / 100.0)))
@@ -161,28 +169,39 @@ async def convert_oc_to_dte(
                 "quantity": float(it["cantidad"]),
                 "unit_price": int(it["precio_unitario"]),
                 "total_amount": subtotal,
-                "is_exempt": not it["afecto_iva"]
+                "is_exempt": True if is_exenta else (not it["afecto_iva"])
             })
+
+        monto_neto = 0 if is_exenta else int(oc.get("neto", 0))
+        monto_iva = 0 if is_exenta else int(oc.get("iva", 0))
+        tasa_iva = 0.0 if is_exenta else 19.0
 
         dte_payload = {
             "organization_id": oc["organization_id"],
             "tipo_dte": tipo_dte,
             "receptor_rut": oc["cliente_rut"],
             "receptor_razon_social": oc["cliente_nombre"],
-            "monto_neto": oc["neto"],
-            "monto_iva": oc["iva"],
-            "monto_total": oc["total"],
-            "tasa_iva": 19.0
+            "monto_neto": monto_neto,
+            "monto_iva": monto_iva,
+            "monto_total": int(oc.get("total", 0)),
+            "tasa_iva": tasa_iva,
+            "referencias": [{
+                "tipo_doc": "801",  # 801 = Código SII para Orden de Compra
+                "folio": str(oc.get("numero")),
+                "fecha_ref": str(oc.get("fecha") or date.today().isoformat()),
+                "razon_ref": f"Orden de Compra N° {oc.get('numero')}"
+            }]
         }
 
         # Generar DTE firmado
         result = await logic.create_and_sign_invoice(dte_payload, items_dict)
 
-        # Actualizar estado de la OC a "facturada"
+        # Actualizar estado de la OC a "facturada" con el folio y el ID del DTE generado
         db.table("purchase_orders").update({
             "estado": "facturada",
             "tipo_dte": tipo_dte,
-            "folio_dte": result.get("folio")
+            "folio_dte": result.get("folio"),
+            "dte_id": result.get("id")
         }).eq("id", oc_id).execute()
 
         return {
@@ -191,6 +210,8 @@ async def convert_oc_to_dte(
             "dte_result": result
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"[OC Convert Error] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
