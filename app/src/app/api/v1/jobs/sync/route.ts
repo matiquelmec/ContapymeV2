@@ -67,12 +67,32 @@ async function handleSync(req: NextRequest) {
     // 4. Ejecutar sincronización e ingesta de vacantes regionales
     const syncResult = await syncRegionalJobs()
 
-    // 5. Revalidar rutas públicas
+    const durationMs = Date.now() - startMs
+
+    // 5. Registrar telemetría del cron en audit_logs para trazabilidad inmutable
+    const adminDb = createAdminClient()
+    try {
+      await adminDb.from('audit_logs').insert({
+        action: 'CRON_JOBS_SYNC_EXECUTED',
+        entity_type: 'job_postings_cron',
+        entity_id: 'cron_sync_' + new Date().toISOString().slice(0, 10),
+        details: {
+          inserted_count: syncResult.insertedCount,
+          skipped_count: syncResult.skippedCount,
+          expired_cleaned: cleanupResult.expiredCount,
+          duration_ms: durationMs,
+          source: vercelCronHeader === '1' ? 'vercel_cron' : authHeader ? 'bearer_cron_secret' : 'admin_session',
+          timestamp: new Date().toISOString(),
+        }
+      })
+    } catch (logErr: any) {
+      console.warn('[Jobs Sync Audit Log Warning]:', logErr.message)
+    }
+
+    // 6. Revalidar rutas públicas
     revalidatePath('/empleos')
     revalidatePath('/dashboard/empleos')
     revalidatePath('/sitemap-jobs.xml')
-
-    const durationMs = Date.now() - startMs
 
     return NextResponse.json({
       success: true,

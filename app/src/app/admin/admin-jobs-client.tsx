@@ -14,7 +14,8 @@ import {
   Eye, 
   ShieldCheck, 
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +33,25 @@ export function AdminJobsClient({ initialJobs }: AdminJobsClientProps) {
   const [jobs, setJobs] = useState<JobPosting[]>(initialJobs)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const handleManualSync = async () => {
+    setIsSyncing(true)
+    try {
+      const res = await fetch('/api/v1/jobs/sync', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(`Sincronización exitosa: ${data.metrics?.inserted_count || 0} nuevos empleos inyectados (${data.metrics?.skipped_count || 0} omitidos por deduplicación).`)
+        router.refresh()
+      } else {
+        toast.error(data.error || 'Error al ejecutar sincronización.')
+      }
+    } catch (err: any) {
+      toast.error('Fallo de red al sincronizar empleos: ' + err.message)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const filteredJobs = jobs.filter((j) => {
     const matchesSearch =
@@ -82,7 +102,7 @@ export function AdminJobsClient({ initialJobs }: AdminJobsClientProps) {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {['ALL', 'active', 'filled', 'expired'].map((st) => (
             <Button
               key={st}
@@ -94,6 +114,16 @@ export function AdminJobsClient({ initialJobs }: AdminJobsClientProps) {
               {st === 'ALL' ? 'Todas' : st === 'active' ? 'Activas' : st === 'filled' ? 'Cubiertas' : 'Expiradas'}
             </Button>
           ))}
+
+          <Button
+            size="sm"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="rounded-xl h-9 px-3.5 text-[10px] font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs transition-all gap-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Feed'}</span>
+          </Button>
         </div>
       </div>
 

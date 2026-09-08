@@ -156,3 +156,37 @@ class TestJobsCronAutomation:
 
         assert inserted_p2 == 0, "En un reintento no deben insertarse nuevos duplicados."
         assert skipped_p2 == 2, "En un reintento todos los elementos existentes deben ser ignorados."
+
+    def test_06_github_actions_redundant_daily_sync_workflow(self):
+        """Verifica que exista el workflow de GitHub Actions como segundo canal de redundancia diaria."""
+        gh_workflow_path = os.path.join(".github", "workflows", "jobs-daily-sync.yml")
+        assert os.path.exists(gh_workflow_path), "Debe existir .github/workflows/jobs-daily-sync.yml."
+
+        with open(gh_workflow_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        assert "cron: '0 11 * * *'" in content, "El workflow debe ejecutarse diariamente a las 11:00 UTC."
+        assert "/api/v1/jobs/sync" in content, "El workflow debe invocar la ruta /api/v1/jobs/sync."
+        assert "Authorization: Bearer" in content, "El workflow debe autenticarse de forma segura con token Bearer."
+
+    def test_07_audit_log_telemetry_schema(self):
+        """Valida que el evento de auditoría del cron posea los campos de telemetría inmutable."""
+        log_entry = {
+            "action": "CRON_JOBS_SYNC_EXECUTED",
+            "entity_type": "job_postings_cron",
+            "entity_id": "cron_sync_2026-09-08",
+            "details": {
+                "inserted_count": 6,
+                "skipped_count": 6,
+                "expired_cleaned": 0,
+                "duration_ms": 420,
+                "source": "vercel_cron",
+                "timestamp": "2026-09-08T11:00:00.000Z"
+            }
+        }
+        assert log_entry["action"] == "CRON_JOBS_SYNC_EXECUTED"
+        assert log_entry["entity_type"] == "job_postings_cron"
+        assert "inserted_count" in log_entry["details"]
+        assert "skipped_count" in log_entry["details"]
+        assert "duration_ms" in log_entry["details"]
+

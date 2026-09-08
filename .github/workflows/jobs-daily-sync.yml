@@ -1,0 +1,39 @@
+﻿name: 🔄 Daily Regional Jobs Sync & Lifecycle Audit
+
+on:
+  schedule:
+    # 11:00 UTC = 08:00 AM Punta Arenas (Magallanes) todos los días
+    - cron: '0 11 * * *'
+  workflow_dispatch: # Permite ejecución manual desde GitHub Actions
+
+jobs:
+  sync-magallanes-jobs:
+    name: 🌐 Ingesta Diaria de Vacantes Magallanes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Disparar Sincronización Segura vía Endpoint Vercel / Cloud
+        env:
+          SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://contapymepuq.cl' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "Disparando sincronización diaria de empleos en $SITE_URL/api/v1/jobs/sync..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$SITE_URL/api/v1/jobs/sync" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Código HTTP recibido: $HTTP_CODE"
+          echo "Respuesta del servidor: $BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Sincronización y ciclo de vida de empleos completado con éxito."
+          else
+            echo "⚠️ Advertencia o Fallo en la sincronización (HTTP $HTTP_CODE)."
+            exit 1
+          fi
