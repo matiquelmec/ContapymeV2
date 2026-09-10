@@ -12,6 +12,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { generateNvidiaMacroAnalysisAction } from "@/actions/nvidia-macro";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 interface MacroRadarRealtimeProps {
@@ -20,6 +21,8 @@ interface MacroRadarRealtimeProps {
 }
 
 export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRadarRealtimeProps) {
+  const [liveIndicators, setLiveIndicators] = useState<any[]>(indicators);
+  const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({});
   const [analysis, setAnalysis] = useState<string>(
     initialAnalysis || 
     "El escenario cambiario y el nivel de tasas de interés condicionan las decisiones de inversión en la Patagonia. Una cotización estable del dólar beneficia a los importadores de la Zona Franca de Punta Arenas, mientras que los costos de energía y transporte marítimo dependen de la evolución del petróleo internacional."
@@ -27,9 +30,69 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("En vivo");
 
+  useEffect(() => {
+    setLiveIndicators(indicators);
+  }, [indicators]);
+
+  // Suscripción a Supabase Realtime para cotizaciones en vivo
+  useEffect(() => {
+    let channel: any;
+    try {
+      const supabase = createClient();
+      channel = supabase
+        .channel("macro_radar_realtime_indicators")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "economic_indicators",
+          },
+          (payload: any) => {
+            const newRecord = payload.new;
+            if (newRecord && newRecord.codigo) {
+              setLiveIndicators((prev) => {
+                const updated = [...prev];
+                const idx = updated.findIndex((i) => i.codigo === newRecord.codigo);
+                if (idx !== -1) {
+                  updated[idx] = { ...updated[idx], ...newRecord };
+                } else {
+                  updated.push(newRecord);
+                }
+                return updated;
+              });
+
+              setUpdatedCodes((prev) => ({ ...prev, [newRecord.codigo]: true }));
+              setTimeout(() => {
+                setUpdatedCodes((prev) => ({ ...prev, [newRecord.codigo]: false }));
+              }, 2500);
+            }
+          }
+        );
+      channel.subscribe();
+    } catch (err) {
+      console.error("Error al suscribir MacroRadar a Realtime:", err);
+    }
+
+    return () => {
+      if (channel) {
+        try {
+          const supabase = createClient();
+          supabase.removeChannel(channel);
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
   const getInd = (code: string, fallback: string) => {
-    const item = indicators.find((i) => i.codigo === code);
-    return item ? `$${Number(item.valor).toLocaleString("es-CL")}` : fallback;
+    const item = liveIndicators.find((i) => i.codigo === code);
+    if (!item) return fallback;
+    if (code === "libra_cobre") {
+      return `US$ ${Number(item.valor).toFixed(2)}/lb`;
+    }
+    return `$${Number(item.valor).toLocaleString("es-CL")}`;
   };
 
   const handleRefreshAnalysis = async () => {
@@ -103,7 +166,7 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
 
       {/* Métricas Oficiales en Vivo */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        <div className="p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border border-border/60 space-y-1">
+        <div className={`p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border transition-all duration-500 space-y-1 ${updatedCodes["dolar"] ? "border-emerald-500 bg-emerald-500/10 scale-105" : "border-border/60"}`}>
           <span className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
             Dólar Observado
           </span>
@@ -112,7 +175,7 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
           </span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border border-border/60 space-y-1">
+        <div className={`p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border transition-all duration-500 space-y-1 ${updatedCodes["uf"] ? "border-emerald-500 bg-emerald-500/10 scale-105" : "border-border/60"}`}>
           <span className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
             Unidad de Fomento
           </span>
@@ -121,12 +184,12 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
           </span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/20 space-y-1">
+        <div className={`col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border transition-all duration-500 space-y-1 ${updatedCodes["libra_cobre"] ? "border-emerald-500 scale-105" : "border-emerald-500/20"}`}>
           <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
             Cobre COMEX
           </span>
           <span className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-400 tabular-nums font-mono">
-            US$ 4.52/lb
+            {getInd("libra_cobre", "US$ 4.52/lb")}
           </span>
         </div>
       </div>
