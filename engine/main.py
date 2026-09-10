@@ -91,7 +91,7 @@ app.include_router(ml_classifier.router,       prefix="/api/v1/ai",          tag
 app.include_router(dte.router,                 prefix="/api/v1/dte",         tags=["Facturación Electrónica DTE"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(dj1887.router,              prefix="/api/v1/dj1887",      tags=["Declaración Jurada 1887"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(previred_importer.router,   prefix="/api/v1/previred-importer", tags=["Importador Previred"], dependencies=GLOBAL_DEPENDENCIES)
-app.include_router(news.router,                prefix="/api/v1/news",        tags=["Noticias Regionales (IA)"], dependencies=GLOBAL_DEPENDENCIES)
+app.include_router(news.router,                prefix="/api/v1/news",        tags=["Noticias Regionales (IA)"], dependencies=[]) # Público para sincronización y portal
 app.include_router(purchase_orders.router,     prefix="/api/v1/purchase-orders", tags=["Órdenes de Compra"], dependencies=GLOBAL_DEPENDENCIES)
 app.include_router(jobs.router,                prefix="/api/v1/jobs",        tags=["ContaEmpleos Magallanes"], dependencies=[]) # Público para buscador y postulación
 app.include_router(whatsapp.router,            prefix="/api/v1/whatsapp",    tags=["Autoatención WhatsApp"], dependencies=[]) # Webhooks públicos y simulación
