@@ -263,7 +263,7 @@ function CalculatorContent() {
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    const urlLiq = searchParams.get("liq");
+    const urlSueldo = searchParams.get("sueldo") || searchParams.get("liq") || searchParams.get("bruto");
     const urlGrat = searchParams.get("grat");
     const urlCont = searchParams.get("cont");
     const urlAfp = searchParams.get("afp");
@@ -274,14 +274,19 @@ function CalculatorContent() {
     const urlZona = searchParams.get("zona");
     const urlZonaCode = searchParams.get("zonaCode");
 
-    if (urlLiq) setTargetLiquido(Math.max(0, parseInt(urlLiq) || 1000000));
+    if (urlSueldo) {
+      const parsed = parseInt(urlSueldo, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        setTargetLiquido(parsed);
+      }
+    }
     if (urlGrat) setGratificacion(urlGrat === "true");
     if (urlCont) setTipoContrato(urlCont);
     if (urlAfp) setAfpCode(urlAfp.toUpperCase());
     if (urlSalud) setSaludCode(urlSalud.toUpperCase());
     if (urlUf) setPlanSaludUf(parseFloat(urlUf) || 0);
-    if (urlMov) setAsignacionMovilizacion(parseInt(urlMov) || 0);
-    if (urlCol) setAsignacionColacion(parseInt(urlCol) || 0);
+    if (urlMov) setAsignacionMovilizacion(parseInt(urlMov, 10) || 0);
+    if (urlCol) setAsignacionColacion(parseInt(urlCol, 10) || 0);
     if (urlZona) setEsZonaExtrema(urlZona === "true");
     if (urlZonaCode && urlZonaCode.toUpperCase() in ZONAS_EXTREMAS) setZonaExtrema(urlZonaCode.toUpperCase());
   }, [searchParams]);

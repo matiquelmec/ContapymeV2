@@ -51,6 +51,15 @@ const SECTORES = [
   'Construcción / Logística'
 ]
 
+const SHIFTS = [
+  'TODOS',
+  '40 Horas',
+  '7x7',
+  '14x14',
+  'Turno Rotativo',
+  'Jornada Completa'
+]
+
 function formatJobDate(dateStr?: string | null): string {
   if (!dateStr) return 'Publicado recientemente'
   const date = new Date(dateStr)
@@ -159,6 +168,28 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
                 }`}
               >
                 {comuna}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Filtros de Turno / Modalidad Austral */}
+        <div className="space-y-2">
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/70">
+            Turno / Jornada Laboral
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {SHIFTS.map((shift) => (
+              <button
+                key={shift}
+                onClick={() => setSelectedShift(shift)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedShift === shift
+                    ? 'bg-primary/90 text-primary-foreground shadow-xs scale-105'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                }`}
+              >
+                {shift}
               </button>
             ))}
           </div>
