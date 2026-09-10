@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, useReducedMotion } from "framer-motion";
@@ -52,7 +52,7 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
           exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           aria-label="Navegación contextual rápida"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[94vw] sm:max-w-max bg-zinc-950/90 text-white backdrop-blur-2xl p-1.5 sm:p-2 rounded-full border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex items-center gap-1"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[94vw] sm:max-w-max bg-white/90 dark:bg-zinc-900/90 text-foreground backdrop-blur-2xl p-1.5 sm:p-2 rounded-full border border-border/80 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.12)] flex items-center gap-1"
         >
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 px-1">
             {categories.map((cat) => {
@@ -64,7 +64,7 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
                   <a
                     key={cat.id}
                     href={cat.href}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors whitespace-nowrap"
                   >
                     <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
                     <span>{cat.label}</span>
@@ -77,9 +77,9 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
                   <a
                     key={cat.id}
                     href={cat.href}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-white/80 hover:text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors whitespace-nowrap"
                   >
-                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-400" />
+                    <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>{cat.label}</span>
                   </a>
                 );
@@ -89,10 +89,10 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
                 <button
                   key={cat.id}
                   onClick={() => onSelectCategory && onSelectCategory(cat.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                     isSelected
-                      ? "bg-primary text-white shadow-md shadow-primary/30"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -103,11 +103,11 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
           </div>
 
           {/* Botón Volver Arriba */}
-          <div className="pl-1 border-l border-white/15">
+          <div className="pl-1 border-l border-border/60">
             <button
               onClick={scrollToTop}
               title="Subir a la cabecera"
-              className="p-1.5 sm:p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer"
             >
               <ArrowUp className="h-3.5 w-3.5" />
             </button>

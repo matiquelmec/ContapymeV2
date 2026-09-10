@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -230,46 +230,46 @@ export function ModernHeroBento({ heroNews, indicators = [], onAnalyzeNews }: Mo
       </div>
 
       {/* 📊 BARRA DE PULSO DE MERCADO EN TIEMPO REAL */}
-      <div className="p-4 sm:p-5 rounded-[2rem] bg-zinc-950 text-white border border-white/10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 rounded-[2rem] bg-white/80 dark:bg-zinc-900/80 text-foreground border border-border/80 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.06)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3 shrink-0">
-          <div className="p-2 rounded-xl bg-primary/20 text-primary border border-primary/30">
-            <Radio className="h-4 w-4 text-emerald-400 animate-pulse" />
+          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <Radio className="h-4 w-4 text-primary animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400">
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
                 Market Pulse Magallanes
               </span>
-              <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+              <span className="text-[8px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 Realtime
               </span>
             </div>
-            <p className="text-xs font-black text-white/90 italic">
+            <p className="text-xs font-black text-foreground/90 italic">
               Indicadores Económicos Oficiales SII & Banco Central
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs font-black">
-          <div className={`transition-all duration-500 px-2 py-1 rounded-lg ${updatedCodes["uf"] ? "bg-emerald-500/20 text-emerald-400 scale-105" : ""}`}>
-            <span className="text-white/50 text-[10px] mr-1.5 uppercase">UF:</span>
-            <span className="text-white tabular-nums font-mono">${getIndicatorVal("uf")}</span>
+          <div className={`transition-all duration-500 px-3 py-1 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/60 border border-border/50 ${updatedCodes["uf"] ? "bg-emerald-500/20 text-emerald-600 scale-105" : ""}`}>
+            <span className="text-muted-foreground text-[10px] mr-1.5 uppercase font-bold">UF:</span>
+            <span className="text-foreground tabular-nums font-mono">${getIndicatorVal("uf")}</span>
           </div>
 
-          <div className={`transition-all duration-500 px-2 py-1 rounded-lg ${updatedCodes["dolar"] ? "bg-emerald-500/20 text-emerald-400 scale-105" : ""}`}>
-            <span className="text-white/50 text-[10px] mr-1.5 uppercase">Dólar:</span>
-            <span className="text-white tabular-nums font-mono">${getIndicatorVal("dolar")}</span>
+          <div className={`transition-all duration-500 px-3 py-1 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/60 border border-border/50 ${updatedCodes["dolar"] ? "bg-emerald-500/20 text-emerald-600 scale-105" : ""}`}>
+            <span className="text-muted-foreground text-[10px] mr-1.5 uppercase font-bold">Dólar:</span>
+            <span className="text-foreground tabular-nums font-mono">${getIndicatorVal("dolar")}</span>
           </div>
 
-          <div className={`transition-all duration-500 px-2 py-1 rounded-lg ${updatedCodes["utm"] ? "bg-emerald-500/20 text-emerald-400 scale-105" : ""}`}>
-            <span className="text-white/50 text-[10px] mr-1.5 uppercase">UTM:</span>
-            <span className="text-white tabular-nums font-mono">${getIndicatorVal("utm")}</span>
+          <div className={`transition-all duration-500 px-3 py-1 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/60 border border-border/50 ${updatedCodes["utm"] ? "bg-emerald-500/20 text-emerald-600 scale-105" : ""}`}>
+            <span className="text-muted-foreground text-[10px] mr-1.5 uppercase font-bold">UTM:</span>
+            <span className="text-foreground tabular-nums font-mono">${getIndicatorVal("utm")}</span>
           </div>
 
           <button
             onClick={handleManualSync}
             disabled={syncing}
-            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-all disabled:opacity-50"
+            className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-foreground/80 hover:text-primary transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
             title="Sincronizar indicadores ahora"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />

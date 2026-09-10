@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { 
@@ -64,36 +64,36 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
   }, [initialAnalysis]);
 
   return (
-    <div className="p-6 sm:p-7 rounded-[2.5rem] bg-gradient-to-br from-zinc-950 via-zinc-900 to-slate-950 text-white border border-white/15 shadow-2xl space-y-5 relative overflow-hidden">
-      {/* Luz decorativa */}
-      <div className="absolute -top-16 -right-16 w-36 h-36 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="p-6 sm:p-7 rounded-[2.5rem] bg-white/80 dark:bg-zinc-900/80 border border-border/80 backdrop-blur-xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.06)] hover:border-primary/40 transition-all duration-500 space-y-5 relative overflow-hidden">
+      {/* Luz decorativa austral */}
+      <div className="absolute -top-16 -right-16 w-36 h-36 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Cabecera del Radar */}
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+            <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
               <Cpu className="h-3.5 w-3.5" />
             </span>
-            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400">
+            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">
               Radar Macroeconómico
             </span>
           </div>
-          <h4 className="text-base sm:text-lg font-black italic tracking-tighter uppercase text-white">
-            Impacto <span className="text-primary-foreground font-serif">en Magallanes</span>
+          <h4 className="text-base sm:text-lg font-black italic tracking-tighter uppercase text-foreground">
+            Impacto <span className="text-primary font-serif">en Magallanes</span>
           </h4>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2.5 py-0.5 text-[8px] font-bold text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2.5 py-0.5 text-[8px] font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
             <span>NVIDIA NIM AI</span>
           </div>
 
           <button
             onClick={handleRefreshAnalysis}
             disabled={loading}
-            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all disabled:opacity-50 cursor-pointer"
+            className="p-1.5 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-foreground/80 hover:text-primary transition-all disabled:opacity-50 cursor-pointer"
             title="Actualizar análisis con NVIDIA Nemotron"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -103,59 +103,59 @@ export function MacroRadarRealtime({ initialAnalysis, indicators = [] }: MacroRa
 
       {/* Métricas Oficiales en Vivo */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-          <span className="text-[8px] font-black text-white/50 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border border-border/60 space-y-1">
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
             Dólar Observado
           </span>
-          <span className="text-sm sm:text-base font-black text-white tabular-nums font-mono">
+          <span className="text-sm sm:text-base font-black text-foreground tabular-nums font-mono">
             {getInd("dolar", "$932")}
           </span>
         </div>
 
-        <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-          <span className="text-[8px] font-black text-white/50 uppercase tracking-wider block">
+        <div className="p-3.5 rounded-2xl bg-zinc-50/90 dark:bg-zinc-800/60 border border-border/60 space-y-1">
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
             Unidad de Fomento
           </span>
-          <span className="text-sm sm:text-base font-black text-white tabular-nums font-mono">
+          <span className="text-sm sm:text-base font-black text-foreground tabular-nums font-mono">
             {getInd("uf", "$39.600")}
           </span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-          <span className="text-[8px] font-black text-white/50 uppercase tracking-wider block">
+        <div className="col-span-2 sm:col-span-1 p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/20 space-y-1">
+          <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
             Cobre COMEX
           </span>
-          <span className="text-sm sm:text-base font-black text-emerald-400 tabular-nums font-mono">
+          <span className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-400 tabular-nums font-mono">
             US$ 4.52/lb
           </span>
         </div>
       </div>
 
-      {/* Caja de Análisis Neural (NVIDIA Nemotron 70B) */}
-      <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2.5">
-        <div className="flex items-center justify-between text-[9px] font-black text-white/60 uppercase tracking-wider">
-          <span className="flex items-center gap-1.5 text-primary-foreground">
-            <Sparkles className="h-3 w-3 text-amber-300" />
+      {/* Caja de Análisis Neural (NVIDIA Nemotron) */}
+      <div className="p-4 rounded-2xl bg-primary/[0.04] dark:bg-primary/[0.08] border border-primary/20 space-y-2.5">
+        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider">
+          <span className="flex items-center gap-1.5 text-primary font-bold">
+            <Sparkles className="h-3 w-3 text-amber-500" />
             Síntesis Generada por Nemotron 3.5
           </span>
-          <span className="font-mono text-[8px] text-white/40">
+          <span className="font-mono text-[8px] text-muted-foreground">
             {lastUpdated}
           </span>
         </div>
 
-        <p className="text-xs text-white/85 font-medium leading-relaxed italic text-justify">
+        <p className="text-xs text-foreground/85 font-medium leading-relaxed italic text-justify">
           "{analysis}"
         </p>
       </div>
 
       {/* Enlace y Transparencia con Fuentes Oficiales */}
-      <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[9px] text-white/50 font-bold uppercase tracking-wider">
+      <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
         <span>Fuente: Banco Central & INE</span>
         <a
           href="https://www.bcentral.cl/calendario-de-eventos"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-primary-foreground hover:text-white transition-colors"
+          className="inline-flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
         >
           <span>Calendario Oficial</span>
           <ExternalLink className="h-2.5 w-2.5" />
