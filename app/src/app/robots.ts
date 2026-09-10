@@ -5,12 +5,12 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard/", "/api/"],
+      disallow: ["/dashboard/", "/admin/", "/api/"],
     },
     sitemap: [
-      "https://contapymepuq.cl/sitemap.xml",
-      "https://contapymepuq.cl/sitemap-news.xml",
-      "https://contapymepuq.cl/sitemap-jobs.xml"
+      "https://www.contapymepuq.cl/sitemap.xml",
+      "https://www.contapymepuq.cl/sitemap-news.xml",
+      "https://www.contapymepuq.cl/sitemap-jobs.xml",
     ],
   };
 }

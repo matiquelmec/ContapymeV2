@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeJobSeoText, generateCleanJobSlug, notifySearchEnginesOfJob } from '@/lib/seo/indexing-service'
 
 export interface JobPosting {
   id: string
@@ -389,16 +390,15 @@ export async function createJobAction(formData: {
       }
     }
 
-    // 2. Generar Slug Único
-    const baseSlug = `${formData.title}-${formData.company_name}-${formData.location}`
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '')
+    // 2. Sanitizar textos y Generar Slug Único Limpio
+    const cleanTitle = sanitizeJobSeoText(formData.title);
+    const cleanCompany = sanitizeJobSeoText(formData.company_name);
+    const cleanDesc = sanitizeJobSeoText(formData.description);
+    const cleanReqs = (formData.requirements || []).map(r => sanitizeJobSeoText(r));
+    const cleanBenefits = (formData.benefits || []).map(b => sanitizeJobSeoText(b));
 
     const randomSuffix = Math.random().toString(36).substring(2, 7)
-    const slug = `${baseSlug}-${randomSuffix}`
+    const slug = generateCleanJobSlug(cleanTitle, cleanCompany, randomSuffix)
 
     // 3. Fechas de vigencia (21 días)
     const now = new Date()
@@ -408,9 +408,9 @@ export async function createJobAction(formData: {
     const { data, error } = await adminDb
       .from('job_postings')
       .insert({
-        title: formData.title.trim(),
+        title: cleanTitle,
         slug,
-        company_name: formData.company_name.trim(),
+        company_name: cleanCompany,
         company_rut: formData.company_rut?.trim() || null,
         company_logo_url: formData.company_logo_url?.trim() || null,
         location: formData.location.trim(),
@@ -421,9 +421,9 @@ export async function createJobAction(formData: {
         salary_min: formData.salary_min || null,
         salary_max: formData.salary_max || null,
         is_salary_public: !!formData.salary_raw,
-        description: formData.description.trim(),
-        requirements: formData.requirements || [],
-        benefits: formData.benefits || [],
+        description: cleanDesc,
+        requirements: cleanReqs,
+        benefits: cleanBenefits,
         contact_email: formData.contact_email?.trim() || null,
         contact_whatsapp: formData.contact_whatsapp?.trim() || null,
         application_url: formData.application_url?.trim() || null,
@@ -441,9 +441,15 @@ export async function createJobAction(formData: {
       return { success: false, error: 'Error al registrar la oferta: ' + error.message }
     }
 
+    revalidatePath('/')
     revalidatePath('/empleos')
     revalidatePath('/dashboard/empleos')
     revalidatePath('/sitemap-jobs.xml')
+
+    // Disparo inmediato no bloqueante de indexación en Google e IndexNow
+    notifySearchEnginesOfJob(data.slug).catch(err => {
+      console.warn('[Google/IndexNow Trigger Warning]', err?.message)
+    })
 
     return { success: true, data: data as JobPosting }
   } catch (err: any) {

@@ -22,6 +22,13 @@ import { JobSocialCardGenerator } from "@/components/jobs/job-social-card-genera
 
 import type { Metadata } from "next";
 
+import { 
+  generateJobPostingSchema, 
+  generateJobBreadcrumbSchema, 
+  normalizeStringList, 
+  BASE_SITE_URL 
+} from "@/lib/seo/job-schema";
+
 interface JobDetailPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -37,6 +44,7 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
     };
   }
 
+  const canonicalUrl = `${BASE_SITE_URL}/empleos/${job.slug}`;
   const title = `${job.title} en ${job.company_name} | Empleos ${job.location}`;
   const description = `${job.description.slice(0, 160)}... Oferta laboral en ${job.location}, Magallanes. Postula directo por WhatsApp en ContaEmpleos PUQ.`;
 
@@ -48,12 +56,16 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
       `empleo ${job.location.toLowerCase()}`,
       `trabajo ${job.company_name.toLowerCase()}`,
       "contaempleos magallanes",
-      "bolsa de trabajo punta arenas"
+      "bolsa de trabajo punta arenas",
+      "google for jobs chile"
     ],
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
-      url: `https://contapymepuq.cl/empleos/${job.slug}`,
+      url: canonicalUrl,
       type: "article",
       locale: "es_CL",
       siteName: "ContaEmpleos PUQ",
@@ -81,28 +93,6 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
   };
 }
 
-function normalizeStringList(value: unknown): string[] {
-  if (!value) return []
-  if (Array.isArray(value)) {
-    return value.map(v => String(v).trim()).filter(Boolean)
-  }
-  if (typeof value === 'string') {
-    if (value.trim().startsWith('[') && value.trim().endsWith(']')) {
-      try {
-        const parsed = JSON.parse(value)
-        if (Array.isArray(parsed)) {
-          return parsed.map(v => String(v).trim()).filter(Boolean)
-        }
-      } catch (e) {}
-    }
-    return value
-      .split('\n')
-      .map(line => line.replace(/^[-•*]\s*/, '').trim())
-      .filter(Boolean)
-  }
-  return []
-}
-
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { slug } = await params;
   const jobRes = await getJobBySlug(slug);
@@ -116,78 +106,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const benefitsList = normalizeStringList(job.benefits);
 
   // Schema.org JobPosting estructurado para Google for Jobs (Estándares 2026)
-  const schemaOrgJob = {
-    "@context": "https://schema.org/",
-    "@type": "JobPosting",
-    "title": job.title,
-    "description": `<p>${job.description.replace(/\n/g, '<br/>')}</p>${requirementsList.length > 0 ? `<h3>Requisitos:</h3><ul>${requirementsList.map((r: string) => `<li>${r}</li>`).join('')}</ul>` : ''}${benefitsList.length > 0 ? `<h3>Beneficios:</h3><ul>${benefitsList.map((b: string) => `<li>${b}</li>`).join('')}</ul>` : ''}`,
-    "identifier": {
-      "@type": "PropertyValue",
-      "name": job.company_name,
-      "value": job.slug
-    },
-    "datePosted": job.published_at || new Date().toISOString(),
-    "validThrough": job.expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    "employmentType": job.job_type === "Jornada Completa" ? "FULL_TIME" : job.job_type === "Part-Time" ? "PART_TIME" : "CONTRACTOR",
-    "directApply": true,
-    "hiringOrganization": {
-      "@type": "Organization",
-      "name": job.company_name,
-      "sameAs": "https://contapymepuq.cl",
-      "logo": job.company_logo_url || "https://contapymepuq.cl/logo-contapyme.png"
-    },
-    "jobLocation": {
-      "@type": "Place",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": job.location,
-        "addressRegion": "Magallanes y de la Antártica Chilena",
-        "postalCode": job.location === "Punta Arenas" ? "6200000" : job.location === "Puerto Natales" ? "6160000" : job.location === "Porvenir" ? "6300000" : "6200000",
-        "addressCountry": "CL"
-      }
-    },
-    "applicantLocationRequirements": {
-      "@type": "Country",
-      "name": "Chile"
-    },
-    ...(job.salary_min ? {
-      "baseSalary": {
-        "@type": "MonetaryAmount",
-        "currency": "CLP",
-        "value": {
-          "@type": "QuantitativeValue",
-          "minValue": job.salary_min,
-          "maxValue": job.salary_max || job.salary_min,
-          "unitText": "MONTH"
-        }
-      }
-    } : {})
-  };
-
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "ContaEmpleos Magallanes",
-        "item": "https://contapymepuq.cl/empleos"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": job.location,
-        "item": `https://contapymepuq.cl/empleos/comuna/${encodeURIComponent(job.location.toLowerCase().replace(/\s+/g, '-'))}`
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": job.title,
-        "item": `https://contapymepuq.cl/empleos/${job.slug}`
-      }
-    ]
-  };
+  const schemaOrgJob = generateJobPostingSchema(job);
+  const breadcrumbSchema = generateJobBreadcrumbSchema(job);
 
   return (
     <div className="py-6 sm:py-12 lg:py-16">

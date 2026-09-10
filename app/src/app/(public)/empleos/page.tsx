@@ -19,10 +19,16 @@ export const metadata: Metadata = {
     "trabajo salmonera punta arenas",
     "hidrogeno verde magallanes empleos"
   ],
+  alternates: {
+    canonical: "https://www.contapymepuq.cl/empleos",
+  },
   openGraph: {
     title: "ContaEmpleos Magallanes | Portal de Empleos Regional",
     description: "Bolsa de trabajo hiperlocal para Punta Arenas y la Patagonia Chilena.",
-    url: "https://contapymepuq.cl/empleos",
+    url: "https://www.contapymepuq.cl/empleos",
+    siteName: "ContaEmpleos PUQ",
+    locale: "es_CL",
+    type: "website",
   },
 };
 
@@ -33,8 +39,55 @@ export default async function JobsPage() {
   const jobs = jobsRes.success ? jobsRes.data : [];
   const stats = await getJobsStats();
 
+  const baseUrl = "https://www.contapymepuq.cl";
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Inicio",
+        "item": baseUrl,
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Bolsa de Empleos Magallanes",
+        "item": `${baseUrl}/empleos`,
+      },
+    ],
+  };
+
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Ofertas Laborales en Magallanes y de la Antártica Chilena",
+    "description": "Directorio de empleos activos en Punta Arenas, Puerto Natales, Porvenir y faenas.",
+    "url": `${baseUrl}/empleos`,
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": jobs.length,
+      "itemListElement": jobs.slice(0, 20).map((job, idx) => ({
+        "@type": "ListItem",
+        "position": idx + 1,
+        "url": `${baseUrl}/empleos/${job.slug}`,
+        "name": `${job.title} en ${job.company_name} (${job.location})`,
+      })),
+    },
+  };
+
   return (
     <AuroraBackground className="py-12 sm:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-6xl space-y-12">
         {/* ===== HERO PRINCIPAL ===== */}
         <div className="space-y-6">

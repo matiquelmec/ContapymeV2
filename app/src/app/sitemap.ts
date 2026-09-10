@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { getRegionalNews } from "@/actions/news";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://contapymepuq.cl";
+  const baseUrl = "https://www.contapymepuq.cl";
 
   const newsRes = await getRegionalNews();
   const newsList = newsRes.success ? newsRes.data : [];
@@ -20,6 +20,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "always" as const,
       priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/empleos`,
+      lastModified: new Date(),
+      changeFrequency: "hourly" as const,
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/publicar-empleo`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/calculadora`,

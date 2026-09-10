@@ -18,7 +18,7 @@ import { Providers } from "@/components/providers";
 import { JsonLdSchema } from "@/components/json-ld";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://contapymepuq.cl"),
+  metadataBase: new URL("https://www.contapymepuq.cl"),
   title: {
     default: "Contapymepuq | Software Contable, Nómina & Noticias en Punta Arenas",
     template: "%s | Contapymepuq"
@@ -39,6 +39,11 @@ export const metadata: Metadata = {
   authors: [{ name: "Contapymepuq Team" }],
   creator: "Contapymepuq",
   publisher: "Contapymepuq",
+  alternates: {
+    types: {
+      'application/rss+xml': 'https://www.contapymepuq.cl/feed.xml',
+    },
+  },
   robots: {
     index: true,
     follow: true,
@@ -52,13 +57,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_CL",
-    url: "https://contapymepuq.cl",
+    url: "https://www.contapymepuq.cl",
     siteName: "Contapymepuq",
     title: "Contapymepuq | Software Contable, Nómina & Noticias en Punta Arenas",
     description: "Estudio contable digital, simulador de sueldos y noticias regionales en tiempo real para Magallanes.",
     images: [
       {
-        url: "https://contapymepuq.cl/og-image.png",
+        url: "https://www.contapymepuq.cl/og-image.png",
         width: 1200,
         height: 630,
         alt: "Contapymepuq SaaS Contable Magallanes",
@@ -69,7 +74,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contapymepuq | Contabilidad & Sueldos en Punta Arenas",
     description: "Gestión contable avanzada y remuneraciones para la Región de Magallanes.",
-    images: ["https://contapymepuq.cl/og-image.png"],
+    images: ["https://www.contapymepuq.cl/og-image.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {

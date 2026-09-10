@@ -254,29 +254,41 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
             {news.title}
           </h1>
           
-          {/* Metadatos Editorial Premium con Tiempo de Lectura en Vivo */}
-          <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-[10px] md:text-[11px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] italic border-y border-border/50 py-6" suppressHydrationWarning>
-            <span className="flex items-center gap-2.5 text-primary" suppressHydrationWarning>
+          {/* Metadatos Editorial Premium con Tiempo de Lectura en Vivo y E-E-A-T */}
+          <div className="flex flex-wrap items-center gap-y-3 gap-x-4 sm:gap-x-6 text-[10px] md:text-[11px] font-black text-muted-foreground/60 uppercase tracking-[0.15em] italic border-y border-border/50 py-4 sm:py-5" suppressHydrationWarning>
+            <span className="flex items-center gap-2 text-primary" suppressHydrationWarning>
               <Globe className="h-4 w-4 animate-spin" style={{ animationDuration: '12s' }} /> Diario Punta Arenas
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
-            <span className="flex items-center gap-2.5" suppressHydrationWarning>
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+            <span className="text-zinc-700 font-bold" suppressHydrationWarning>
+              Por {news.author_name || 'Redacción ContaPymePUQ'}
+            </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+            <span className="flex items-center gap-1.5" suppressHydrationWarning>
               <Calendar className="h-4 w-4 text-sky-500" /> 
               <span suppressHydrationWarning>
                 {new Date(news.published_at).toLocaleDateString('es-CL', {
                   day: 'numeric',
-                  month: 'long',
+                  month: 'short',
                   year: 'numeric'
                 })}
               </span>
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
-            <span className="flex items-center gap-2.5 text-emerald-500">
+            {news.updated_at && new Date(news.updated_at).getTime() - new Date(news.published_at).getTime() > 1000 * 60 * 60 && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                <span className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200" suppressHydrationWarning>
+                  <Clock className="h-3 w-3" /> Actualizado
+                </span>
+              </>
+            )}
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+            <span className="flex items-center gap-2 text-emerald-600">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
-              Lectura: {readingTime} {readingTime === 1 ? 'minuto' : 'minutos'}
+              Lectura: {readingTime} {readingTime === 1 ? 'min' : 'mins'}
             </span>
           </div>
         </div>

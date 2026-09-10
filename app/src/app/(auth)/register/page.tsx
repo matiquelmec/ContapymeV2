@@ -12,6 +12,13 @@ import { RegisterFormClient } from './register-form-client'
 export const metadata: Metadata = {
   title: 'Crear Cuenta | Contapymepuq',
   description: 'Regístrate en Contapymepuq, el sistema contable profesional para PYMEs.',
+  alternates: {
+    canonical: 'https://www.contapymepuq.cl/register',
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 interface RegisterPageProps {

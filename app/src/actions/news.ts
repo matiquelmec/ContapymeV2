@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { engineFetch } from '@/lib/engine-client'
+import { notifyIndexNowForNews } from '@/lib/seo/indexing-service'
 
 let lastNewsSync = 0
 const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
@@ -410,7 +411,13 @@ export async function createNewsAction(newsData: {
       throw error
     }
 
+    // Notificar indexación inmediata (IndexNow / Bing / Yandex)
+    notifyIndexNowForNews(itemSlug).catch((e) =>
+      console.error('[createNewsAction] Error notificando IndexNow:', e)
+    )
+
     revalidatePath('/')
+    revalidatePath('/noticias')
     revalidatePath('/admin')
     return { success: true, data }
   } catch (err: any) {
@@ -603,6 +610,11 @@ export async function createCompanyNewsAction(newsData: {
     if (error) {
       throw error
     }
+
+    // Notificar indexación inmediata (IndexNow / Bing / Yandex)
+    notifyIndexNowForNews(itemSlug).catch((e) =>
+      console.error('[createCompanyNewsAction] Error notificando IndexNow:', e)
+    )
 
     revalidatePath('/')
     revalidatePath('/noticias')

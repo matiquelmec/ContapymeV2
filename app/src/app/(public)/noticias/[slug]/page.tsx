@@ -2,12 +2,13 @@ import { Metadata, ResolvingMetadata } from "next";
 
 export const revalidate = 0 // Dinamismo para noticias individuales
 import { getRegionalNews, getNewsBySlug } from "@/actions/news";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Globe } from "lucide-react";
 import { NewsArticleContent } from "@/components/news-article-content";
+import { resolveAlternativeNewsSlug } from "@/lib/seo/news-slug-resolver";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -22,7 +23,15 @@ export async function generateMetadata(
   const newsRes = await getNewsBySlug(slug);
   const news = newsRes.success ? newsRes.data : null;
 
-  if (!news) return { title: "Noticia no encontrada" };
+  if (!news) {
+    const alternativeSlug = await resolveAlternativeNewsSlug(slug);
+    if (alternativeSlug && alternativeSlug !== slug) {
+      return {
+        title: "Redirigiendo a Noticia Actualizada | Contapymepuq",
+      };
+    }
+    return { title: "Noticia no encontrada | Contapymepuq" };
+  }
 
   const excerpt = news.seo_description || news.summary || news.content.substring(0, 160) + "...";
   const canonicalUrl = `https://www.contapymepuq.cl/noticias/${slug}`;
@@ -48,7 +57,7 @@ export async function generateMetadata(
       title: news.title,
       description: excerpt,
       url: canonicalUrl,
-      siteName: "Contapymepuq",
+      siteName: "ContaPymePUQ Diario Regional de Magallanes",
       locale: "es_CL",
       images: [
         {
@@ -77,7 +86,13 @@ export default async function NewsPage({ params }: Props) {
   const newsRes = await getNewsBySlug(slug);
   const news = newsRes.success ? newsRes.data : null;
 
-  if (!news) notFound();
+  if (!news) {
+    const alternativeSlug = await resolveAlternativeNewsSlug(slug);
+    if (alternativeSlug && alternativeSlug !== slug) {
+      redirect(`/noticias/${alternativeSlug}`);
+    }
+    notFound();
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -90,18 +105,20 @@ export default async function NewsPage({ params }: Props) {
     datePublished: news.published_at,
     dateModified: news.updated_at || news.published_at,
     author: [{
-      "@type": "Organization",
-      name: "Equipo Editorial Contapymepuq",
-      url: "https://www.contapymepuq.cl"
+      "@type": "Person",
+      name: news.author_name || "Redacción ContaPymePUQ",
+      jobTitle: "Periodista Regional",
+      url: "https://www.contapymepuq.cl/nosotros"
     }],
     publisher: {
       "@type": "NewsMediaOrganization",
-      name: "Contapymepuq",
+      name: "ContaPymePUQ Diario Regional de Magallanes",
       url: "https://www.contapymepuq.cl",
       logo: {
         "@type": "ImageObject",
         url: "https://www.contapymepuq.cl/logo-contapyme.png"
-      }
+      },
+      publishingPrinciples: "https://www.contapymepuq.cl/terminos"
     },
     mainEntityOfPage: {
       "@type": "WebPage",

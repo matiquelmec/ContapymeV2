@@ -55,18 +55,21 @@ export function generateJobDeduplicationKey(company: string, title: string, loca
   return crypto.createHash('sha256').update(raw).digest('hex')
 }
 
+import { sanitizeJobSeoText, notifySearchEnginesOfJob } from '@/lib/seo/indexing-service'
+
 export function generateSlug(title: string, company: string): string {
   const norm = (s: string) =>
-    (s || '')
+    (sanitizeJobSeoText(s) || '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
 
-  const base = `${norm(title)}-${norm(company)}`
+  const titleSlug = norm(title).slice(0, 45)
+  const companySlug = norm(company).slice(0, 30)
   const randomSuffix = crypto.randomBytes(3).toString('hex')
-  return `${base.slice(0, 70)}-${randomSuffix}`
+  return `${titleSlug}-${companySlug}-${randomSuffix}`.replace(/--+/g, '-')
 }
 
 /**
@@ -306,9 +309,9 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
       const slug = generateSlug(item.title, item.company_name)
 
       const payload = {
-        title: item.title.trim(),
+        title: sanitizeJobSeoText(item.title),
         slug,
-        company_name: item.company_name.trim(),
+        company_name: sanitizeJobSeoText(item.company_name),
         company_rut: item.company_rut || null,
         location: item.location.trim(),
         sector: item.sector.trim(),
@@ -341,6 +344,8 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
       } else {
         existingHashes.add(hash)
         insertedCount++
+        // Disparo de indexación inmediata no bloqueante
+        notifySearchEnginesOfJob(slug).catch((e) => console.warn(`[Sync Indexing Warning ${slug}]`, e?.message))
       }
     } catch (err: any) {
       errors.push(`Fallo procesando ${item.title}: ${err.message}`)

@@ -6,6 +6,9 @@ import { Suspense } from 'react'
 export const metadata: Metadata = {
   title: 'Reservar Banner Publicitario en Magallanes | ContaPymePUQ Media Kit',
   description: 'Contrata espacios publicitarios en la Calculadora de Sueldos y Diario Regional de Magallanes. Precios desde $1.333/día con Mercado Pago.',
+  alternates: {
+    canonical: 'https://www.contapymepuq.cl/anunciar',
+  },
 }
 
 export default function AnunciarPage() {

@@ -10,6 +10,13 @@ import { signInWithEmail } from '@/actions/auth'
 
 export const metadata: Metadata = {
   title: 'Iniciar Sesión | Contapymepuq',
+  alternates: {
+    canonical: 'https://www.contapymepuq.cl/login',
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 interface LoginPageProps {

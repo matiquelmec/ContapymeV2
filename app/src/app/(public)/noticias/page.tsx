@@ -22,7 +22,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Diario Regional Magallanes | Contapymepuq Noticias",
     description: "Información económica, empresarial y noticias de última hora en Punta Arenas.",
-    url: "https://contapymepuq.cl/noticias",
+    url: "https://www.contapymepuq.cl/noticias",
+    siteName: "ContaPymePUQ Diario Regional de Magallanes",
+    locale: "es_CL",
+    type: "website",
   },
 };
 
@@ -32,8 +35,53 @@ export default async function NewsArchivePage() {
   const newsRes = await getRegionalNews();
   const news = newsRes.success ? newsRes.data : [];
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Inicio",
+        item: "https://www.contapymepuq.cl",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Diario Regional de Noticias",
+        item: "https://www.contapymepuq.cl/noticias",
+      },
+    ],
+  };
+
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Hemeroteca y Diario Regional de Noticias de Magallanes",
+    description: "Archivo de noticias de Punta Arenas, Puerto Natales, Porvenir y economía austral.",
+    url: "https://www.contapymepuq.cl/noticias",
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: news.length,
+      itemListElement: news.slice(0, 30).map((item, idx) => ({
+        "@type": "ListItem",
+        position: idx + 1,
+        url: `https://www.contapymepuq.cl/noticias/${item.slug}`,
+        name: item.title,
+      })),
+    },
+  };
+
   return (
     <AuroraBackground className="min-h-screen py-12 sm:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 space-y-12">
         {/* Título Institucional y CTA */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

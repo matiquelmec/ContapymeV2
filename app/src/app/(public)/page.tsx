@@ -1,7 +1,9 @@
 import { Metadata } from "next";
 import { getLatestIndicators } from "@/actions/indicators";
 import { getRegionalNews } from "@/actions/news";
+import { getRegionalJobs } from "@/actions/jobs";
 import { DiarioRegionalSection } from "@/components/diario-regional-section";
+import { RegionalJobsSection } from "@/components/home/regional-jobs-section";
 
 export const revalidate = 0;
 
@@ -59,6 +61,9 @@ export default async function HomePage() {
   const newsRes = await getRegionalNews();
   const regionalNews = newsRes.success ? newsRes.data : [];
 
+  const jobsRes = await getRegionalJobs();
+  const regionalJobs = jobsRes.success ? jobsRes.data.slice(0, 6) : [];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -109,6 +114,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <DiarioRegionalSection initialNews={regionalNews} indicators={indicators} />
+      <RegionalJobsSection jobs={regionalJobs} />
     </>
   );
 }
