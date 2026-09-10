@@ -22,7 +22,7 @@ export function RegionalJobsSection({ jobs }: RegionalJobsSectionProps) {
   }
 
   return (
-    <section className="py-12 sm:py-16 border-t border-border/40 bg-zinc-50/50 relative overflow-hidden">
+    <section id="empleos" className="py-12 sm:py-16 border-t border-border/40 bg-zinc-50/50 relative overflow-hidden scroll-mt-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-7xl space-y-8">
         {/* Cabecera de la Sección con Enlaces de Alta Jerarquía SEO */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

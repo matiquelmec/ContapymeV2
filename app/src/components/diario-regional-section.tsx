@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,18 @@ import {
   BadgeCheck, 
   ArrowUpRight, 
   ArrowDownRight,
-  X
+  X,
+  Filter
 } from "lucide-react";
-import { HeroBentoGrid } from "@/components/hero-bento";
-import { GlobalMarketPanel } from "@/components/global-market-panel";
+import { ModernHeroBento } from "@/components/home/modern-hero-bento";
+import { StickyCategoryDock } from "@/components/home/sticky-category-dock";
 import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
 import { NewsCardSkeleton, SmallNewsCardSkeleton } from "@/components/skeleton-loader";
 import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
-interface NewsArticle {
+export interface NewsArticle {
   id: string;
   title: string;
   slug: string;
@@ -37,7 +38,7 @@ interface NewsArticle {
   source_url: string;
 }
 
-interface DiarioRegionalSectionProps {
+export interface DiarioRegionalSectionProps {
   initialNews: NewsArticle[];
   indicators?: any[];
 }
@@ -71,14 +72,14 @@ export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle |
   scoredRecent.sort((a, b) => b.score - a.score);
   const hero = scoredRecent[0]?.article || sortedByDate[0] || null;
 
-  // 3. Flujo de Noticias Secundarias (Las 6 noticias más recientes del día, excluyendo la Hero)
-  const secondary = sortedByDate.filter(n => !hero || n.id !== hero.id).slice(0, 6);
+  // 3. Flujo de Noticias Secundarias (Las 8 noticias más recientes del día, excluyendo la Hero)
+  const secondary = sortedByDate.filter(n => !hero || n.id !== hero.id).slice(0, 8);
 
   return { hero, secondary };
 }
 
 /** 🧠 IA Inferencia: Análisis de Impacto y Recomendación PYME */
-function generateNewsAnalysis(article: NewsArticle) {
+export function generateNewsAnalysis(article: NewsArticle) {
   const category = article.category?.toUpperCase() || "";
   const title = article.title?.toUpperCase() || "";
 
@@ -96,7 +97,6 @@ function generateNewsAnalysis(article: NewsArticle) {
     advice = "Monitorea las oportunidades de licitación o alianzas comerciales que surjan de estos proyectos de desarrollo. Mantén tu facturación electrónica al día mediante Facturín para responder de inmediato ante cotizaciones y nuevos clientes locales.";
   }
 
-  // Personalizaciones finas basadas en palabras clave específicas de Magallanes
   if (title.includes("AEROPUERTO")) {
     impact = "La ampliación de la infraestructura del aeropuerto de Punta Arenas aumentará significativamente la capacidad de pasajeros diarios. Esto beneficiará de manera directa al turismo, la hotelería, el transporte local y los servicios gastronómicos de la provincia.";
     advice = "Las PYMEs turísticas y de transportes deben prepararse digitalizando sus métodos de cobro y facturación. Asegúrate de emitir facturas y boletas electrónicas al instante y en regla ante el SII para captar el flujo de clientes institucionales y corporativos que visitarán la zona.";
@@ -144,7 +144,6 @@ export function ensureUniqueNewsImages(hero: NewsArticle | null, secondary: News
   const cleanSecondary = secondary.map((item, idx) => {
     let currentImg = item.image_url;
     
-    // Si la imagen ya fue usada en el hero o en un artículo anterior del feed
     if (!currentImg || seenImages.has(currentImg) || currentImg === "/news-placeholder.png") {
       const fallback = CLIENT_UNIQUE_FALLBACK_IMAGES.find(img => !seenImages.has(img)) 
         || CLIENT_UNIQUE_FALLBACK_IMAGES[idx % CLIENT_UNIQUE_FALLBACK_IMAGES.length];
@@ -160,366 +159,309 @@ export function ensureUniqueNewsImages(hero: NewsArticle | null, secondary: News
 
 export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRegionalSectionProps) {
   const [analyzedNews, setAnalyzedNews] = useState<NewsArticle | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("TODAS");
+
   const rawScoring = newsRelevanceScoring(initialNews);
   const { hero: heroNews, secondary: secondaryNews } = ensureUniqueNewsImages(rawScoring.hero, rawScoring.secondary);
 
-  /** 🛡️ Protocolo de Veracidad Absoluta */
-  const isDataReady = Array.isArray(indicators) && indicators.length > 0;
+  // Filtro reactivo de noticias secundarias por categoría
+  const filteredSecondaryNews = useMemo(() => {
+    if (selectedCategory === "TODAS") return secondaryNews;
 
-  // Mapeo dinámico del Market Pulse con Inteligencia de Tendencia
-  const pulseData = [
-    { 
-      label: "IPSA Chile", 
-      value: indicators.find(i => i.codigo === 'ipsa')?.valor,
-      trend: "up",
-      color: isDataReady ? "text-emerald-500" : "text-muted-foreground/30",
-      format: (v: number) => v ? `${v.toLocaleString('es-CL', { minimumFractionDigits: 0 })} pts` : "---"
-    },
-    { 
-      label: "Petróleo WTI", 
-      value: indicators.find(i => i.codigo === 'wti')?.valor,
-      trend: "down",
-      color: isDataReady ? "text-rose-500" : "text-muted-foreground/30",
-      format: (v: number) => v ? `US$ ${v.toFixed(2)}` : "---"
-    },
-    { 
-      label: "Cobre (lb)", 
-      value: indicators.find(i => i.codigo === 'libra_cobre')?.valor,
-      trend: "up",
-      color: isDataReady ? "text-emerald-500" : "text-muted-foreground/30",
-      format: (v: number) => v ? `US$ ${v.toFixed(2)}` : "---"
-    }
-  ];
+    const filtered = secondaryNews.filter((n) => {
+      const cat = n.category?.toUpperCase() || "";
+      if (selectedCategory === "ECONOMÍA") {
+        return cat.includes("ECONOM") || cat.includes("FINANZ") || cat.includes("INVER");
+      }
+      if (selectedCategory === "SII") {
+        return cat.includes("SII") || cat.includes("LEGAL") || cat.includes("TRIBUTAR");
+      }
+      return cat.includes(selectedCategory);
+    });
+
+    // Fallback: si no hay noticias en esa categoría específica, muestra las secundarias normales
+    return filtered.length > 0 ? filtered : secondaryNews;
+  }, [secondaryNews, selectedCategory]);
 
   return (
     <section id="diario" className="py-16 bg-white text-foreground overflow-hidden relative scroll-mt-32" suppressHydrationWarning>
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")'}} suppressHydrationWarning />
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent" suppressHydrationWarning />
       
-      <div className="container mx-auto px-6 lg:px-12 relative z-10" suppressHydrationWarning>
-        <div className="flex flex-col md:flex-row items-end justify-between mb-20 gap-8" suppressHydrationWarning>
-            <div className="space-y-6 relative">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 space-y-12" suppressHydrationWarning>
+        {/* Cabecera Principal */}
+        <div className="flex flex-col md:flex-row items-end justify-between gap-8" suppressHydrationWarning>
+            <div className="space-y-4 relative">
                <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
-               <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-primary/80 mb-2 italic animate-in fade-in slide-in-from-top-4 duration-700">
-                 <span className="w-10 h-[1px] bg-primary/50" />
-                 <Landmark className="h-3 w-3 animate-pulse" /> Diario & Portal Económico de la Patagonia
+               <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.35em] text-primary/80 italic">
+                 <span className="w-8 h-[1px] bg-primary/50" />
+                 <Landmark className="h-3 w-3 animate-pulse text-primary" /> Diario & Portal Económico de la Patagonia
                </div>
-               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground text-shadow-sm animate-in fade-in slide-in-from-left-6 duration-700">
+               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground">
                  Diario Regional <br />
-                 <span className="text-primary italic font-serif">de Magallanes</span> <span className="text-muted-foreground/35">& Finanzas Australes.</span>
+                 <span className="text-primary italic font-serif">de Magallanes</span> <span className="text-muted-foreground/40">& Finanzas Australes.</span>
                </h2>
-               <p className="text-muted-foreground font-medium italic text-sm sm:text-lg leading-relaxed max-w-xl animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+               <p className="text-muted-foreground font-medium italic text-xs sm:text-base leading-relaxed max-w-xl">
                  Información estratégica para emprendedores, empresas y la comunidad de Magallanes. El pulso diario de nuestra economía, inversiones regionales y actualidad global.
                </p>
             </div>
-             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Link href="/calculadora" className="w-full sm:w-auto">
-                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-12 px-8 transition-all active:scale-95">
-                    Calculadora Tributaria
+             <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+                <Link href="/calculadora" className="flex-1 sm:flex-initial">
+                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-11 px-6 transition-all active:scale-95">
+                    Calculadora
                   </Button>
                 </Link>
-                <Link href="/empleos" className="w-full sm:w-auto">
-                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-2xl h-12 px-8 transition-all">
-                    Bolsa de Empleos
+                <Link href="/empleos" className="flex-1 sm:flex-initial">
+                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-2xl h-11 px-6 transition-all">
+                    Empleos
                   </Button>
                 </Link>
-                <Link href="/noticias" className="w-full sm:w-auto">
-                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
+                <Link href="/noticias" className="flex-1 sm:flex-initial">
+                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-11 px-6 transition-all">
                     Hemeroteca
                   </Button>
                 </Link>
-                <Link href="/anunciar" className="w-full sm:w-auto">
-                  <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest border border-dashed border-border text-muted-foreground hover:bg-muted rounded-2xl h-12 px-8 transition-all">
+                <Link href="/anunciar" className="flex-1 sm:flex-initial">
+                  <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest border border-dashed border-border text-muted-foreground hover:bg-muted rounded-2xl h-11 px-6 transition-all">
                     Anuncia
                   </Button>
                 </Link>
              </div>
-         </div>
-         {/* Deduplicación: Obtener la noticia principal del Diario y excluirla del Bento Grid */}
-        {(() => {
-          const bentoNews = heroNews ? initialNews.filter((n: any) => n.id !== heroNews.id) : initialNews;
+        </div>
 
-          return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-               {/* 📰 COLUMNA IZQUIERDA: FLUJO DE NOTICIAS (Ancho: 3/12 en desktop) */}
-               <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 border-t lg:border-t-0 lg:border-r border-zinc-150 pt-8 lg:pt-0 lg:pr-6">
-                 <div className="flex items-center gap-2 pb-3 border-b border-zinc-150">
-                   <span className="text-[10px] font-black uppercase tracking-[0.25em] text-primary italic">Flujo de Noticias</span>
-                   <span className="relative flex h-2 w-2">
-                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                   </span>
-                 </div>
-                 
-                 <div className="space-y-6 divide-y divide-zinc-100">
-                   {secondaryNews.map((news: NewsArticle, idx: number) => (
-                     <div key={news.id} className={`pt-6 ${idx === 0 ? 'pt-0' : ''} group cursor-pointer space-y-3`}>
-                       <Link href={`/noticias/${news.slug}`} scroll={false}>
-                         <div className="space-y-3">
-                           <div className="relative aspect-video rounded-2xl overflow-hidden border border-border/50 shadow-md">
-                             <img 
-                                src={news.image_url || "/news-placeholder.png"} 
-                                alt={news.title} 
-                                className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full absolute inset-0"
-                             />
-                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                             <div className="absolute bottom-2 left-2">
-                                <span className="text-[7px] font-black tracking-widest text-primary-foreground italic px-2 py-0.5 border border-primary/50 rounded bg-primary/95 uppercase">{news.category}</span>
-                             </div>
-                           </div>
-                           <div className="space-y-2">
-                             <h4 className="text-xs font-black uppercase italic leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                                {news.title}
-                             </h4>
-                             <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground/60">
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setAnalyzedNews(news);
-                                  }}
-                                  className="text-primary font-black uppercase tracking-wider flex items-center gap-1 hover:text-primary/80 transition-colors cursor-pointer focus:outline-none"
-                                >
-                                  Analizar <ArrowRight className="h-2.5 w-2.5" />
-                                </button>
-                                <span className="italic uppercase tracking-widest font-mono" suppressHydrationWarning>
-                                   {new Date(news.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric'})}
-                                </span>
-                             </div>
-                           </div>
-                         </div>
-                       </Link>
-                     </div>
-                   ))}
-                 </div>
-               </div>
+        {/* 🌟 NUEVO CENTRO DE CONTROL: BENTO GRID 2.0 MODULAR */}
+        <ModernHeroBento 
+          heroNews={heroNews} 
+          indicators={indicators} 
+          onAnalyzeNews={(article) => setAnalyzedNews(article)} 
+        />
 
-               {/* 🏆 COLUMNA CENTRAL: NOTICIA HERO & SLINGSHOT (Ancho: 6/12 en desktop) */}
-               <div className="lg:col-span-6 space-y-8 order-1 lg:order-2 px-0 lg:px-4">
-                  {/* Noticia Principal (Hero - Estilo Patagonia Times) */}
-                  {heroNews ? (
-                    <Link href={`/noticias/${heroNews.slug}`} scroll={false}>
-                      <div className="group cursor-pointer space-y-4">
-                        <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl hover:border-primary/40 transition-all duration-700">
-                           <img 
-                              src={heroNews.image_url || "/news-placeholder.png"} 
-                              alt={heroNews.title} 
-                              className="object-cover transition-transform duration-1000 group-hover:scale-[1.03] w-full h-full absolute inset-0"
-                            />
-                            
-                           {/* Top Badges (Insignias Superiores) */}
-                           <div className="absolute inset-x-0 top-0 p-3 sm:p-5 flex justify-between items-center z-10">
-                              <div className="bg-rose-600/95 backdrop-blur-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-rose-400/30 shadow-lg flex items-center gap-1.5">
-                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-white">Última Hora</span>
-                              </div>
-                              <div className="bg-white/95 backdrop-blur-xl px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-1.5">
-                                 <BadgeCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary" />
-                                 <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-primary">Verificado</span>
-                              </div>
-                           </div>
+        {/* 📰 SECCIÓN EDITORIAL: FLUJO SECUNDARIO & WIDGETS LATERALES */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
+          {/* Columna Izquierda / Central: Stream de Noticias Secundarias (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-primary italic">
+                  Flujo de Actualidad Regional
+                </span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+              </div>
 
-                           {/* Gradient Background */}
-                           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
-
-                           {/* Bottom Content Container */}
-                           <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 space-y-2 sm:space-y-3 z-10">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] sm:text-[9px] font-black tracking-widest text-primary-foreground italic px-2.5 py-0.5 sm:px-3 sm:py-1 border border-primary/50 rounded-lg bg-primary/95 backdrop-blur-xl shadow-lg uppercase">{heroNews.category}</span>
-                                <span className="text-[8px] sm:text-[9px] font-black tracking-widest text-white/90 italic px-2.5 py-0.5 sm:px-3 sm:py-1 border border-white/20 rounded-lg bg-black/50 backdrop-blur-xl uppercase">3 min lectura</span>
-                              </div>
-                              <h3 className="text-base sm:text-2xl md:text-3xl font-black leading-tight italic drop-shadow-2xl text-white tracking-tighter uppercase line-clamp-2 sm:line-clamp-3">
-                                 {heroNews.title}
-                              </h3>
-                              <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-black text-white/80 uppercase tracking-widest italic pt-0.5" suppressHydrationWarning>
-                                 <span>{heroNews.source_name || "Prensa Magallanes"}</span>
-                                 <span>{new Date(heroNews.published_at).toLocaleDateString('es-CL', {day: '2-digit', month: 'long', year: 'numeric'})}</span>
-                              </div>
-                           </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ) : (
-                    <NewsCardSkeleton />
-                  )}
-
-                  {/* Panel de Análisis de Mercado (Slingshot) */}
-                  {/* <GlobalMarketPanel indicators={indicators} /> */}
-               </div>
-
-               {/* 🏛️ COLUMNA DERECHA: WIDGETS & PUBLICIDAD (Ancho: 3/12 en desktop) */}
-               <div className="lg:col-span-3 space-y-8 order-3 border-t lg:border-t-0 lg:border-l border-zinc-150 pt-8 lg:pt-0 lg:pl-6">
-                  {/* Clima e Indicadores en Vivo */}
-                  <HeroBentoGrid indicators={indicators} news={bentoNews} />
-
-                  {/* Calendario Macro */}
-                  <MacroCalendarWidget />
-
-                  {/* Ads Patrocinados & Facturín */}
-                  <div className="space-y-6">
-                     {/* Video de Facturín */}
-                     <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-50 to-white border border-primary/15 space-y-4 relative overflow-hidden group shadow-md hover:shadow-lg transition-all duration-300">
-                        <div className="relative space-y-3">
-                           <div className="flex items-center justify-between">
-                              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600 px-2 py-0.5 bg-emerald-500/10 rounded-full">
-                                  Facturín
-                              </span>
-                              <span className="text-[7px] font-black text-muted-foreground/30 uppercase tracking-widest">SII / Legal</span>
-                           </div>
-                           <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground leading-tight">
-                              Facturación <span className="font-serif italic text-primary">Express</span>
-                           </h5>
-                           <div className="relative rounded-xl overflow-hidden border border-primary/10 shadow bg-black w-full">
-                              <video 
-                                src="/Facturin.mp4" 
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                controls 
-                                preload="metadata"
-                                className="w-full h-auto object-contain block"
-                              />
-                           </div>
-                           <p className="text-[8.5px] font-semibold text-muted-foreground/60 italic text-center leading-normal">
-                              Emisión de boletas y facturas al instante bajo normativa del SII.
-                           </p>
-                           <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest rounded-lg h-9 px-4 hover:bg-emerald-700 transition-all active:scale-95 group/btn">
-                              <span>Probar Gratis</span>
-                              <ArrowRight className="h-3.5 w-3.5 text-white group-hover/btn:translate-x-0.5 transition-transform" />
-                           </Link>
-                        </div>
-                     </div>
-
-                     {/* 📢 Banner Publicitario Dinámico de la Barra Lateral */}
-                     <AdBannerSlot position="news_sidebar" className="w-full" />
-                  </div>
-               </div>
+              {/* Filtros Rápidos en Portada */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                {["TODAS", "ECONOMÍA", "SII"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all ${
+                      selectedCategory === cat
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
-          );
-        })()}
 
-        {/* Sección de Ventas Premium del Software ContaPyme */}
-        <div className="mt-20 py-20 border-t border-zinc-150 relative overflow-hidden rounded-[3.5rem] bg-gradient-to-tr from-slate-50 via-white to-sky-500/[0.02] border border-neutral-200/60 text-slate-850 px-8 md:px-16 shadow-[0_30px_80px_rgba(30,58,138,0.02)]">
-          {/* Auroras de fondo muy suaves */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-primary/5 to-sky-500/[0.02] rounded-full blur-[140px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-sky-600/[0.02] to-primary/5 rounded-full blur-[140px] pointer-events-none" />
-          
-          <div className="relative z-10 space-y-12">
-            <div className="text-center max-w-3xl mx-auto space-y-4">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Plataforma Empresarial ContaPyme</span>
-              <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-slate-900">
-                Gestión Contable & Nómina <br />
-                <span className="text-primary italic font-serif">Optimizada para Magallanes</span>
-              </h2>
-              <p className="text-slate-500 font-medium italic text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
-                Software contable integral diseñado para normativas del SII en Chile, bonificación a la contratación DL 889, exenciones de Zona Franca y gestión diaria de flujo de caja.
+            {/* Tarjetas Secundarias en Grilla 2x2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {filteredSecondaryNews.map((news) => (
+                <article
+                  key={news.id}
+                  className="group bg-zinc-50/60 dark:bg-zinc-900/40 rounded-3xl p-4 border border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between space-y-3"
+                >
+                  <Link href={`/noticias/${news.slug}`} scroll={false} className="space-y-3 block">
+                    <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-border/40">
+                      <img
+                        src={news.image_url || "/news-placeholder.png"}
+                        alt={news.title}
+                        className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full absolute inset-0"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-2 left-2">
+                        <span className="text-[8px] font-black tracking-widest text-white italic px-2.5 py-0.5 rounded bg-primary/95 uppercase">
+                          {news.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h4 className="text-sm font-black uppercase italic leading-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                      {news.title}
+                    </h4>
+                  </Link>
+
+                  <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground pt-2 border-t border-border/40">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setAnalyzedNews(news);
+                      }}
+                      className="text-primary font-black uppercase tracking-wider flex items-center gap-1 hover:text-primary/80 transition-colors cursor-pointer"
+                    >
+                      Analizar IA <ArrowRight className="h-3 w-3" />
+                    </button>
+                    <span className="font-mono text-[9px] uppercase tracking-wider" suppressHydrationWarning>
+                      {new Date(news.published_at).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          {/* Columna Derecha: Calendario Macro, Video Facturín y Anuncios (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            <MacroCalendarWidget />
+
+            {/* Video de Facturín */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950 border border-primary/20 space-y-3 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600 px-2.5 py-0.5 bg-emerald-500/10 rounded-full">
+                  Facturín ERP
+                </span>
+                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-wider">SII Certificado</span>
+              </div>
+              <h5 className="text-sm font-black italic tracking-tighter uppercase text-foreground">
+                Facturación <span className="font-serif italic text-primary">Express</span>
+              </h5>
+              <div className="relative rounded-2xl overflow-hidden border border-primary/10 shadow bg-black w-full">
+                <video
+                  src="/Facturin.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  preload="metadata"
+                  className="w-full h-auto object-contain block"
+                />
+              </div>
+              <p className="text-[10px] font-medium text-muted-foreground text-center">
+                Emisión instantánea de DTE y boletas bajo normativa SII.
+              </p>
+              <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest rounded-xl h-10 px-4 hover:bg-emerald-700 transition-all">
+                <span>Probar Gratis</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            {/* Banner Publicitario */}
+            <AdBannerSlot position="news_sidebar" className="w-full" />
+          </div>
+        </div>
+
+        {/* Sección de Software ContaPyme */}
+        <div className="mt-16 py-16 rounded-[3rem] bg-gradient-to-tr from-slate-50 via-white to-sky-500/[0.03] border border-border/70 p-8 sm:p-12 shadow-sm space-y-10">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="text-[10px] font-black uppercase tracking-[0.35em] text-primary">Plataforma Empresarial ContaPyme</span>
+            <h2 className="text-2xl sm:text-4xl font-black italic tracking-tighter uppercase text-foreground">
+              Gestión Contable & Nómina <br />
+              <span className="text-primary font-serif">Optimizada para Magallanes</span>
+            </h2>
+            <p className="text-muted-foreground font-medium text-xs sm:text-sm">
+              Software contable integral con normativa chilena: bonificación DL 889, exenciones Zona Franca y conciliación automática.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-border/60 shadow-xs space-y-2">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Landmark className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-black uppercase italic text-foreground">Facturación SII & DTE</h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Boletas y facturas sincronizadas con el SII y conciliación bancaria instantánea.
               </p>
             </div>
 
-            {/* Grilla Bento de Características */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              
-              {/* Tarjeta 1: Facturación */}
-              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
-                  <Landmark className="h-5 w-5" />
-                </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Facturación SII & DTE</h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Emisión instantánea de boletas, facturas y guías electrónicas sincronizadas directamente con el SII y conciliación bancaria automática.
-                </p>
+            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-border/60 shadow-xs space-y-2">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Sparkles className="h-4 w-4" />
               </div>
-
-              {/* Tarjeta 2: Remuneraciones */}
-              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Nómina & Libro LRE DT</h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Liquidaciones con firma digital, feriado legal de 20 días en Magallanes y exportación directa al Libro de Remuneraciones Electrónico.
-                </p>
-              </div>
-
-              {/* Tarjeta 3: Conciliación */}
-              <div className="p-8 rounded-[2rem] bg-white/80 border border-neutral-200/60 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 space-y-4 group">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-                <h4 className="text-lg font-black italic uppercase tracking-tight text-slate-800">Beneficios DL 889 & Zona Franca</h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                  Cálculo de bonificación a la contratación DL 889, exenciones tributarias de Zona Franca y auditoría comparativa de ahorro fiscal.
-                </p>
-              </div>
-
+              <h4 className="text-sm font-black uppercase italic text-foreground">Nómina & Libro LRE</h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Liquidaciones con firma digital, feriado austral de 20 días y reporte a la DT.
+              </p>
             </div>
 
-            {/* Botón de Acción Principal */}
-            <div className="text-center pt-4">
-              <Link href="/login" className="inline-block">
-                <Button size="lg" className="inline-flex items-center justify-center text-[10px] sm:text-xs font-black uppercase tracking-widest h-12 sm:h-14 px-8 sm:px-12 rounded-full bg-primary text-primary-foreground hover:shadow-2xl hover:shadow-primary/30 transition-all whitespace-nowrap group">
-                  Iniciar Prueba Gratis de 14 Días <ArrowRight className="ml-2.5 h-4 w-4 group-hover:translate-x-1 transition-transform shrink-0" />
-                </Button>
-              </Link>
+            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-border/60 shadow-xs space-y-2">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-black uppercase italic text-foreground">Beneficio DL 889</h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Cálculo de bonificación a la contratación regional y exenciones de Zona Franca.
+              </p>
             </div>
+          </div>
+
+          <div className="text-center pt-2">
+            <Link href="/login">
+              <Button size="lg" className="text-xs font-black uppercase tracking-widest h-12 px-8 rounded-full bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/25 transition-all">
+                Iniciar Prueba Gratis de 14 Días <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Modal de Auditoría de Impacto IA (Glassmorphic) */}
+      {/* ⚓ DOCK FLOTANTE CONTEXTUAL CON SCROLL */}
+      <StickyCategoryDock 
+        activeCategory={selectedCategory} 
+        onSelectCategory={(cat) => setSelectedCategory(cat)} 
+      />
+
+      {/* Modal de Análisis de Impacto IA */}
       {analyzedNews && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white/95 backdrop-blur-xl border border-white/40 rounded-[2.5rem] w-full max-w-xl p-6 sm:p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-300 relative">
-            
-            {/* Botón cerrar */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-white/20 rounded-[2.5rem] w-full max-w-xl p-6 sm:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 relative">
             <button 
               onClick={() => setAnalyzedNews(null)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 transition-all cursor-pointer focus:outline-none"
+              className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-all cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
 
-            {/* Cabecera del Análisis */}
-            <div className="space-y-3">
-              <span className="text-[8px] font-black tracking-widest text-primary-foreground italic px-3 py-1 border border-primary/50 rounded bg-primary/95 uppercase inline-block">
+            <div className="space-y-2">
+              <span className="text-[8px] font-black tracking-widest text-primary-foreground italic px-2.5 py-0.5 rounded bg-primary uppercase inline-block">
                 {analyzedNews.category}
               </span>
-              <h3 className="text-xl sm:text-2xl font-black uppercase leading-tight italic text-foreground tracking-tight pr-8">
+              <h3 className="text-xl sm:text-2xl font-black uppercase leading-tight italic text-foreground tracking-tight pr-6">
                 {analyzedNews.title}
               </h3>
-              <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] italic">
-                Cruce de Impacto Inteligente — ContaPyme PUQ
+              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
+                Análisis de Impacto Regional — ContaPyme PUQ
               </p>
             </div>
 
-            {/* Contenido Analítico */}
-            <div className="space-y-5 divide-y divide-zinc-150 pt-2">
-              
-              {/* Sección 1: Impacto local */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1.5 pt-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> 1. El Impacto en Magallanes (IA)
+            <div className="space-y-4 divide-y divide-border/60 pt-1">
+              <div className="space-y-1.5 pt-2">
+                <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> 1. Impacto en Magallanes (IA)
                 </h4>
-                <p className="text-xs font-semibold text-zinc-700 leading-relaxed text-justify italic">
+                <p className="text-xs font-medium text-muted-foreground leading-relaxed italic text-justify">
                   "{generateNewsAnalysis(analyzedNews).impact}"
                 </p>
               </div>
 
-              {/* Sección 2: Recomendaciones */}
-              <div className="space-y-2 pt-4">
+              <div className="space-y-1.5 pt-3">
                 <h4 className="text-[10px] font-black uppercase tracking-wider text-indigo-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" /> 2. Recomendación Contable / Legal
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> 2. Recomendación Contable / Legal
                 </h4>
-                <p className="text-xs font-semibold text-zinc-700 leading-relaxed text-justify italic">
+                <p className="text-xs font-medium text-muted-foreground leading-relaxed italic text-justify">
                   "{generateNewsAnalysis(analyzedNews).advice}"
                 </p>
               </div>
-
             </div>
 
-            {/* Acciones */}
-            <div className="pt-4 flex flex-col sm:flex-row gap-3">
+            <div className="pt-3 flex flex-col sm:flex-row gap-3">
               <Link href={`/noticias/${analyzedNews.slug}`} scroll={false} className="flex-1">
                 <Button 
                   onClick={() => setAnalyzedNews(null)}
@@ -531,12 +473,11 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
               <Button 
                 variant="outline" 
                 onClick={() => setAnalyzedNews(null)}
-                className="text-xs font-black uppercase tracking-widest border-zinc-200 text-zinc-500 hover:bg-zinc-100 rounded-xl h-11 px-6"
+                className="text-xs font-black uppercase tracking-widest rounded-xl h-11 px-6"
               >
                 Cerrar
               </Button>
             </div>
-
           </div>
         </div>
       )}
