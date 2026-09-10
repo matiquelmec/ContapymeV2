@@ -55,6 +55,11 @@ export async function POST(req: NextRequest) {
       const isFeatured = itemTier === 'basic' || itemTier === 'featured' || itemTier === 'faena'
       const isFree = amount === 0
 
+      // Confidencialidad salarial: verificar consentimiento explícito
+      const isSalaryPublic = jobData.is_salary_public !== undefined
+        ? Boolean(jobData.is_salary_public)
+        : Boolean(jobData.salary_raw)
+
       // Inserción del empleo en la base de datos
       const { data: createdJob, error: jobError } = await supabase
         .from('job_postings')
@@ -68,8 +73,10 @@ export async function POST(req: NextRequest) {
           work_shift: jobData.work_shift || 'Lunes a Viernes (40 Horas)',
           salary_min: jobData.salary_min ? Number(jobData.salary_min) : null,
           salary_max: jobData.salary_max ? Number(jobData.salary_max) : null,
-          salary_raw: jobData.salary_raw || (jobData.salary_min ? `$${Number(jobData.salary_min).toLocaleString('es-CL')} Líquido` : null),
-          is_salary_public: Boolean(jobData.salary_min),
+          salary_raw: isSalaryPublic
+            ? (jobData.salary_raw || (jobData.salary_min ? `$${Number(jobData.salary_min).toLocaleString('es-CL')} Líquido` : null))
+            : null,
+          is_salary_public: isSalaryPublic,
           description: jobData.description,
           requirements: Array.isArray(jobData.requirements) ? jobData.requirements : [],
           benefits: Array.isArray(jobData.benefits) ? jobData.benefits : [],

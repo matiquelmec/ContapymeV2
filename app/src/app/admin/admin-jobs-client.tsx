@@ -158,11 +158,15 @@ export function AdminJobsClient({ initialJobs }: AdminJobsClientProps) {
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">
                   {job.title}
                 </h4>
-                {job.salary_raw && (
+                {job.is_salary_public === false ? (
+                  <span className="text-xs font-bold text-amber-600 block">
+                    🔒 Confidencial {job.salary_raw ? `(${job.salary_raw} interno)` : '(A convenir)'}
+                  </span>
+                ) : job.salary_raw ? (
                   <span className="text-xs font-bold text-emerald-600 block">
                     💰 {job.salary_raw}
                   </span>
-                )}
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap shrink-0">

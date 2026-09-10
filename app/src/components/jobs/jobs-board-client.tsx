@@ -277,10 +277,14 @@ export function JobsBoardClient({ initialJobs }: JobsBoardClientProps) {
 
                     {/* Tags y Badges: Sueldo y Turno */}
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {job.salary_raw && (
+                      {job.is_salary_public !== false && job.salary_raw ? (
                         <div className="flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-lg">
                           <DollarSign className="h-3 w-3" />
                           <span>{job.salary_raw}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                          <span>🔒 A convenir</span>
                         </div>
                       )}
                       {job.work_shift && (

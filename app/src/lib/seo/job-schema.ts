@@ -31,6 +31,20 @@ export interface JobPostingSchemaInput {
 export const BASE_SITE_URL = "https://www.contapymepuq.cl";
 
 /**
+ * 🛡️ Sanitiza ofertas de empleo para entrega pública: si is_salary_public es false,
+ * enmascara salary_raw, salary_min y salary_max para proteger la confidencialidad de la empresa.
+ */
+export function sanitizeJobForPublicDelivery<T extends JobPostingSchemaInput>(job: T): T {
+  const isPublic = job.is_salary_public !== false;
+  return {
+    ...job,
+    salary_raw: isPublic ? (job.salary_raw || null) : null,
+    salary_min: isPublic ? (job.salary_min || null) : null,
+    salary_max: isPublic ? (job.salary_max || null) : null,
+  };
+}
+
+/**
  * Normaliza listas que pueden venir como array, string separado por saltos de línea o JSON string.
  */
 export function normalizeStringList(value: unknown): string[] {
@@ -204,8 +218,8 @@ export function generateJobPostingSchema(job: JobPostingSchemaInput) {
     };
   }
 
-  // Si existe salario estructurado mínimo
-  if (job.salary_min && job.salary_min > 0) {
+  // Si existe salario estructurado mínimo y es público
+  if (job.is_salary_public !== false && job.salary_min && job.salary_min > 0) {
     schema.baseSalary = {
       "@type": "MonetaryAmount",
       currency: "CLP",

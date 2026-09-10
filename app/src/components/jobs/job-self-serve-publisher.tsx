@@ -22,7 +22,9 @@ import {
   UserPlus,
   Lock,
   Wand2,
-  MessageCircle
+  MessageCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -56,6 +58,7 @@ export function JobSelfServePublisher() {
   const [salaryType, setSalaryType] = useState<'liquido' | 'bruto'>('liquido')
   const [salaryMin, setSalaryMin] = useState('')
   const [salaryMax, setSalaryMax] = useState('')
+  const [isSalaryPublic, setIsSalaryPublic] = useState(true)
   const [description, setDescription] = useState('')
   const [requirements, setRequirements] = useState('')
   const [contactWhatsapp, setContactWhatsapp] = useState('')
@@ -76,6 +79,7 @@ export function JobSelfServePublisher() {
         if (d.workShift) setWorkShift(d.workShift)
         if (d.salaryMin) setSalaryMin(d.salaryMin)
         if (d.salaryMax) setSalaryMax(d.salaryMax)
+        if (typeof d.isSalaryPublic === 'boolean') setIsSalaryPublic(d.isSalaryPublic)
         if (d.description) setDescription(d.description)
         if (d.requirements) setRequirements(d.requirements)
         if (d.contactWhatsapp) setContactWhatsapp(d.contactWhatsapp)
@@ -99,7 +103,7 @@ export function JobSelfServePublisher() {
     try {
       localStorage.setItem('draft_job_post', JSON.stringify({
         title, companyName, location, sector, workShift, salaryMin, salaryMax,
-        description, requirements, contactWhatsapp, contactEmail, tier
+        isSalaryPublic, description, requirements, contactWhatsapp, contactEmail, tier
       }))
     } catch (e) {}
   }
@@ -222,7 +226,8 @@ export function JobSelfServePublisher() {
             work_shift: workShift,
             salary_min: salaryMin ? Number(salaryMin) : null,
             salary_max: salaryMax ? Number(salaryMax) : null,
-            salary_raw: salaryMin
+            is_salary_public: isSalaryPublic,
+            salary_raw: isSalaryPublic && salaryMin
               ? (salaryMax
                   ? `$${Number(salaryMin).toLocaleString('es-CL')} - $${Number(salaryMax).toLocaleString('es-CL')} ${salaryType === 'liquido' ? 'Líquido' : 'Bruto'}`
                   : `$${Number(salaryMin).toLocaleString('es-CL')} ${salaryType === 'liquido' ? 'Líquido' : 'Bruto'}`)
@@ -470,16 +475,53 @@ export function JobSelfServePublisher() {
 
           {/* Bloque 2: Sueldo y Descripción */}
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-border/80 shadow-md space-y-5">
-            <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
-              <DollarSign className="h-4 w-4" />
-              <span>2. Renta y Detalle de la Oferta</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                <DollarSign className="h-4 w-4" />
+                <span>2. Renta y Detalle de la Oferta</span>
+              </div>
+              
+              {/* Selector de Confidencialidad Salarial */}
+              <button
+                type="button"
+                onClick={() => setIsSalaryPublic(!isSalaryPublic)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                  isSalaryPublic
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                }`}
+              >
+                {isSalaryPublic ? (
+                  <>
+                    <Eye className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Sueldo Público en el Aviso</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-3.5 w-3.5 text-amber-600" />
+                    <span>🔒 Sueldo Confidencial (A convenir)</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="space-y-4">
+              {!isSalaryPublic ? (
+                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
+                  <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold">Confidencialidad Activada para este aviso</p>
+                    <p className="text-[11px] text-amber-800/90 leading-relaxed">
+                      El monto salarial <strong>no se mostrará a los postulantes</strong> ni en Google for Jobs. El aviso indicará <em>&quot;Sueldo a convenir / Confidencial&quot;</em>. Puedes ingresar un monto referencial solo para tus cálculos internos o dejarlo vacío.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               {/* Selector de Modalidad de Renta */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground block">
-                  Modalidad de Renta Ofertada
+                  Modalidad de Renta {isSalaryPublic ? 'Ofertada' : '(Solo cálculo interno)'}
                 </label>
                 <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-2xl border border-zinc-200">
                   <button
@@ -511,6 +553,7 @@ export function JobSelfServePublisher() {
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1.5">
                     {salaryType === 'liquido' ? 'Sueldo Líquido Ofrecido ($CLP)' : 'Sueldo Bruto Imponible ($CLP)'}
+                    {!isSalaryPublic && <span className="text-[10px] text-amber-700 font-normal ml-1">(Oculto al público)</span>}
                   </label>
                   <input
                     type="number"
@@ -524,6 +567,7 @@ export function JobSelfServePublisher() {
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1.5">
                     {salaryType === 'liquido' ? 'Sueldo Líquido Máximo / Bonos ($CLP)' : 'Sueldo Bruto Máximo ($CLP)'}
+                    {!isSalaryPublic && <span className="text-[10px] text-amber-700 font-normal ml-1">(Oculto al público)</span>}
                   </label>
                   <input
                     type="number"

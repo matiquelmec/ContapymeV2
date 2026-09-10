@@ -4,6 +4,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sanitizeJobSeoText, generateCleanJobSlug, notifySearchEnginesOfJob } from '@/lib/seo/indexing-service'
+import { sanitizeJobForPublicDelivery } from '@/lib/seo/job-schema'
+
+export { sanitizeJobForPublicDelivery }
 
 export interface JobPosting {
   id: string
@@ -16,9 +19,9 @@ export interface JobPosting {
   sector: string
   job_type: string
   work_shift: string
-  salary_raw?: string
-  salary_min?: number
-  salary_max?: number
+  salary_raw?: string | null
+  salary_min?: number | null
+  salary_max?: number | null
   salary_period?: string
   is_salary_public: boolean
   description: string
@@ -174,6 +177,27 @@ export async function cleanupExpiredJobsAction() {
   }
 }
 
+export interface CreateJobInput {
+  title: string
+  company_name: string
+  company_rut?: string
+  company_logo_url?: string
+  location: string
+  sector: string
+  job_type: string
+  work_shift: string
+  salary_raw?: string
+  salary_min?: number
+  salary_max?: number
+  is_salary_public?: boolean
+  description: string
+  requirements: string[]
+  benefits: string[]
+  contact_email?: string
+  contact_whatsapp?: string
+  application_url?: string
+}
+
 /**
  * 📋 Obtiene la lista de ofertas laborales activas de Magallanes con filtros.
  */
@@ -218,7 +242,8 @@ export async function getRegionalJobs(filters?: {
       return { success: false, data: [] }
     }
 
-    return { success: true, data: (data as JobPosting[]) || [] }
+    const sanitized = ((data as JobPosting[]) || []).map(sanitizeJobForPublicDelivery)
+    return { success: true, data: sanitized }
   } catch (err: any) {
     console.error('Error inesperado en getRegionalJobs:', err)
     return { success: false, data: [] }
@@ -241,7 +266,8 @@ export async function getJobBySlug(slug: string) {
       return { success: false, data: null }
     }
 
-    return { success: true, data: data as JobPosting }
+    const sanitized = sanitizeJobForPublicDelivery(data as JobPosting)
+    return { success: true, data: sanitized }
   } catch (err) {
     console.error('Error al consultar empleo por slug:', err)
     return { success: false, data: null }
@@ -354,25 +380,7 @@ export async function getCompanyJobsAction() {
 /**
  * 📝 Crea una nueva vacante de empleo con validación legal Art. 2° DT.
  */
-export async function createJobAction(formData: {
-  title: string
-  company_name: string
-  company_rut?: string
-  company_logo_url?: string
-  location: string
-  sector: string
-  job_type: string
-  work_shift: string
-  salary_raw?: string
-  salary_min?: number
-  salary_max?: number
-  description: string
-  requirements: string[]
-  benefits: string[]
-  contact_email?: string
-  contact_whatsapp?: string
-  application_url?: string
-}) {
+export async function createJobAction(formData: CreateJobInput) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -404,6 +412,12 @@ export async function createJobAction(formData: {
     const now = new Date()
     const expiresAt = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000)
 
+    // Si el usuario no especificó explícitamente is_salary_public, se evalúa si hay salary_raw
+    // Pero si especificó false, se respeta estrictamente la confidencialidad
+    const isSalaryPublic = formData.is_salary_public !== undefined
+      ? Boolean(formData.is_salary_public)
+      : Boolean(formData.salary_raw)
+
     const adminDb = createAdminClient()
     const { data, error } = await adminDb
       .from('job_postings')
@@ -417,10 +431,10 @@ export async function createJobAction(formData: {
         sector: formData.sector.trim(),
         job_type: formData.job_type || 'Presencial',
         work_shift: formData.work_shift || 'Jornada Completa',
-        salary_raw: formData.salary_raw?.trim() || null,
+        salary_raw: isSalaryPublic ? (formData.salary_raw?.trim() || null) : null,
         salary_min: formData.salary_min || null,
         salary_max: formData.salary_max || null,
-        is_salary_public: !!formData.salary_raw,
+        is_salary_public: isSalaryPublic,
         description: cleanDesc,
         requirements: cleanReqs,
         benefits: cleanBenefits,
@@ -550,9 +564,14 @@ export async function updateJobAction(id: string, formData: Partial<JobPosting>)
       return { success: false, error: 'Seguridad Multi-Tenant: No tienes autorización para modificar vacantes de otra empresa.' }
     }
 
+    const updatePayload = { ...formData }
+    if (updatePayload.is_salary_public === false) {
+      updatePayload.salary_raw = null
+    }
+
     const { data, error } = await adminDb
       .from('job_postings')
-      .update(formData)
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()

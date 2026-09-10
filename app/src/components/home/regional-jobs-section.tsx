@@ -100,7 +100,7 @@ export function RegionalJobsSection({ jobs }: RegionalJobsSectionProps) {
               {/* Pie de la Tarjeta con Detalles Salariales y Enlace a Detalle */}
               <div className="pt-5 mt-4 border-t border-zinc-100 flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {job.salary_raw ? (
+                  {job.is_salary_public !== false && job.salary_raw ? (
                     <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg">
                       <DollarSign className="h-3 w-3" /> {job.salary_raw}
                     </span>

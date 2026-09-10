@@ -177,10 +177,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
               {/* Badges de Modalidad y Sueldo */}
               <div className="flex flex-wrap gap-2 pt-1">
-                {job.salary_raw && (
+                {job.is_salary_public !== false && job.salary_raw ? (
                   <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
                     <DollarSign className="h-3.5 w-3.5" />
                     <span>{job.salary_raw}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
+                    <span>🔒 Sueldo a convenir</span>
                   </div>
                 )}
                 {job.work_shift && (
@@ -247,11 +251,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               </div>
             )}
 
-            {/* 🧮 CALCULADORA DE SUELDO LÍQUIDO EN VIVO */}
-            <JobSalaryCalculator 
-              initialGrossSalary={job.salary_min || 1000000} 
-              salaryRaw={job.salary_raw} 
-            />
+            {/* 🧮 CALCULADORA DE SUELDO LÍQUIDO EN VIVO (Solo si la remuneración es pública) */}
+            {job.is_salary_public !== false && job.salary_raw && (
+              <JobSalaryCalculator 
+                initialGrossSalary={job.salary_min || 1000000} 
+                salaryRaw={job.salary_raw} 
+              />
+            )}
           </div>
 
           {/* 📱 COLUMNA LATERAL: POSTULACIÓN RÁPIDA & SEGURIDAD (4/12) */}

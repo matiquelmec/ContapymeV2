@@ -222,7 +222,7 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
       cintillo_superior: aspectRatio === 'story' ? "🔥 ¡NUEVA VACANTE EN MAGALLANES!" : "🔥 ¡OFERTA LABORAL DESTACADA!",
       empresa_contratante: job.company_name,
       titulo_cargo: job.title,
-      sueldo_destacado: job.salary_raw || "Remuneración acorde al mercado",
+      sueldo_destacado: (job.is_salary_public !== false && job.salary_raw) ? job.salary_raw : "Remuneración acorde al mercado",
       jornada_turno: job.work_shift || "Jornada Completa",
       requisitos_principales: (() => {
         const reqs = getRequirementsArray(job.requirements)
@@ -239,7 +239,7 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
     text_rendering: {
       exact_title: job.title,
       font_style: "Plus Jakarta Sans, Weight 900 Italic, uppercase, sans-serif, high contrast",
-      exact_salary: job.salary_raw || "Sueldo Competitivo",
+      exact_salary: (job.is_salary_public !== false && job.salary_raw) ? job.salary_raw : "Sueldo Competitivo (A convenir)",
       salary_badge_style: `Background ${brandPalette.accentHex}, text white bold rounded pill`,
       placement: "Estructura vertical equilibrada con jerarquía visual: cintillo, cabecera con logos, cargo en tipografía extra bold, sueldo destacado, viñetas de requisitos y pie de postulación con QR."
     },
@@ -257,11 +257,14 @@ export function JobSocialCardGenerator({ job }: JobSocialCardGeneratorProps) {
 
   // 2. Templates de texto para Redes
   const promptReqList = getRequirementsArray(job.requirements)
+  const isSalaryPublic = job.is_salary_public !== false
+  const displaySalary = isSalaryPublic && job.salary_raw ? job.salary_raw : 'A convenir / Confidencial'
+
   const whatsappCopy = `💼 *NUEVA OFERTA LABORAL EN MAGALLANES*
 📍 *Ubicación:* ${job.location}
 🏢 *Empresa:* ${job.company_name} ${job.is_verified ? '✅' : ''}
 📌 *Cargo:* ${job.title}
-💰 *Sueldo:* ${job.salary_raw || 'A convenir'}
+💰 *Sueldo:* ${displaySalary}
 ⏱️ *Jornada / Turno:* ${job.work_shift || 'Completa'}
 
 ${promptReqList.length > 0 ? `📋 *Requisitos:*\n${promptReqList.slice(0, 4).map(r => `• ${r}`).join('\n')}\n` : ''}
@@ -274,7 +277,7 @@ ${promptReqList.length > 0 ? `📋 *Requisitos:*\n${promptReqList.slice(0, 4).ma
 
 📌 Cargo: ${job.title}
 🏢 Empresa: ${job.company_name}
-💰 Sueldo: ${job.salary_raw || 'A convenir'}
+💰 Sueldo: ${displaySalary}
 ⏱️ Turno: ${job.work_shift || 'Jornada completa'}
 
 🔗 Postula directo tocando el Sticker de Enlace en nuestra historia o ingresando a:
@@ -287,7 +290,7 @@ ${promptReqList.length > 0 ? `📋 *Requisitos:*\n${promptReqList.slice(0, 4).ma
 ${job.company_name} se encuentra en búsqueda de ${job.title} para sus operaciones en ${job.location}.
 
 🔹 Modalidad / Turno: ${job.work_shift || 'Jornada Completa'}
-🔹 Remuneración aproximada: ${job.salary_raw || 'Acorde al mercado'}
+🔹 Remuneración aproximada: ${displaySalary}
 🔹 Postulación transparente y directa sin intermediarios.
 
 Revisa los requisitos completos y postula en el ecosistema laboral regional:
@@ -724,7 +727,7 @@ Revisa los requisitos completos y postula en el ecosistema laboral regional:
 
                     {/* 💰 PÍLDORA DE SUELDO MAGNÉTICA (IMÁN DE CLICS) */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1 w-full min-w-0">
-                      {job.salary_raw ? (
+                      {job.is_salary_public !== false && job.salary_raw ? (
                         <div
                           className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-black text-white px-3 py-1 rounded-xl shadow-md shrink-0 border border-white/20"
                           style={{ 
