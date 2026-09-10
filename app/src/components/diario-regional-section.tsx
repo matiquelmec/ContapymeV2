@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { ModernHeroBento } from "@/components/home/modern-hero-bento";
 import { StickyCategoryDock } from "@/components/home/sticky-category-dock";
-import { MacroCalendarWidget } from "@/components/macro-calendar-widget";
+import { MacroRadarRealtime } from "@/components/home/macro-radar-realtime";
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
 import { NewsCardSkeleton, SmallNewsCardSkeleton } from "@/components/skeleton-loader";
 import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
@@ -316,9 +316,9 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
             </div>
           </div>
 
-          {/* Columna Derecha: Calendario Macro, Video Facturín y Anuncios (4 cols) */}
+          {/* Columna Derecha: Radar Macroeconómico NVIDIA NIM, Video Facturín y Anuncios (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
-            <MacroCalendarWidget />
+            <MacroRadarRealtime indicators={indicators} />
 
             {/* Video de Facturín */}
             <div className="p-5 rounded-3xl bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950 border border-primary/20 space-y-3 shadow-md">
