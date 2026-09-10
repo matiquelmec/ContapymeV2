@@ -296,9 +296,18 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
         continue
       }
 
-      // Regla de Seguridad y Veracidad: Exigir fuente oficial o canal verificado
-      const appUrl = item.external_url?.trim() || null
+      // Regla de Calidad y Veracidad: Exigir canal de postulación directa comprobable (Email o WhatsApp)
+      // No publicar avisos con enlaces genéricos que no llevan a la postulación real
       const contactEmail = item.contact_email?.trim().toLowerCase() || null
+      const contactWhatsapp = item.contact_whatsapp?.trim() || null
+      const hasDirectChannel = Boolean((contactEmail && contactEmail.includes('@')) || (contactWhatsapp && contactWhatsapp.replace(/\D/g, '').length >= 8))
+
+      if (!hasDirectChannel) {
+        skippedCount++
+        continue
+      }
+
+      const appUrl = item.external_url?.trim() || null
 
       const cleanDesc = sanitizeJobContent(item.description)
       const cleanReqs = sanitizeJobContent(item.requirements || '')
