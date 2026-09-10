@@ -52,7 +52,7 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
           exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           aria-label="Navegación contextual rápida"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[94vw] sm:max-w-max bg-white/90 dark:bg-zinc-900/90 text-foreground backdrop-blur-2xl p-1.5 sm:p-2 rounded-full border border-border/80 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.12)] flex items-center gap-1"
+          className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-max bg-white/90 dark:bg-zinc-900/90 text-foreground backdrop-blur-2xl p-1.5 sm:p-2 rounded-full border border-border/80 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.12)] items-center gap-1"
         >
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 px-1">
             {categories.map((cat) => {
