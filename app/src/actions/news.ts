@@ -26,7 +26,7 @@ const FALLBACK_IMAGES_FINANZAS = [
 
 const NEWS_SOURCES = [
   { name: "La Prensa Austral", url: "https://laprensaaustral.cl/feed/", category: "REGIONAL" },
-  { name: "El Pingüino", url: "https://elpinguino.com/rss", category: "REGIONAL" },
+  { name: "El Pingüino", url: "https://news.google.com/rss/search?q=site:elpinguino.com&hl=es-419&gl=CL&ceid=CL:es-419", category: "REGIONAL" },
   { name: "Ovejero Noticias", url: "https://www.ovejeronoticias.cl/feed/", category: "REGIONAL" },
   { name: "Google News Magallanes", url: "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419", category: "REGIONAL" },
   { name: "Diario Financiero", url: "https://www.df.cl/site/asociacion/rss/rss_index.xml", category: "FINANZAS" },

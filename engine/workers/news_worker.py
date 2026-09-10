@@ -97,7 +97,7 @@ def _is_semantic_duplicate(headline: str, content: str, existing_articles: list)
 NEWS_SOURCES = [
     # Regionales (Core)
     {"name": "La Prensa Austral", "url": "https://laprensaaustral.cl/feed/", "type": "regional"},
-    {"name": "El Pingüino", "url": "https://elpinguino.com/rss", "type": "regional"},
+    {"name": "El Pingüino", "url": "https://news.google.com/rss/search?q=site:elpinguino.com&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
     {"name": "Ovejero Noticias", "url": "https://www.ovejeronoticias.cl/feed/", "type": "regional"},
     {"name": "Google News Magallanes", "url": "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
     # Económicas y Financieras (Link al nicho Contapyme)
