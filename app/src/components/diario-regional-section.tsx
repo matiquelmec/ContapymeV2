@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   X,
   Filter
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { ModernHeroBento } from "@/components/home/modern-hero-bento";
 import { StickyCategoryDock } from "@/components/home/sticky-category-dock";
 import { MacroRadarRealtime } from "@/components/home/macro-radar-realtime";
@@ -158,10 +159,70 @@ export function ensureUniqueNewsImages(hero: NewsArticle | null, secondary: News
 }
 
 export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRegionalSectionProps) {
+  const [liveNews, setLiveNews] = useState<NewsArticle[]>(initialNews);
   const [analyzedNews, setAnalyzedNews] = useState<NewsArticle | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("TODAS");
 
-  const rawScoring = newsRelevanceScoring(initialNews);
+  useEffect(() => {
+    setLiveNews(initialNews);
+  }, [initialNews]);
+
+  // 🔄 Suscripción a Supabase Realtime para noticias en vivo
+  useEffect(() => {
+    let channel: any;
+    try {
+      const supabase = createClient();
+      channel = supabase
+        .channel("regional_news_realtime_stream")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "regional_news",
+          },
+          (payload: any) => {
+            if (payload.eventType === "INSERT") {
+              const newArticle = payload.new as NewsArticle;
+              if (newArticle && newArticle.id) {
+                setLiveNews((prev) => {
+                  if (prev.some((n) => n.id === newArticle.id)) return prev;
+                  return [newArticle, ...prev];
+                });
+              }
+            } else if (payload.eventType === "DELETE") {
+              const deletedId = payload.old?.id;
+              if (deletedId) {
+                setLiveNews((prev) => prev.filter((n) => n.id !== deletedId));
+              }
+            } else if (payload.eventType === "UPDATE") {
+              const updatedArticle = payload.new as NewsArticle;
+              if (updatedArticle && updatedArticle.id) {
+                setLiveNews((prev) =>
+                  prev.map((n) => (n.id === updatedArticle.id ? updatedArticle : n))
+                );
+              }
+            }
+          }
+        );
+      channel.subscribe();
+    } catch (err) {
+      console.error("Error al suscribir noticias a Realtime:", err);
+    }
+
+    return () => {
+      if (channel) {
+        try {
+          const supabase = createClient();
+          supabase.removeChannel(channel);
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const rawScoring = newsRelevanceScoring(liveNews);
   const { hero: heroNews, secondary: secondaryNews } = ensureUniqueNewsImages(rawScoring.hero, rawScoring.secondary);
 
   // Filtro reactivo de noticias secundarias por categoría

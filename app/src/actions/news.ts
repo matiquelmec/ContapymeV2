@@ -128,12 +128,42 @@ function parseRSS(xmlText: string): any[] {
     }
 
     if (title && link) {
+      // 1. Extraer fecha real desde la URL si existe (ej. /2026/04/09/...)
+      let parsedDate: Date | null = null;
+      const urlDateMatch = link.match(/\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//);
+      if (urlDateMatch) {
+        const y = parseInt(urlDateMatch[1], 10);
+        const m = parseInt(urlDateMatch[2], 10) - 1;
+        const d = parseInt(urlDateMatch[3], 10);
+        parsedDate = new Date(Date.UTC(y, m, d));
+      } else if (pubDate) {
+        const d = new Date(pubDate);
+        if (!isNaN(d.getTime())) {
+          parsedDate = d;
+        }
+      }
+
+      // Si no hay fecha determinable o es anacrónica (más de 7 días hacia atrás o fecha futura absurda), se evalúa
+      const now = Date.now();
+      const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // Máximo 7 días de antigüedad para actualidad regional
+
+      if (parsedDate && !isNaN(parsedDate.getTime())) {
+        const ageMs = now - parsedDate.getTime();
+        // Descartar si es más vieja que 7 días o si está más de 24 horas en el futuro
+        if (ageMs > MAX_AGE_MS || ageMs < -24 * 60 * 60 * 1000) {
+          continue; // Descartar noticia obsoleta
+        }
+      } else {
+        // Si no hay fecha verificable, no inventar una fecha actual
+        continue;
+      }
+
       items.push({
         title: cleanHTML(title),
         link: link.trim(),
         description: cleanHTML(description),
         imageUrl: imageUrl.trim(),
-        pubDate: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString()
+        pubDate: parsedDate.toISOString()
       })
     }
   }
@@ -259,6 +289,12 @@ export async function syncNewsAction() {
           // Saltar si ya existe
           if (existingTitles.has(titleNorm) || existingSlugs.has(itemSlug) || existingUrls.has(item.link)) {
             continue
+          }
+
+          // Validación de seguridad de fecha del artículo (no más de 7 días)
+          const itemDate = new Date(item.pubDate);
+          if (isNaN(itemDate.getTime()) || (Date.now() - itemDate.getTime()) > 7 * 24 * 60 * 60 * 1000) {
+            continue; // Rechazar noticias obsoletas
           }
 
           // Preparar la imagen (si no viene, se usa fallback temático)
