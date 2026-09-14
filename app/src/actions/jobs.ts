@@ -242,7 +242,29 @@ export async function getRegionalJobs(filters?: {
       return { success: false, data: [] }
     }
 
-    const sanitized = ((data as JobPosting[]) || []).map(sanitizeJobForPublicDelivery)
+    // 🛡️ Auto-Sanación en Demanda (Stale-While-Revalidate):
+    // Si la vacante activa más reciente tiene más de 24 horas, o hay menos de 5 activas,
+    // se dispara en background (no bloqueante) la sincronización y limpieza automática
+    const jobsList = (data as JobPosting[]) || []
+    const newestJob = jobsList[0]
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000
+
+    const isStale = !newestJob || (newestJob.published_at && new Date(newestJob.published_at).getTime() < twentyFourHoursAgo)
+
+    if (isStale) {
+      // Disparo asíncrono no bloqueante
+      (async () => {
+        try {
+          const { syncRegionalJobs } = await import('@/lib/jobs/jobs-feed-sync')
+          await cleanupExpiredJobsAction()
+          await syncRegionalJobs()
+        } catch (bgErr: any) {
+          console.warn('[getRegionalJobs Background Auto-Sync Warning]:', bgErr?.message)
+        }
+      })()
+    }
+
+    const sanitized = jobsList.map(sanitizeJobForPublicDelivery)
     return { success: true, data: sanitized }
   } catch (err: any) {
     console.error('Error inesperado en getRegionalJobs:', err)

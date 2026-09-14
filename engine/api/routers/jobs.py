@@ -9,9 +9,31 @@ from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 from pydantic import BaseModel, Field
 
 from core.database import get_supabase
-from workers.job_worker import audit_and_structure_job_with_ai, process_and_save_job, _audit_legal_compliance
+from workers.job_worker import (
+    audit_and_structure_job_with_ai,
+    process_and_save_job,
+    _audit_legal_compliance,
+    sync_regional_jobs_cycle
+)
 
 router = APIRouter()
+
+
+@router.post("/sync-now")
+async def trigger_jobs_sync():
+    """
+    Dispara manualmente o vía webhook la sincronización de vacantes
+    y limpieza de expirados en el Engine.
+    """
+    try:
+        result = await sync_regional_jobs_cycle()
+        return {
+            "status": "success",
+            "message": "Sincronización autónoma de empleos ejecutada.",
+            "metrics": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en sincronización de empleos: {str(e)}")
 
 
 class JobPublishRequest(BaseModel):

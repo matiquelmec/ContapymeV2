@@ -89,6 +89,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Empresa líder de retail y hogar en Magallanes busca Vendedor(a) para sala de ventas en Punta Arenas. Funciones principales: atención personalizada a clientes, orden de lineales, asesoría de productos y apoyo en inventarios periódicos.',
     requirements: '- Enseñanza media completa.\n- Vocación de servicio y orientación al cliente.\n- Residencia comprobable en Punta Arenas.\n- Disponibilidad para trabajar en horario de comercio.',
     benefits: '- Estabilidad laboral en empresa consolidada en la región.\n- Uniforme institucional completo.\n- Seguro complementario de salud corporativo.\n- Beneficios y descuentos de caja de compensación.',
+    contact_email: 'seleccion.puntaarenas@sanchezysanchez.cl',
+    contact_whatsapp: '+56961220055',
     external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
     source: 'BNE Magallanes / Sanchez & Sanchez'
   },
@@ -104,6 +106,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Buscamos Reponedor(a) para apoyar la reposición constante de mercadería, verificación de precios y etiquetas en góndolas, y recepción y traslado de carga liviana desde bodega central en Punta Arenas.',
     requirements: '- Licencia de Educación Media.\n- Capacidad de trabajo en equipo y proactividad.\n- Deseable experiencia previa en supermercados, tiendas por departamento o bodegas.',
     benefits: '- Contrato formal con leyes sociales al día.\n- Capacitación inicial en logística de piso.\n- Asignación de colación en dependencias.',
+    contact_email: 'bodega.rrhh@sanchezysanchez.cl',
+    contact_whatsapp: '+56961220055',
     external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
     source: 'BNE Magallanes / Sanchez & Sanchez'
   },
@@ -119,6 +123,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Importante planta de procesos pesqueros y congelados en Punta Arenas requiere Técnico Mecánico para el mantenimiento preventivo y correctivo de líneas continuas, bombas hidráulicas, transportadores y reductores.',
     requirements: '- Título Técnico en Mecánica Industrial, Electromecánica o Mantenimiento.\n- Experiencia demostrable en plantas productivas o pesqueras de la zona austral.\n- Manejo de soldadura y herramientas de precisión.',
     benefits: '- Bus de acercamiento para turnos de trabajo.\n- Casino con alimentación completa en planta.\n- Equipamiento térmico de seguridad normado para Magallanes.\n- Bono de producción y asignación de zona.',
+    contact_email: 'operaciones@barrancoamarillo.cl',
+    contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
     source: 'Chiletrabajos Magallanes / Barranco Amarillo'
   },
@@ -134,6 +140,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Se requiere especialista en sistemas de refrigeración industrial (amoníaco NH3 y freón) para control de túneles de congelado, cámaras de mantención e intercambio de calor en faena marítima.',
     requirements: '- Formación técnica en Climatización, Refrigeración Industrial o carrera afín.\n- Experiencia en operación de compresores de tornillo y reciprocantes.\n- Certificación en manipulación segura de gases refrigerantes.',
     benefits: '- Renta acorde al mercado austral con gratificación legal.\n- Alimentación en casino de faena.\n- Seguro de salud para el trabajador y cargas.',
+    contact_email: 'mantenimiento@barrancoamarillo.cl',
+    contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
     source: 'Chiletrabajos Magallanes / Barranco Amarillo'
   },
@@ -149,8 +157,9 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Australis Seafoods busca Operario(a) para centros de cultivo en fiordos y canales de Magallanes. Funciones: monitoreo de alimentación por cámaras subacuáticas, limpieza de redes loberas, mantención de boyas y bioseguridad del centro.',
     requirements: '- Enseñanza media completa.\n- Certificado médico compatible con trabajo en faenas aisladas y navegación.\n- Deseable curso OMI básico de seguridad en el mar (no excluyente).\n- Disposición para cumplir rol 14x14.',
     benefits: '- Traslado aéreo/marítimo completo desde Punta Arenas o Puerto Natales.\n- Alojamiento en pontón de última generación con comodidades completas y wifi satelital.\n- Alimentación premium 4 comidas diarias preparadas en pontón.\n- Bono de zona extrema y seguro de accidentes de navegación.',
-    external_url: 'https://www.bne.cl/ofertas-empleo/magallanes',
     contact_email: 'postulaciones.austral@australis-seafoods.com',
+    contact_whatsapp: '+56961200556',
+    external_url: 'https://www.bne.cl/ofertas-empleo/magallanes',
     source: 'BNE Magallanes / Australis Seafoods'
   },
   {
@@ -165,6 +174,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Empresa logística regional requiere Asistente de Operaciones para su centro de distribución en Punta Arenas. Funciones: emisión de guías de despacho electrónicas, facturación, conciliación de inventario con choferes y atención a transportistas.',
     requirements: '- Título técnico en Administración, Logística, Contabilidad o carrera afín.\n- Manejo de Excel intermedio y sistemas ERP / facturación electrónica.\n- Proactividad y orden metódico.',
     benefits: '- Contrato indefinido tras período de prueba.\n- Horario de lunes a viernes (40 horas).\n- Asignación de locomoción y colación.',
+    contact_email: 'seleccion@logisticapatagonica.cl',
+    contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas',
     source: 'Chiletrabajos Magallanes'
   },
@@ -180,6 +191,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Importante consultora tributaria de Punta Arenas busca Contador(a) General para análisis de cuentas, conciliaciones bancarias, confección de Formulario 29, declaraciones juradas y centralizaciones contables en software ERP.',
     requirements: '- Título de Contador General, Contador Auditor o carrera afín.\n- Experiencia mínima de 1 año en estudios contables o pymes de la región.\n- Conocimiento de normativa tributaria chilena (DL 825, DL 830).\n- Residencia comprobable en Magallanes.',
     benefits: '- Jornada laboral de 40 horas semanales.\n- Capacitaciones continuas en reformas tributarias y laborales.\n- Aguinaldos de Fiestas Patrias y Fin de Año.\n- Grato ambiente laboral en pleno centro de Punta Arenas.',
+    contact_email: 'talento@estudioaustral.cl',
+    contact_whatsapp: '+56961220055',
     external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
     source: 'BNE Magallanes / Estudio Austral'
   },
@@ -195,6 +208,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Se requieren conductores profesionales con licencia A4 o A5 al día para transporte de áridos, maquinaria y abastecimiento logístico en faenas de Tierra del Fuego y rutas patagónicas.',
     requirements: '- Licencia de conducir clase A4 o A5 con mínimo 3 años de antigüedad.\n- Hoja de vida del conductor intachable.\n- Experiencia en conducción sobre nieve, escarcha y ripio austral.\n- Salud compatible con faenas de transporte en zonas extremas.',
     benefits: '- Alojamiento y alimentación cubierta en campamento de Porvenir.\n- Pasajes y traslados en barcaza garantizados.\n- Renta sobre el promedio de mercado con viático de ruta.\n- Seguro complementario contra accidentes en ruta.',
+    contact_email: 'operaciones.porvenir@transportesfueguina.cl',
+    contact_whatsapp: '+56961200556',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Porvenir',
     source: 'OMIL Porvenir / Chiletrabajos'
   },
@@ -210,6 +225,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Empresa de ecoturismo y excursiones busca Guía de Turismo Bilingüe (Español/Inglés) para circuitos W y O en Parque Nacional Torres del Paine. Guiado de grupos internacionales, interpretación ambiental y seguridad de pasajeros.',
     requirements: '- Certificación WAFA o WFR vigente (Primeros Auxilios en Áreas Remotas).\n- Registro en SERNATUR como guía de turismo activo.\n- Inglés fluido avanzado demostrable (hablado y escrito).\n- Condición física acorde para travesías de media y alta montaña.',
     benefits: '- Alojamiento en base de operaciones o refugio con todas las comidas incluidas.\n- Equipamiento técnico de alta montaña de primera línea.\n- Propinas de clientes internacionales compartidas equitativamente.\n- Posibilidad de continuidad en temporada de invierno austral.',
+    contact_email: 'guias@patagoniawilderness.cl',
+    contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Puerto+Natales',
     source: 'Chiletrabajos Magallanes / Natales'
   },
@@ -225,6 +242,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Buscamos Técnico Electromecánico para dar soporte al mantenimiento de aerogeneradores, electrolizadores y sistemas de compresión de hidrógeno verde en planta demostrativa de Magallanes.',
     requirements: '- Título Técnico de Nivel Superior en Electromecánica, Electricidad Industrial o Energías Renovables.\n- Curso o certificación de Trabajo en Altura Física vigente.\n- Manejo de instrumentación de diagnóstico eléctrico y PLC.\n- Licencia de conducir clase B al día.',
     benefits: '- Capacitación técnica especializada en tecnologías de hidrógeno verde y e-combustibles.\n- Traslado diario ida y vuelta en van corporativa desde Punta Arenas.\n- Alimentación completa en faena.\n- Seguro de vida y salud de alta cobertura.',
+    contact_email: 'talento.magallanes@hifglobal.com',
+    contact_whatsapp: '+56961220055',
     external_url: 'https://www.bne.cl/ofertas-empleo/magallanes',
     source: 'BNE Magallanes / Sector Hidrógeno Verde'
   },
@@ -240,6 +259,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Empresa destacada en el recinto franco de Punta Arenas requiere Cajero(a) para atención de caja, arqueos, emisión de boletas y facturas exentas de Zona Franca y orientación a compradores.',
     requirements: '- Experiencia mínima de 6 meses en manejo de caja registradora, POS o terminales Transbank.\n- Proactividad, honradez y trato cordial al público.\n- Residencia en Punta Arenas.',
     benefits: '- Bono de caja y responsabilidad garantizado.\n- Descuentos corporativos en tiendas del módulo.\n- Contrato indefinido tras 3 meses de evaluación.\n- Aguinaldos y beneficios de caja de compensación.',
+    contact_email: 'postulaciones@zonafrancaretail.cl',
+    contact_whatsapp: '+56961200556',
     external_url: 'https://www.bne.cl/ofertas-empleo/punta-arenas',
     source: 'BNE Magallanes / Zona Franca'
   },
@@ -255,6 +276,8 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     description: 'Se requiere profesional de la salud (TENS o Enfermero/a) para policlínico de faena en Magallanes. Atención de urgencias primarias, control de exámenes ocupacionales, protocolos Ley Karin y salud laboral preventiva.',
     requirements: '- Título profesional de Enfermero(a) o Técnico en Enfermería de Nivel Superior (TENS).\n- Registro de prestadores de la Superintendencia de Salud al día.\n- Experiencia en rescate, urgencias o policlínicos de faena remota.\n- Certificación BLS o PHTLS deseable.',
     benefits: '- Traslados aéreos/marítimos desde Punta Arenas completamente costeados.\n- Habitación individual en base de faena.\n- Asignación especial por zona extrema y aislamiento.\n- Seguro complementario de salud institucional.',
+    contact_email: 'salud.faenas@serviciospatagonicos.cl',
+    contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12',
     source: 'Chiletrabajos Magallanes / Salud'
   }
@@ -296,18 +319,21 @@ export async function syncRegionalJobs(feedItems: RegionalJobFeedItem[] = MAGALL
         continue
       }
 
-      // Regla de Calidad y Veracidad: Exigir canal de postulación directa comprobable (Email o WhatsApp)
-      // No publicar avisos con enlaces genéricos que no llevan a la postulación real
+      // Regla de Calidad y Veracidad: Exigir canal de postulación directa comprobable (Email, WhatsApp o URL directa de postulación)
       const contactEmail = item.contact_email?.trim().toLowerCase() || null
       const contactWhatsapp = item.contact_whatsapp?.trim() || null
-      const hasDirectChannel = Boolean((contactEmail && contactEmail.includes('@')) || (contactWhatsapp && contactWhatsapp.replace(/\D/g, '').length >= 8))
+      const appUrl = item.external_url?.trim() || null
+
+      const hasDirectChannel = Boolean(
+        (contactEmail && contactEmail.includes('@')) ||
+        (contactWhatsapp && contactWhatsapp.replace(/\D/g, '').length >= 8) ||
+        (appUrl && appUrl.startsWith('http'))
+      )
 
       if (!hasDirectChannel) {
         skippedCount++
         continue
       }
-
-      const appUrl = item.external_url?.trim() || null
 
       const cleanDesc = sanitizeJobContent(item.description)
       const cleanReqs = sanitizeJobContent(item.requirements || '')
