@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { ShieldCheck, FileText, Building2, User, Lock, AlertTriangle, ArrowLeft, Scale, CalendarIcon } from 'lucide-react'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ShieldCheck, FileText, Building2, User, Lock, AlertTriangle, ArrowLeft, Scale, CalendarIcon, Briefcase } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -21,10 +21,12 @@ function fCurrency(val: number) {
 export default async function VerifyDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const cleanId = (id || '').trim().toLowerCase()
-  const supabase = await createClient()
+  // Usamos createAdminClient para que el portal público de verificación pueda consultar los documentos oficiales
+  const supabase = createAdminClient()
 
-  let docType: 'liquidation' | 'trial_balance' | 'vacation' | 'contract' | 'unknown' = 'unknown'
+  let docType: 'liquidation' | 'trial_balance' | 'vacation' | 'contract' | 'termination' | 'unknown' = 'unknown'
   let liquidation: any = null
+  let contract: any = null
   let org: any = null
   let emp: any = null
   let docTitle = 'Documento Oficial'
@@ -55,12 +57,11 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
     const { data: terms } = await supabase
       .from('employee_terminations')
       .select('*, employees(*), organizations(*)')
-      .or(`id.ilike.${rawId}%`)
-      .limit(1)
+      .limit(100)
 
-    const term = terms && terms.length > 0 ? terms[0] : null
+    const term = terms?.find(t => t.id.toLowerCase().startsWith(rawId)) || null
     if (term) {
-      docType = 'termination' as any
+      docType = 'termination'
       emp = term.employees
       org = term.organizations
       docTitle = 'Finiquito de Trabajo Acreditado'
@@ -70,29 +71,41 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
   }
   // C. Verificación de Feriado Legal / Vacaciones (vac-...)
   else if (cleanId.startsWith('vac-')) {
-    docType = 'vacation'
-    docTitle = 'Comprobante de Feriado Legal (Vacaciones)'
-    docSubtitle = 'REGISTRO DE DESCANSO SEGÚN ART. 74 CÓDIGO DEL TRABAJO'
+    const rawId = cleanId.replace('vac-', '')
+    const { data: vacs } = await supabase
+      .from('vacation_requests')
+      .select('*, employees(*), organizations(*)')
+      .limit(100)
+
+    const vac = vacs?.find(v => v.id.toLowerCase().startsWith(rawId)) || null
+    if (vac) {
+      docType = 'vacation'
+      emp = vac.employees
+      org = vac.organizations
+      docTitle = 'Comprobante de Feriado Legal (Vacaciones)'
+      docSubtitle = 'REGISTRO DE DESCANSO SEGÚN ART. 74 CÓDIGO DEL TRABAJO'
+    } else {
+      docType = 'vacation'
+      docTitle = 'Comprobante de Feriado Legal (Vacaciones)'
+      docSubtitle = 'REGISTRO DE DESCANSO SEGÚN ART. 74 CÓDIGO DEL TRABAJO'
+    }
   }
-  // C. Verificación de Liquidaciones (Default / Direct ID / Folio)
+  // D. Verificación General: Liquidaciones, Contratos Laborales o Fichas
   else {
     const rawCode = cleanId.replace('liq-', '').replace('ctr-', '')
-    const { data: liquidations } = await supabase
+    
+    // 1. Intentar primero en Liquidaciones de Sueldo / Honorarios
+    const { data: allLiq } = await supabase
       .from('liquidations')
       .select('*, employees(*), organizations(*)')
-      .or(`id.ilike.${rawCode}%,folio_number.ilike.%${cleanId}%,folio_number.ilike.%${rawCode}%`)
-      .limit(1)
+      .order('created_at', { ascending: false })
+      .limit(250)
 
-    liquidation = liquidations && liquidations.length > 0 ? liquidations[0] : null
-
-    if (!liquidation && rawCode.length >= 6) {
-      const { data: allLiq } = await supabase
-        .from('liquidations')
-        .select('*, employees(*), organizations(*)')
-        .limit(100)
-      
-      liquidation = allLiq?.find(l => l.id.toLowerCase().startsWith(rawCode) || (l.folio_number || '').toLowerCase().includes(rawCode)) || null
-    }
+    liquidation = allLiq?.find(l => 
+      l.id.toLowerCase().startsWith(rawCode) || 
+      (l.folio_number || '').toLowerCase().includes(rawCode) ||
+      (l.folio_number || '').toLowerCase().includes(cleanId)
+    ) || null
 
     if (liquidation) {
       docType = 'liquidation'
@@ -105,6 +118,43 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
       totalBruto = Number(liquidation.total_haberes_brutos || 0)
       totalDescuentos = Number(liquidation.total_descuentos || 0)
       totalLiquido = Number(liquidation.sueldo_liquido || 0)
+    } else {
+      // 2. Intentar en Contratos de Trabajo (employment_contracts)
+      const { data: allContracts } = await supabase
+        .from('employment_contracts')
+        .select('*, employees(*), organizations(*)')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      contract = allContracts?.find(c => 
+        c.id.toLowerCase().startsWith(rawCode) || 
+        c.employee_id?.toLowerCase().startsWith(rawCode)
+      ) || null
+
+      if (contract) {
+        docType = 'contract'
+        emp = contract.employees
+        org = contract.organizations
+        docTitle = `Contrato de Trabajo (${contract.tipo_contrato ? contract.tipo_contrato.toUpperCase() : 'OFICIAL'})`
+        docSubtitle = `REGISTRO LABORAL ACREDITADO — CARGO: ${contract.cargo || emp?.cargo || 'COLABORADOR'}`
+        totalLiquido = Number(contract.sueldo_base || 0)
+      } else {
+        // 3. Fallback: Buscar por Ficha de Empleado directa
+        const { data: allEmps } = await supabase
+          .from('employees')
+          .select('*, organizations(*)')
+          .limit(100)
+
+        const matchedEmp = allEmps?.find(e => e.id.toLowerCase().startsWith(rawCode)) || null
+        if (matchedEmp) {
+          docType = 'contract'
+          emp = matchedEmp
+          org = matchedEmp.organizations
+          docTitle = `Contrato de Trabajo (${matchedEmp.tipo_contrato ? matchedEmp.tipo_contrato.toUpperCase() : 'INDEFINIDO'})`
+          docSubtitle = `FICHA LABORAL CERTIFICADA — CARGO: ${matchedEmp.cargo || 'COLABORADOR'}`
+          totalLiquido = Number(matchedEmp.sueldo_base || 0)
+        }
+      }
     }
   }
 
@@ -210,6 +260,30 @@ export default async function VerifyDocumentPage({ params }: { params: Promise<{
                   <div className="flex justify-between items-center py-2 pt-3">
                     <span className="text-emerald-700 uppercase text-xs font-black tracking-widest">Alcance Líquido Acreditado</span>
                     <span className="font-mono text-lg font-black text-emerald-700">{fCurrency(totalLiquido)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* DETALLES SI ES CONTRATO DE TRABAJO */}
+              {docType === 'contract' && (
+                <div className="space-y-3 p-6 bg-blue-500/5 rounded-2xl border border-blue-500/20 font-bold text-xs text-foreground">
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Modalidad Laboral</span>
+                    <Badge variant="outline" className="font-mono text-[10px] font-black uppercase bg-blue-100 text-blue-800 border-blue-300">
+                      {contract?.tipo_contrato || emp?.tipo_contrato || 'Indefinido'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Fecha de Inicio / Ingreso</span>
+                    <span className="font-mono font-black">{contract?.fecha_inicio || emp?.fecha_ingreso || 'Registrado'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground uppercase text-[10px] font-black tracking-wider">Jornada Legal</span>
+                    <span className="font-mono font-black text-foreground">{emp?.horas_semanales ? `${emp.horas_semanales} hrs semanales` : 'Jornada Ordinaria'}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 pt-3">
+                    <span className="text-blue-700 uppercase text-xs font-black tracking-widest">Sueldo Base Pactado</span>
+                    <span className="font-mono text-lg font-black text-blue-700">{fCurrency(totalLiquido)}</span>
                   </div>
                 </div>
               )}
