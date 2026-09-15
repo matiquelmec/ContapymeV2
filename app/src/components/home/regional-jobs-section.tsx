@@ -38,19 +38,19 @@ export function RegionalJobsSection({ jobs }: RegionalJobsSectionProps) {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/empleos">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0">
+            <Link href="/empleos" className="w-full sm:w-auto">
               <Button 
                 variant="outline" 
-                className="text-xs font-black uppercase tracking-wider rounded-2xl h-11 px-5 border-zinc-300 hover:bg-zinc-100 hover:text-foreground group"
+                className="w-full sm:w-auto text-xs font-black uppercase tracking-wider rounded-2xl h-11 px-5 border-zinc-300 hover:bg-zinc-100 hover:text-foreground group justify-center"
               >
                 <span>Ver las {jobs.length > 6 ? '+18' : ''} Vacantes</span>
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/publicar-empleo">
+            <Link href="/publicar-empleo" className="w-full sm:w-auto">
               <Button 
-                className="text-xs font-black uppercase tracking-wider rounded-2xl h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto text-xs font-black uppercase tracking-wider rounded-2xl h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95 justify-center"
               >
                 <Briefcase className="h-3.5 w-3.5 mr-1.5" /> + Publicar Empleo
               </Button>

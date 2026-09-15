@@ -254,6 +254,8 @@ FORMATO JSON OBLIGATORIO (JSON MODE):
         job_data["status"] = "active"
         job_data["published_at"] = datetime.now(timezone.utc).isoformat()
         job_data["expires_at"] = (datetime.now(timezone.utc) + timedelta(days=21)).isoformat()
+        # Remover campos internos de validación que no existen como columnas en Supabase
+        job_data.pop("is_compliant", None)
 
         return job_data
 
