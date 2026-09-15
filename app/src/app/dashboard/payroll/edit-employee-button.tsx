@@ -62,7 +62,14 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
   
   // States from employee data
   const [sueldoBase, setSueldoBase] = useState(employee.sueldo_base?.toString() || "0")
-  const [afcActivo, setAfcActivo] = useState(!!employee.afc_active)
+  const [tipoContrato, setTipoContrato] = useState(employee.tipo_contrato || "indefinido")
+  const [afcActivo, setAfcActivo] = useState(
+    employee.afc_active !== undefined ? !!employee.afc_active : employee.tipo_contrato !== "honorarios"
+  )
+  const [gratificacionLegal, setGratificacionLegal] = useState(
+    employee.gratificacion_legal !== undefined ? !!employee.gratificacion_legal : true
+  )
+  const [horasSemanales, setHorasSemanales] = useState(employee.horas_semanales?.toString() || "44")
   const [numeroCargas, setNumeroCargas] = useState(employee.family_allowances || 0)
   const [esZonaExtrema, setEsZonaExtrema] = useState(!!employee.es_zona_extrema)
   const [fechaIngreso, setFechaIngreso] = useState(employee.fecha_ingreso || new Date().toISOString().split('T')[0])
@@ -72,6 +79,22 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
   const [bonoFijo, setBonoFijo] = useState(employee.bono_fijo?.toString() || "0")
   const [saludSeleccionada, setSaludSeleccionada] = useState(employee.prevision_salud || "Fonasa")
   const [planSaludUf, setPlanSaludUf] = useState(employee.plan_salud_uf?.toString() || "0")
+
+  // Automatización inteligente: al cambiar el tipo de contrato, sugerir y preconfigurar AFC
+  const handleTipoContratoChange = (nuevoTipo: string) => {
+    setTipoContrato(nuevoTipo)
+    if (nuevoTipo === "honorarios") {
+      setAfcActivo(false)
+      toast.info("Contrato a Honorarios: Seguro de Cesantía (AFC) no aplica.")
+    } else if (nuevoTipo === "indefinido" || nuevoTipo === "plazo_fijo" || nuevoTipo === "por_obra") {
+      setAfcActivo(true)
+      if (nuevoTipo === "indefinido") {
+        toast.info("Contrato Indefinido: AFC activada (0,6% trabajador + 2,4% empleador).")
+      } else {
+        toast.info("Contrato Plazo Fijo / Obra: AFC activada (3,0% empleador, 0% trabajador).")
+      }
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -201,6 +224,20 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                     <Checkbox id="edit_extranjero" name="extranjero" defaultChecked={!!employee.extranjero} />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-dashed border-slate-200">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Dirección Particular</Label>
+                    <Input name="address" defaultValue={employee.address || ""} placeholder="Calle y N°" className="h-12 rounded-xl font-bold text-xs" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Comuna</Label>
+                    <Input name="city" defaultValue={employee.city || ""} placeholder="Ej: Punta Arenas" className="h-12 rounded-xl font-bold text-xs uppercase" />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Región</Label>
+                    <Input name="region" defaultValue={employee.region || "Magallanes y de la Antártica Chilena"} placeholder="Región" className="h-12 rounded-xl font-bold text-xs uppercase" />
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="contract" forceMount className="space-y-8 animate-in fade-in slide-in-from-bottom-2 data-[state=inactive]:hidden">
@@ -215,7 +252,7 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Tipo de Contrato</Label>
-                    <Select name="tipo_contrato" defaultValue={employee.tipo_contrato || "indefinido"}>
+                    <Select name="tipo_contrato" value={tipoContrato} onValueChange={handleTipoContratoChange}>
                        <SelectTrigger className="h-12 rounded-xl font-black uppercase text-[10px]">
                         <SelectValue />
                       </SelectTrigger>
@@ -226,6 +263,18 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                         <SelectItem value="honorarios">Honorarios</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Horas Semanales (Jornada)</Label>
+                    <Input 
+                      name="horas_semanales" 
+                      type="number" 
+                      min="1" 
+                      max="45" 
+                      value={horasSemanales} 
+                      onChange={(e) => setHorasSemanales(e.target.value)} 
+                      className="h-12 rounded-xl font-black font-mono text-xs" 
+                    />
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -287,6 +336,18 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                         <div className="space-y-2 pb-2">
                             <Label className="text-[10px] font-black text-slate-400 uppercase ml-1">Bono Fijo Mensual ($)</Label>
                             <Input name="bono_fijo" type="number" value={bonoFijo} onChange={(e) => setBonoFijo(e.target.value)} className="h-14 rounded-2xl font-black font-mono text-sm shadow-sm" />
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                            <div>
+                                <Label htmlFor="edit_gratificacion_legal" className="text-[10px] font-black text-slate-700 uppercase cursor-pointer">Gratificación Legal (Art. 50)</Label>
+                                <p className="text-[9px] text-slate-400 font-medium">25% sobre sueldo e imponibles con tope legal anual 4.75 IMM.</p>
+                            </div>
+                            <Checkbox 
+                                id="edit_gratificacion_legal" 
+                                name="gratificacion_legal" 
+                                checked={gratificacionLegal} 
+                                onCheckedChange={(val) => setGratificacionLegal(!!val)} 
+                            />
                         </div>
                       </div>
                    </div>
@@ -375,6 +436,37 @@ export function EditEmployeeButton({ employee }: { employee: any }) {
                          {saludSeleccionada === "Fonasa" && (
                            <input type="hidden" name="plan_salud_uf" value="0" />
                          )}
+                          {/* Seguro de Cesantía (AFC) — Inteligencia Legal Automática */}
+                          <div className="p-4 rounded-2xl border-2 border-slate-100 bg-white space-y-2 shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <Label htmlFor="edit_afc_active" className="text-[10px] font-black text-slate-700 uppercase cursor-pointer">Seguro de Cesantía (AFC)</Label>
+                                <p className="text-[9px] text-slate-400 font-medium">
+                                  {tipoContrato === "indefinido" && "0,6% trabajador + 2,4% empleador (Tope 126.6 UF)"}
+                                  {(tipoContrato === "plazo_fijo" || tipoContrato === "por_obra") && "0% trabajador + 3,0% empleador (Tope 126.6 UF)"}
+                                  {tipoContrato === "honorarios" && "Exento: contratos a honorarios no cotizan AFC"}
+                                </p>
+                              </div>
+                              <Checkbox 
+                                id="edit_afc_active" 
+                                name="afc_active" 
+                                checked={afcActivo} 
+                                onCheckedChange={(val) => setAfcActivo(!!val)} 
+                              />
+                            </div>
+                            {afcActivo && tipoContrato === "indefinido" && (
+                              <div className="flex items-center gap-2 pt-1 border-t border-dashed border-slate-100 text-[9px] text-blue-600 font-bold">
+                                <span className="px-1.5 py-0.5 rounded-md bg-blue-50">Descuento Trabajador: 0,6%</span>
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700">Aporte Empleador: 2,4%</span>
+                              </div>
+                            )}
+                            {afcActivo && (tipoContrato === "plazo_fijo" || tipoContrato === "por_obra") && (
+                              <div className="flex items-center gap-2 pt-1 border-t border-dashed border-slate-100 text-[9px] text-emerald-700 font-bold">
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-50">100% a cargo del empleador: 3,0%</span>
+                              </div>
+                            )}
+                          </div>
+
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-dashed border-slate-200">
                            <div className="space-y-2">
                              <Label className="text-[10px] font-black text-slate-400 uppercase">Cargas familiares</Label>
