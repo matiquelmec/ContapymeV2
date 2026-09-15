@@ -30,8 +30,26 @@ export async function getExecutiveMetrics(year: number, providedOrgId?: string, 
     })
 
     if (!response.ok) {
-      const err = await response.text()
-      throw new Error(`Error en motor financiero: ${err}`)
+      const contentType = response.headers.get('content-type') || ''
+      let errorMessage = 'No se pudo comunicar con el motor financiero'
+      if (contentType.includes('application/json')) {
+        try {
+          const errJson = await response.json()
+          errorMessage = errJson.detail || errJson.error || errJson.message || JSON.stringify(errJson)
+        } catch {
+          errorMessage = await response.text()
+        }
+      } else {
+        const rawText = await response.text()
+        if (rawText.includes('<title>Just a moment...</title>') || rawText.includes('cf-browser-verification')) {
+          errorMessage = 'El motor financiero está iniciando o verificando conexión con Cloudflare/Render. Por favor, reintenta en unos segundos.'
+        } else if (rawText.startsWith('<!DOCTYPE') || rawText.startsWith('<html')) {
+          errorMessage = `El motor financiero devolvió un error del servidor (HTTP ${response.status}: ${response.statusText}).`
+        } else {
+          errorMessage = rawText.slice(0, 200)
+        }
+      }
+      throw new Error(errorMessage)
     }
 
     const result = await response.json()
