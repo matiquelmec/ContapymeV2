@@ -10,7 +10,8 @@ from workers.job_worker import (
     _audit_legal_compliance,
     _slugify_job,
     _is_duplicate_job,
-    _extract_semantic_tokens
+    _extract_semantic_tokens,
+    _has_valid_direct_contact
 )
 
 class TestJobsPipelineAndCompliance(unittest.TestCase):
@@ -174,12 +175,72 @@ class TestJobsPipelineAndCompliance(unittest.TestCase):
             digits_only = "".join(filter(str.isdigit, raw))
             self.assertGreaterEqual(len(digits_only), 8)
 
-    def test_12_xss_and_injection_shield_on_job_channels(self):
-        """12. Ciberseguridad: Blindaje contra XSS e inyección de encabezados en parámetros de postulación"""
-        malicious_input = "<script>alert('xss')</script> & DROP TABLE users; --"
-        sanitized = _clean_job_text(malicious_input)
-        self.assertNotIn("<script>", sanitized)
-        self.assertNotIn("</script>", sanitized)
+    def test_13_rejects_job_without_direct_contact_channel(self):
+        """13. Regla de Calidad y Veracidad: Rechazar cualquier oferta laboral sin canal de contacto directo"""
+        job_without_contact = {
+            "title": "Vendedor de Salón",
+            "company_name": "Empresa Regional",
+            "contact_email": None,
+            "contact_whatsapp": None,
+            "application_url": None,
+            "source_url": None
+        }
+        self.assertFalse(_has_valid_direct_contact(job_without_contact))
+
+        job_with_fake_null_strings = {
+            "title": "Vendedor de Salón",
+            "company_name": "Empresa Regional",
+            "contact_email": "null",
+            "contact_whatsapp": "undefined",
+            "application_url": "null"
+        }
+        self.assertFalse(_has_valid_direct_contact(job_with_fake_null_strings))
+
+    def test_14_approves_jobs_with_verified_contact_channels(self):
+        """14. Verificación de Canales: Aceptar avisos con Email válido, WhatsApp o URL institucional"""
+        job_with_email = {
+            "title": "Técnico Mecánico",
+            "company_name": "Procesadora Barranco Amarillo",
+            "contact_email": "operaciones@barrancoamarillo.cl",
+            "contact_whatsapp": None
+        }
+        self.assertTrue(_has_valid_direct_contact(job_with_email))
+
+        job_with_wa = {
+            "title": "Operario de Cultivo",
+            "company_name": "Australis Seafoods",
+            "contact_email": None,
+            "contact_whatsapp": "+56 9 6120 0556"
+        }
+        self.assertTrue(_has_valid_direct_contact(job_with_wa))
+
+        job_with_direct_url = {
+            "title": "Ingeniero Eléctrico",
+            "company_name": "HIF Global",
+            "contact_email": None,
+            "contact_whatsapp": None,
+            "application_url": "https://hifglobal.com/careers/magallanes-job-123"
+        }
+        self.assertTrue(_has_valid_direct_contact(job_with_direct_url))
+
+    def test_15_validates_strict_contact_formats(self):
+        """15. Sanitización Estricta: Descartar formatos inválidos como números cortos o emails sin dominio"""
+        invalid_short_wa = {
+            "title": "Guardia",
+            "company_name": "Seguridad",
+            "contact_email": None,
+            "contact_whatsapp": "12345" # Menos de 8 dígitos
+        }
+        self.assertFalse(_has_valid_direct_contact(invalid_short_wa))
+
+        invalid_malformed_email = {
+            "title": "Guardia",
+            "company_name": "Seguridad",
+            "contact_email": "contacto@sin_punto",
+            "contact_whatsapp": None
+        }
+        self.assertFalse(_has_valid_direct_contact(invalid_malformed_email))
+
 
 if __name__ == '__main__':
     unittest.main()

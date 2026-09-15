@@ -161,11 +161,49 @@ def _is_duplicate_job(candidate_title: str, candidate_company: str, candidate_lo
     return False
 
 
-async def audit_and_structure_job_with_ai(raw_text: str, source_name: str = "ContaEmpleos PUQ", source_url: str = None) -> Optional[Dict[str, Any]]:
+def _has_valid_direct_contact(job_data: Dict[str, Any]) -> bool:
+    """
+    Regla de Calidad y Veracidad (ContaEmpleos PUQ):
+    Exige que toda oferta laboral publicada posea al menos un canal directo
+    y verificable de postulación (Email corporativo, WhatsApp activo o URL directa).
+    """
+    email = (job_data.get("contact_email") or "").strip().lower()
+    raw_wa = job_data.get("contact_whatsapp") or ""
+    whatsapp = re.sub(r"\D", "", str(raw_wa))
+    raw_url = (job_data.get("application_url") or job_data.get("source_url") or "").strip().lower()
+
+    # Validar email sintáctico
+    has_email = bool(
+        "@" in email and "." in email and len(email) > 5
+        and not email.startswith("@") and not email.endswith("@")
+        and not any(fake in email for fake in ["null", "undefined", "no-email", "none", "sin-correo"])
+    )
+
+    # Validar WhatsApp (mínimo 8 dígitos, formato regional/nacional)
+    has_whatsapp = len(whatsapp) >= 8
+
+    # Validar URL institucional o de postulación directa
+    has_url = bool(
+        (raw_url.startswith("http://") or raw_url.startswith("https://"))
+        and not any(fake in raw_url for fake in ["null", "undefined", "localhost"])
+    )
+
+    return has_email or has_whatsapp or has_url
+
+
+async def audit_and_structure_job_with_ai(
+    raw_text: str,
+    source_name: str = "ContaEmpleos PUQ",
+    source_url: str = None,
+    fallback_company: str = None,
+    fallback_email: str = None,
+    fallback_whatsapp: str = None
+) -> Optional[Dict[str, Any]]:
     """
     Procesa un aviso laboral con IA:
     1. Audita el Artículo 2° y no discriminación.
     2. Estructura el aviso en formato normalizado JSON para Google for Jobs.
+    3. Asegura preservación de metadatos de empresa y canales directos de contacto.
     """
     # 1. Auditoría de reglas deterministas
     is_compliant, reason = _audit_legal_compliance(raw_text)
@@ -185,7 +223,7 @@ REGLAS DE ORO JURÍDICAS Y LABORALES (CHILE):
 5. Jornada: Clasifica en: '44 hrs', '40 hrs', 'Turno 7x7', 'Turno 14x14', 'Turno 21x7', 'Part-Time', 'Honorarios'.
 6. Tipo Contrato: 'Indefinido', 'Plazo Fijo', 'Faena / Obra', 'Honorarios', 'Práctica'.
 7. Salario: Extrae valores numéricos si existen (mínimo y máximo mensual). Si no indica monto, pon salary_min: null, salary_max: null, is_salary_public: false.
-8. WhatsApp / Email: Extrae el teléfono o correo para postulación directa.
+8. WhatsApp / Email: Extrae el teléfono o correo para postulación directa. Si se suministran datos de contacto en la cabecera, presérvalos con exactitud.
 
 FORMATO JSON OBLIGATORIO (JSON MODE):
 {
@@ -209,7 +247,16 @@ FORMATO JSON OBLIGATORIO (JSON MODE):
   "is_compliant": true
 }"""
 
-    prompt_user = f"AVISO LABORAL A ESTRUCTURAR:\n{raw_text[:2500]}"
+    context_lines = []
+    if fallback_company:
+        context_lines.append(f"Empresa informada: {fallback_company}")
+    if fallback_email:
+        context_lines.append(f"Email postulación: {fallback_email}")
+    if fallback_whatsapp:
+        context_lines.append(f"WhatsApp postulación: {fallback_whatsapp}")
+    context_prefix = ("DATOS VERIFICADOS DE FUENTE:\n" + "\n".join(context_lines) + "\n\n") if context_lines else ""
+
+    prompt_user = f"{context_prefix}AVISO LABORAL A ESTRUCTURAR:\n{raw_text[:2500]}"
 
     try:
         response_text = await groq_chat_completion(
@@ -237,8 +284,24 @@ FORMATO JSON OBLIGATORIO (JSON MODE):
         if sector not in SECTORES_PRODUCTIVOS:
             sector = "Comercio / Zona Franca"
 
-        company_name = job_data.get("company_name", "Empresa Regional")
+        # Normalizar empresa y fusionar fallbacks si la IA devolvió nombres genéricos o incompletos
+        company_name = (job_data.get("company_name") or "").strip()
+        generic_names = ["empresa regional", "empresa líder de retail y hogar", "empresa confidencial", "empresa", ""]
+        if (not company_name or company_name.lower() in generic_names) and fallback_company:
+            company_name = fallback_company
+        elif not company_name:
+            company_name = fallback_company or "Empresa Regional"
+
         title = job_data.get("title")
+
+        # Fusionar contactos de fallback si el LLM no los extrajo o vinieron nulos
+        contact_email = (job_data.get("contact_email") or "").strip().lower()
+        if (not contact_email or contact_email in ["null", "none", "undefined"]) and fallback_email:
+            job_data["contact_email"] = fallback_email
+
+        contact_whatsapp = str(job_data.get("contact_whatsapp") or "").strip()
+        if (not contact_whatsapp or contact_whatsapp in ["null", "none", "undefined"]) and fallback_whatsapp:
+            job_data["contact_whatsapp"] = fallback_whatsapp
 
         # Generar slug
         slug = _slugify_job(title, company_name, location)
@@ -264,21 +327,43 @@ FORMATO JSON OBLIGATORIO (JSON MODE):
         return None
 
 
-async def process_and_save_job(raw_text: str, source_name: str = "ContaEmpleos PUQ", source_url: str = None) -> Optional[Dict[str, Any]]:
-    """Procesa, valida, deduplica y guarda una oferta en Supabase."""
+async def process_and_save_job(
+    raw_text: str,
+    source_name: str = "ContaEmpleos PUQ",
+    source_url: str = None,
+    fallback_company: str = None,
+    fallback_email: str = None,
+    fallback_whatsapp: str = None
+) -> Optional[Dict[str, Any]]:
+    """Procesa, valida, audita canales de contacto, deduplica y guarda una oferta en Supabase."""
     cleaned_text = _clean_job_text(raw_text)
-    structured = await audit_and_structure_job_with_ai(cleaned_text, source_name=source_name, source_url=source_url)
+    structured = await audit_and_structure_job_with_ai(
+        cleaned_text,
+        source_name=source_name,
+        source_url=source_url,
+        fallback_company=fallback_company,
+        fallback_email=fallback_email,
+        fallback_whatsapp=fallback_whatsapp
+    )
     if not structured:
         return None
 
+    # 1. Regla de Calidad y Veracidad: Exigir canal de contacto directo comprobable
+    if not _has_valid_direct_contact(structured):
+        logger.warning(
+            f"[Job Worker] 🚫 Oferta rechazada por Regla de Calidad y Veracidad (sin email, whatsapp ni canal directo): "
+            f"'{structured.get('title')}' de '{structured.get('company_name')}'"
+        )
+        return None
+
     db = get_supabase()
-    # 1. Comprobar duplicados existentes
+    # 2. Comprobar duplicados existentes
     recent_jobs = db.table("job_postings").select("id, title, company_name, location").eq("status", "active").limit(50).execute().data or []
     if _is_duplicate_job(structured["title"], structured["company_name"], structured["location"], recent_jobs):
         logger.info(f"[Job Worker] 🔁 Oferta duplicada detectada y descartada: {structured['title']} ({structured['company_name']})")
         return None
 
-    # 2. Inserción en base de datos
+    # 3. Inserción en base de datos
     try:
         res = db.table("job_postings").insert(structured).execute()
         if res.data and len(res.data) > 0:
@@ -423,7 +508,10 @@ async def sync_regional_jobs_cycle() -> Dict[str, Any]:
             saved = await process_and_save_job(
                 raw_text=feed["raw_text"],
                 source_name=feed.get("source_name", "ContaEmpleos PUQ"),
-                source_url=feed.get("source_url")
+                source_url=feed.get("source_url"),
+                fallback_company=feed.get("company_name"),
+                fallback_email=feed.get("contact_email"),
+                fallback_whatsapp=feed.get("contact_whatsapp")
             )
             if saved:
                 inserted_count += 1
