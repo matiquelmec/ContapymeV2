@@ -227,6 +227,10 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
           src={news.image_url || "/news-placeholder.png"}
           alt={news.title}
           className="object-cover transition-transform duration-1000 group-hover:scale-102 w-full h-full absolute inset-0"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/news-placeholder.png";
+          }}
         />
         {/* Degradado inmersivo */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent opacity-90" />

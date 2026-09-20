@@ -52,11 +52,11 @@ FALLBACK_POOLS = {
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1280&fit=crop&q=80",
         "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1280&fit=crop&q=80",
         "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1520607164069-c5b03e077533?w=1280&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1280&fit=crop&q=80",
     ],
     "DEPORTES REGIONALES": [
         "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1280&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=1280&fit=crop&q=80",
         "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1280&fit=crop&q=80",
         "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=1280&fit=crop&q=80",
         "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1280&fit=crop&q=80",

@@ -116,9 +116,13 @@ export default async function NewsArchivePage() {
                 <div>
                   <div className="relative h-56 overflow-hidden bg-zinc-950">
                     <img 
-                      src={item.image_url || "/news-placeholder.jpg"} 
+                      src={item.image_url || "/news-placeholder.png"} 
                       alt={item.title} 
                       className="object-cover opacity-90 w-full h-full group-hover:scale-105 transition-transform duration-700 absolute inset-0"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/news-placeholder.png";
+                      }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                     <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">

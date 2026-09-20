@@ -323,6 +323,10 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
                 src={latestNews.image_url} 
                 alt={latestNews.title} 
                 className="object-cover transition-transform duration-700 group-hover:scale-105 w-full h-full absolute inset-0"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/news-placeholder.png";
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/60 to-zinc-950/40" />
             </div>

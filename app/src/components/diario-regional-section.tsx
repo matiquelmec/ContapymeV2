@@ -128,7 +128,7 @@ const CLIENT_UNIQUE_FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1280&fit=crop&q=80",
   "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1280&fit=crop&q=80",
   "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1280&fit=crop&q=80",
-  "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=1280&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=1280&fit=crop&q=80",
   "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1280&fit=crop&q=80",
   "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1280&fit=crop&q=80"
 ];
@@ -343,6 +343,10 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                         src={news.image_url || "/news-placeholder.png"}
                         alt={news.title}
                         className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full absolute inset-0"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/news-placeholder.png";
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       <div className="absolute bottom-2 left-2">
