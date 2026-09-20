@@ -29,7 +29,7 @@ jobs:
       - name: Run Full Test Suite & Coverage
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://mock.supabase.co' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'mock-service-role-key' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vY2siLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE5MDAwMDAwMDB9.mock-service-role-key' }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'mock-groq-key' }}
         run: |
           python -m pytest tests --cov=engine/calculators --cov=engine/core --cov=engine/api -v

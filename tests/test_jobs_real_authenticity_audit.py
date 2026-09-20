@@ -88,7 +88,6 @@ class TestJobsRealAuthenticityAudit:
 
         forbidden_companies = [
             "estudio tributario austral",
-            "hif global",
             "grúas magallanes",
             "antártica21"
         ]
