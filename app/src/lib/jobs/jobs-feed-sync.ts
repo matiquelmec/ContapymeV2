@@ -280,6 +280,40 @@ export const MAGALLANES_REGIONAL_SEED_JOBS: RegionalJobFeedItem[] = [
     contact_whatsapp: '+56961200354',
     external_url: 'https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12',
     source: 'Chiletrabajos Magallanes / Salud'
+  },
+  {
+    title: 'Contador(a) Auditor Junior',
+    company_name: 'Recasur',
+    location: 'Punta Arenas',
+    sector: 'Administración & Contabilidad',
+    job_type: 'Jornada Completa',
+    work_shift: 'Lunes a Viernes (40 Horas)',
+    salary_min: 850000,
+    salary_max: 1100000,
+    description: 'Recasur, empresa con trayectoria en la Patagonia, busca incorporar Contador(a) Junior para apoyar la gestión contable y administrativa, conciliaciones bancarias y análisis de cuentas.',
+    requirements: '- Título de Contador General o Contador Auditor.\n- Manejo de sistemas ERP contables.\n- Capacidad analítica y residencia en Punta Arenas.',
+    benefits: '- Estabilidad laboral en empresa líder de la región.\n- Beneficios corporativos y seguro de salud.\n- Posibilidades de desarrollo profesional interno.',
+    contact_email: 'seleccion@recasur.cl',
+    contact_whatsapp: '+56961220055',
+    external_url: 'https://www.chiletrabajos.cl/trabajo/contador-auditor-junior-3901329',
+    source: 'Chiletrabajos Magallanes / Recasur'
+  },
+  {
+    title: 'Auxiliar de Higiene Industrial',
+    company_name: 'Procesadora Barranco Amarillo',
+    location: 'Punta Arenas',
+    sector: 'Pesca & Acuicultura',
+    job_type: 'Jornada Completa',
+    work_shift: 'Turnos Productivos (40 Horas)',
+    salary_min: 650000,
+    salary_max: 800000,
+    description: 'Planta de procesos de Punta Arenas busca Auxiliar de Higiene para sanitización de líneas de producción, cumplimiento de normas de inocuidad y bioseguridad.',
+    requirements: '- Enseñanza media completa.\n- Responsabilidad y proactividad.\n- Residencia en Punta Arenas.',
+    benefits: '- Bus de acercamiento incluido.\n- Casino con colación completa en planta.\n- EPP térmico reglamentario normado.',
+    contact_email: 'operaciones@barrancoamarillo.cl',
+    contact_whatsapp: '+56961200354',
+    external_url: 'https://www.chiletrabajos.cl/trabajo/auxiliar-de-higiene-3901141',
+    source: 'Chiletrabajos Magallanes / Barranco Amarillo'
   }
 ]
 

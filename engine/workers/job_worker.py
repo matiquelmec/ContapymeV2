@@ -28,6 +28,15 @@ from apscheduler.triggers.interval import IntervalTrigger
 from core.database import get_supabase
 from core.ai import groq_chat_completion
 
+try:
+    from scrapers.jobs_scraper import fetch_all_magallanes_jobs, ScrapedJob
+except ImportError:
+    try:
+        from engine.scrapers.jobs_scraper import fetch_all_magallanes_jobs, ScrapedJob
+    except ImportError:
+        fetch_all_magallanes_jobs = None
+        ScrapedJob = None
+
 logger = logging.getLogger("contaempleos.worker")
 
 # Scheduler global
@@ -499,27 +508,58 @@ async def sync_regional_jobs_cycle() -> Dict[str, Any]:
     # 1. Limpieza de expirados
     expired_cleaned = await cleanup_expired_jobs()
     
-    # 2. Ingesta de fuentes curadas
+    # 2. Ingesta dinámica desde portales laborales de Magallanes
     inserted_count = 0
     skipped_count = 0
     
-    for feed in REGIONAL_CURATED_FEEDS:
+    dynamic_jobs: List[Dict[str, Any]] = []
+    if fetch_all_magallanes_jobs is not None:
+        try:
+            logger.info("[Job Worker] 🌐 Consultando ofertas laborales dinámicas de Magallanes...")
+            dynamic_jobs = await fetch_all_magallanes_jobs(limit=15)
+            logger.info(f"[Job Worker] 🔍 Obtenidas {len(dynamic_jobs)} ofertas dinámicas para evaluar.")
+        except Exception as scrape_err:
+            logger.error(f"[Job Worker] ⚠️ Error en colector dinámico: {scrape_err}")
+
+    # Procesar ofertas dinámicas extraídas
+    for job in dynamic_jobs:
         try:
             saved = await process_and_save_job(
-                raw_text=feed["raw_text"],
-                source_name=feed.get("source_name", "ContaEmpleos PUQ"),
-                source_url=feed.get("source_url"),
-                fallback_company=feed.get("company_name"),
-                fallback_email=feed.get("contact_email"),
-                fallback_whatsapp=feed.get("contact_whatsapp")
+                raw_text=job["description"],
+                source_name=job.get("source_name", "Chiletrabajos Magallanes"),
+                source_url=job.get("source_url"),
+                fallback_company=job.get("company_name"),
+                fallback_email=job.get("contact_email"),
+                fallback_whatsapp=job.get("contact_whatsapp")
             )
             if saved:
                 inserted_count += 1
             else:
                 skipped_count += 1
         except Exception as err:
-            logger.error(f"[Job Worker Sync Cycle] Error procesando '{feed['title']}': {err}")
+            logger.error(f"[Job Worker Sync Cycle] Error procesando oferta dinámica '{job.get('title')}': {err}")
             skipped_count += 1
+
+    # 3. Respaldo Curado: Si no se insertaron dinámicas, evaluar catálogo curado
+    if inserted_count == 0:
+        logger.info("[Job Worker] ℹ️ Evaluando catálogo curado regional como respaldo/contingencia...")
+        for feed in REGIONAL_CURATED_FEEDS:
+            try:
+                saved = await process_and_save_job(
+                    raw_text=feed["raw_text"],
+                    source_name=feed.get("source_name", "ContaEmpleos PUQ"),
+                    source_url=feed.get("source_url"),
+                    fallback_company=feed.get("company_name"),
+                    fallback_email=feed.get("contact_email"),
+                    fallback_whatsapp=feed.get("contact_whatsapp")
+                )
+                if saved:
+                    inserted_count += 1
+                else:
+                    skipped_count += 1
+            except Exception as err:
+                logger.error(f"[Job Worker Sync Cycle] Error procesando '{feed['title']}': {err}")
+                skipped_count += 1
 
     duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
     
