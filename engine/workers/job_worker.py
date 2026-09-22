@@ -179,7 +179,7 @@ def _has_valid_direct_contact(job_data: Dict[str, Any]) -> bool:
     email = (job_data.get("contact_email") or "").strip().lower()
     raw_wa = job_data.get("contact_whatsapp") or ""
     whatsapp = re.sub(r"\D", "", str(raw_wa))
-    raw_url = (job_data.get("application_url") or job_data.get("source_url") or "").strip().lower()
+    raw_url = (job_data.get("application_url") or "").strip().lower()
 
     # Validar email sintáctico
     has_email = bool(
@@ -191,9 +191,11 @@ def _has_valid_direct_contact(job_data: Dict[str, Any]) -> bool:
     # Validar WhatsApp (mínimo 8 dígitos, formato regional/nacional)
     has_whatsapp = len(whatsapp) >= 8
 
-    # Validar URL institucional o de postulación directa
+    # Validar URL institucional directa (NO agregadores como chiletrabajos o computrabajo)
+    is_aggregator = any(agg in raw_url for agg in ["chiletrabajos", "computrabajo", "indeed", "yapo"])
     has_url = bool(
         (raw_url.startswith("http://") or raw_url.startswith("https://"))
+        and not is_aggregator
         and not any(fake in raw_url for fake in ["null", "undefined", "localhost"])
     )
 
