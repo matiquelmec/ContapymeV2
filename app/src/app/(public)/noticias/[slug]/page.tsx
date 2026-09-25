@@ -2,7 +2,7 @@ import { Metadata, ResolvingMetadata } from "next";
 
 export const revalidate = 0 // Dinamismo para noticias individuales
 import { getRegionalNews, getNewsBySlug } from "@/actions/news";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -89,9 +89,10 @@ export default async function NewsPage({ params }: Props) {
   if (!news) {
     const alternativeSlug = await resolveAlternativeNewsSlug(slug);
     if (alternativeSlug && alternativeSlug !== slug) {
-      redirect(`/noticias/${alternativeSlug}`);
+      permanentRedirect(`/noticias/${alternativeSlug}`);
     }
-    notFound();
+    // Si la noticia ya expiró y fue purgada, redirigir al hub de noticias con 308
+    permanentRedirect('/noticias');
   }
 
   const jsonLd = {
@@ -153,7 +154,7 @@ export default async function NewsPage({ params }: Props) {
         "@type": "ListItem",
         position: 2,
         name: news.category || "Regional",
-        item: `https://www.contapymepuq.cl/noticias?cat=${encodeURIComponent(news.category || "Regional")}`
+        item: "https://www.contapymepuq.cl/noticias"
       },
       {
         "@type": "ListItem",

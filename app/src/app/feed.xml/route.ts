@@ -2,6 +2,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const revalidate = 3600 // Revalidación horaria
 
+function escapeXml(unsafe: string): string {
+  return (unsafe || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const categoryFilter = searchParams.get('cat')
@@ -9,7 +18,7 @@ export async function GET(request: Request) {
   const supabase = createAdminClient()
   let query = supabase
     .from('regional_news')
-    .select('title, slug, summary, content, category, image_url, published_at, updated_at, author_name')
+    .select('title, slug, summary, content, category, image_url, source_name, published_at, updated_at')
     .order('published_at', { ascending: false })
     .limit(40)
 
@@ -28,11 +37,12 @@ export async function GET(request: Request) {
     : 'ContaPymePUQ Diario Regional de Magallanes'
 
   const feedItems = news.map((item) => {
-    const itemUrl = `${baseUrl}/noticias/${item.slug}`
+    const itemUrl = `${baseUrl}/noticias/${encodeURIComponent(item.slug)}`
     const pubDate = item.published_at ? new Date(item.published_at).toUTCString() : buildDate
-    const author = item.author_name || 'Redacción ContaPymePUQ'
+    const author = item.source_name || 'Redacción ContaPymePUQ'
     const category = item.category || 'Regional'
-    const imageUrl = item.image_url || `${baseUrl}/og-cover.png`
+    const rawImageUrl = item.image_url || `${baseUrl}/og-cover.png`
+    const imageUrl = escapeXml(rawImageUrl)
     const summary = item.summary || (item.content ? item.content.slice(0, 250) + '...' : '')
     const fullContent = item.content || summary
 

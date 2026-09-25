@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { resolveAlternativeJobSlug } from "@/lib/seo/job-slug-resolver";
 import { 
   Building2, 
   MapPin, 
@@ -99,7 +100,12 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const job = jobRes.data;
 
   if (!job) {
-    notFound();
+    const alternativeSlug = await resolveAlternativeJobSlug(slug);
+    if (alternativeSlug && alternativeSlug !== slug) {
+      permanentRedirect(`/empleos/${alternativeSlug}`);
+    }
+    // Si la vacante ya expiró y fue purgada, redirigir al listado principal con 308
+    permanentRedirect('/empleos');
   }
 
   const requirementsList = normalizeStringList(job.requirements);

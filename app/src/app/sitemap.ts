@@ -7,12 +7,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const newsRes = await getRegionalNews();
   const newsList = newsRes.success ? newsRes.data : [];
 
-  const newsUrls = newsList.map((news) => ({
-    url: `${baseUrl}/noticias/${news.slug}`,
-    lastModified: new Date(news.published_at || Date.now()),
-    changeFrequency: "daily" as const,
-    priority: 0.8,
-  }));
+  // Filtrar artículos que tengan contenido sustancial para evitar enviar thin content
+  const newsUrls = newsList
+    .filter((news) => (news.content || news.summary || '').length >= 100)
+    .map((news) => ({
+      url: `${baseUrl}/noticias/${news.slug}`,
+      lastModified: new Date(news.updated_at || news.published_at || Date.now()),
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+    }));
 
   const staticPages = [
     {
@@ -31,6 +34,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/publicar-empleo`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/crear-empresa`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/nosotros`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
       priority: 0.85,
     },
     {

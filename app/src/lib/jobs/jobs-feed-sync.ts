@@ -68,8 +68,12 @@ export function generateSlug(title: string, company: string): string {
 
   const titleSlug = norm(title).slice(0, 45)
   const companySlug = norm(company).slice(0, 30)
-  const randomSuffix = crypto.randomBytes(3).toString('hex')
-  return `${titleSlug}-${companySlug}-${randomSuffix}`.replace(/--+/g, '-')
+  const deterministicSuffix = crypto
+    .createHash('sha256')
+    .update(`${titleSlug}|${companySlug}`)
+    .digest('hex')
+    .slice(0, 6)
+  return `${titleSlug}-${companySlug}-${deterministicSuffix}`.replace(/--+/g, '-')
 }
 
 /**

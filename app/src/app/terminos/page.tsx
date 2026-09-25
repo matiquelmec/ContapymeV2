@@ -1,9 +1,21 @@
-'use client'
-
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { Scale, ChevronLeft, GitCompare, RefreshCw, Landmark } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+
+export const metadata: Metadata = {
+  title: "Términos y Condiciones | Contapymepuq Magallanes",
+  description: "Términos y condiciones de uso del software contable Contapymepuq, servicios tributarios, libro de remuneraciones LRE y diario regional.",
+  alternates: {
+    canonical: "https://www.contapymepuq.cl/terminos",
+  },
+  openGraph: {
+    title: "Términos y Condiciones | Contapymepuq Magallanes",
+    description: "Condiciones de servicio para el ecosistema contable, tributario y laboral en Punta Arenas.",
+    url: "https://www.contapymepuq.cl/terminos",
+  },
+}
 
 export default function TermsPage() {
   return (

@@ -28,10 +28,13 @@ export const metadata: Metadata = {
     "libro remuneraciones electronico dt",
     "contador punta arenas software"
   ],
+  alternates: {
+    canonical: "https://www.contapymepuq.cl/software",
+  },
   openGraph: {
     title: "Software Contable & Remuneraciones LRE - Contapymepuq",
     description: "Gestión contable IFRS, facturación SII y liquidaciones masivas en Punta Arenas.",
-    url: "https://contapymepuq.cl/software",
+    url: "https://www.contapymepuq.cl/software",
   },
 };
 

@@ -1,9 +1,21 @@
-'use client'
-
+import type { Metadata } from "next"
 import { Card, CardContent } from "@/components/ui/card"
 import { Shield, ChevronLeft, MapPin, Lock } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+
+export const metadata: Metadata = {
+  title: "Política de Privacidad | Contapymepuq Magallanes",
+  description: "Políticas de privacidad, seguridad criptográfica y protección de datos financieros según la Ley 19.628 para empresas de Punta Arenas y Magallanes.",
+  alternates: {
+    canonical: "https://www.contapymepuq.cl/privacidad",
+  },
+  openGraph: {
+    title: "Política de Privacidad | Contapymepuq Magallanes",
+    description: "Seguridad contable, secreto profesional y protección de datos de personal y empresas.",
+    url: "https://www.contapymepuq.cl/privacidad",
+  },
+}
 
 export default function PrivacyPage() {
   return (

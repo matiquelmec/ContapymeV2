@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Creación de Empresas en Punta Arenas por $35.000",
     description: "Formaliza tu empresa en Magallanes con asesoría legal y tributaria experta.",
-    url: "https://contapymepuq.cl/crear-empresa",
+    url: "https://www.contapymepuq.cl/crear-empresa",
   },
 };
 
