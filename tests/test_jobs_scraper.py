@@ -15,6 +15,11 @@ from unittest.mock import patch, AsyncMock
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'engine'))
 
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
+
 from scrapers.jobs_scraper import (
     parse_chiletrabajos_html,
     fetch_chiletrabajos_magallanes,
@@ -47,6 +52,7 @@ SAMPLE_CHILETRABAJOS_HTML = """
 </div>
 """
 
+@unittest.skipIf(BeautifulSoup is None, "beautifulsoup4 no está instalado en este entorno")
 class TestJobsScraper(unittest.TestCase):
 
     def test_01_parse_chiletrabajos_extracts_magallanes_jobs_only(self):

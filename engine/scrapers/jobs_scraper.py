@@ -13,7 +13,11 @@ import logging
 import re
 from typing import List, Optional, Tuple, TypedDict
 import httpx
-from bs4 import BeautifulSoup
+
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
 
 logger = logging.getLogger("contaempleos.scraper")
 
@@ -59,7 +63,9 @@ def parse_chiletrabajos_html(html_content: str, base_url: str = "https://www.chi
     verificando estrictamente su pertenencia a la Región de Magallanes.
     """
     jobs: List[ScrapedJob] = []
-    if not html_content:
+    if not html_content or BeautifulSoup is None:
+        if BeautifulSoup is None:
+            logger.warning("[Scraper] beautifulsoup4 no está instalado en este entorno.")
         return jobs
 
     soup = BeautifulSoup(html_content, "html.parser")
@@ -138,6 +144,9 @@ async def fetch_job_detail_contacts(client: httpx.AsyncClient, job_url: str) -> 
     Ingresa a la página individual de la vacante, elimina scripts y metadatos del sitio,
     y extrae el correo o WhatsApp genuino que el empleador haya colocado en el cuerpo del aviso.
     """
+    if BeautifulSoup is None:
+        return None, None, ""
+
     try:
         resp = await client.get(job_url, timeout=12.0)
         if resp.status_code == 200 and resp.text:
