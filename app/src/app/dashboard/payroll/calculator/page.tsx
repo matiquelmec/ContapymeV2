@@ -182,6 +182,7 @@ export default function SalaryCalculatorPage() {
                   >
                     <option value="indefinido">Indefinido</option>
                     <option value="fijo">Plazo Fijo / Obra</option>
+                    <option value="sueldo_empresarial">Sueldo Empresarial (Socio - Sin AFC)</option>
                   </select>
                 </div>
               </div>
@@ -436,20 +437,58 @@ export default function SalaryCalculatorPage() {
                         <span className="font-bold">{formatCLP(result.liquidacion.afc_empresa)}</span>
                       </div>
                     )}
+                    {Number(result.liquidacion.mutual_empresa || 0) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="font-sans font-bold text-slate-600">Mutual Seg. Laboral / Ley 16.744 (0.93%)</span>
+                        <span className="font-bold">{formatCLP(result.liquidacion.mutual_empresa)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between border-t border-dashed border-border pt-3 font-black text-sm">
                       <span className="font-sans text-foreground">Total Aportes Patronales</span>
-                      <span>{formatCLP(result.liquidacion.sis_empresa + result.liquidacion.afc_empresa)}</span>
+                      <span>{formatCLP(result.liquidacion.sis_empresa + result.liquidacion.afc_empresa + Number(result.liquidacion.mutual_empresa || 0))}</span>
                     </div>
+                    {Number(result.liquidacion.total_leyes_sociales_previred || 0) > 0 && (
+                      <div className="flex justify-between pt-2 border-t border-slate-200 text-xs font-black text-slate-900">
+                        <span className="font-sans">Total Desembolso Previred</span>
+                        <span className="text-primary">{formatCLP(result.liquidacion.total_leyes_sociales_previred)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Bonificación Ley 19.853 (17% Magallanes) */}
+                {Number(result.liquidacion.bonificacion_ley_19853 || 0) > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-3 text-emerald-950">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-emerald-800">
+                        <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <span>Bonificación Ley N° 19.853 (17% TGR)</span>
+                      </div>
+                      <span className="text-sm font-black text-emerald-700">+{formatCLP(result.liquidacion.bonificacion_ley_19853)}</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-emerald-900 font-medium">
+                      Subsidio reembolsado por la Tesorería General de la República (TGR) a empresas en Magallanes.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 pt-2 text-center">
+                      <div className="p-2.5 rounded-xl bg-white/80 border border-emerald-100">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recuperación Retenciones</span>
+                        <span className="text-base font-black text-emerald-900">{result.liquidacion.porcentaje_recuperacion_retenciones}%</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/80 border border-emerald-100">
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recuperación Previred</span>
+                        <span className="text-base font-black text-emerald-900">{result.liquidacion.porcentaje_recuperacion_previred}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {esZonaExtrema && result.liquidacion?.zona_extrema?.es_zona_extrema && (
                   <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex gap-4 text-blue-900">
                     <Shield className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
                     <div>
-                      <h5 className="font-black text-xs uppercase tracking-wider mb-1">Beneficio Zona Extrema Activo</h5>
+                      <h5 className="font-black text-xs uppercase tracking-wider mb-1">Beneficio Zona Extrema Activo (DL 889 Art. 29)</h5>
                       <p className="text-[11px] leading-relaxed text-blue-800">
-                        Zona {zonaExtrema}: deduccion base {formatCLP(result.liquidacion.zona_extrema.asignacion_zona_extrema || 0)} y rebaja de impuesto {formatCLP(result.liquidacion.zona_extrema.rebaja_zona_extrema || 0)}.
+                        Zona {zonaExtrema}: deducción base {formatCLP(result.liquidacion.zona_extrema.asignacion_zona_extrema || 0)} y rebaja de impuesto {formatCLP(result.liquidacion.zona_extrema.rebaja_zona_extrema || 0)}.
                       </p>
                     </div>
                   </div>

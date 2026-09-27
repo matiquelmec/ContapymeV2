@@ -168,10 +168,17 @@ class LiquidacionResult:
     tipo_contrato: str = "indefinido"
     uf_valor_usado: float = 0.0
     advertencias: list = field(default_factory=list)
-    # ── Desglose Zona Extrema (DL 889) ────────────────────────────────────────
-    asignacion_zona_extrema: int = 0             # Deducción de base tributable
+    # ── Desglose Zona Extrema (DL 889 / Ley 19.853) ───────────────────────────
+    asignacion_zona_extrema: int = 0             # Deducción de base tributable (Art. 29 DL 889)
     impuesto_unico_sin_rebaja: int = 0           # Impuesto determinado bruto
     rebaja_zona_extrema: int = 0                 # Descuento del impuesto (ej: 98%)
+    bonificacion_ley_19853: int = 0              # 17% TGR sobre remuneración imponible
+    cumple_piso_ley_19853: bool = False          # Si supera el +20% del IMM en Magallanes
+    piso_minimo_ley_19853: int = 0               # Monto IMM * 1.20
+    mutual_empresa: int = 0                      # 0.93% Mutual Ley 16.744 + SANNA
+    total_leyes_sociales_previred: int = 0       # Total desembolsado en Previred (trabajador + empleador)
+    porcentaje_recuperacion_retenciones: float = 0.0 # % bonificación / retenciones sueldo
+    porcentaje_recuperacion_previred: float = 0.0    # % bonificación / total Previred
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -556,15 +563,16 @@ def calcular_liquidacion(
         descuento_salud = descuento_salud_legal
 
     # AFC: Seguro de Cesantía (trabajador)
-    # La base AFC tiene su propio tope legal: 126.6 UF (Ley 19.728)
+    # La base AFC tiene su propio tope legal: 135.2 UF (Ley 19.728)
     tope_afc_pesos = int(settings.uf_tope_afc * settings.uf_valor)
     base_afc = min(base_bruta_imponible, tope_afc_pesos)
     
     descuento_afc_trab = 0
-    if emp.afc_active:
+    if emp.afc_active and emp.tipo_contrato != "sueldo_empresarial":
         if emp.tipo_contrato == "indefinido":
             descuento_afc_trab = int(base_afc * (settings.afc_indefinido_trabajador_pct / 100))
         # Contrato fijo: solo paga la empresa (0% trabajador)
+        # Sueldo Empresarial: exento de AFC (0% trabajador y 0% empleador)
     
     # Base imponible para impuesto = bruto - AFP - Salud Legal (7%) - AFC
     # NOTA LEGAL (SII): La cotización voluntaria de Isapre (adicional al 7%) NO rebaja la base tributable
@@ -618,9 +626,9 @@ def calcular_liquidacion(
 
     # ── 4. CARGOS EMPRESA ─────────────────────────────────────────────────────
 
-    # AFC empresa (misma base topada a 126.6 UF)
+    # AFC empresa (misma base topada a 135.2 UF)
     afc_empresa = 0
-    if emp.afc_active:
+    if emp.afc_active and emp.tipo_contrato != "sueldo_empresarial":
         if emp.tipo_contrato == "indefinido":
             afc_empresa = int(base_afc * (settings.afc_indefinido_empresa_pct / 100))
         else:
@@ -628,10 +636,44 @@ def calcular_liquidacion(
 
     # SIS — Seguro de Invalidez y Sobrevivencia (pagado 100% por empresa)
     sis_empresa = int(base_afp * (settings.afp_sis_pct / 100))
+    # Mutual de Seguridad (Ley 16.744 + SANNA: 0.93% estándar)
+    mutual_pct = getattr(settings, "mutual_pct", 0.93)
+    mutual_empresa = int(round(base_afp * (mutual_pct / 100.0)))
 
     res.afc_empresa = afc_empresa
     res.sis_empresa = sis_empresa
+    res.mutual_empresa = mutual_empresa
     res.total_cargos_empresa = afc_empresa + sis_empresa
+
+    # ── 4.a INTELIGENCIA LEY 19.853 (17% TGR) & PREVIRED ─────────────────────
+    # En Previred se declaran y pagan las retenciones del trabajador + aportes patronales
+    retenciones_sueldo = descuento_afp + descuento_afp_comision + descuento_salud_legal + descuento_afc_trab
+    total_previred = retenciones_sueldo + sis_empresa + afc_empresa
+    res.total_leyes_sociales_previred = total_previred
+
+    bonificacion_19853 = 0
+    cumple_piso_19853 = False
+    piso_19853 = int(round(settings.sueldo_minimo * 1.20))
+    res.piso_minimo_ley_19853 = piso_19853
+
+    if emp.es_zona_extrema and emp.zona_extrema:
+        zona_upper = emp.zona_extrema.upper()
+        # En Magallanes, Aysén, Chiloé y Palena la ley exige superar en un 20% el IMM
+        if zona_upper in ["MAGALLANES", "AYSEN", "CHILOE", "PALENA"]:
+            cumple_piso_19853 = base_bruta_imponible > piso_19853
+        else:
+            cumple_piso_19853 = True
+
+        if cumple_piso_19853:
+            bonificacion_19853 = int(round(base_bruta_imponible * 0.17))
+
+    res.bonificacion_ley_19853 = bonificacion_19853
+    res.cumple_piso_ley_19853 = cumple_piso_19853
+
+    if retenciones_sueldo > 0 and bonificacion_19853 > 0:
+        res.porcentaje_recuperacion_retenciones = round((bonificacion_19853 / retenciones_sueldo) * 100.0, 2)
+    if total_previred > 0 and bonificacion_19853 > 0:
+        res.porcentaje_recuperacion_previred = round((bonificacion_19853 / total_previred) * 100.0, 2)
 
     # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
     # Crédito CCAF, anticipos, préstamos y retenciones judiciales. Los retiene el
@@ -795,7 +837,13 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "prestamo": res.prestamo,
             "retencion_judicial": res.retencion_judicial,
             "otros_descuentos_varios": res.otros_descuentos_varios,
-            "retencion_honorarios": res.retencion_honorarios
+            "retencion_honorarios": res.retencion_honorarios,
+            "bonificacion_ley_19853": res.bonificacion_ley_19853,
+            "cumple_piso_ley_19853": res.cumple_piso_ley_19853,
+            "piso_minimo_ley_19853": res.piso_minimo_ley_19853,
+            "total_leyes_sociales_previred": res.total_leyes_sociales_previred,
+            "porcentaje_recuperacion_retenciones": res.porcentaje_recuperacion_retenciones,
+            "porcentaje_recuperacion_previred": res.porcentaje_recuperacion_previred
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }

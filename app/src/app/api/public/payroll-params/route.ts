@@ -12,6 +12,8 @@ const FALLBACK = {
   afc_indefinido_trabajador_pct: 0.6,
   afc_indefinido_empresa_pct: 2.4,
   afc_fijo_empresa_pct: 3.0,
+  mutual_pct: 0.93,
+  bonificacion_zona_extrema_pct: 17.0,
   afp_commissions: {
     HABITAT: 1.27,
     CAPITAL: 1.44,

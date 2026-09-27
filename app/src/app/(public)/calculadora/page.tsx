@@ -430,14 +430,14 @@ export default async function CalculadoraPublicaPage() {
                 </ul>
               </div>
 
-              {/* Beneficio Zona Extrema (Magallanes DL 889) */}
+              {/* Beneficio Zona Extrema (Magallanes Ley 19.853 & DL 889) */}
               <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 shadow-sm space-y-3">
                 <div className="flex items-center gap-2 text-emerald-800 font-black text-xs uppercase tracking-wider">
                   <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>Beneficio Magallanes (DL 889)</span>
+                  <span>Beneficios Magallanes (Ley 19.853 & DL 889)</span>
                 </div>
                 <p className="text-xs text-emerald-950/85 leading-relaxed font-medium">
-                  Las empresas radicadas en la Región de Magallanes cuentan con la bonificación fiscal a la contratación (DL 889) equivalente al <strong>17% de la remuneración imponible</strong> con tope en Grado 1A.
+                  <strong>Bonificación 17% TGR (Ley 19.853):</strong> Reembolso directo del 17% de la remuneración imponible que recupera entre el <strong>77% y 97%</strong> del total previsional para empresas locales. Además, los trabajadores acceden a la rebaja del Impuesto Único bajo el <strong>Art. 29 del DL 889</strong>.
                 </p>
               </div>
 

@@ -212,3 +212,69 @@ class TestChileanPayrollEngine:
         assert res_prop.sueldo_base == 500000
         assert res_prop.bono_fijo == 100000
         assert res_prop.total_haberes_brutos == 600000
+
+    def test_ley_19853_bonificacion_y_recuperacion(self, default_settings):
+        """Validar el 17% de bonificación TGR (Ley 19.853) y porcentaje de recuperación."""
+        # Caso exacto: imponible $1.098.764, AFP Uno 10.49% (10% + 0.49%), Fonasa 7%
+        settings = PayrollSettings(
+            afp_tasa_cotizacion_pct=10.0,
+            afp_comision_pct=0.49,
+            afp_sis_pct=1.49,
+            uf_tope_afp=84.3,
+            salud_pct=7.0,
+            uf_tope_salud=84.3,
+            afc_indefinido_trabajador_pct=0.6,
+            afc_indefinido_empresa_pct=2.4,
+            uf_tope_afc=126.6,
+            sueldo_minimo=539000,
+            uf_valor=38000.0,
+        )
+
+        emp = EmployeeInput(
+            sueldo_base=1098764,
+            afp_code="UNO",
+            afp_comision_pct=0.49,
+            gratificacion_legal=False,
+            es_zona_extrema=True,
+            zona_extrema="MAGALLANES",
+            tipo_contrato="indefinido"
+        )
+        res = calcular_liquidacion(emp, settings, utm_valor=67294.0)
+
+        # Imponible: 1.098.764
+        # Bonificación 17%: round(1098764 * 0.17) = 186.790
+        assert res.bonificacion_ley_19853 == 186790
+        assert res.cumple_piso_ley_19853 is True
+
+        # Descuentos trabajador:
+        # AFP Uno (10.49%): round(1098764 * 0.1049) = 115.260
+        # Salud (7%): round(1098764 * 0.07) = 76.913
+        # AFC (0.6%): round(1098764 * 0.006) = 6.593
+        # Total retenciones trabajador = 115260 + 76913 + 6593 = 198.766
+        # Recuperación retenciones: round(186790 / 198766 * 100, 2) = 93.98%
+        assert 93.5 <= res.porcentaje_recuperacion_retenciones <= 94.5
+
+        # Previred total incluye SIS (1.49%), AFC empleador (2.4%), Mutual (0.93%)
+        assert res.total_leyes_sociales_previred > res.total_descuentos_legales
+        assert 70.0 <= res.porcentaje_recuperacion_previred <= 80.0
+
+    def test_sueldo_empresarial_exento_afc(self, default_settings):
+        """Validar que en sueldo empresarial AFC es 0% tanto para trabajador como para empresa."""
+        emp = EmployeeInput(
+            sueldo_base=1098764,
+            afp_code="UNO",
+            afp_comision_pct=0.49,
+            gratificacion_legal=False,
+            es_zona_extrema=True,
+            zona_extrema="MAGALLANES",
+            tipo_contrato="sueldo_empresarial"
+        )
+        res = calcular_liquidacion(emp, default_settings)
+
+        assert res.afc_trabajador == 0
+        assert res.afc_empresa == 0
+        assert res.bonificacion_ley_19853 == round(1098764 * 0.17)
+        # En Sueldo Empresarial con AFP Uno (10.49%) y Fonasa (7%), retenciones = 192.173
+        # Recuperación retenciones: 186.790 / 192.173 = 97.20%
+        assert res.porcentaje_recuperacion_retenciones >= 97.0
+

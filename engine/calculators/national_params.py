@@ -37,6 +37,11 @@ SALUD_LEGAL_PCT = 7.0                   # % cotización obligatoria de salud
 # 2024=13.75 · 2025=14.5 · 2026=15.25 · 2027=16 · 2028=17
 RETENCION_HONORARIOS_PCT = 15.25       # % retención boletas de honorarios (2026)
 
+# Bonificación a la Mano de Obra en Zonas Extremas (Ley N° 19.853 / D.L. 889)
+BONIFICACION_ZONA_EXTREMA_PCT = 17.0    # 17% sobre remuneración imponible bonificable
+FACTOR_PISO_ZONA_EXTREMA_MAGALLANES = 1.20 # En Magallanes y Aysén debe superar en un 20% el sueldo mínimo
+MUTUAL_BASICA_PCT = 0.93                # 0.90% Ley 16.744 + 0.03% Ley SANNA
+
 # Comisiones AFP (variables por administradora, vigentes 2025)
 AFP_COMISIONES = {
     "CAPITAL":   1.44,
