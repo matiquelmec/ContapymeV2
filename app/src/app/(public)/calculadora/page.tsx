@@ -437,7 +437,7 @@ export default async function CalculadoraPublicaPage() {
                   <span>Beneficios Magallanes (Ley 19.853 & DL 889)</span>
                 </div>
                 <p className="text-xs text-emerald-950/85 leading-relaxed font-medium">
-                  <strong>Bonificación 17% TGR (Ley 19.853):</strong> Reembolso directo del 17% de la remuneración imponible que recupera entre el <strong>77% y 97%</strong> del total previsional para empresas locales. Además, los trabajadores acceden a la rebaja del Impuesto Único bajo el <strong>Art. 29 del DL 889</strong>.
+                  <strong>Bonificación 17% TGR (Ley 19.853):</strong> Subsidio del 17% para sueldos &gt;$646.800, sujeto al <strong>tope imponible reajustado por IPC ($281.195 &rarr; $47.803 máx. real por trabajador)</strong>. Además, los trabajadores acceden a la rebaja de Impuesto Único bajo el <strong>Art. 29 del DL 889</strong> (tope Grado 1A EUS).
                 </p>
               </div>
 

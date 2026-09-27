@@ -110,11 +110,15 @@ export interface CalculationResult {
   costoTotalEmpresa: number;
   pisoMagallanes19853: number;
   cumplePisoMagallanes19853: boolean;
+  topeImponibleTgrIpc: number;
   bonificacionLey19853: number;
   bonificacionTgrTopeIpc: number;
   porcentajeRecuperacionRetenciones: number;
   porcentajeRecuperacionPrevired: number;
   porcentajeRecuperacionSueldoEmpresarial: number;
+  porcentajeRecuperacionRetencionesReal: number;
+  porcentajeRecuperacionPreviredReal: number;
+  porcentajeRecuperacionSueldoEmpresarialReal: number;
   costoNetoRealEmpresa: number;
 }
 
@@ -283,13 +287,14 @@ function forwardCalculation(params: {
     bonificacionLey19853 = Math.round(brutoImponible * (legalParams.bonificacion_zona_extrema_pct / 100.0));
   }
 
-  // En el portal oficial de TGR la ley aplica el tope legal reajustado por IPC (base original $182.000 -> ~$352.000)
-  const topeImponibleTgrIpc = 352000;
-  const bonificacionTgrTopeIpc = (esZonaExtrema && cumplePisoMagallanes19853)
-    ? Math.round(Math.min(brutoImponible, topeImponibleTgrIpc) * 0.17)
+  // En el portal oficial de TGR la ley aplica el tope legal reajustado por IPC
+  // Base histórica $182.000 (2012) -> $271.686 en 2025 ($46.187 bono) -> $281.195 en 2026 ($47.803 bono máx)
+  const topeImponibleTgrIpc = 281195;
+  const bonificacionTgrTopeIpc = (esZonaExtrema && (zonaExtrema in ZONAS_EXTREMAS) && cumplePisoMagallanes19853)
+    ? Math.round(Math.min(brutoImponible, topeImponibleTgrIpc) * (legalParams.bonificacion_zona_extrema_pct / 100.0))
     : 0;
 
-  // Comparativa y porcentajes de recuperación
+  // Comparativa y porcentajes de recuperación (17% Teórico Sin Tope)
   const porcentajeRecuperacionRetenciones = (retencionesPrevisionalesSueldo > 0 && bonificacionLey19853 > 0)
     ? Number(((bonificacionLey19853 / retencionesPrevisionalesSueldo) * 100).toFixed(2))
     : 0;
@@ -304,7 +309,20 @@ function forwardCalculation(params: {
     ? Number(((bonificacionLey19853 / retencionesSueldoEmpresarial) * 100).toFixed(2))
     : 0;
 
-  const costoNetoRealEmpresa = costoTotalEmpresa - bonificacionLey19853;
+  // Porcentajes de recuperación REALES aplicando el Tope Legal TGR ($47.803 máx)
+  const porcentajeRecuperacionRetencionesReal = (retencionesPrevisionalesSueldo > 0 && bonificacionTgrTopeIpc > 0)
+    ? Number(((bonificacionTgrTopeIpc / retencionesPrevisionalesSueldo) * 100).toFixed(2))
+    : 0;
+
+  const porcentajeRecuperacionPreviredReal = (totalPrevired > 0 && bonificacionTgrTopeIpc > 0)
+    ? Number(((bonificacionTgrTopeIpc / totalPrevired) * 100).toFixed(2))
+    : 0;
+
+  const porcentajeRecuperacionSueldoEmpresarialReal = (retencionesSueldoEmpresarial > 0 && bonificacionTgrTopeIpc > 0)
+    ? Number(((bonificacionTgrTopeIpc / retencionesSueldoEmpresarial) * 100).toFixed(2))
+    : 0;
+
+  const costoNetoRealEmpresa = costoTotalEmpresa - bonificacionTgrTopeIpc;
 
   return {
     sueldoBase: base,
@@ -337,11 +355,15 @@ function forwardCalculation(params: {
     costoTotalEmpresa,
     pisoMagallanes19853,
     cumplePisoMagallanes19853,
+    topeImponibleTgrIpc,
     bonificacionLey19853,
     bonificacionTgrTopeIpc,
     porcentajeRecuperacionRetenciones,
     porcentajeRecuperacionPrevired,
     porcentajeRecuperacionSueldoEmpresarial,
+    porcentajeRecuperacionRetencionesReal,
+    porcentajeRecuperacionPreviredReal,
+    porcentajeRecuperacionSueldoEmpresarialReal,
     costoNetoRealEmpresa
   };
 }
@@ -414,6 +436,8 @@ function CalculatorContent() {
   const [afps, setAfps] = useState(DEFAULT_AFPS);
   const [esZonaExtrema, setEsZonaExtrema] = useState<boolean>(true);
   const [zonaExtrema, setZonaExtrema] = useState<string>("MAGALLANES");
+  const [modoTgrConTope, setModoTgrConTope] = useState<boolean>(true);
+  const [mostrarLetraChica, setMostrarLetraChica] = useState<boolean>(true);
 
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -846,7 +870,7 @@ function CalculatorContent() {
                   
                   {result.cumplePisoMagallanes19853 ? (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full">
-                      <CheckCircle2 className="w-3 h-3" /> Califica para el 17%
+                      <CheckCircle2 className="w-3 h-3" /> Califica Piso (&gt;$646.800)
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-full">
@@ -855,104 +879,206 @@ function CalculatorContent() {
                   )}
                 </div>
 
+                {/* Selector de Realidad TGR (Con Tope Legal IPC vs 17% Teórico Sin Tope) */}
+                {result.cumplePisoMagallanes19853 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-black/40 p-2 rounded-2xl border border-white/10">
+                    <span className="text-[9.5px] font-black uppercase tracking-wider text-zinc-300 pl-2">
+                      Criterio de Cálculo TGR:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setModoTgrConTope(true)}
+                        className={`px-3 py-1.5 rounded-xl text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          modoTgrConTope
+                            ? "bg-emerald-500 text-slate-950 shadow-sm"
+                            : "text-zinc-400 hover:text-white bg-white/5"
+                        }`}
+                      >
+                        🔒 Tope Real TGR ({formatCLP(result.bonificacionTgrTopeIpc)})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModoTgrConTope(false)}
+                        className={`px-3 py-1.5 rounded-xl text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                          !modoTgrConTope
+                            ? "bg-amber-400 text-slate-950 shadow-sm"
+                            : "text-zinc-400 hover:text-white bg-white/5"
+                        }`}
+                      >
+                        🧮 17% Sin Tope ({formatCLP(result.bonificacionLey19853)})
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Métricas de Reembolso y Porcentajes de Recuperación */}
                 {result.cumplePisoMagallanes19853 ? (
                   <div className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
-                          Reembolso 17% Imponible
-                        </span>
-                        <p className="text-2xl font-black text-white tracking-tight">{formatCLP(result.bonificacionLey19853)}</p>
-                        <p className="text-[9px] text-zinc-400">17% sobre {formatCLP(result.brutoImponible)}</p>
-                      </div>
+                    {(() => {
+                      const bonoActivo = modoTgrConTope ? result.bonificacionTgrTopeIpc : result.bonificacionLey19853;
+                      const pctSueldoActivo = modoTgrConTope
+                        ? (tipoContrato === "sueldo_empresarial" ? result.porcentajeRecuperacionSueldoEmpresarialReal : result.porcentajeRecuperacionRetencionesReal)
+                        : (tipoContrato === "sueldo_empresarial" ? result.porcentajeRecuperacionSueldoEmpresarial : result.porcentajeRecuperacionRetenciones);
+                      const pctPreviredActivo = modoTgrConTope
+                        ? result.porcentajeRecuperacionPreviredReal
+                        : result.porcentajeRecuperacionPrevired;
 
-                      <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
-                          Recuperado del Sueldo
-                        </span>
-                        <p className="text-2xl font-black text-emerald-400 tracking-tight">
-                          {tipoContrato === "sueldo_empresarial" 
-                            ? `${result.porcentajeRecuperacionSueldoEmpresarial}%` 
-                            : `${result.porcentajeRecuperacionRetenciones}%`}
-                        </p>
-                        <p className="text-[9px] text-zinc-400">
-                          {tipoContrato === "sueldo_empresarial" 
-                            ? "Cubre el 97,2% de Salud + AFP" 
-                            : "Cubre casi el 94% de retenciones"}
-                        </p>
-                      </div>
+                      return (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
+                                {modoTgrConTope ? "Abono Real TGR (Topado)" : "Reembolso 17% (Sin Tope)"}
+                              </span>
+                              <p className="text-2xl font-black text-white tracking-tight">{formatCLP(bonoActivo)}</p>
+                              <p className="text-[9px] text-zinc-400">
+                                {modoTgrConTope
+                                  ? `17% sobre tope legal ${formatCLP(result.topeImponibleTgrIpc)}`
+                                  : `17% directo sobre ${formatCLP(result.brutoImponible)}`}
+                              </p>
+                            </div>
 
-                      <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
-                          Recuperado de Previred
-                        </span>
-                        <p className="text-2xl font-black text-emerald-400 tracking-tight">
-                          {result.porcentajeRecuperacionPrevired}%
-                        </p>
-                        <p className="text-[9px] text-zinc-400">Sobre la planilla total pagada</p>
-                      </div>
-                    </div>
+                            <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
+                                Recuperado del Sueldo
+                              </span>
+                              <p className="text-2xl font-black text-emerald-400 tracking-tight">
+                                {pctSueldoActivo}%
+                              </p>
+                              <p className="text-[9px] text-zinc-400">
+                                {modoTgrConTope
+                                  ? `Recuperación efectiva con tope TGR`
+                                  : (tipoContrato === "sueldo_empresarial" ? "Cubre el 97,2% de Salud + AFP" : "Cubre casi el 94% de retenciones")}
+                              </p>
+                            </div>
 
-                    {/* Tabla Comparativa de Recuperación */}
-                    <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/30">
-                      <table className="w-full text-left text-xs font-mono">
-                        <thead className="bg-white/5 text-[9px] uppercase tracking-wider text-zinc-300">
-                          <tr>
-                            <th className="p-3">Concepto Analizado</th>
-                            <th className="p-3">Monto Previred</th>
-                            <th className="p-3 text-emerald-400">Reembolso 17%</th>
-                            <th className="p-3 text-right">% Recuperado</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5 text-zinc-300 text-xs">
-                          <tr>
-                            <td className="p-3 font-sans font-bold">Retenciones del Sueldo (Trabajador)</td>
-                            <td className="p-3">{formatCLP(result.retencionesPrevisionalesSueldo)}</td>
-                            <td className="p-3 text-emerald-400 font-bold">{formatCLP(result.bonificacionLey19853)}</td>
-                            <td className="p-3 text-right font-black text-emerald-400">
-                              {tipoContrato === "sueldo_empresarial" 
-                                ? `${result.porcentajeRecuperacionSueldoEmpresarial}%` 
-                                : `${result.porcentajeRecuperacionRetenciones}%`}
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="p-3 font-sans font-bold">Total Previred (Inc. Aportes Patronales)</td>
-                            <td className="p-3">{formatCLP(result.totalPrevired)}</td>
-                            <td className="p-3 text-emerald-400 font-bold">{formatCLP(result.bonificacionLey19853)}</td>
-                            <td className="p-3 text-right font-black text-emerald-400">{result.porcentajeRecuperacionPrevired}%</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                            <div className="p-4 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
+                                Recuperado de Previred
+                              </span>
+                              <p className="text-2xl font-black text-emerald-400 tracking-tight">
+                                {pctPreviredActivo}%
+                              </p>
+                              <p className="text-[9px] text-zinc-400">Sobre la planilla total pagada</p>
+                            </div>
+                          </div>
 
-                    {/* Nota Legal & Botón Sueldo Empresarial */}
-                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-2">
+                          {/* Explicación del Doble Candado cuando está en modo Real vs Sin Tope */}
+                          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[10.5px] text-amber-200/95 leading-relaxed">
+                            <strong>⚖️ La Paradoja de Magallanes (Doble Candado Legal):</strong> La Ley N° 19.853 exige pagar un sueldo imponible mayor a <strong>$646.800</strong> (+20% IMM) para activar el beneficio, pero calcula el 17% solo hasta el <strong>tope imponible histórico reajustado por IPC ({formatCLP(result.topeImponibleTgrIpc)} en 2026 / $271.686 en 2025)</strong>. Por eso TGR deposita un máximo real de <strong>{formatCLP(result.bonificacionTgrTopeIpc)}</strong> mensuales por trabajador (y no {formatCLP(result.bonificacionLey19853)}).
+                          </div>
+
+                          {/* Tabla Comparativa de Recuperación */}
+                          <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/30">
+                            <table className="w-full text-left text-xs font-mono">
+                              <thead className="bg-white/5 text-[9px] uppercase tracking-wider text-zinc-300">
+                                <tr>
+                                  <th className="p-3">Concepto Analizado</th>
+                                  <th className="p-3">Monto Previred</th>
+                                  <th className="p-3 text-emerald-400">
+                                    {modoTgrConTope ? "Abono Real TGR" : "17% Sin Tope"}
+                                  </th>
+                                  <th className="p-3 text-right">% Recuperado</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5 text-zinc-300 text-xs">
+                                <tr>
+                                  <td className="p-3 font-sans font-bold">Retenciones del Sueldo (Trabajador)</td>
+                                  <td className="p-3">{formatCLP(result.retencionesPrevisionalesSueldo)}</td>
+                                  <td className="p-3 text-emerald-400 font-bold">{formatCLP(bonoActivo)}</td>
+                                  <td className="p-3 text-right font-black text-emerald-400">
+                                    {pctSueldoActivo}%
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="p-3 font-sans font-bold">Total Previred (Inc. Aportes Patronales)</td>
+                                  <td className="p-3">{formatCLP(result.totalPrevired)}</td>
+                                  <td className="p-3 text-emerald-400 font-bold">{formatCLP(bonoActivo)}</td>
+                                  <td className="p-3 text-right font-black text-emerald-400">{pctPreviredActivo}%</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      );
+                    })()}
+
+                    {/* Nota Legal & Advertencia Sueldo Empresarial */}
+                    <div className={`p-4 rounded-xl border text-xs space-y-2 ${
+                      tipoContrato === "sueldo_empresarial"
+                        ? "bg-rose-500/10 border-rose-500/30"
+                        : "bg-emerald-500/10 border-emerald-500/20"
+                    }`}>
                       <div className="flex items-start gap-2">
-                        <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                          <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        <Info className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          tipoContrato === "sueldo_empresarial" ? "text-rose-400" : "text-emerald-400"
+                        }`} />
+                        <div className="space-y-1.5">
+                          <p className="text-zinc-200 text-[11px] leading-relaxed">
                             {tipoContrato === "sueldo_empresarial" ? (
                               <span>
-                                👑 <strong>Régimen de Sueldo Empresarial Activo:</strong> Al ser socio/titular sin subordinación legal, estás exento de Seguro de Cesantía (AFC $0). Por eso el 17% de TGR cubre el <strong>{result.porcentajeRecuperacionSueldoEmpresarial}%</strong> de tus descuentos previsionales obligatorios de Salud y AFP.
+                                ⚠️ <strong>Alerta de Fiscalización TGR en Sueldo Empresarial:</strong> Al ser socio/dueño estás exento de AFC ($0), pero <strong>no tienes vínculo de subordinación y dependencia laboral</strong> (Código del Trabajo). Aunque el validador automático de TGR a veces paga por cruce de PreviRed, en una auditoría TGR/Contraloría <strong>objetan el bono de los socios dueños y exigen su devolución con intereses</strong>.
                               </span>
                             ) : (
                               <span>
-                                💡 <strong>Ajuste por Autocontratación:</strong> En contratos laborales comunes se incluye AFC ($6.592 trabajador + $26.370 empresa). Si se trata del <strong>dueño o socio de la pyme</strong>, no cotizas AFC y la recuperación de tus cotizaciones de Salud y AFP sube al <strong>97,20%</strong>.
+                                💡 <strong>Diferencia con Sueldo Empresarial (Socio/Dueño):</strong> El socio dueño no cotiza AFC ($0), pero recuerda que la Ley 19.853 exige vínculo de dependencia laboral (contrato de trabajo) para no ser objetado en fiscalizaciones de TGR.
                               </span>
                             )}
                           </p>
-                          {tipoContrato !== "sueldo_empresarial" && (
+                          {tipoContrato !== "sueldo_empresarial" ? (
                             <button
                               type="button"
                               onClick={() => setTipoContrato("sueldo_empresarial")}
                               className="text-[10px] font-black uppercase text-emerald-400 underline hover:text-emerald-300 transition-colors pt-1 cursor-pointer block"
                             >
-                              ➔ Cambiar a Sueldo Empresarial (Eximir de AFC)
+                              ➔ Simular como Sueldo Empresarial (Eximir de AFC y ver advertencia TGR)
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setTipoContrato("indefinido")}
+                              className="text-[10px] font-black uppercase text-rose-300 underline hover:text-white transition-colors pt-1 cursor-pointer block"
+                            >
+                              ➔ Volver a Contrato Indefinido (Trabajador Dependiente)
                             </button>
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Acordeón de las 5 Letras Chicas de TGR y SII */}
+                    <div className="rounded-xl border border-white/10 bg-black/40 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setMostrarLetraChica(!mostrarLetraChica)}
+                        className="w-full p-3.5 flex items-center justify-between text-left text-[10px] font-black uppercase tracking-wider text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                          Las 5 &ldquo;Letras Chicas&rdquo; de TGR y SII que debes conocer
+                        </span>
+                        <span className="text-zinc-400">{mostrarLetraChica ? "▲ Ocultar" : "▼ Ver Detalle"}</span>
+                      </button>
+                      {mostrarLetraChica && (
+                        <div className="p-4 pt-1 border-t border-white/10 text-[10.5px] text-zinc-300 space-y-2 leading-relaxed">
+                          <p>
+                            <strong className="text-white">1. Tope Imponible Real ({formatCLP(result.topeImponibleTgrIpc)}):</strong> El 17% NO se paga hasta las 90 UF ni hasta el Grado 1A; tiene su propio techo reajustado por IPC ($271.686 en 2025 = $46.187; {formatCLP(result.topeImponibleTgrIpc)} en 2026 = {formatCLP(result.bonificacionTgrTopeIpc)} máx. por trabajador).
+                          </p>
+                          <p>
+                            <strong className="text-white">2. Muerte Súbita por Atraso (Día 13):</strong> Si pagas PreviRed el día 14 (1 solo día fuera del plazo legal electrónico), <strong>pierdes el 100% del bono TGR de ese mes</strong> de forma irreversible.
+                          </p>
+                          <p>
+                            <strong className="text-white">3. Paga Impuesto a la Renta (Art. 29 LIR):</strong> El SII dictaminó que el bono Ley 19.853 <strong>NO es ingreso no renta</strong>; es un ingreso bruto tributable que paga Impuesto de Primera Categoría (12,5% / 25%).
+                          </p>
+                          <p>
+                            <strong className="text-white">4. Prohibido Teletrabajo fuera de Magallanes:</strong> El trabajador debe vivir y trabajar físicamente de forma permanente en la zona. Incluir remotos de otras regiones constituye <strong>delito de Fraude al Fisco</strong>.
+                          </p>
+                          <p>
+                            <strong className="text-white">5. Exclusiones Legales:</strong> No aplica para boletas de honorarios, trabajadoras de casa particular, bancos, financieras, aseguradoras ni gran minería.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

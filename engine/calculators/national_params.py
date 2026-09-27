@@ -40,6 +40,9 @@ RETENCION_HONORARIOS_PCT = 15.25       # % retención boletas de honorarios (202
 # Bonificación a la Mano de Obra en Zonas Extremas (Ley N° 19.853 / D.L. 889)
 BONIFICACION_ZONA_EXTREMA_PCT = 17.0    # 17% sobre remuneración imponible bonificable
 FACTOR_PISO_ZONA_EXTREMA_MAGALLANES = 1.20 # En Magallanes y Aysén debe superar en un 20% el sueldo mínimo
+# Tope de remuneración imponible sobre el cual se aplica el 17% (base original $182.000 reajustada por IPC:
+# $271.686 en 2025 -> bono máx $46.187; $281.195 en 2026 -> bono máx $47.803 por trabajador)
+TOPE_IMPONIBLE_BONIFICACION_LEY_19853 = 281_195
 MUTUAL_BASICA_PCT = 0.93                # 0.90% Ley 16.744 + 0.03% Ley SANNA
 
 # Comisiones AFP (variables por administradora, vigentes 2025)

@@ -464,21 +464,34 @@ export default function SalaryCalculatorPage() {
                         <Shield className="w-5 h-5 text-emerald-600 shrink-0" />
                         <span>Bonificación Ley N° 19.853 (17% TGR)</span>
                       </div>
-                      <span className="text-sm font-black text-emerald-700">+{formatCLP(result.liquidacion.bonificacion_ley_19853)}</span>
+                      <span className="text-sm font-black text-emerald-700">
+                        +{formatCLP(result.liquidacion.bonificacion_ley_19853_real_topada || 47803)} (Tope Real TGR)
+                      </span>
                     </div>
                     <p className="text-[11px] leading-relaxed text-emerald-900 font-medium">
-                      Subsidio reembolsado por la Tesorería General de la República (TGR) a empresas en Magallanes.
+                      En TGR el 17% se aplica hasta el tope imponible reajustado por IPC ({formatCLP(result.liquidacion.tope_imponible_ley_19853 || 281195)}). Sin tope legal sería {formatCLP(result.liquidacion.bonificacion_ley_19853)}.
                     </p>
                     <div className="grid grid-cols-2 gap-3 pt-2 text-center">
                       <div className="p-2.5 rounded-xl bg-white/80 border border-emerald-100">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recuperación Retenciones</span>
-                        <span className="text-base font-black text-emerald-900">{result.liquidacion.porcentaje_recuperacion_retenciones}%</span>
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recup. Real Retenciones</span>
+                        <span className="text-base font-black text-emerald-900">
+                          {result.liquidacion.porcentaje_recuperacion_retenciones_real ?? result.liquidacion.porcentaje_recuperacion_retenciones}%
+                        </span>
+                        <span className="block text-[9px] text-emerald-600/80">Sin tope: {result.liquidacion.porcentaje_recuperacion_retenciones}%</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-white/80 border border-emerald-100">
-                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recuperación Previred</span>
-                        <span className="text-base font-black text-emerald-900">{result.liquidacion.porcentaje_recuperacion_previred}%</span>
+                        <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-700">Recup. Real Previred</span>
+                        <span className="text-base font-black text-emerald-900">
+                          {result.liquidacion.porcentaje_recuperacion_previred_real ?? result.liquidacion.porcentaje_recuperacion_previred}%
+                        </span>
+                        <span className="block text-[9px] text-emerald-600/80">Sin tope: {result.liquidacion.porcentaje_recuperacion_previred}%</span>
                       </div>
                     </div>
+                    {tipoContrato === "sueldo_empresarial" && (
+                      <div className="p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-[10.5px] text-amber-950 font-medium">
+                        ⚠️ <strong>Letra Chica TGR (Sueldo Empresarial):</strong> Al no existir vínculo de subordinación laboral, TGR/Contraloría puede objetar el bono del 17% para socios dueños en caso de auditoría.
+                      </div>
+                    )}
                   </div>
                 )}
 

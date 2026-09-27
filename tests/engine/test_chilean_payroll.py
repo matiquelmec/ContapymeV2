@@ -242,21 +242,27 @@ class TestChileanPayrollEngine:
         res = calcular_liquidacion(emp, settings, utm_valor=67294.0)
 
         # Imponible: 1.098.764
-        # Bonificación 17%: round(1098764 * 0.17) = 186.790
+        # Bonificación 17% teórica: round(1098764 * 0.17) = 186.790
+        # Bonificación 17% real topada TGR: round(281195 * 0.17) = 47.803
         assert res.bonificacion_ley_19853 == 186790
+        assert res.bonificacion_ley_19853_real_topada == 47803
+        assert res.tope_imponible_ley_19853 == 281195
         assert res.cumple_piso_ley_19853 is True
+        assert res.alerta_sueldo_empresarial_tgr is False
 
         # Descuentos trabajador:
         # AFP Uno (10.49%): round(1098764 * 0.1049) = 115.260
         # Salud (7%): round(1098764 * 0.07) = 76.913
         # AFC (0.6%): round(1098764 * 0.006) = 6.593
         # Total retenciones trabajador = 115260 + 76913 + 6593 = 198.766
-        # Recuperación retenciones: round(186790 / 198766 * 100, 2) = 93.98%
+        # Recuperación retenciones teórica: round(186790 / 198766 * 100, 2) = 93.98%
         assert 93.5 <= res.porcentaje_recuperacion_retenciones <= 94.5
+        assert 23.5 <= res.porcentaje_recuperacion_retenciones_real <= 24.5
 
         # Previred total incluye SIS (1.49%), AFC empleador (2.4%), Mutual (0.93%)
         assert res.total_leyes_sociales_previred > res.total_descuentos_legales
         assert 70.0 <= res.porcentaje_recuperacion_previred <= 80.0
+        assert 19.0 <= res.porcentaje_recuperacion_previred_real <= 21.0
 
     def test_sueldo_empresarial_exento_afc(self, default_settings):
         """Validar que en sueldo empresarial AFC es 0% tanto para trabajador como para empresa."""
@@ -274,7 +280,10 @@ class TestChileanPayrollEngine:
         assert res.afc_trabajador == 0
         assert res.afc_empresa == 0
         assert res.bonificacion_ley_19853 == round(1098764 * 0.17)
+        assert res.bonificacion_ley_19853_real_topada == 47803
+        assert res.alerta_sueldo_empresarial_tgr is True
         # En Sueldo Empresarial con AFP Uno (10.49%) y Fonasa (7%), retenciones = 192.173
-        # Recuperación retenciones: 186.790 / 192.173 = 97.20%
+        # Recuperación retenciones teórica: 186.790 / 192.173 = 97.20%
         assert res.porcentaje_recuperacion_retenciones >= 97.0
+        assert 24.5 <= res.porcentaje_recuperacion_retenciones_real <= 25.5
 

@@ -172,13 +172,18 @@ class LiquidacionResult:
     asignacion_zona_extrema: int = 0             # Deducción de base tributable (Art. 29 DL 889)
     impuesto_unico_sin_rebaja: int = 0           # Impuesto determinado bruto
     rebaja_zona_extrema: int = 0                 # Descuento del impuesto (ej: 98%)
-    bonificacion_ley_19853: int = 0              # 17% TGR sobre remuneración imponible
+    bonificacion_ley_19853: int = 0              # 17% teórico sobre remuneración imponible total
+    bonificacion_ley_19853_real_topada: int = 0  # 17% real depositado por TGR aplicando tope legal IPC ($47.803 máx)
+    tope_imponible_ley_19853: int = 281_195      # Tope legal imponible bonificable reajustado por IPC
     cumple_piso_ley_19853: bool = False          # Si supera el +20% del IMM en Magallanes
     piso_minimo_ley_19853: int = 0               # Monto IMM * 1.20
     mutual_empresa: int = 0                      # 0.93% Mutual Ley 16.744 + SANNA
     total_leyes_sociales_previred: int = 0       # Total desembolsado en Previred (trabajador + empleador)
-    porcentaje_recuperacion_retenciones: float = 0.0 # % bonificación / retenciones sueldo
-    porcentaje_recuperacion_previred: float = 0.0    # % bonificación / total Previred
+    porcentaje_recuperacion_retenciones: float = 0.0 # % bonificación teórica / retenciones sueldo
+    porcentaje_recuperacion_previred: float = 0.0    # % bonificación teórica / total Previred
+    porcentaje_recuperacion_retenciones_real: float = 0.0 # % bonificación real TGR topada / retenciones sueldo
+    porcentaje_recuperacion_previred_real: float = 0.0    # % bonificación real TGR topada / total Previred
+    alerta_sueldo_empresarial_tgr: bool = False  # Advertencia de exclusión/reparo en TGR por falta de subordinación
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -652,9 +657,12 @@ def calcular_liquidacion(
     res.total_leyes_sociales_previred = total_previred
 
     bonificacion_19853 = 0
+    bonificacion_19853_topada = 0
     cumple_piso_19853 = False
     piso_19853 = int(round(settings.sueldo_minimo * 1.20))
+    tope_19853 = int(round(281_195 * factor_dias))
     res.piso_minimo_ley_19853 = piso_19853
+    res.tope_imponible_ley_19853 = tope_19853
 
     if emp.es_zona_extrema and emp.zona_extrema:
         zona_upper = emp.zona_extrema.upper()
@@ -666,14 +674,24 @@ def calcular_liquidacion(
 
         if cumple_piso_19853:
             bonificacion_19853 = int(round(base_bruta_imponible * 0.17))
+            bonificacion_19853_topada = int(round(min(base_bruta_imponible, tope_19853) * 0.17))
+
+        if emp.tipo_contrato == "sueldo_empresarial":
+            res.alerta_sueldo_empresarial_tgr = True
+            res.advertencias.append(
+                "⚠️ Letra Chica TGR (Ley 19.853): En Sueldo Empresarial no existe subordinación y dependencia laboral, por lo que TGR puede objetar el bono del 17% ante fiscalización."
+            )
 
     res.bonificacion_ley_19853 = bonificacion_19853
+    res.bonificacion_ley_19853_real_topada = bonificacion_19853_topada
     res.cumple_piso_ley_19853 = cumple_piso_19853
 
     if retenciones_sueldo > 0 and bonificacion_19853 > 0:
         res.porcentaje_recuperacion_retenciones = round((bonificacion_19853 / retenciones_sueldo) * 100.0, 2)
+        res.porcentaje_recuperacion_retenciones_real = round((bonificacion_19853_topada / retenciones_sueldo) * 100.0, 2)
     if total_previred > 0 and bonificacion_19853 > 0:
         res.porcentaje_recuperacion_previred = round((bonificacion_19853 / total_previred) * 100.0, 2)
+        res.porcentaje_recuperacion_previred_real = round((bonificacion_19853_topada / total_previred) * 100.0, 2)
 
     # ── 4.b OTROS DESCUENTOS (no legales) ──────────────────────────────────────
     # Crédito CCAF, anticipos, préstamos y retenciones judiciales. Los retiene el
@@ -839,11 +857,16 @@ def to_db_dict(res: LiquidacionResult, org_id: str, emp_id: str, periodo: str) -
             "otros_descuentos_varios": res.otros_descuentos_varios,
             "retencion_honorarios": res.retencion_honorarios,
             "bonificacion_ley_19853": res.bonificacion_ley_19853,
+            "bonificacion_ley_19853_real_topada": res.bonificacion_ley_19853_real_topada,
+            "tope_imponible_ley_19853": res.tope_imponible_ley_19853,
             "cumple_piso_ley_19853": res.cumple_piso_ley_19853,
             "piso_minimo_ley_19853": res.piso_minimo_ley_19853,
             "total_leyes_sociales_previred": res.total_leyes_sociales_previred,
             "porcentaje_recuperacion_retenciones": res.porcentaje_recuperacion_retenciones,
-            "porcentaje_recuperacion_previred": res.porcentaje_recuperacion_previred
+            "porcentaje_recuperacion_previred": res.porcentaje_recuperacion_previred,
+            "porcentaje_recuperacion_retenciones_real": res.porcentaje_recuperacion_retenciones_real,
+            "porcentaje_recuperacion_previred_real": res.porcentaje_recuperacion_previred_real,
+            "alerta_sueldo_empresarial_tgr": res.alerta_sueldo_empresarial_tgr
         },
         "folio_number": f"LIQ-{periodo.replace('-', '')}-{str(emp_id)[:8].upper()}"
     }
