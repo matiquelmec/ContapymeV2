@@ -488,8 +488,13 @@ export default function SalaryCalculatorPage() {
                       </div>
                     </div>
                     {tipoContrato === "sueldo_empresarial" && (
-                      <div className="p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-[10.5px] text-amber-950 font-medium">
-                        ⚠️ <strong>Letra Chica TGR (Sueldo Empresarial):</strong> Al no existir vínculo de subordinación laboral, TGR/Contraloría puede objetar el bono del 17% para socios dueños en caso de auditoría.
+                      <div className="p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-[10.5px] text-amber-950 font-medium space-y-1">
+                        <p>
+                          ⚠️ <strong>Letra Chica TGR (Sueldo Empresarial):</strong> Al no existir vínculo de subordinación laboral, NO se recomienda solicitar el 17% en TGR por el socio dueño para evitar reparos y multas de Contraloría/TGR.
+                        </p>
+                        <p>
+                          👑 <strong>Escudo Fiscal SII (Art. 31 N° 6 LIR):</strong> Tu beneficio real como socio es rebajar <strong>{formatCLP((result.liquidacion.total_haberes_brutos + result.liquidacion.sis_empresa + Number(result.liquidacion.mutual_empresa || 0)) * 12)}/año</strong> de utilidad en el SII, ahorrando hasta <strong>{formatCLP(Math.round((result.liquidacion.total_haberes_brutos + result.liquidacion.sis_empresa + Number(result.liquidacion.mutual_empresa || 0)) * 12 * 0.25))}/año</strong> en Impuesto de 1ª Categoría (tasa 25%) + exención del 3% de AFC.
+                        </p>
                       </div>
                     )}
                   </div>

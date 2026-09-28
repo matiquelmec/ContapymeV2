@@ -120,6 +120,13 @@ export interface CalculationResult {
   porcentajeRecuperacionPreviredReal: number;
   porcentajeRecuperacionSueldoEmpresarialReal: number;
   costoNetoRealEmpresa: number;
+  // Escudo Fiscal SII (Sueldo Empresarial Art. 31 N° 6 LIR)
+  gastoAceptadoMensualSii: number;
+  gastoAceptadoAnualSii: number;
+  ahorroRentaAnual125: number;
+  ahorroRentaAnual25: number;
+  ahorroAfcMensual: number;
+  ahorroAfcAnual: number;
 }
 
 function forwardCalculation(params: {
@@ -324,6 +331,14 @@ function forwardCalculation(params: {
 
   const costoNetoRealEmpresa = costoTotalEmpresa - bonificacionTgrTopeIpc;
 
+  // Escudo Fiscal SII (Art. 31 N° 6 LIR — Sueldo Empresarial como Gasto Aceptado)
+  const gastoAceptadoMensualSii = costoTotalEmpresa;
+  const gastoAceptadoAnualSii = costoTotalEmpresa * 12;
+  const ahorroRentaAnual125 = Math.round(gastoAceptadoAnualSii * 0.125);
+  const ahorroRentaAnual25 = Math.round(gastoAceptadoAnualSii * 0.25);
+  const ahorroAfcMensual = Math.round(baseAFC * 0.03);
+  const ahorroAfcAnual = ahorroAfcMensual * 12;
+
   return {
     sueldoBase: base,
     gratificacion: grat,
@@ -364,7 +379,13 @@ function forwardCalculation(params: {
     porcentajeRecuperacionRetencionesReal,
     porcentajeRecuperacionPreviredReal,
     porcentajeRecuperacionSueldoEmpresarialReal,
-    costoNetoRealEmpresa
+    costoNetoRealEmpresa,
+    gastoAceptadoMensualSii,
+    gastoAceptadoAnualSii,
+    ahorroRentaAnual125,
+    ahorroRentaAnual25,
+    ahorroAfcMensual,
+    ahorroAfcAnual
   };
 }
 
@@ -868,7 +889,11 @@ function CalculatorContent() {
                     </div>
                   </div>
                   
-                  {result.cumplePisoMagallanes19853 ? (
+                  {tipoContrato === "sueldo_empresarial" ? (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2.5 py-1 rounded-full">
+                      <AlertCircle className="w-3 h-3" /> Socio Dueño: Bono TGR Bloqueado por Autojefatura
+                    </span>
+                  ) : result.cumplePisoMagallanes19853 ? (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full">
                       <CheckCircle2 className="w-3 h-3" /> Califica Piso (&gt;$646.800)
                     </span>
@@ -879,11 +904,63 @@ function CalculatorContent() {
                   )}
                 </div>
 
+                {/* 👑 PANEL ESCUDO FISCAL SII (EXCLUSIVO CUANDO ESTÁ ACTIVO SUELDO EMPRESARIAL) */}
+                {tipoContrato === "sueldo_empresarial" && (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-emerald-950/80 border border-indigo-400/30 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">👑</span>
+                        <div>
+                          <h5 className="text-[11px] font-black uppercase tracking-wider text-indigo-300">
+                            Escudo Fiscal SII • Sueldo Empresarial (Art. 31 N° 6 LIR)
+                          </h5>
+                          <p className="text-[10px] text-zinc-300">
+                            Tu beneficio real como socio/dueño está en el ahorro de Impuesto a la Renta (F22) y exención de AFC, NO en el bono TGR:
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-widest bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 px-2.5 py-1 rounded-full">
+                        100% Gasto Aceptado SII
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="p-3.5 rounded-xl bg-black/40 border border-indigo-400/20 space-y-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-300 block">
+                          Rebaja Utilidad Anual (SII)
+                        </span>
+                        <p className="text-xl font-black text-white">{formatCLP(result.gastoAceptadoAnualSii)}</p>
+                        <p className="text-[9px] text-zinc-400">{formatCLP(result.gastoAceptadoMensualSii)}/mes deducibles</p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-black/40 border border-emerald-400/25 space-y-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 block">
+                          Ahorro Impuesto Renta (F22)
+                        </span>
+                        <p className="text-xl font-black text-emerald-400">{formatCLP(result.ahorroRentaAnual25)}/año</p>
+                        <p className="text-[9px] text-zinc-400">
+                          Tasa 25% ({formatCLP(result.ahorroRentaAnual125)} al 12,5% ProPyme)
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-black/40 border border-sky-400/20 space-y-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-sky-300 block">
+                          Ahorro Exención AFC (3%)
+                        </span>
+                        <p className="text-xl font-black text-sky-300">{formatCLP(result.ahorroAfcAnual)}/año</p>
+                        <p className="text-[9px] text-zinc-400">{formatCLP(result.ahorroAfcMensual)}/mes ahorrados en AFC</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Selector de Realidad TGR (Con Tope Legal IPC vs 17% Teórico Sin Tope) */}
                 {result.cumplePisoMagallanes19853 && (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-black/40 p-2 rounded-2xl border border-white/10">
                     <span className="text-[9.5px] font-black uppercase tracking-wider text-zinc-300 pl-2">
-                      Criterio de Cálculo TGR:
+                      {tipoContrato === "sueldo_empresarial"
+                        ? "Simulación Referencial TGR (Solo aplica a Empleados Dependientes):"
+                        : "Criterio de Cálculo TGR:"}
                     </span>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
@@ -1018,11 +1095,11 @@ function CalculatorContent() {
                           <p className="text-zinc-200 text-[11px] leading-relaxed">
                             {tipoContrato === "sueldo_empresarial" ? (
                               <span>
-                                ⚠️ <strong>Alerta de Fiscalización TGR en Sueldo Empresarial:</strong> Al ser socio/dueño estás exento de AFC ($0), pero <strong>no tienes vínculo de subordinación y dependencia laboral</strong> (Código del Trabajo). Aunque el validador automático de TGR a veces paga por cruce de PreviRed, en una auditoría TGR/Contraloría <strong>objetan el bono de los socios dueños y exigen su devolución con intereses</strong>.
+                                ⚠️ <strong>Estrategia Blindada (Separación Tributaria vs. Laboral):</strong> Usa tu Sueldo Empresarial para rebajar <strong>{formatCLP(result.gastoAceptadoAnualSii)}/año</strong> de utilidad en el SII y ahorrar <strong>{formatCLP(result.ahorroAfcAnual)}/año</strong> en AFC, pero <strong>NO solicites el 17% a la TGR por tu propio RUT de socio dueño</strong> (al no existir subordinación laboral bajo el Código del Trabajo, TGR/Contraloría objetan el pago automático en auditorías y exigen su restitución con multas). Reserva el bono de <strong>{formatCLP(result.bonificacionTgrTopeIpc)}/mes</strong> para tus empleados contratados.
                               </span>
                             ) : (
                               <span>
-                                💡 <strong>Diferencia con Sueldo Empresarial (Socio/Dueño):</strong> El socio dueño no cotiza AFC ($0), pero recuerda que la Ley 19.853 exige vínculo de dependencia laboral (contrato de trabajo) para no ser objetado en fiscalizaciones de TGR.
+                                💡 <strong>¿Eres el dueño o socio de la SpA/Ltda?:</strong> El Sueldo Empresarial te exime del 3% de AFC y rebaja <strong>{formatCLP(result.gastoAceptadoAnualSii)}/año</strong> como gasto aceptado en el SII (ahorrando hasta <strong>{formatCLP(result.ahorroRentaAnual25)}/año</strong> en Impuesto a la Renta), aunque te excluye de pedir el bono TGR por falta de subordinación laboral.
                               </span>
                             )}
                           </p>
@@ -1032,7 +1109,7 @@ function CalculatorContent() {
                               onClick={() => setTipoContrato("sueldo_empresarial")}
                               className="text-[10px] font-black uppercase text-emerald-400 underline hover:text-emerald-300 transition-colors pt-1 cursor-pointer block"
                             >
-                              ➔ Simular como Sueldo Empresarial (Eximir de AFC y ver advertencia TGR)
+                              ➔ Simular como Sueldo Empresarial (Ver Escudo Fiscal SII y Exención AFC)
                             </button>
                           ) : (
                             <button
@@ -1040,7 +1117,7 @@ function CalculatorContent() {
                               onClick={() => setTipoContrato("indefinido")}
                               className="text-[10px] font-black uppercase text-rose-300 underline hover:text-white transition-colors pt-1 cursor-pointer block"
                             >
-                              ➔ Volver a Contrato Indefinido (Trabajador Dependiente)
+                              ➔ Volver a Contrato Indefinido (Empleado Externo con Derecho a Bono TGR)
                             </button>
                           )}
                         </div>
