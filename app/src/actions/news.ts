@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { engineFetch } from '@/lib/engine-client'
 import { notifyIndexNowForNews } from '@/lib/seo/indexing-service'
 
@@ -171,12 +172,28 @@ function parseRSS(xmlText: string): any[] {
 }
 
 /**
+ * Cliente Supabase sin cookies para lectura pública de noticias.
+ * No genera conflictos con ISR/revalidate ni lanza errores de SSR en Next.js.
+ */
+function getPublicNewsClient() {
+  try {
+    return createAdminClient()
+  } catch {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    return createSupabaseClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    })
+  }
+}
+
+/**
  * Obtiene las noticias regionales de Supabase.
  * Gatilla una sincronización asíncrona en segundo plano si los datos están obsoletos.
  */
 export async function getRegionalNews() {
-  const supabase = await createClient()
   try {
+    const supabase = getPublicNewsClient()
     const { data, error } = await supabase
       .from('regional_news')
       .select('*')
@@ -204,34 +221,24 @@ export async function getRegionalNews() {
       }
     }
 
-    if (shouldSync) {
+    if (shouldSync && process.env.ENGINE_URL) {
       lastNewsSync = Date.now()
-      console.log('[News Action] Noticias obsoletas. Gatillando sincronización en segundo plano en el motor de IA...')
-      engineFetch('/api/v1/news/sync', { method: 'POST' })
-        .then(async (res) => {
-          if (res.ok) {
-            console.log('[News Action] Sincronización en el motor de IA iniciada con éxito.')
-            revalidatePath('/')
-          } else {
-            const errText = await res.text()
-            console.error('[News Action] Error de API al gatillar sincronización en el motor:', errText)
-          }
-        })
-        .catch((err) => {
-          console.error('[News Action] Error de red al contactar al motor de noticias:', err.message)
-        })
+      console.log('[News Action] Gatillando sincronización en segundo plano en el motor de IA...')
+      engineFetch('/api/v1/news/sync', { method: 'POST' }).catch((err) => {
+        console.warn('[News Action] Sincronización en segundo plano no disponible:', err?.message)
+      })
     }
 
     return { success: true, data: news, isFallback: false }
   } catch (err: any) {
-    console.error("[News Action Error]:", err.message);
+    console.error("[News Action Error]:", err?.message || err);
     return { success: true, data: [], isFallback: false }
   }
 }
 
 export async function getNewsBySlug(slug: string) {
-  const supabase = await createClient()
   try {
+    const supabase = getPublicNewsClient()
     const { data, error } = await supabase
       .from('regional_news')
       .select('*')
@@ -239,12 +246,12 @@ export async function getNewsBySlug(slug: string) {
       .single()
     
     if (error || !data) {
-      return { success: false, error: 'Noticia no encontrada en los registros oficiales' }
+      return { success: false, error: 'Noticia no encontrada en los registros oficiales', data: null }
     }
 
     return { success: true, data, isFallback: false }
   } catch (err: any) {
-    return { success: false, error: 'Error de conexión con la central de noticias' }
+    return { success: false, error: 'Error de conexión con la central de noticias', data: null }
   }
 }
 

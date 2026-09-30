@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getRegionalNews } from "@/actions/news";
 import { Card, CardContent } from "@/components/ui/card";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { NewsCardImage } from "@/components/news-card-image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -109,52 +110,66 @@ export default async function NewsArchivePage() {
         </div>
 
         {/* Grilla de Noticias */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {news.map((item: any, i: number) => (
-            <Link key={i} href={`/noticias/${item.slug}`} className="group block h-full">
-              <Card className="h-full rounded-[2.5rem] border-border/80 bg-white/90 shadow-sm hover:shadow-2xl hover:border-primary/30 transition-all duration-500 overflow-hidden flex flex-col justify-between">
-                <div>
-                  <div className="relative h-56 overflow-hidden bg-zinc-950">
-                    <img 
-                      src={item.image_url || "/news-placeholder.png"} 
-                      alt={item.title} 
-                      className="object-cover opacity-90 w-full h-full group-hover:scale-105 transition-transform duration-700 absolute inset-0"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "/news-placeholder.png";
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">
-                      {item.category || "General"}
+        {news.length === 0 ? (
+          <div className="text-center py-20 bg-white/60 backdrop-blur-md rounded-[2.5rem] border border-border/60 p-8 space-y-4">
+            <Newspaper className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+            <h3 className="text-xl font-black uppercase italic tracking-tight text-foreground">
+              No hay noticias disponibles en este momento
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Estamos actualizando los despachos informativos de Magallanes. Vuelve a consultar en unos minutos.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {news.map((item: any, i: number) => {
+              const formattedDate = item.published_at && !isNaN(new Date(item.published_at).getTime())
+                ? new Date(item.published_at).toLocaleDateString('es-CL')
+                : 'Actualidad';
+
+              return (
+                <Link key={item.id || item.slug || i} href={`/noticias/${item.slug}`} className="group block h-full">
+                  <Card className="h-full rounded-[2.5rem] border-border/80 bg-white/90 shadow-sm hover:shadow-2xl hover:border-primary/30 transition-all duration-500 overflow-hidden flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-56 overflow-hidden bg-zinc-950">
+                        <NewsCardImage
+                          src={item.image_url}
+                          alt={item.title}
+                          className="object-cover opacity-90 w-full h-full group-hover:scale-105 transition-transform duration-700 absolute inset-0"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">
+                          {item.category || "General"}
+                        </div>
+                      </div>
+                      <CardContent className="p-6 sm:p-8 space-y-3">
+                        <div className="flex items-center gap-4 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> {formattedDate}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Tag className="h-3 w-3" /> {item.category || "Finanzas"}
+                          </span>
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-black italic uppercase tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {item.title}
+                        </h2>
+                        <p className="text-xs font-medium text-muted-foreground leading-relaxed line-clamp-3">
+                          {item.summary || "Resumen no disponible para esta noticia institucional de la región."}
+                        </p>
+                      </CardContent>
                     </div>
-                  </div>
-                  <CardContent className="p-6 sm:p-8 space-y-3">
-                    <div className="flex items-center gap-4 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {new Date(item.published_at).toLocaleDateString('es-CL')}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" /> {item.category || "Finanzas"}
+                    <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-border/40 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-1.5 group-hover:gap-3 transition-all">
+                        Leer noticia completa <ArrowRight className="h-3 w-3" />
                       </span>
                     </div>
-                    <h2 className="text-lg sm:text-xl font-black italic uppercase tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                      {item.title}
-                    </h2>
-                    <p className="text-xs font-medium text-muted-foreground leading-relaxed line-clamp-3">
-                      {item.summary || "Resumen no disponible para esta noticia institucional de la región."}
-                    </p>
-                  </CardContent>
-                </div>
-                <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-border/40 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-1.5 group-hover:gap-3 transition-all">
-                    Leer noticia completa <ArrowRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </AuroraBackground>
   );
