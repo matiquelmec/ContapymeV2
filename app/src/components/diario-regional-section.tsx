@@ -8,12 +8,11 @@ import {
   Globe, 
   TrendingUp, 
   ArrowRight, 
-  Sparkles, 
+  Sparkles,
   Landmark, 
   BadgeCheck, 
   ArrowUpRight, 
   ArrowDownRight,
-  X,
   Filter
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -79,39 +78,6 @@ export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle |
   return { hero, secondary };
 }
 
-/** 🧠 IA Inferencia: Análisis de Impacto y Recomendación PYME */
-export function generateNewsAnalysis(article: NewsArticle) {
-  const category = article.category?.toUpperCase() || "";
-  const title = article.title?.toUpperCase() || "";
-
-  let impact = "Esta noticia o evento regional afecta de forma indirecta la planificación financiera y los costos operativos de las PYMEs locales en la Patagonia.";
-  let advice = "Recomendamos evaluar el impacto presupuestario de este hecho económico y mantener el control de gastos a través de la conciliación automática.";
-
-  if (category.includes("SII") || category.includes("LEGAL")) {
-    impact = "Esta normativa legal o tributaria afecta directamente la estructura de costos operativos de las PYMEs en Magallanes. Las modificaciones en derechos laborales o regulaciones del SII exigen un ajuste inmediato en la planificación mensual de egresos para evitar contingencias y multas.";
-    advice = "Recomendamos agendar una auditoría interna con tu contador para revisar los contratos de trabajo vigentes y la parametrización de haberes en tu software de remuneraciones. Asegúrate de registrar las modificaciones en el Libro de Remuneraciones Electrónico (LRE) antes del plazo legal.";
-  } else if (category.includes("ECONOMÍA") || category.includes("FINANZAS") || category.includes("INVERSIONES")) {
-    impact = "Los ajustes presupuestarios o movimientos macroeconómicos regionales influyen en el flujo de caja local y en el poder adquisitivo de los consumidores en Punta Arenas. Un recorte o redistribución de fondos públicos puede contraer la demanda en ciertos sectores de servicios y comercio.";
-    advice = "Es aconsejable revisar y proyectar un escenario conservador de flujo de caja para los próximos 3 meses. Evita adquirir deudas a tasa variable y prioriza la optimización de gastos operativos fijos. Utiliza herramientas de conciliación automática para mantener un control exhaustivo del presupuesto diario.";
-  } else {
-    impact = "Los eventos de actualidad y el desarrollo urbano/turístico en comunas como Punta Arenas o Timaukel tienen un impacto indirecto pero positivo en el dinamismo comercial. Atraen flujo de personas y fomentan encadenamientos productivos locales (transporte, alimentación, servicios).";
-    advice = "Monitorea las oportunidades de licitación o alianzas comerciales que surjan de estos proyectos de desarrollo. Mantén tu facturación electrónica al día mediante Facturín para responder de inmediato ante cotizaciones y nuevos clientes locales.";
-  }
-
-  if (title.includes("AEROPUERTO")) {
-    impact = "La ampliación de la infraestructura del aeropuerto de Punta Arenas aumentará significativamente la capacidad de pasajeros diarios. Esto beneficiará de manera directa al turismo, la hotelería, el transporte local y los servicios gastronómicos de la provincia.";
-    advice = "Las PYMEs turísticas y de transportes deben prepararse digitalizando sus métodos de cobro y facturación. Asegúrate de emitir facturas y boletas electrónicas al instante y en regla ante el SII para captar el flujo de clientes institucionales y corporativos que visitarán la zona.";
-  } else if (title.includes("CONTRIBUCIONES")) {
-    impact = "Eximir contribuciones representa un alivio fiscal directo para las familias y PYMEs propietarias de inmuebles en la región, liberando liquidez que puede ser reinyectada en consumo o capital de trabajo.";
-    advice = "Si tu propiedad califica para la exención, registra contablemente este menor gasto proyectado en tus activos fijos y actualiza tu balance general para reflejar con exactitud la valorización de tus bienes raíces.";
-  } else if (title.includes("CULTURA")) {
-    impact = "El recorte presupuestario a la cultura limita la contratación de servicios locales de producción, diseño, catering y gestión de eventos artísticos en Punta Arenas, afectando la liquidez de emprendedores creativos.";
-    advice = "Los profesionales de la industria creativa y cultural deben buscar vías de financiamiento mixto (privado/corporativo) y revisar minuciosamente su planificación tributaria para optimizar sus costos fijos y mantener la viabilidad durante este periodo de menor gasto público.";
-  }
-
-  return { impact, advice };
-}
-
 const CLIENT_UNIQUE_FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&fit=crop&q=80",
   "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1280&fit=crop&q=80",
@@ -160,7 +126,6 @@ export function ensureUniqueNewsImages(hero: NewsArticle | null, secondary: News
 
 export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRegionalSectionProps) {
   const [liveNews, setLiveNews] = useState<NewsArticle[]>(initialNews);
-  const [analyzedNews, setAnalyzedNews] = useState<NewsArticle | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("TODAS");
 
   useEffect(() => {
@@ -294,7 +259,6 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
         <ModernHeroBento 
           heroNews={heroNews} 
           indicators={indicators} 
-          onAnalyzeNews={(article) => setAnalyzedNews(article)} 
         />
 
         {/* 📰 SECCIÓN EDITORIAL: FLUJO SECUNDARIO & WIDGETS LATERALES */}
@@ -362,16 +326,14 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   </Link>
 
                   <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground pt-2 border-t border-border/40">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setAnalyzedNews(news);
-                      }}
-                      className="text-primary font-black uppercase tracking-wider flex items-center gap-1 hover:text-primary/80 transition-colors cursor-pointer"
+                    <Link
+                      href={`/noticias/${news.slug}`}
+                      scroll={false}
+                      className="text-primary font-black uppercase tracking-wider flex items-center gap-1 hover:text-primary/80 transition-colors"
                     >
-                      Analizar IA <ArrowRight className="h-3 w-3" />
-                    </button>
+                      <span>Leer noticia</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </Link>
                     <span className="font-mono text-[9px] uppercase tracking-wider" suppressHydrationWarning>
                       {new Date(news.published_at).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" })}
                     </span>
@@ -482,70 +444,6 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
         activeCategory={selectedCategory} 
         onSelectCategory={(cat) => setSelectedCategory(cat)} 
       />
-
-      {/* Modal de Análisis de Impacto IA */}
-      {analyzedNews && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 border border-white/20 rounded-[2.5rem] w-full max-w-xl p-6 sm:p-8 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200 relative">
-            <button 
-              onClick={() => setAnalyzedNews(null)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-all cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="space-y-2">
-              <span className="text-[8px] font-black tracking-widest text-primary-foreground italic px-2.5 py-0.5 rounded bg-primary uppercase inline-block">
-                {analyzedNews.category}
-              </span>
-              <h3 className="text-xl sm:text-2xl font-black uppercase leading-tight italic text-foreground tracking-tight pr-6">
-                {analyzedNews.title}
-              </h3>
-              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
-                Análisis de Impacto Regional — ContaPyme PUQ
-              </p>
-            </div>
-
-            <div className="space-y-4 divide-y divide-border/60 pt-1">
-              <div className="space-y-1.5 pt-2">
-                <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> 1. Impacto en Magallanes (IA)
-                </h4>
-                <p className="text-xs font-medium text-muted-foreground leading-relaxed italic text-justify">
-                  "{generateNewsAnalysis(analyzedNews).impact}"
-                </p>
-              </div>
-
-              <div className="space-y-1.5 pt-3">
-                <h4 className="text-[10px] font-black uppercase tracking-wider text-indigo-600 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" /> 2. Recomendación Contable / Legal
-                </h4>
-                <p className="text-xs font-medium text-muted-foreground leading-relaxed italic text-justify">
-                  "{generateNewsAnalysis(analyzedNews).advice}"
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-3 flex flex-col sm:flex-row gap-3">
-              <Link href={`/noticias/${analyzedNews.slug}`} scroll={false} className="flex-1">
-                <Button 
-                  onClick={() => setAnalyzedNews(null)}
-                  className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg rounded-xl h-11"
-                >
-                  Leer Noticia Completa
-                </Button>
-              </Link>
-              <Button 
-                variant="outline" 
-                onClick={() => setAnalyzedNews(null)}
-                className="text-xs font-black uppercase tracking-widest rounded-xl h-11 px-6"
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

@@ -36,10 +36,9 @@ interface NewsArticle {
 interface ModernHeroBentoProps {
   heroNews: NewsArticle | null;
   indicators: Indicator[];
-  onAnalyzeNews?: (article: NewsArticle) => void;
 }
 
-export function ModernHeroBento({ heroNews, indicators = [], onAnalyzeNews }: ModernHeroBentoProps) {
+export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoProps) {
   const [liveIndicators, setLiveIndicators] = useState<Indicator[]>(indicators);
   const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({});
   const [syncing, setSyncing] = useState(false);
@@ -192,16 +191,6 @@ export function ModernHeroBento({ heroNews, indicators = [], onAnalyzeNews }: Mo
                   </span>
 
                   <div className="flex items-center gap-3">
-                    {onAnalyzeNews && (
-                      <button
-                        onClick={() => onAnalyzeNews(heroNews)}
-                        className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border border-white/25 transition-all flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Sparkles className="h-3 w-3 text-amber-300" />
-                        <span>Impacto Pyme (IA)</span>
-                      </button>
-                    )}
-
                     <Link
                       href={`/noticias/${heroNews.slug}`}
                       scroll={false}
