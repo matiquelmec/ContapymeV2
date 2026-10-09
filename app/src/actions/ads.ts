@@ -2,24 +2,26 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 
 export interface AdBanner {
   id: string
   position: 'calculator' | 'news_sidebar' | 'header_top'
+  media_type?: 'image' | 'video'
   sponsor_name: string
   title: string
   image_url: string
+  video_url?: string
+  poster_url?: string
   target_url: string
   contact_whatsapp?: string
-  status: 'active' | 'expired' | 'pending'
+  status: 'active' | 'expired' | 'pending' | 'pending_review' | 'paused'
+  amount_clp?: number
   starts_at?: string
   expires_at?: string
   created_at?: string
 }
 
-/**
- * Obtiene todos los banners activos para una posición publicitaria específica (para Pasarela / Carrusel).
- */
 export async function getActiveAdBanners(position: 'calculator' | 'news_sidebar' | 'header_top'): Promise<AdBanner[]> {
   try {
     const supabase = createAdminClient()
@@ -41,9 +43,6 @@ export async function getActiveAdBanners(position: 'calculator' | 'news_sidebar'
   }
 }
 
-/**
- * Obtiene el banner activo para una posición publicitaria específica.
- */
 export async function getActiveAdBanner(position: 'calculator' | 'news_sidebar' | 'header_top'): Promise<AdBanner | null> {
   try {
     const banners = await getActiveAdBanners(position)
@@ -64,9 +63,6 @@ export interface SlotAvailability {
   nextAvailableDate?: string | null
 }
 
-/**
- * Consulta en tiempo real la disponibilidad y cupos restantes de cada ubicación publicitaria (Máx 5 por slot).
- */
 export async function getAdSlotsAvailabilityAction(): Promise<Record<string, SlotAvailability>> {
   try {
     const supabase = createAdminClient()
@@ -110,9 +106,6 @@ export async function getAdSlotsAvailabilityAction(): Promise<Record<string, Slo
   }
 }
 
-/**
- * Obtiene todos los banners gestionados en el panel de control.
- */
 export async function getCompanyAdBannersAction() {
   try {
     const supabase = await createClient()
@@ -132,18 +125,111 @@ export async function getCompanyAdBannersAction() {
   }
 }
 
-/**
- * Sube una imagen de banner comprimida en WebP al almacenamiento de Supabase.
- */
+export async function updateAdBannerStatusAction(id: string, status: 'active' | 'paused' | 'expired' | 'pending_review', durationDays: number = 30) {
+  try {
+    const adminDb = createAdminClient()
+    const now = new Date()
+    const updatePayload: Record<string, any> = { status }
+
+    if (status === 'active') {
+      updatePayload.starts_at = now.toISOString()
+      updatePayload.expires_at = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString()
+    }
+
+    const { error } = await adminDb
+      .from('ad_banners')
+      .update(updatePayload)
+      .eq('id', id)
+
+    if (error) throw error
+
+    revalidatePath('/')
+    revalidatePath('/anunciar')
+    revalidatePath('/dashboard/publicidad')
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+export async function createManualAdBannerAction(payload: {
+  position: 'calculator' | 'news_sidebar' | 'header_top'
+  media_type?: 'image' | 'video'
+  sponsor_name: string
+  title: string
+  image_url: string
+  video_url?: string
+  poster_url?: string
+  target_url: string
+  contact_whatsapp?: string
+  duration_days: number
+  amount_clp?: number
+}) {
+  try {
+    const adminDb = createAdminClient()
+    const now = new Date()
+    const startsAt = now.toISOString()
+    const expiresAt = new Date(now.getTime() + (payload.duration_days || 30) * 24 * 60 * 60 * 1000).toISOString()
+
+    const { data, error } = await adminDb
+      .from('ad_banners')
+      .insert({
+        position: payload.position,
+        media_type: payload.media_type || (payload.video_url ? 'video' : 'image'),
+        sponsor_name: payload.sponsor_name,
+        title: payload.title,
+        image_url: payload.image_url,
+        video_url: payload.video_url || null,
+        poster_url: payload.poster_url || null,
+        target_url: payload.target_url,
+        contact_whatsapp: payload.contact_whatsapp || null,
+        status: 'active',
+        amount_clp: payload.amount_clp || 0,
+        starts_at: startsAt,
+        expires_at: expiresAt,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    revalidatePath('/')
+    revalidatePath('/anunciar')
+    revalidatePath('/dashboard/publicidad')
+    return { success: true, data }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+export async function deleteAdBannerAction(id: string) {
+  try {
+    const adminDb = createAdminClient()
+    const { error } = await adminDb
+      .from('ad_banners')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    revalidatePath('/')
+    revalidatePath('/anunciar')
+    revalidatePath('/dashboard/publicidad')
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
 export async function uploadAdBannerImageAction(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const file = formData.get('file') as File
     if (!file) {
-      return { success: false, error: 'No se detectó ningún archivo.' }
+      return { success: false, error: 'No se detecto ningun archivo.' }
     }
 
     const fileExt = file.name.split('.').pop() || 'webp'
-    const fileName = `ad_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+    const fileName = 'ad_' + Date.now() + '_' + Math.random().toString(36).substring(7) + '.' + fileExt
     
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)

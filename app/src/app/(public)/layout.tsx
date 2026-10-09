@@ -73,8 +73,8 @@ export default async function PublicLayout({
         </div>
       </header>
 
-      {/* ===== ESPACIO PUBLICITARIO CABECERA SOYINDI ===== */}
-      <SponsoredAdBanner />
+      {/* ===== ESPACIO PUBLICITARIO CABECERA (SLOT MULTIMEDIA CON FALLBACK A SOYINDI) ===== */}
+      <AdBannerSlot position="header_top" fallbackToSoyIndi={true} />
 
       <main className="flex-1">{children}</main>
 
