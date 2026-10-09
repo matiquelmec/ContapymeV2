@@ -115,7 +115,6 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <DiarioRegionalSection initialNews={regionalNews} indicators={indicators} />
-      <SponsoredAdBanner />
       <RegionalJobsSection jobs={regionalJobs} />
     </>
   );
