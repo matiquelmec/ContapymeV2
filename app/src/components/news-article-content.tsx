@@ -31,14 +31,45 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
   const wordCount = news.content ? news.content.split(/\s+/).length : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
-  // Dividir el contenido en párrafos por doble salto de línea (delimitador real de párrafo)
-  // y normalizar los saltos de línea simples internos a espacios para que el texto justificado fluya continuamente.
+  // Función para decodificar entidades HTML y limpiar basura en el frontend
+  const sanitizeText = (txt: string) => {
+    if (!txt) return ''
+    return txt
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      .replace(/&#124;/g, '|')
+      .replace(/&#8211;/g, '–')
+      .replace(/&#8217;/g, "'")
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  // Dividir el contenido en párrafos, sanitizar y filtrar basura residual
   const paragraphs = news.content 
     ? news.content
         .split(/\n\s*\n/)
-        .map((p: string) => p.replace(/\s*\n\s*/g, ' ').trim())
-        .filter(Boolean)
+        .map((p: string) => sanitizeText(p.replace(/\s*\n\s*/g, ' ')))
+        .filter((p: string) => {
+          if (!p) return false
+          // Descartar si es un hash base64 de Google News o link residual
+          if (p.includes('CBMi') || p.includes('news.google.com') || p.includes('<font')) return false
+          // Descartar si es solo una cadena alfanumérica sin espacios
+          if (p.length > 50 && !p.includes(' ')) return false
+          return true
+        })
     : []
+
+  const displayTitle = sanitizeText(news.title)
 
   /**
    * Obtiene un resumen periodístico completo y cerrado sin cortar oraciones.
@@ -212,7 +243,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
       {/* Story Card Invisible (para generación de imagen) */}
       <StoryCard
         ref={storyCardRef}
-        title={news.title}
+        title={displayTitle}
         category={news.category || 'Regional'}
         imageUrl={news.image_url || '/news-placeholder.png'}
         date={news.published_at}
@@ -262,7 +293,7 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
             "font-black italic tracking-tighter leading-[0.95] uppercase text-foreground font-serif",
             isModal ? "text-3xl md:text-4xl" : "text-4xl sm:text-5xl md:text-6xl"
           )}>
-            {news.title}
+            {displayTitle}
           </h1>
           
           {/* Metadatos Editorial Premium con Tiempo de Lectura en Vivo y E-E-A-T */}

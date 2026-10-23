@@ -32,6 +32,23 @@ export const metadata: Metadata = {
 
 export const revalidate = 300;
 
+function decodeEntities(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#124;/g, '|')
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&nbsp;/g, ' ')
+    .trim()
+}
+
 export default async function NewsArchivePage() {
   const newsRes = await getRegionalNews();
   const news = newsRes.success ? newsRes.data : [];
@@ -159,10 +176,10 @@ export default async function NewsArchivePage() {
                           </span>
                         </div>
                         <h2 className="text-lg sm:text-xl font-black italic uppercase tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                          {item.title}
+                          {decodeEntities(item.title)}
                         </h2>
                         <p className="text-xs font-medium text-muted-foreground leading-relaxed line-clamp-3">
-                          {item.summary || "Resumen no disponible para esta noticia institucional de la región."}
+                          {decodeEntities(item.summary) || "Resumen no disponible para esta noticia institucional de la región."}
                         </p>
                       </CardContent>
                     </div>

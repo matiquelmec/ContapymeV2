@@ -27,28 +27,61 @@ const FALLBACK_IMAGES_FINANZAS = [
 
 const NEWS_SOURCES = [
   { name: "La Prensa Austral", url: "https://laprensaaustral.cl/feed/", category: "REGIONAL" },
-  { name: "El Pingüino", url: "https://news.google.com/rss/search?q=site:elpinguino.com&hl=es-419&gl=CL&ceid=CL:es-419", category: "REGIONAL" },
   { name: "Ovejero Noticias", url: "https://www.ovejeronoticias.cl/feed/", category: "REGIONAL" },
-  { name: "Google News Magallanes", url: "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419", category: "REGIONAL" },
-  { name: "Diario Financiero", url: "https://www.df.cl/site/asociacion/rss/rss_index.xml", category: "FINANZAS" },
-  { name: "Google News Economía", url: "https://news.google.com/rss/search?q=SII+IPC+Dolar+Chile+Impuestos+Economia&hl=es-419&gl=CL&ceid=CL:es-419", category: "FINANZAS" }
+  { name: "Diario Financiero", url: "https://www.df.cl/site/asociacion/rss/rss_index.xml", category: "FINANZAS" }
 ]
 
-function cleanHTML(html: string): string {
-  if (!html) return ''
-  return html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&#8211;/g, '-')
-    .replace(/&nbsp;/g, ' ')
+/**
+ * Decodifica entidades HTML tanto nombradas como numéricas (&amp;, &#124;, &#8211;, etc.)
+ */
+function decodeHTMLEntities(text: string): string {
+  if (!text) return ''
+  return text
+    // Entidades nombradas comunes
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&hellip;/g, '...')
+    .replace(/&middot;/g, '·')
+    .replace(/&bull;/g, '•')
+    // Entidades decimales (ej: &#124; -> |, &#8211; -> –)
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCharCode(parseInt(dec, 10))
+      } catch {
+        return ''
+      }
+    })
+    // Entidades hexadecimales (ej: &#x7c; -> |)
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16))
+      } catch {
+        return ''
+      }
+    })
+}
+
+function cleanHTML(html: string): string {
+  if (!html) return ''
+  // 1. Eliminar scripts y styles
+  let cleaned = html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    // 2. Eliminar completamente etiquetas <a> y <font> junto con su contenido si son enlaces de Google News
+    .replace(/<a[^>]*href=["'][^"']*news\.google\.com[^"']*["'][^>]*>[\s\S]*?<\/a>/gi, ' ')
+    // 3. Eliminar todas las etiquetas HTML restantes
+    .replace(/<[^>]+>/g, ' ')
+    // 4. Decodificar entidades HTML
+  cleaned = decodeHTMLEntities(cleaned)
+    // 5. Normalizar espacios
+  return cleaned.replace(/\s+/g, ' ').trim()
 }
 
 function slugify(text: string): string {
@@ -309,16 +342,34 @@ export async function syncNewsAction() {
           
           // Crear resumen a partir de la descripción (limitar a 300 caracteres)
           const rawDesc = item.description || ''
-          const summary = rawDesc.length > 300 ? rawDesc.substring(0, 297) + '...' : rawDesc
 
-          // Insertar la noticia
+          // 🛡️ FILTRO ESTRICTO DE CALIDAD:
+          // Rechazar si contiene tokens Base64 de Google News, HTML residual o longitud insuficiente
+          if (
+            rawDesc.includes('CBMi') || 
+            rawDesc.includes('news.google.com') ||
+            rawDesc.includes('<font') ||
+            rawDesc.includes('<a href') ||
+            rawDesc.length < 180
+          ) {
+            continue // Descartar sin contaminar la base de datos
+          }
+
+          // Asegurar que el resumen no termine con puntos suspensivos que rompan la constraint
+          let summary = rawDesc.length > 280 ? rawDesc.substring(0, 275) : rawDesc
+          summary = summary.replace(/\.{2,}$/, '').replace(/…$/, '').trim()
+          if (!summary.endsWith('.')) {
+            summary += '.'
+          }
+
+          // Insertar la noticia limpia
           const { error: insertError } = await supabase
             .from('regional_news')
             .insert({
               title: item.title,
               slug: itemSlug,
               category: feed.category,
-              content: rawDesc || item.title,
+              content: rawDesc,
               summary: summary,
               image_url: finalImage,
               source_url: item.link,
