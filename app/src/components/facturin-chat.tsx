@@ -129,7 +129,7 @@ export function FacturinChat() {
       {/* Burbuja flotante */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 flex items-center justify-center h-14 w-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xl hover:shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 animate-bounce"
+        className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center justify-center h-14 w-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xl hover:shadow-emerald-600/30 transition-all hover:scale-105 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 animate-bounce"
         style={{ animationDuration: '3s' }}
         title="Consultas Contables Facturín"
       >
@@ -147,7 +147,7 @@ export function FacturinChat() {
 
       {/* Ventana de chat Glassmorphic */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[360px] sm:w-[400px] h-[500px] rounded-3xl bg-white/80 border border-white/30 backdrop-blur-2xl shadow-[0_30px_90px_-20px_rgba(0,0,0,0.2)] hover:border-emerald-500/20 transition-all duration-300 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="fixed bottom-40 sm:bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[400px] max-w-[390px] h-[480px] sm:h-[500px] rounded-3xl bg-white/80 border border-white/30 backdrop-blur-2xl shadow-[0_30px_90px_-20px_rgba(0,0,0,0.2)] hover:border-emerald-500/20 transition-all duration-300 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
           
           {/* Cabecera del Chat */}
           <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center gap-3 relative">

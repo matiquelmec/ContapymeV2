@@ -27,7 +27,7 @@ export function WhatsAppFloatingButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-3 select-none">
+    <div className="fixed bottom-24 sm:bottom-6 left-4 sm:left-6 z-50 flex flex-col items-start gap-3 select-none">
       {/* Menú Contextual Desplegable */}
       {isOpen && (
         <div 
