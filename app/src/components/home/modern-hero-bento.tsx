@@ -214,7 +214,9 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
           <AustralWeatherWidget />
 
           {/* Widget 2: Simulador Express de Sueldos */}
-          <QuickSalarySlider />
+          <div id="calculadora" className="scroll-mt-28">
+            <QuickSalarySlider />
+          </div>
         </div>
       </div>
 

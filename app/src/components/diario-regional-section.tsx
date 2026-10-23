@@ -194,20 +194,47 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
   const filteredSecondaryNews = useMemo(() => {
     if (selectedCategory === "TODAS") return secondaryNews;
 
-    const filtered = secondaryNews.filter((n) => {
-      const cat = n.category?.toUpperCase() || "";
+    const pool = liveNews.length > 0 ? liveNews : secondaryNews;
+    const filtered = pool.filter((n) => {
+      const cat = (n.category || "").toUpperCase();
+      const title = (n.title || "").toUpperCase();
+      const summary = (n.summary || "").toUpperCase();
+
       if (selectedCategory === "ECONOMÍA") {
-        return cat.includes("ECONOM") || cat.includes("FINANZ") || cat.includes("INVER");
+        return (
+          cat.includes("ECONOM") || 
+          cat.includes("FINANZ") || 
+          cat.includes("INVER") ||
+          cat.includes("H2V") ||
+          cat.includes("EMPRESA") ||
+          title.includes("ECONOM") ||
+          title.includes("INVERSI") ||
+          title.includes("H2V") ||
+          title.includes("DÓLAR") ||
+          title.includes("UF") ||
+          summary.includes("ECONOM") ||
+          summary.includes("FINANZ")
+        );
       }
       if (selectedCategory === "SII") {
-        return cat.includes("SII") || cat.includes("LEGAL") || cat.includes("TRIBUTAR");
+        return (
+          cat.includes("SII") || 
+          cat.includes("LEGAL") || 
+          cat.includes("TRIBUTAR") ||
+          cat.includes("NORMATIV") ||
+          title.includes("SII") ||
+          title.includes("TRIBUT") ||
+          title.includes("IMPUESTO") ||
+          title.includes("RENTA") ||
+          summary.includes("SII") ||
+          summary.includes("TRIBUTAR")
+        );
       }
       return cat.includes(selectedCategory);
     });
 
-    // Fallback: si no hay noticias en esa categoría específica, muestra las secundarias normales
-    return filtered.length > 0 ? filtered : secondaryNews;
-  }, [secondaryNews, selectedCategory]);
+    return filtered.length > 0 ? filtered.slice(0, 8) : secondaryNews.slice(0, 8);
+  }, [liveNews, secondaryNews, selectedCategory]);
 
   return (
     <section id="diario" className="py-16 bg-white text-foreground overflow-hidden relative scroll-mt-32" suppressHydrationWarning>
@@ -262,7 +289,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
         />
 
         {/* 📰 SECCIÓN EDITORIAL: FLUJO SECUNDARIO & WIDGETS LATERALES */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4">
+        <div id="flujo-noticias" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-4 scroll-mt-28">
           {/* Columna Izquierda / Central: Stream de Noticias Secundarias (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/50">
@@ -278,21 +305,43 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
 
               {/* Filtros Rápidos en Portada */}
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                {["TODAS", "ECONOMÍA", "SII"].map((cat) => (
+                {[
+                  { id: "TODAS", label: "Todas" },
+                  { id: "ECONOMÍA", label: "Economía & H2V" },
+                  { id: "SII", label: "SII & Legal" }
+                ].map((cat) => (
                   <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all ${
-                      selectedCategory === cat
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                      selectedCategory === cat.id
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {cat}
+                    {cat.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Feedback Visual de Filtro Activo */}
+            {selectedCategory !== "TODAS" && (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary animate-in fade-in duration-300">
+                <span className="flex items-center gap-2">
+                  <Filter className="h-3.5 w-3.5" />
+                  <span>
+                    Filtrado por: <strong>{selectedCategory === "ECONOMÍA" ? "Economía & H2V" : "SII & Legal"}</strong> ({filteredSecondaryNews.length} despachos encontrados)
+                  </span>
+                </span>
+                <button
+                  onClick={() => setSelectedCategory("TODAS")}
+                  className="text-[10px] font-black uppercase tracking-wider text-primary hover:underline cursor-pointer"
+                >
+                  Ver todas las noticias ✕
+                </button>
+              </div>
+            )}
 
             {/* Tarjetas Secundarias en Grilla 2x2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
