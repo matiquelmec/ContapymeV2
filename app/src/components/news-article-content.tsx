@@ -9,6 +9,7 @@ import { Button } from './ui/button'
 import { StoryCard } from './story-card'
 import { toast } from 'sonner'
 import { AdBannerSlot } from './ads/ad-banner-slot'
+import { NewsMediaGallery, MediaItem } from './news/news-media-gallery'
 
 interface NewsArticleContentProps {
   news: any
@@ -235,11 +236,17 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         {/* Degradado inmersivo */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent opacity-90" />
         
-        {/* Badge de Categoría flotante de alta fidelidad */}
-        <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12">
+        {/* Badges de Categoría y Tipo de Contenido flotantes de alta fidelidad */}
+        <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-black tracking-[0.3em] text-primary-foreground italic px-5 py-2.5 border border-primary/50 rounded-xl bg-primary/95 backdrop-blur-xl shadow-2xl uppercase">
             {news.category}
           </span>
+          {news.content_type === 'comunicado' && (
+            <span className="text-[10px] font-black tracking-[0.25em] text-amber-200 italic px-4 py-2 border border-amber-400/40 rounded-xl bg-black/85 backdrop-blur-xl shadow-2xl uppercase flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+              Comunicado de Prensa
+            </span>
+          )}
         </div>
       </div>
 
@@ -313,6 +320,23 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
         {/* Cuerpo de la Noticia Justificado con Estilo Editorial */}
         <div className="space-y-6">
           {paragraphs.map((para: string, idx: number) => {
+            // Detección de subtítulos / intertítulos (texto corto en mayúsculas, ej: "SE VIENE LA TEMPORADA ESTIVAL")
+            const isSubheading =
+              para.length < 80 &&
+              para === para.toUpperCase() &&
+              !para.endsWith('.') &&
+              /[A-ZÁÉÍÓÚÑ]/.test(para)
+
+            if (isSubheading) {
+              return (
+                <div key={idx} className="pt-6 pb-2">
+                  <h2 className="text-xl sm:text-2xl font-black italic tracking-tight uppercase text-foreground font-serif border-l-4 border-primary pl-4">
+                    {para}
+                  </h2>
+                </div>
+              )
+            }
+
             // Primer párrafo con Letra Capital (Drop Cap) elegante
             if (idx === 0) {
               return (
@@ -343,6 +367,11 @@ export function NewsArticleContent({ news, isModal = false }: NewsArticleContent
               </p>
             )
           })}
+
+          {/* Galería y Material Audiovisual Inmersivo (si el artículo contiene medios registrados) */}
+          {Array.isArray(news.media) && news.media.length > 0 && (
+            <NewsMediaGallery media={news.media} />
+          )}
         </div>
 
         {/* CTA Contextual Único y Global */}

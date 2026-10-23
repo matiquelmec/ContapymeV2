@@ -467,18 +467,18 @@ async def _maintain_db_hygiene():
     """Mantiene solo las últimas 200 noticias usando filtros de fecha para mayor eficiencia."""
     db = get_supabase()
     try:
-        # 1. Obtener la fecha de la noticia número 200 (nuestro límite)
-        res = db.table("regional_news").select("published_at").order("published_at", desc=True).range(199, 199).execute()
+        # 1. Obtener la fecha de la noticia no protegida número 200 (nuestro límite para feeds automáticos)
+        res = db.table("regional_news").select("published_at").eq("is_protected", False).order("published_at", desc=True).range(199, 199).execute()
         
         if not res.data:
-            # Si hay menos de 200 noticias, no hacemos nada
+            # Si hay menos de 200 noticias no protegidas, no hacemos nada
             return
             
         limit_date = res.data[0]["published_at"]
         
-        # 2. Borrar todo lo que sea anterior a esa fecha
-        # Esto es una sola query eficiente en el servidor
-        delete_res = db.table("regional_news").delete().lt("published_at", limit_date).execute()
+        # 2. Borrar todo lo que sea anterior a esa fecha que NO esté protegido
+        # Esto preserva comunicados institucionales y notas permanentes
+        delete_res = db.table("regional_news").delete().lt("published_at", limit_date).eq("is_protected", False).execute()
         
         if delete_res.data:
             logger.info(f"[News Worker] 🧹 Higiene: Se eliminaron {len(delete_res.data)} noticias antiguas (anteriores a {limit_date}).")

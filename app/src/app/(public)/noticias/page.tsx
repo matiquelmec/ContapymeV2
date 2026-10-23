@@ -138,8 +138,15 @@ export default async function NewsArchivePage() {
                           className="object-cover opacity-90 w-full h-full group-hover:scale-105 transition-transform duration-700 absolute inset-0"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                        <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">
-                          {item.category || "General"}
+                        <div className="absolute top-4 left-4 flex items-center gap-1.5">
+                          <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/20 rounded-full text-[8px] font-black text-white uppercase tracking-widest">
+                            {item.category || "General"}
+                          </span>
+                          {item.content_type === 'comunicado' && (
+                            <span className="px-2.5 py-1 bg-amber-500/90 backdrop-blur-md border border-amber-300/40 rounded-full text-[8px] font-black text-zinc-950 uppercase tracking-widest">
+                              Comunicado
+                            </span>
+                          )}
                         </div>
                       </div>
                       <CardContent className="p-6 sm:p-8 space-y-3">

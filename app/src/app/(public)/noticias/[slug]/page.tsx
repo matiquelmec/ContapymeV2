@@ -95,20 +95,30 @@ export default async function NewsPage({ params }: Props) {
     permanentRedirect('/noticias');
   }
 
-  const jsonLd = {
+  // Extraer imágenes y videos adicionales del campo media si existen
+  const extraImages = Array.isArray(news.media)
+    ? news.media.filter((m: any) => m.type === 'image' && m.url).map((m: any) => m.url)
+    : [];
+  const allImages = Array.from(new Set([news.image_url, ...extraImages].filter(Boolean)));
+
+  const videoItem = Array.isArray(news.media)
+    ? news.media.find((m: any) => m.type === 'video')
+    : null;
+
+  const isComunicado = news.content_type === 'comunicado';
+
+  const jsonLd: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: news.title,
     description: news.seo_description || news.summary || news.content.substring(0, 160),
-    image: [
-      news.image_url || "https://www.contapymepuq.cl/news-placeholder.png"
-    ],
+    image: allImages.length > 0 ? allImages : ["https://www.contapymepuq.cl/news-placeholder.png"],
     datePublished: news.published_at,
     dateModified: news.updated_at || news.published_at,
     author: [{
-      "@type": "Person",
-      name: news.author_name || "Redacción ContaPymePUQ",
-      jobTitle: "Periodista Regional",
+      "@type": isComunicado ? "Organization" : "Person",
+      name: news.author_name || (isComunicado ? "Oficina de Prensa" : "Redacción ContaPymePUQ"),
+      jobTitle: isComunicado ? "Fuente Oficial" : "Periodista Regional",
       url: "https://www.contapymepuq.cl/nosotros"
     }],
     publisher: {
@@ -139,6 +149,17 @@ export default async function NewsPage({ params }: Props) {
       cssSelector: ["h1", ".news-summary", "article p"]
     }
   };
+
+  if (videoItem && videoItem.url) {
+    jsonLd.video = {
+      "@type": "VideoObject",
+      name: news.title,
+      description: videoItem.caption || news.summary || news.title,
+      thumbnailUrl: [videoItem.poster || news.image_url || "https://www.contapymepuq.cl/news-placeholder.png"],
+      uploadDate: news.published_at,
+      contentUrl: videoItem.url
+    };
+  }
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
