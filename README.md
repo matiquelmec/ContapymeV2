@@ -89,8 +89,9 @@ Para levantar el entorno completo local:
 
 * **Frontend Web:** `http://localhost:3000`
 * **Engine API & Swagger:** `http://localhost:8000/docs`
-* **Ejecutar Pruebas Unitarias:** `python -m pytest tests/ -v`
-* **Verificar Tipado TypeScript:** `cd app && npx tsc --noEmit`
+* **Suite de Pruebas Frontend:** `cd app && npm test`
+* **Verificar Tipado TypeScript:** `cd app && npm run typecheck`
+* **Suite de Pruebas Backend:** `python -m pytest tests/ -v`
 
 ---
 

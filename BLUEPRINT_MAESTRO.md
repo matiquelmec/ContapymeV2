@@ -153,9 +153,9 @@
   - Función `get_organization_financial_aggregates(p_organization_id, p_year)` que computa ventas, compras, nómina y activos en un solo paso dentro del motor SQL, reduciendo la transferencia de miles de filas a 1 solo objeto JSON consolidado.
   - Índices compuestos estratégicos en `sales_records`, `purchase_records`, `liquidations` e `economic_indicators`.
 # 🎯 PROJECT: CONTAPYMEPUQ — BLUEPRINT MAESTRO
-**Versión:** 20.1 (Ecosistema Integral: ERP, Órdenes de Compra, Créditos CCAF, Diario Regional, ContaEmpleos & Media Kit Digital 👑)  
+**Versión:** 20.2 (Ecosistema Integral: Austral Titanium Standard, Guardrails Multi-Tenant, ERP, Órdenes de Compra, Créditos CCAF, Diario Regional, ContaEmpleos & Media Kit Digital 👑)  
 **Estado:** Production & Audit-Ready 🚀  
-**Última Actualización:** Septiembre 2026  
+**Última Actualización:** Octubre 2026  
 
 ---
 
@@ -332,3 +332,20 @@
 * [x] **Pruebas Unitarias y Métricas de Calidad:**
   - 5 pruebas unitarias en `tests/test_f29_rcv_audit_and_reconciliation.py` (100% aprobadas).
   - TypeScript sin errores de compilación (`tsc --noEmit`).
+
+### FASE 25: Implantación del Estándar Austral Titanium Delivery Flow & Guardrails Multi-Tenant — **COMPLETADO**
+* [x] **Constitución Operativa y Gobernanza Doc-as-Code:**
+  - Creación de `AGENTS.md` canónico en la raíz del repositorio definiendo los 6 Pilares del Ecosistema y los 2 roles operativos (`Principal Frontend Architect` y `Staff Principal Software Engineer`).
+  - Creación de skills `.agents/skills/ui-ux-pro-max` (artesanía visual, OKLCH, Base 8, touch targets $\ge 48\text{px}$) y `.agents/skills/contapyme-security-guardrails` (anti-IDOR y Zero-Binary en Supabase).
+* [x] **Seguridad y Doble Cerrojo Anti-IDOR:**
+  - Biblioteca `app/src/lib/auth/guardrails.ts` con `getSafeAuthenticatedOrgUser` (verificación de sesión + membresía en `organization_members`) y helper `validateInput` con Zod runtime.
+* [x] **Saneamiento Visual y Canales Oficiales ("Cero Ficción"):**
+  - Saneamiento de `public-nav.tsx`: corrección del texto `'Crea tu Empresa ($35.000)'`.
+  - Evolución de `WhatsAppFloatingButton` a un Dock Radial de Élite con el número oficial verificado **`+56 9 4444 4565`**, badge *"🟢 En línea • Punta Arenas"* y 3 atajos contextuales de alto impacto.
+  - Refactorización de la columna de Canales Oficiales en el footer con diseño Bento y micro-interacciones hover.
+* [x] **Triple Puerta de Calidad y Pruebas:**
+  - Script `"typecheck": "tsc --noEmit"` en `package.json` (0 errores permitidos).
+  - Pruebas unitarias en `app/src/components/__tests__/whatsapp-floating-button.test.ts` y `app/src/lib/auth/__tests__/guardrails.test.ts`.
+  - Frontend: 37 pruebas pasando al 100%. Backend: 26 pruebas de integración y seguridad pasando al 100%.
+  - Comprobación Sensorial en Viewport Móvil (390px) y Desktop certificando 0 overflow horizontal y touch targets ergonómicos.
+

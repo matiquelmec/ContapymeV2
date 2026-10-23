@@ -139,20 +139,40 @@ export default async function PublicLayout({
               </ul>
             </div>
 
-            {/* Columna 5: Redes Sociales & Garantía */}
+            {/* Columna 5: Canales Oficiales & Legal */}
             <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-indigo-500 pl-2.5">Redes Sociales & Legal</h4>
-              <ul className="space-y-2.5 text-xs font-semibold text-slate-400">
-                <li>
-                  <a href="https://wa.me/56944444565" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-emerald-400 transition-colors">
-                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" /> WhatsApp +56 9 4444 4565
-                  </a>
-                </li>
-                <li>
-                  <a href="https://www.instagram.com/contapyme.puq" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-pink-400 transition-colors">
-                    <InstagramIcon className="w-4 h-4 text-pink-400 fill-current" /> Instagram @contapyme.puq
-                  </a>
-                </li>
+              <h4 className="text-xs font-black uppercase tracking-widest text-white border-l-2 border-emerald-500 pl-2.5">Canales Oficiales</h4>
+              <div className="space-y-2">
+                <a
+                  href="https://wa.me/56944444565"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 hover:bg-emerald-950/40 border border-slate-800 hover:border-emerald-500/40 transition-all text-xs font-semibold text-slate-300 hover:text-white group"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current shrink-0" />
+                    <span>WhatsApp Oficial</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    +56 9 4444 4565
+                  </span>
+                </a>
+                <a
+                  href="https://www.instagram.com/contapyme.puq"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 hover:bg-pink-950/30 border border-slate-800 hover:border-pink-500/40 transition-all text-xs font-semibold text-slate-300 hover:text-white group"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <InstagramIcon className="w-4 h-4 text-pink-400 fill-current shrink-0" />
+                    <span>Instagram Regional</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20">
+                    @contapyme.puq
+                  </span>
+                </a>
+              </div>
+              <ul className="space-y-2 text-xs font-semibold text-slate-400 pt-1">
                 <li><Link href="/privacidad" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>
                 <li><Link href="/terminos" className="hover:text-primary transition-colors">Términos de Servicio</Link></li>
                 <li><Link href="/verify/check" className="hover:text-primary transition-colors">Portal de Verificación Pública</Link></li>
