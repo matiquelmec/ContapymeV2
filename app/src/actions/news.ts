@@ -242,8 +242,8 @@ export async function getRegionalNews() {
     // 🛡️ Sanitización de encoding y caracteres corruptos en tiempo de ejecución
     const news = rawNews.map((item) => ({
       ...item,
-      title: (item.title || "").replace(//g, "á").replace(/\uFFFD/g, "á"),
-      summary: (item.summary || "").replace(//g, "á").replace(/\uFFFD/g, "á"),
+      title: (item.title || "").replace(/\uFFFD/g, "á"),
+      summary: (item.summary || "").replace(/\uFFFD/g, "á"),
     }))
 
     // Verificar si las noticias están desactualizadas
