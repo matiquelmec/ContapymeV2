@@ -238,7 +238,13 @@ export async function getRegionalNews() {
       return { success: false, error: 'No se pudieron obtener noticias.', data: [] }
     }
 
-    const news = data || []
+    const rawNews = data || []
+    // 🛡️ Sanitización de encoding y caracteres corruptos en tiempo de ejecución
+    const news = rawNews.map((item) => ({
+      ...item,
+      title: (item.title || "").replace(//g, "á").replace(/\uFFFD/g, "á"),
+      summary: (item.summary || "").replace(//g, "á").replace(/\uFFFD/g, "á"),
+    }))
 
     // Verificar si las noticias están desactualizadas
     let shouldSync = false

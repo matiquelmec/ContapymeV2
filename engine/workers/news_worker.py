@@ -2,9 +2,10 @@ import asyncio
 import logging
 import httpx
 import re
+import email.utils
 import xml.etree.ElementTree as ET
 from difflib import SequenceMatcher
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.database import get_supabase
@@ -14,6 +15,9 @@ from core.images import generate_and_upload_image, download_and_upload_image, ge
 from googlenewsdecoder import new_decoderv1
 
 logger = logging.getLogger("contapyme.news")
+
+# 🛡️ Ventana Máxima de Frescura Editorial (Máximo 5 días de antigüedad)
+MAX_ARTICLE_AGE_DAYS = 5
 
 def _validate_editorial_integrity(raw_content: str, ai_content: str, ai_summary: str) -> tuple[bool, str]:
     """
@@ -97,12 +101,12 @@ def _is_semantic_duplicate(headline: str, content: str, existing_articles: list)
 NEWS_SOURCES = [
     # Regionales (Core)
     {"name": "La Prensa Austral", "url": "https://laprensaaustral.cl/feed/", "type": "regional"},
-    {"name": "El Pingüino", "url": "https://news.google.com/rss/search?q=site:elpinguino.com&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
+    {"name": "El Pingüino", "url": "https://news.google.com/rss/search?q=site:elpinguino.com+when:3d&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
     {"name": "Ovejero Noticias", "url": "https://www.ovejeronoticias.cl/feed/", "type": "regional"},
-    {"name": "Google News Magallanes", "url": "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
+    {"name": "Google News Magallanes", "url": "https://news.google.com/rss/search?q=Punta+Arenas+Magallanes+when:3d&hl=es-419&gl=CL&ceid=CL:es-419", "type": "regional"},
     # Económicas y Financieras (Link al nicho Contapyme)
     {"name": "Diario Financiero", "url": "https://www.df.cl/site/asociacion/rss/rss_index.xml", "type": "financial"},
-    {"name": "Google News Economía", "url": "https://news.google.com/rss/search?q=SII+IPC+Dolar+Chile+Impuestos+Economia&hl=es-419&gl=CL&ceid=CL:es-419", "type": "financial"},
+    {"name": "Google News Economía", "url": "https://news.google.com/rss/search?q=SII+IPC+Dolar+Chile+Impuestos+Economia+when:3d&hl=es-419&gl=CL&ceid=CL:es-419", "type": "financial"},
 ]
 
 # Cabeceras de Navegador Real (Stealth) para evitar bloqueos 403
@@ -143,25 +147,89 @@ def _clean_html(html_str: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+def _parse_article_datetime(pub_date_str: str | None) -> datetime | None:
+    """
+    Parsea de forma robusta fechas RFC-822, RFC-2822, ISO 8601 o GMT.
+    Retorna un datetime con timezone UTC o None si no se puede determinar fehacientemente.
+    """
+    if not pub_date_str:
+        return None
+
+    cleaned = pub_date_str.strip()
+    # Intentar RFC 2822 / 822 con email.utils (maneja GMT, EST, +0000, etc.)
+    try:
+        parsed_tuple = email.utils.parsedate_to_datetime(cleaned)
+        if parsed_tuple:
+            if parsed_tuple.tzinfo is None:
+                parsed_tuple = parsed_tuple.replace(tzinfo=timezone.utc)
+            return parsed_tuple.astimezone(timezone.utc)
+    except Exception:
+        pass
+
+    # Intentar formatos comunes
+    formats = [
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S.%f%z",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(cleaned, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc)
+        except Exception:
+            continue
+
+    return None
+
+def _extract_date_from_url(url: str | None) -> datetime | None:
+    """Extrae fecha estampada en URLs típicas de medios (/YYYY/MM/DD/ o /YYYY/MM/)."""
+    if not url:
+        return None
+    # Patrón completo /2026/04/09/
+    match_full = re.search(r'/(202[0-9])/([0-1][0-9])/([0-3][0-9])/', url)
+    if match_full:
+        try:
+            y, m, d = int(match_full.group(1)), int(match_full.group(2)), int(match_full.group(3))
+            return datetime(y, m, d, tzinfo=timezone.utc)
+        except Exception:
+            pass
+    # Patrón mensual /2026/04/
+    match_month = re.search(r'/(202[0-9])/([0-1][0-9])/', url)
+    if match_month:
+        try:
+            y, m = int(match_month.group(1)), int(match_month.group(2))
+            return datetime(y, m, 1, tzinfo=timezone.utc)
+        except Exception:
+            pass
+    return None
+
 def _slugify(text: str) -> str:
     """Convierte texto en un slug amigable para URL con soporte para acentos españoles."""
     import unicodedata
-    # Normalizar acentos a caracteres base (ej: á -> a)
     normalized = unicodedata.normalize('NFKD', str(text)).encode('ascii', 'ignore').decode('utf-8')
     normalized = normalized.lower()
-    # Eliminar caracteres no alfanuméricos
     normalized = re.sub(r'[^a-z0-9\s]', '', normalized)
-    # Reemplazar espacios por guiones
     normalized = re.sub(r'\s+', '-', normalized)
-    # Eliminar guiones duplicados
     return re.sub(r'-+', '-', normalized).strip('-')
 
 async def _fetch_full_content(url: str, client: httpx.AsyncClient) -> str:
-    """Extrae el texto completo de una noticia visitando su URL."""
+    """Extrae el texto completo de una noticia visitando su URL con decodificación resiliente."""
     try:
         resp = await client.get(url, timeout=15.0, follow_redirects=True)
         if resp.status_code == 200:
-            return _clean_html(resp.text)
+            # Resiliencia de codificación: intentar UTF-8 con fallback a ISO-8859-1
+            try:
+                raw_bytes = resp.content
+                try:
+                    text_content = raw_bytes.decode('utf-8')
+                except UnicodeDecodeError:
+                    text_content = raw_bytes.decode('iso-8859-1', errors='replace')
+            except Exception:
+                text_content = resp.text
+            return _clean_html(text_content)
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener contenido completo de {url}: {e}")
     return ""
@@ -259,6 +327,8 @@ async def _fetch_and_process_news():
     financial_candidates = []
     regional_candidates = []
     seen_uf = False
+    now_utc = datetime.now(timezone.utc)
+
     for raw in news_pool:
         url = raw.get("link")
         headline = raw.get("headline", "")
@@ -272,6 +342,33 @@ async def _fetch_and_process_news():
         if norm_headline in existing_titles:
             logger.info(f"[News Worker] ⏭️ Omitiendo (Título exacto ya existe): {headline[:50]}...")
             continue
+
+        # 🛡️ ESCUDO DE FRESCURA EDITORIAL OBLIGATORIO:
+        # Extraer fecha real desde el RSS y desde la estructura de la URL
+        parsed_dt = _parse_article_datetime(raw.get("pub_date"))
+        url_dt = _extract_date_from_url(url)
+        
+        # Priorizar la fecha más confiable y antigua entre RSS y URL si existe discrepancia
+        effective_dt = parsed_dt or url_dt
+        if url_dt and parsed_dt:
+            # Si la URL indica una fecha más antigua (ej: /2026/04/09/), prevalece la fecha de la URL
+            if url_dt < parsed_dt:
+                effective_dt = url_dt
+        elif url_dt and not parsed_dt:
+            effective_dt = url_dt
+
+        # Si no se puede verificar ninguna fecha o la noticia tiene más de MAX_ARTICLE_AGE_DAYS días, DESCARTAR
+        if not effective_dt:
+            logger.warning(f"[News Worker] 🛑 Rechazando noticia por fecha no verificable: {headline[:50]}...")
+            continue
+
+        age_delta = now_utc - effective_dt
+        if age_delta.days > MAX_ARTICLE_AGE_DAYS:
+            logger.warning(f"[News Worker] 🛑 Rechazando noticia anacrónica/obsoleta ({age_delta.days} días de antigüedad, máx {MAX_ARTICLE_AGE_DAYS}d): {headline[:50]} | URL: {url}")
+            continue
+
+        # Guardar la fecha validada en el dict para persistirla con fidelidad absoluta
+        raw["validated_published_at"] = effective_dt.isoformat()
 
         # Deduplicación Semántica Inteligente (Cruces entre diferentes diarios del mismo hecho)
         is_dup, dup_reason = _is_semantic_duplicate(headline, raw.get("content", ""), existing_articles)
@@ -413,12 +510,15 @@ async def _fetch_and_process_news():
             if image_url:
                 used_images_in_cycle.add(image_url)
 
-            # Formatear Fecha
-            pub_date_iso = datetime.now().isoformat()
-            if raw_news.get("pub_date"):
-                try:
-                    pub_date_iso = datetime.strptime(raw_news["pub_date"], "%a, %d %b %Y %H:%M:%S %z").isoformat()
-                except: pass
+            # 🛡️ Formatear Fecha Certificada con Estricto Rechazo de Anacronismo
+            pub_date_iso = raw_news.get("validated_published_at")
+            if not pub_date_iso:
+                # Si por alguna razón no pasó la validación, intentar parseo estricto
+                parsed_dt = _parse_article_datetime(raw_news.get("pub_date")) or _extract_date_from_url(raw_news.get("link"))
+                if not parsed_dt or (datetime.now(timezone.utc) - parsed_dt).days > MAX_ARTICLE_AGE_DAYS:
+                    logger.warning(f"[News Worker] 🛑 Abortando persistencia por fecha inválida o anacrónica: {ai_data['title']}")
+                    continue
+                pub_date_iso = parsed_dt.isoformat()
 
             # Normalizar Categoría para prioridad Smart Mix
             category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))

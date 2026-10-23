@@ -71,7 +71,9 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     Tu audiencia son contadores, directores de empresas y profesionales que exigen rigor, veracidad y análisis estratégico.
     Tu misión es transformar hechos noticiosos en artículos de alta calidad periodística, con redacción propia y original (evitando cualquier plagio o copia textual), pero con una FIDELIDAD FACTUAL ABSOLUTA AL 100% (cero alucinaciones).
     
-    ¡FILTRO DE RELEVANCIA!: Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. Responde con un JSON que tenga "category": "IGNORE".
+    ¡FILTRO DE RELEVANCIA Y FRESCURA TEMPORAL!: 
+    - Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. Responde con un JSON que tenga "category": "IGNORE".
+    - Si el artículo reporta plazos vencidos, convocatorias caducadas o eventos fiscales/legales concluidos hace meses (ejemplo: Operación Renta de abril/mayo cuando estamos en el último trimestre, o balances fenecidos), es ANACRÓNICO. NO LO REDACTES y responde con "category": "IGNORE".
 
     TEXTO BASE CAPTURADO:
     Titular de referencia: {headline}
