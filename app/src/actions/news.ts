@@ -1,11 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { engineFetch } from '@/lib/engine-client'
 import { notifyIndexNowForNews } from '@/lib/seo/indexing-service'
+import { 
+  createCleanSummary, 
+  isNicheRelevant, 
+  RegionalNewsInsertSchema 
+} from '@/lib/news/news-quality'
+
+export { createCleanSummary, isNicheRelevant, RegionalNewsInsertSchema }
 
 let lastNewsSync = 0
 const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
@@ -177,18 +185,18 @@ function parseRSS(xmlText: string): any[] {
         }
       }
 
-      // Si no hay fecha determinable o es anacrónica (más de 7 días hacia atrás o fecha futura absurda), se evalúa
+      // 🛡️ Ventana estricta de frescura editorial (Máximo 5 días de antigüedad)
       const now = Date.now();
-      const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // Máximo 7 días de antigüedad para actualidad regional
+      const MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
 
       if (parsedDate && !isNaN(parsedDate.getTime())) {
         const ageMs = now - parsedDate.getTime();
-        // Descartar si es más vieja que 7 días o si está más de 24 horas en el futuro
+        // Descartar si es más vieja que 5 días o si está más de 24 horas en el futuro
         if (ageMs > MAX_AGE_MS || ageMs < -24 * 60 * 60 * 1000) {
           continue; // Descartar noticia obsoleta
         }
       } else {
-        // Si no hay fecha verificable, no inventar una fecha actual
+        // Cero fallbacks a la fecha actual: descartar sin fecha verificable
         continue;
       }
 
@@ -295,9 +303,64 @@ export async function getNewsBySlug(slug: string) {
 }
 
 /**
+ * Deep Scraping en Node.js: extrae el cuerpo completo del artículo visitando la URL.
+ */
+async function fetchArticleFullBody(url: string, headers: Record<string, string>): Promise<string> {
+  if (!url || !url.startsWith('http')) return ''
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 6000)
+    const res = await fetch(url, { headers, signal: controller.signal, cache: 'no-store' })
+    clearTimeout(timeout)
+    if (!res.ok) return ''
+    const html = await res.text()
+
+    // 1. Extraer párrafos editoriales <p>
+    const pMatches = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi)
+    if (pMatches && pMatches.length > 0) {
+      const cleanParagraphs = pMatches
+        .map(p => cleanHTML(p))
+        .filter(p => p.length > 50 && !p.toLowerCase().includes('comparte esta') && !p.toLowerCase().includes('redes sociales'))
+
+      const joined = cleanParagraphs.join('\n\n')
+      if (joined.length >= 350) {
+        return joined
+      }
+    }
+
+    // 2. Fallback a contenedor de artículo
+    const articleMatch = html.match(/<article[\s\S]*?>([\s\S]*?)<\/article>/i) ||
+                         html.match(/<div[^>]+class=["'][^"']*(?:entry-content|post-content|story-content)[^"']*["'][\s\S]*?>([\s\S]*?)<\/div>/i)
+    if (articleMatch) {
+      const cleaned = cleanHTML(articleMatch[1] || articleMatch[0])
+      if (cleaned.length >= 350) {
+        return cleaned
+      }
+    }
+  } catch {
+    // Si falla el scraping, retornar vacío
+  }
+  return ''
+}
+
+/**
  * Server Action que sincroniza las noticias desde los feeds RSS y las guarda en Supabase.
+ * Posee blindaje de calidad, deep scraping y validación Zod runtime.
  */
 export async function syncNewsAction() {
+  // 1. Delegar al Motor FastAPI (Python) si está configurado y activo
+  if (process.env.ENGINE_URL) {
+    try {
+      const engineRes = await engineFetch('/api/v1/news/sync', { method: 'POST' })
+      if (engineRes) {
+        console.log('[Sync News] Ingesta editorial profesional delegada a FastAPI Engine.')
+        return { success: true, addedCount: 0, engineDelegated: true }
+      }
+    } catch (e: any) {
+      console.warn('[Sync News] FastAPI Engine no disponible, ejecutando pipeline Node.js blindado:', e.message)
+    }
+  }
+
   const supabase = createAdminClient()
   let addedCount = 0
   const errores: string[] = []
@@ -308,7 +371,7 @@ export async function syncNewsAction() {
   }
 
   try {
-    // 1. Obtener registros existentes para evitar colisiones en columnas unique en memoria
+    // 1. Obtener registros existentes para evitar colisiones
     const { data: existingData } = await supabase
       .from('regional_news')
       .select('title, slug, source_url')
@@ -317,7 +380,7 @@ export async function syncNewsAction() {
     const existingSlugs = new Set(existingData?.map(n => n.slug) || [])
     const existingUrls = new Set(existingData?.map(n => n.source_url) || [])
 
-    // 2. Iterar feeds de noticias y descargar
+    // 2. Iterar feeds de noticias
     for (const feed of NEWS_SOURCES) {
       try {
         const res = await fetch(feed.url, { headers, cache: 'no-store' })
@@ -332,58 +395,72 @@ export async function syncNewsAction() {
           const titleNorm = normalizeTitle(item.title)
           const itemSlug = slugify(item.title)
           
-          // Saltar si ya existe
+          // Omitir si ya existe
           if (existingTitles.has(titleNorm) || existingSlugs.has(itemSlug) || existingUrls.has(item.link)) {
             continue
           }
 
-          // Validación de seguridad de fecha del artículo (no más de 7 días)
-          const itemDate = new Date(item.pubDate);
-          if (isNaN(itemDate.getTime()) || (Date.now() - itemDate.getTime()) > 7 * 24 * 60 * 60 * 1000) {
-            continue; // Rechazar noticias obsoletas
+          // Validación estricta de fecha (máximo 5 días de antigüedad, cero anacronismos)
+          const itemDate = new Date(item.pubDate)
+          if (isNaN(itemDate.getTime()) || (Date.now() - itemDate.getTime()) > 5 * 24 * 60 * 60 * 1000) {
+            continue
           }
 
-          // Preparar la imagen (si no viene, se usa fallback temático)
+          // 🛡️ Filtro de Nicho y Relevancia Institucional
+          if (!isNicheRelevant(item.title, item.description || '')) {
+            continue
+          }
+
+          // 🛡️ Deep Scraping del cuerpo del artículo completo
+          let fullContent = await fetchArticleFullBody(item.link, headers)
+          if (!fullContent || fullContent.length < 350) {
+            // Si la descripción original del feed es suficientemente sustantiva (>=350c), usarla; de lo contrario DESCARTAR
+            if (item.description && item.description.length >= 350) {
+              fullContent = item.description
+            } else {
+              // Cero noticias incompletas o mutiladas
+              continue
+            }
+          }
+
+          // Resumen editorial limpio cortado a nivel de palabra completa
+          const summary = createCleanSummary(fullContent || item.description, 260)
+
+          // Asignación de categoría experta
+          let category = feed.category === 'FINANZAS' ? 'ECONOMÍA' : 'MAGALLANES ACTUAL'
+          const normCombined = `${titleNorm} ${normalizeTitle(summary)}`
+          if (normCombined.includes('sii') || normCombined.includes('tribut') || normCombined.includes('impuesto') || normCombined.includes('legal') || normCombined.includes('laboral')) {
+            category = 'SII / LEGAL'
+          } else if (normCombined.includes('dolar') || normCombined.includes('dólar') || normCombined.includes('uf') || normCombined.includes('banco central') || normCombined.includes('inflacion') || normCombined.includes('ipc')) {
+            category = 'ECONOMÍA'
+          }
+
           const finalImage = item.imageUrl || getFallbackImage(item.title, feed.category)
-          
-          // Crear resumen a partir de la descripción (limitar a 300 caracteres)
-          const rawDesc = item.description || ''
 
-          // 🛡️ FILTRO ESTRICTO DE CALIDAD:
-          // Rechazar si contiene tokens Base64 de Google News, HTML residual o longitud insuficiente
-          if (
-            rawDesc.includes('CBMi') || 
-            rawDesc.includes('news.google.com') ||
-            rawDesc.includes('<font') ||
-            rawDesc.includes('<a href') ||
-            rawDesc.length < 180
-          ) {
-            continue // Descartar sin contaminar la base de datos
+          // 🛡️ Validación Runtime Zod 100%
+          const candidate = {
+            title: item.title,
+            slug: itemSlug,
+            category,
+            content: fullContent,
+            summary,
+            image_url: finalImage,
+            source_url: item.link,
+            source_name: feed.name,
+            normalized_title: titleNorm,
+            published_at: item.pubDate,
+            is_featured: false // Cero secuestro arbitrario de Portada Hero
           }
 
-          // Asegurar que el resumen no termine con puntos suspensivos que rompan la constraint
-          let summary = rawDesc.length > 280 ? rawDesc.substring(0, 275) : rawDesc
-          summary = summary.replace(/\.{2,}$/, '').replace(/…$/, '').trim()
-          if (!summary.endsWith('.')) {
-            summary += '.'
+          const parsed = RegionalNewsInsertSchema.safeParse(candidate)
+          if (!parsed.success) {
+            console.warn(`[Sync News] Candidato rechazado por Zod schema: ${item.title}`, parsed.error.flatten())
+            continue
           }
 
-          // Insertar la noticia limpia
           const { error: insertError } = await supabase
             .from('regional_news')
-            .insert({
-              title: item.title,
-              slug: itemSlug,
-              category: feed.category,
-              content: rawDesc,
-              summary: summary,
-              image_url: finalImage,
-              source_url: item.link,
-              source_name: feed.name,
-              normalized_title: titleNorm,
-              published_at: item.pubDate,
-              is_featured: addedCount < 2 // Marcar las primeras noticias añadidas como destacadas
-            })
+            .insert(parsed.data)
 
           if (!insertError) {
             addedCount++
@@ -407,6 +484,7 @@ export async function syncNewsAction() {
   // Si se agregaron noticias, revalidar las rutas del frontend
   if (addedCount > 0) {
     revalidatePath('/')
+    revalidatePath('/noticias')
   }
 
   return { success: errores.length === 0, addedCount, errores }

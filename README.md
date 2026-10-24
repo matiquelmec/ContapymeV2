@@ -41,7 +41,7 @@
 4. **💼 ContaEmpleos Magallanes (`/empleos` y `/publicar-empleo`):** Bolsa laboral regional de autoservicio (Self-Serve) con auditoría bajo el **Art. 2° del Código del Trabajo**, cálculo de sueldo líquido y cobros con Mercado Pago.
 5. **🎨 Generador Publicitario Co-Branding con IA:** Cuantización cromática de marcas y generación determinista de piezas en formato **Post 1:1** e **Historia 9:16**.
 6. **📰 Diario Regional & Media Kit Publicitario (`/noticias`, `/anunciar` y `/dashboard/publicidad`):**
-   * Portal de noticias regionales de Punta Arenas, Puerto Natales, Porvenir y Cabo de Hornos con ingesta continua y deduplicación.
+   * Portal de noticias de Magallanes con ingesta continua, deep scraping, validación Zod runtime y filtro estricto de nicho económico/regional.
    * **Mega Banner Header**, Banner en Calculadora y Banner Lateral con **Carrusel Inteligente (6s)** y pausa en hover.
    * **Control de Capacidad (Máx 5 marcas)** con badges dinámicos de escasez.
    * **Subida de Archivos con Compresión WebP en el navegador** (-80% peso).
@@ -74,7 +74,7 @@
 | **Generación Documental** | Python-Docx, jsPDF, ReportLab | Emisión de escritos legales Word del SII, liquidaciones PDF y certificados laborales. |
 | **Pasarela de Pagos** | Mercado Pago Checkout Pro + Webhooks HMAC | Cobros automatizados en empleos, publirreportajes, banners y suscripciones ERP. |
 | **Compresión & Media** | HTML5 Canvas Client-Side, WebP Image Compressor | Reducción de 70%-90% de peso de imágenes antes de subir a Storage. |
-| **Test Suite** | Pytest (**312 tests aprobados al 100%**) + Next.js Typecheck | Cobertura integral de cálculo tributario, RLS, DTE, WhatsApp, defensa SII y empleos. |
+| **Test Suite** | Pytest (**312 tests aprobados**) + Next.js Typecheck & Node (**45 tests aprobados**) | Cobertura integral de cálculo tributario, RLS, DTE, WhatsApp, defensa SII, calidad de noticias y empleos. |
 
 ---
 

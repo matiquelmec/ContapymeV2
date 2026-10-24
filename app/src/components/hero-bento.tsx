@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { Indicator } from '@/lib/types/dashboard'
 import { createClient } from '@/lib/supabase/client'
-import { syncAllDataAction } from '@/actions/indicators'
+import { syncIndicatorsAction } from '@/actions/indicators'
 import { toast } from 'sonner'
 
 interface HeroBentoGridProps {
@@ -41,14 +41,14 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
   const handleManualSync = async () => {
     if (syncing) return
     setSyncing(true)
-    const toastId = toast.loading('Sincronizando indicadores y diario regional...')
+    const toastId = toast.loading('Sincronizando indicadores económicos...')
     
     try {
-      const res = await syncAllDataAction()
+      const res = await syncIndicatorsAction()
       if (res.success) {
-        toast.success('Datos actualizados en tiempo real', { id: toastId })
+        toast.success('Indicadores económicos actualizados en tiempo real', { id: toastId })
       } else {
-        toast.error('Actualización parcial. Se encontraron algunos errores.', { id: toastId })
+        toast.error('Actualización parcial de indicadores.', { id: toastId })
       }
     } catch (err: any) {
       toast.error(`Error al sincronizar: ${err.message}`, { id: toastId })

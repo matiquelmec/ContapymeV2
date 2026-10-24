@@ -349,3 +349,20 @@
   - Frontend: 37 pruebas pasando al 100%. Backend: 26 pruebas de integración y seguridad pasando al 100%.
   - Comprobación Sensorial en Viewport Móvil (390px) y Desktop certificando 0 overflow horizontal y touch targets ergonómicos.
 
+### FASE 26: Saneamiento Forense del Pipeline de Noticias & Blindaje de Sincronización en Market Pulse — **COMPLETADO** (Octubre 2026)
+* [x] **Auditoría Forense de Causa Raíz:**
+  - **Desacoplamiento de Responsabilidades en Market Pulse:** El botón de refresco en la barra *"Market Pulse Magallanes"* (`UF`, `Dólar`, `UTM`) ejecutaba indebidamente `syncAllDataAction()`, invocando en cascada el scraper RSS y sobreescribiendo noticias en portada. Corregido para invocar exclusivamente `syncIndicatorsAction()`.
+  - **Identificación de Snippets Defectuosos en DB:** Detección de 19 artículos contaminantes con contenidos incompletos (<380 caracteres) y resúmenes mutilados a mitad de palabra por la heurística anacrónica `substring(0, 275)` (ej: `"Apesar de q."`, `"José Igna."`, `"en busca de las sem."`).
+* [x] **Blindaje del Ingestor de Noticias y Gobernanza Zod Runtime:**
+  - Módulo `app/src/lib/news/news-quality.ts` con truncado inteligente a nivel de palabra completa (`createCleanSummary`), garantizando cortes léxicos limpios con elipsis.
+  - Filtro estricto de nicho temático (`isNicheRelevant`): rechazo taxativo de deportes, crónica roja/policial cotidiana y sucesos domésticos irrelevantes; exigencia obligatoria de palabras clave económicas, laborales, tributarias e institucionales de Magallanes.
+  - Deep scraping en Node.js (`fetchArticleFullBody`) extrayendo párrafos editoriales completos y exigiendo un umbral de sustancia mínima de $\ge 350$ caracteres.
+  - Validación runtime 100% con Zod mediante `RegionalNewsInsertSchema`.
+  - Priorización arquitectónica de delegación a la API de IA en FastAPI (`/api/v1/news/sync`) cuando el motor esté activo.
+  - Eliminación del marcado arbitrario `is_featured: addedCount < 2`, protegiendo el algoritmo editorial contra secuestro de portada.
+* [x] **Saneamiento de Base de Datos y Suite de Pruebas:**
+  - Purga certificada de los 19 registros defectuosos en Supabase `regional_news`.
+  - Nueva suite de pruebas unitarias `app/src/actions/__tests__/news-sync-quality.test.ts` (100% verde).
+  - Verificación limpia de TypeScript (`npm run typecheck`, 0 errores) y suite frontend completa (45 pruebas aprobadas).
+
+

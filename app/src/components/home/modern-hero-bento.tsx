@@ -15,7 +15,7 @@ import {
 import { AustralWeatherWidget } from "./austral-weather-widget";
 import { QuickSalarySlider } from "./quick-salary-slider";
 import { createClient } from "@/lib/supabase/client";
-import { syncAllDataAction } from "@/actions/indicators";
+import { syncIndicatorsAction } from "@/actions/indicators";
 import { toast } from "sonner";
 import type { Indicator } from "@/lib/types/dashboard";
 
@@ -104,11 +104,11 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
     setSyncing(true);
     const toastId = toast.loading("Actualizando indicadores económicos en vivo...");
     try {
-      const res = await syncAllDataAction();
+      const res = await syncIndicatorsAction();
       if (res.success) {
         toast.success("Indicadores económicos actualizados", { id: toastId });
       } else {
-        toast.error("Actualización parcial", { id: toastId });
+        toast.error("Actualización parcial de indicadores", { id: toastId });
       }
     } catch (err: any) {
       toast.error(`Error: ${err.message}`, { id: toastId });
