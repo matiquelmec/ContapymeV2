@@ -360,9 +360,12 @@
   - Validación runtime 100% con Zod mediante `RegionalNewsInsertSchema`.
   - Priorización arquitectónica de delegación a la API de IA en FastAPI (`/api/v1/news/sync`) cuando el motor esté activo.
   - Eliminación del marcado arbitrario `is_featured: addedCount < 2`, protegiendo el algoritmo editorial contra secuestro de portada.
+* [x] **Retiro de Gatillo Manual en Market Pulse a favor de Suscripción Pasiva Realtime:**
+  - Supresión definitiva del botón de recarga manual `🔄` en los componentes de portada (`modern-hero-bento.tsx` y `hero-bento.tsx`), previniendo saturación de endpoints externos (Yahoo Finance / mindicador.cl) y ejecuciones accidentales no autorizadas por usuarios anónimos.
+  - Adopción de arquitectura pasiva 100% reactiva mediante Supabase Realtime (`channel("modern_bento_indicators")`): los indicadores económicos se actualizan automáticamente en background con destellos sutiles de cambio de estado (`updatedCodes`) y un badge institucional *"Realtime / En vivo"*.
 * [x] **Saneamiento de Base de Datos y Suite de Pruebas:**
   - Purga certificada de los 19 registros defectuosos en Supabase `regional_news`.
   - Nueva suite de pruebas unitarias `app/src/actions/__tests__/news-sync-quality.test.ts` (100% verde).
-  - Verificación limpia de TypeScript (`npm run typecheck`, 0 errores) y suite frontend completa (45 pruebas aprobadas).
+  - Verificación limpia de TypeScript (`npm run typecheck`, 0 errores), suite frontend completa (45 pruebas aprobadas) y suite Python en `engine` (5 pruebas aprobadas).
 
 

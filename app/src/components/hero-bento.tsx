@@ -13,13 +13,10 @@ import {
   Compass, 
   ArrowUpRight, 
   Radio, 
-  Activity,
-  RefreshCw 
+  Activity
 } from 'lucide-react'
 import { Indicator } from '@/lib/types/dashboard'
 import { createClient } from '@/lib/supabase/client'
-import { syncIndicatorsAction } from '@/actions/indicators'
-import { toast } from 'sonner'
 
 interface HeroBentoGridProps {
   indicators: Indicator[]
@@ -36,26 +33,7 @@ interface WeatherData {
 }
 
 export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps) {
-  const [syncing, setSyncing] = useState(false)
 
-  const handleManualSync = async () => {
-    if (syncing) return
-    setSyncing(true)
-    const toastId = toast.loading('Sincronizando indicadores económicos...')
-    
-    try {
-      const res = await syncIndicatorsAction()
-      if (res.success) {
-        toast.success('Indicadores económicos actualizados en tiempo real', { id: toastId })
-      } else {
-        toast.error('Actualización parcial de indicadores.', { id: toastId })
-      }
-    } catch (err: any) {
-      toast.error(`Error al sincronizar: ${err.message}`, { id: toastId })
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   // Estado para el clima
   const [weather, setWeather] = useState<WeatherData>({
@@ -261,14 +239,10 @@ export function HeroBentoGrid({ indicators = [], news = [] }: HeroBentoGridProps
         <div>
           <div className="flex items-center justify-between">
             <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Indicadores</span>
-            <button
-              onClick={handleManualSync}
-              disabled={syncing}
-              className="text-primary hover:bg-primary/10 rounded-full p-1.5 transition-all disabled:opacity-50 shrink-0"
-              title="Actualizar datos en vivo"
-            >
-              <RefreshCw className={`h-3 w-3 ${syncing ? 'animate-spin' : 'opacity-65 hover:opacity-100'}`} />
-            </button>
+            <span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              En vivo
+            </span>
           </div>
           
           <div className="mt-4 space-y-3.5">

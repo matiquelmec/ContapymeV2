@@ -8,15 +8,12 @@ import {
   TrendingUp, 
   TrendingDown,
   Sparkles, 
-  RefreshCw,
   Clock,
   Radio
 } from "lucide-react";
 import { AustralWeatherWidget } from "./austral-weather-widget";
 import { QuickSalarySlider } from "./quick-salary-slider";
 import { createClient } from "@/lib/supabase/client";
-import { syncIndicatorsAction } from "@/actions/indicators";
-import { toast } from "sonner";
 import type { Indicator } from "@/lib/types/dashboard";
 
 interface NewsArticle {
@@ -41,7 +38,6 @@ interface ModernHeroBentoProps {
 export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoProps) {
   const [liveIndicators, setLiveIndicators] = useState<Indicator[]>(indicators);
   const [updatedCodes, setUpdatedCodes] = useState<Record<string, boolean>>({});
-  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     setLiveIndicators(indicators);
@@ -99,23 +95,6 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
     };
   }, []);
 
-  const handleManualSync = async () => {
-    if (syncing) return;
-    setSyncing(true);
-    const toastId = toast.loading("Actualizando indicadores económicos en vivo...");
-    try {
-      const res = await syncIndicatorsAction();
-      if (res.success) {
-        toast.success("Indicadores económicos actualizados", { id: toastId });
-      } else {
-        toast.error("Actualización parcial de indicadores", { id: toastId });
-      }
-    } catch (err: any) {
-      toast.error(`Error: ${err.message}`, { id: toastId });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const getIndicatorVal = (code: string) => {
     const ind = liveIndicators.find((i) => i.codigo === code);
@@ -256,15 +235,6 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
             <span className="text-muted-foreground text-[10px] mr-1.5 uppercase font-bold">UTM:</span>
             <span className="text-foreground tabular-nums font-mono">${getIndicatorVal("utm")}</span>
           </div>
-
-          <button
-            onClick={handleManualSync}
-            disabled={syncing}
-            className="p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-foreground/80 hover:text-primary transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
-            title="Sincronizar indicadores ahora"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-          </button>
         </div>
       </div>
     </div>
