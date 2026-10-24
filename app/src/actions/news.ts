@@ -13,8 +13,6 @@ import {
   RegionalNewsInsertSchema 
 } from '@/lib/news/news-quality'
 
-export { createCleanSummary, isNicheRelevant, RegionalNewsInsertSchema }
-
 let lastNewsSync = 0
 const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
 const NEWS_OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 // 4 horas de validez de noticias en DB
