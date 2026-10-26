@@ -89,7 +89,7 @@ export async function getSafeAuthenticatedOrgUser(
   organizationId: string,
   allowedRoles: OrganizationRole[] = ['owner', 'admin', 'accountant', 'member']
 ): Promise<GuardrailResult> {
-  const { createClient } = await import("../supabase/server.js");
+  const { createClient } = await import("../supabase/server");
   const supabase = await createClient();
   return getSafeAuthenticatedOrgUserWithClient(supabase as unknown as SupabaseAuthContext, organizationId, allowedRoles);
 }
