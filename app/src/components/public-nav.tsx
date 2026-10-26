@@ -34,7 +34,7 @@ export function PublicNav() {
     <div className="relative w-full min-w-0 max-w-full">
       <nav 
         aria-label="Navegación Principal"
-        className="flex items-center justify-start xl:justify-center gap-1 xl:gap-1.5 bg-muted/40 p-1 xl:p-1.5 rounded-full border border-border/60 backdrop-blur-xl overflow-x-auto w-full max-w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden whitespace-nowrap shadow-xs max-xl:[mask-image:linear-gradient(to_right,black_92%,transparent_100%)]"
+        className="flex items-center justify-start lg:justify-between gap-1 lg:gap-1 bg-muted/40 p-1 lg:p-1.5 rounded-full border border-border/60 backdrop-blur-xl overflow-x-auto lg:overflow-x-visible w-full max-w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden whitespace-nowrap shadow-xs max-lg:[mask-image:linear-gradient(to_right,black_92%,transparent_100%)]"
       >
         {tabs.map(tab => {
           const Icon = tab.icon
@@ -48,13 +48,13 @@ export function PublicNav() {
               ref={isActive ? activeTabRef : null}
               href={tab.href}
               prefetch={true}
-              className={`relative flex items-center justify-center gap-1.5 text-[10px] xl:text-[10.5px] font-black uppercase tracking-wider xl:tracking-widest px-3.5 xl:px-3.5 2xl:px-4 min-h-[40px] lg:min-h-[38px] rounded-full transition-all duration-300 shrink-0 select-none ${
+              className={`relative flex items-center justify-center gap-1.5 lg:gap-1 xl:gap-1.5 text-[10px] lg:text-[9.5px] xl:text-[10px] font-black uppercase tracking-wider lg:tracking-wide xl:tracking-wider px-3.5 lg:px-2.5 xl:px-3.5 min-h-[40px] lg:min-h-[38px] rounded-full transition-all duration-300 shrink-0 lg:shrink select-none ${
                 isActive
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]'
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/70 active:scale-95'
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+              <Icon className={`h-3.5 w-3.5 lg:h-3 lg:w-3 xl:h-3.5 xl:w-3.5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
               <span>{tab.label}</span>
             </Link>
           )

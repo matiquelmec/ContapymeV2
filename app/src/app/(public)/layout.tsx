@@ -30,9 +30,9 @@ export default async function PublicLayout({
 
       {/* ===== HEADER / NAVBAR CON TABS (ARQUITECTURA ANTI-DESBORDE) ===== */}
       <header className="sticky top-0 lg:top-11 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl overflow-x-clip" suppressHydrationWarning>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 max-w-full" suppressHydrationWarning>
-          {/* Fila 1: Identidad de Marca, Navegación Ultra-Wide (2xl) y Acceso Clientes */}
-          <div className="flex h-14 sm:h-16 2xl:h-20 items-center justify-between gap-3 sm:gap-4 min-w-0">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 max-w-full" suppressHydrationWarning>
+          {/* Fila 1: Identidad de Marca, Insignia Regional y Acceso Clientes */}
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-3 sm:gap-4 min-w-0">
             <Link href="/" className="flex items-center gap-3 group transition-transform duration-300 shrink-0">
               <Image
                 src="/logo-contapyme.png"
@@ -44,14 +44,9 @@ export default async function PublicLayout({
               />
             </Link>
 
-            {/* En pantallas Ultra-Wide (2xl >= 1536px) la navegación va en la misma fila con min-w-0 */}
-            <div className="hidden 2xl:block flex-1 min-w-0 px-2">
-              <PublicNav />
-            </div>
-
             <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-              {/* Indicador de Edición Regional visible en Desktop mediano (lg/xl) donde la nav baja a la Fila 2 */}
-              <div className="hidden lg:flex 2xl:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/60 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {/* Indicador de Edición Regional visible en Desktop */}
+              <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-muted/50 border border-border/60 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Edición Magallanes & Antártica Chilena</span>
               </div>
@@ -72,8 +67,8 @@ export default async function PublicLayout({
             </div>
           </div>
 
-          {/* Fila 2: Barra de Navegación Editorial Completa (Visible en Móvil, Tablet y Laptops/Monitores hasta 1535px para cero desborde) */}
-          <div className="block 2xl:hidden pb-2.5 pt-1.5 border-t border-border/40 min-w-0">
+          {/* Fila 2: Barra de Navegación Editorial Completa al 100% del ancho útil en todas las pantallas (cero desborde garantizado) */}
+          <div className="block pb-2.5 pt-1.5 border-t border-border/40 min-w-0">
             <PublicNav />
           </div>
         </div>
