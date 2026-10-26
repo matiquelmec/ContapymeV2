@@ -7,22 +7,47 @@ import traceback
 import urllib.parse
 import asyncio
 import io
-from PIL import Image
+from PIL import Image, ImageFilter, ImageEnhance, ImageOps
 from core.database import get_supabase
 
 logger = logging.getLogger("contapyme.images")
 
-# 📸 Constantes de Fotoperiodismo Editorial 2026
+# 📸 Constantes de Fotoperiodismo Editorial 2026 (Estándar Reuters / AFP / Leica Full-Frame)
 EDITORIAL_PHOTOJOURNALISM_STYLE = (
-    "authentic documentary press photo, editorial photojournalism, shot on 35mm lens at f/2.8, "
-    "natural overcast Magallanes daylight, realistic Chilean regional context, 16:9 cinematic aspect ratio, "
-    "high resolution, crisp details, natural skin textures, award-winning editorial journalism photography"
+    "authentic editorial press photography, shot on Leica SL2-S 35mm f/2.8 lens, ISO 400, "
+    "natural subpolar Magallanes daylight, authentic Chilean Patagonia architecture and environment, "
+    "subtle Kodak Portra 400 film grain, unretouched documentary realism, crisp optical micro-contrast, "
+    "no close-up faces, no readable text or signage, 16:9 widescreen composition"
 )
 
 EDITORIAL_NEGATIVE_PROMPT = (
     "cartoon, 3d render, CGI, illustration, drawing, painting, anime, video game, "
     "plastic smooth skin, fake studio lighting, oversaturated neon, distorted anatomy, blurry, low resolution, watermark"
 )
+
+# Perfiles ópticos contextuales por categoría para maximizar realismo sin artefactos de IA
+CATEGORY_OPTICAL_PROFILES = {
+    "SII / LEGAL": (
+        "architectural wide-angle shot of modern Chilean institutional stone and glass building facade, "
+        "overcast austral sky, wet pavement reflections, formal documentary atmosphere, no text on signs"
+    ),
+    "ECONOMÍA": (
+        "cinematic wide documentary shot of commercial port, cargo containers and industrial activity in Strait of Magellan, "
+        "cold steel and ocean tones, natural overcast lighting, shot on 35mm lens"
+    ),
+    "FINANZAS": (
+        "minimalist high-end corporate office interior overlooking misty southern ocean bay, "
+        "architectural glass, natural northern window light, shallow depth of field, documentary style"
+    ),
+    "INVERSIONES": (
+        "wide aerial-perspective documentary photo of wind turbines, energy infrastructure and maritime logistics in Patagonia, "
+        "dramatic sub-antarctic clouds, golden hour horizon, crisp optical clarity"
+    ),
+    "MAGALLANES ACTUAL": (
+        "authentic street-level documentary photograph in Punta Arenas Chile, colorful corrugated metal roofs, "
+        "brick heritage buildings, Strait of Magellan in background, crisp cold air, natural daylight"
+    ),
+}
 
 # 📚 Biblioteca Ampliada de Stock Editorial 16:9 de Magallanes y Patagonia (40+ URLs Únicas)
 FALLBACK_POOLS = {
@@ -77,13 +102,17 @@ FALLBACK_POOLS = {
     ]
 }
 
-def _sanitize_visual_prompt(prompt: str) -> str:
-    """Sanitiza el prompt eliminando caracteres de control, saltos de línea peligrosos o inyecciones."""
+def _sanitize_visual_prompt(prompt: str, category: str = "") -> str:
+    """Sanitiza y enriquece el prompt con dirección de arte óptica anti-artefactos IA."""
     if not prompt:
-        return "Noticia de actualidad en Magallanes y la Patagonia Chilena"
+        prompt = "Documentary press scene in Punta Arenas, Magallanes and Chilean Patagonia"
     cleaned = prompt.replace("\n", " ").replace("\r", " ").replace("\t", " ")
     cleaned = " ".join(cleaned.split())
-    return cleaned[:400]
+    cat_key = (category or "").upper().strip()
+    optical_addon = CATEGORY_OPTICAL_PROFILES.get(cat_key, "")
+    if optical_addon and len(cleaned) < 280:
+        cleaned = f"{cleaned}, {optical_addon}"
+    return cleaned[:480]
 
 def _validate_image_bytes(content: bytes) -> tuple[bool, str]:
     """Inspecciona las cabeceras binarias (Magic Numbers) para asegurar que sea una imagen válida."""
@@ -99,16 +128,57 @@ def _validate_image_bytes(content: bytes) -> tuple[bool, str]:
     
     return False, "Formato binario no reconocido"
 
-def _optimize_to_webp(content: bytes, max_width: int = 1280, quality: int = 85) -> bytes:
-    """Convierte y optimiza cualquier buffer de imagen a formato WebP ligero (<150KB)."""
+def _apply_editorial_optical_grade(image: Image.Image, target_width: int = 1536, target_height: int = 864) -> Image.Image:
+    """
+    Revelado Digital Editorial (Anti-AI Look):
+    1. Encuadre inteligente 16:9 (ImageOps.fit con Lanczos) sin deformar proporciones.
+    2. Desaturación sutil (-6%) para eliminar colores neón/sintéticos típicos de IA.
+    3. Micro-contraste (+5%) para profundidad de rango dinámico tipo prensa (Reuters/AFP).
+    4. Máscara de enfoque óptica (UnsharpMask) que elimina la suavidad plástica ('AI softness').
+    """
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+
+    current_ratio = image.width / max(image.height, 1)
+    target_ratio = target_width / target_height
+    if abs(current_ratio - target_ratio) > 0.05:
+        crop_w = min(image.width, target_width)
+        crop_h = int(crop_w / target_ratio)
+        if crop_h > image.height:
+            crop_h = image.height
+            crop_w = int(crop_h * target_ratio)
+        if crop_w > 0 and crop_h > 0:
+            image = ImageOps.fit(image, (crop_w, crop_h), method=Image.Resampling.LANCZOS, centering=(0.5, 0.45))
+
+    if image.width > target_width:
+        new_height = int(image.height * (target_width / image.width))
+        image = image.resize((target_width, new_height), Image.Resampling.LANCZOS)
+
+    # Colorimetría editorial sobria (-6% saturación cromática)
+    image = ImageEnhance.Color(image).enhance(0.94)
+    # Micro-contraste óptico (+5%)
+    image = ImageEnhance.Contrast(image).enhance(1.05)
+    # Nitidez de lente prime (UnsharpMask calibrado)
+    image = image.filter(ImageFilter.UnsharpMask(radius=1.3, percent=125, threshold=3))
+    return image
+
+def _optimize_to_webp(
+    content: bytes,
+    max_width: int = 1536,
+    quality: int = 90,
+    apply_optical_grade: bool = True
+) -> bytes:
+    """Convierte, revela ópticamente y optimiza el buffer de imagen a formato WebP HD."""
     try:
         image = Image.open(io.BytesIO(content))
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-        
-        if image.width > max_width:
-            new_height = int(image.height * (max_width / image.width))
-            image = image.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        if apply_optical_grade:
+            image = _apply_editorial_optical_grade(image, target_width=max_width, target_height=int(max_width * 9 / 16))
+        else:
+            if image.mode in ("RGBA", "P"):
+                image = image.convert("RGB")
+            if image.width > max_width:
+                new_height = int(image.height * (max_width / image.width))
+                image = image.resize((max_width, new_height), Image.Resampling.LANCZOS)
         
         output = io.BytesIO()
         image.save(output, format="WEBP", quality=quality, method=6)
@@ -117,13 +187,21 @@ def _optimize_to_webp(content: bytes, max_width: int = 1280, quality: int = 85) 
         logger.warning(f"[Images] No se pudo optimizar a WebP ({e}). Usando buffer original.")
         return content
 
-async def generate_and_upload_image(prompt: str, news_id: str = None, exclude_urls: list[str] = None) -> str:
+async def generate_and_upload_image(
+    prompt: str,
+    news_id: str = None,
+    exclude_urls: list[str] = None,
+    category: str = ""
+) -> str:
     """
-    Genera imagen con motor multi-capa (Google Imagen 3 -> Pollinations FLUX.1 -> SDXL Turbo)
-    con proporción nativa 16:9 y compresión WebP en el servidor.
+    Genera imagen con motor multi-capa de alta definición:
+    1. Google Imagen 3 / 4 (si existe GOOGLE_API_KEY / GEMINI_API_KEY).
+    2. Hugging Face Serverless Free Tier (`black-forest-labs/FLUX.1-dev` 28 pasos reales, si existe HF_TOKEN).
+    3. Pollinations `flux-realism` / `flux` HD (`1536x864`, `enhance=false` para preservar prompt técnico Leica).
+    4. Pollinations SDXL Turbo con revelado óptico Pillow.
     """
     try:
-        clean_prompt = _sanitize_visual_prompt(prompt)
+        clean_prompt = _sanitize_visual_prompt(prompt, category=category)
         full_prompt = f"{clean_prompt}, {EDITORIAL_PHOTOJOURNALISM_STYLE}"
         encoded_prompt = urllib.parse.quote(full_prompt)
         
@@ -152,45 +230,67 @@ async def generate_and_upload_image(prompt: str, news_id: str = None, exclude_ur
                             import base64
                             img_bytes = base64.b64decode(predictions[0]["bytesBase64Encoded"])
                             logger.info("[Images] ✅ Éxito con Google Imagen 3!")
-                            webp_bytes = _optimize_to_webp(img_bytes, max_width=1280)
+                            webp_bytes = _optimize_to_webp(img_bytes, max_width=1536, quality=90)
                             return await _upload_to_supabase(webp_bytes, "imagen3")
-                    logger.warning(f"[Images] Google Imagen 3 falló (status={resp.status_code}). Pasando a FLUX.1...")
+                    logger.warning(f"[Images] Google Imagen 3 falló (status={resp.status_code}). Pasando a siguiente motor...")
                 except Exception as ie:
-                    logger.warning(f"[Images] Google Imagen 3 no disponible ({ie}). Pasando a FLUX.1...")
+                    logger.warning(f"[Images] Google Imagen 3 no disponible ({ie}). Pasando a siguiente motor...")
 
-            # ─── MOTOR 2: Pollinations FLUX.1 [schnell] (16:9 Nativo - 1280x720) con Reintentos y Backoff ───
-            max_retries = 3
-            for attempt in range(1, max_retries + 1):
-                seed = random.randint(1, 999999)
+            # ─── MOTOR 2: Hugging Face Serverless Inference Free (`FLUX.1-dev` 28-step / `FLUX.1-schnell`) ───
+            hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+            if hf_token:
+                for hf_model in ("black-forest-labs/FLUX.1-dev", "black-forest-labs/FLUX.1-schnell"):
+                    try:
+                        logger.info(f"[Images] Intentando generar con Hugging Face ({hf_model})...")
+                        hf_url = f"https://api-inference.huggingface.co/models/{hf_model}"
+                        hf_headers = {"Authorization": f"Bearer {hf_token}"}
+                        hf_payload = {
+                            "inputs": full_prompt,
+                            "parameters": {"width": 1344, "height": 768, "num_inference_steps": 28 if "dev" in hf_model else 4}
+                        }
+                        hf_resp = await client.post(hf_url, json=hf_payload, headers=hf_headers, timeout=35.0)
+                        if hf_resp.status_code == 200:
+                            valid, _ = _validate_image_bytes(hf_resp.content)
+                            if valid:
+                                logger.info(f"[Images] ✅ Éxito con Hugging Face {hf_model}!")
+                                webp_bytes = _optimize_to_webp(hf_resp.content, max_width=1536, quality=90)
+                                return await _upload_to_supabase(webp_bytes, "fluxdev")
+                    except Exception as hfe:
+                        logger.warning(f"[Images] Hugging Face ({hf_model}) no disponible: {hfe}")
+
+            # ─── MOTOR 3: Pollinations FLUX Realism / FLUX HD (16:9 Full HD 1536x864 + Revelado Óptico) ───
+            pollinations_models = ["flux-realism", "flux", "flux"]
+            for attempt, model_name in enumerate(pollinations_models, start=1):
+                seed = random.randint(10000, 999999)
                 try:
-                    logger.info(f"[Images] Generando con Pollinations FLUX.1 16:9 (Intento {attempt}/{max_retries})...")
+                    logger.info(f"[Images] Generando con Pollinations {model_name} HD 1536x864 (Intento {attempt}/{len(pollinations_models)})...")
                     gen_url = (
                         f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-                        f"?width=1280&height=720&seed={seed}&model=flux&nologo=true"
+                        f"?width=1536&height=864&seed={seed}&model={model_name}&nologo=true&enhance=false&safe=true"
                     )
-                    response = await client.get(gen_url, timeout=30.0)
+                    response = await client.get(gen_url, timeout=35.0)
                     content_type = response.headers.get("content-type", "")
                     
                     if response.status_code == 200 and content_type.startswith("image/"):
-                        valid, mime = _validate_image_bytes(response.content)
+                        valid, _ = _validate_image_bytes(response.content)
                         if valid:
-                            logger.info(f"[Images] ✅ Éxito con Pollinations FLUX.1 en intento {attempt}!")
-                            webp_bytes = _optimize_to_webp(response.content, max_width=1280)
-                            return await _upload_to_supabase(webp_bytes, "flux")
+                            logger.info(f"[Images] ✅ Éxito con Pollinations {model_name} HD en intento {attempt}!")
+                            webp_bytes = _optimize_to_webp(response.content, max_width=1536, quality=90)
+                            return await _upload_to_supabase(webp_bytes, "fluxhd")
                     elif response.status_code == 429:
-                        logger.warning(f"[Images] Pollinations FLUX.1 Rate Limit (429) en intento {attempt}. Pausando...")
+                        logger.warning(f"[Images] Pollinations Rate Limit (429) en intento {attempt}. Pausando...")
                         await asyncio.sleep(attempt * 2)
                     else:
-                        logger.warning(f"[Images] FLUX.1 intento {attempt} status={response.status_code}")
+                        logger.warning(f"[Images] Pollinations {model_name} intento {attempt} status={response.status_code}")
                 except Exception as pe:
-                    logger.warning(f"[Images] FLUX.1 intento {attempt} fallo: {pe}")
+                    logger.warning(f"[Images] Pollinations {model_name} intento {attempt} fallo: {pe}")
                 
-                if attempt < max_retries:
+                if attempt < len(pollinations_models):
                     await asyncio.sleep(2)
             
-            # ─── MOTOR 3: Pollinations SDXL Turbo (Respaldo 16:9 Ultrarrápido) ───
+            # ─── MOTOR 4: Pollinations SDXL Turbo (Respaldo 16:9 con Revelado Óptico) ───
             try:
-                logger.info("[Images] Recurriendo a Motor 3 (SDXL Turbo 16:9)...")
+                logger.info("[Images] Recurriendo a Motor 4 (SDXL Turbo 16:9)...")
                 seed = random.randint(1, 999999)
                 turbo_url = (
                     f"https://image.pollinations.ai/prompt/{encoded_prompt}"
@@ -201,10 +301,10 @@ async def generate_and_upload_image(prompt: str, news_id: str = None, exclude_ur
                     valid, _ = _validate_image_bytes(response.content)
                     if valid:
                         logger.info("[Images] ✅ Éxito con Pollinations SDXL Turbo!")
-                        webp_bytes = _optimize_to_webp(response.content, max_width=1280)
+                        webp_bytes = _optimize_to_webp(response.content, max_width=1536, quality=90)
                         return await _upload_to_supabase(webp_bytes, "turbo")
             except Exception as te:
-                logger.warning(f"[Images] Motor 3 (Turbo) no disponible: {te}")
+                logger.warning(f"[Images] Motor 4 (Turbo) no disponible: {te}")
 
     except Exception as ex:
         logger.error(f"[Images] Fallo general en generador de imágenes: {ex}")
@@ -220,16 +320,42 @@ async def _upload_to_supabase(content: bytes, prefix: str) -> str:
         logger.error(f"[Images] Error al subir a Supabase Storage: {e}")
         return None
 
-async def download_and_upload_image(image_url: str) -> str:
-    if not image_url or not image_url.startswith("http"): return None
+async def download_and_upload_image(image_url: str, min_width: int = 0, min_height: int = 0) -> str:
+    """
+    Descarga una imagen externa (ej. og:image de prensa o logo de marca), verifica que cumpla
+    dimensiones mínimas si se especifican, aplica revelado óptico editorial y la sube en WebP HD.
+    """
+    if not image_url or not image_url.startswith("http"):
+        return None
+    lower_url = image_url.lower()
+    if any(b in lower_url for b in ("placeholder", "default-share", "avatar", "favicon.ico", "logo-default", "1x1", "pixel")):
+        return None
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+        }
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, headers=headers) as client:
             response = await client.get(image_url)
             if response.status_code == 200:
                 valid, _ = _validate_image_bytes(response.content)
                 if valid:
-                    prefix = "brand" if ("clearbit" in image_url or "google.com/s2/favicons" in image_url) else "stock"
-                    webp_bytes = _optimize_to_webp(response.content, max_width=1280)
+                    is_brand_logo = "clearbit" in lower_url or "google.com/s2/favicons" in lower_url
+                    if min_width > 0 or min_height > 0:
+                        try:
+                            img_check = Image.open(io.BytesIO(response.content))
+                            if img_check.width < min_width or img_check.height < min_height:
+                                logger.info(f"[Images] Imagen descartada por baja resolución ({img_check.width}x{img_check.height} < {min_width}x{min_height}): {image_url}")
+                                return None
+                        except Exception:
+                            return None
+                    prefix = "brand" if is_brand_logo else "presshd"
+                    webp_bytes = _optimize_to_webp(
+                        response.content,
+                        max_width=1536,
+                        quality=90,
+                        apply_optical_grade=not is_brand_logo
+                    )
                     return await _upload_to_supabase(webp_bytes, prefix)
             else:
                 logger.warning(f"[Images] Fallo al descargar de {image_url}: status={response.status_code}")

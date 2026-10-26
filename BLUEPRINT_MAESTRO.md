@@ -383,5 +383,15 @@
   - Eliminación en Supabase (`regional_news`) de los registros anacrónicos detectados (`8c844e64-65fd-44de-8fe4-d5899117b697` de Operación Renta abril 2026 y `435c3c09-9fc6-46ca-affb-395fe4c0001b` de Corrida de Garzones septiembre 2026).
   - Ampliación de pruebas unitarias en `app/src/actions/__tests__/news-sync-quality.test.ts` (51 pruebas aprobadas en frontend) y `tests/test_news_editorial_audit.py`.
 
+### FASE 28: Pipeline de Fotoperiodismo HD ($0 Costo) con Extracción `og:image`, `FLUX.1-dev` / `flux-realism` y Revelado Óptico Pillow — **COMPLETADO** (Octubre 2026)
+* [x] **Prioridad 1 a la Fotografía Periodística Real (`og:image` Deep Scraper):**
+  - Implementación de `_extract_og_image_from_html` en `engine/workers/news_worker.py` para capturar la foto de prensa original del medio (`og:image` / `twitter:image`).
+  - Validación de resolución mínima ($\ge 750\times 400\text{px}$) en `download_and_upload_image`, priorizando la foto real del suceso sobre imágenes sintéticas.
+* [x] **Cascada de Generación IA Gratuita de Alta Definición (`1536x864` 16:9):**
+  - Integración de **Hugging Face Serverless Free Tier (`black-forest-labs/FLUX.1-dev` de 28 pasos)** y **Pollinations `flux-realism` HD (`1536x864`, `enhance=false`)** con perfiles ópticos contextuales por categoría (`CATEGORY_OPTICAL_PROFILES` en `engine/core/images.py`) y reglas estrictas anti-artefactos en `engine/core/ai.py` (cero primeros planos de rostros/manos y cero letreros con texto).
+* [x] **Revelado Digital Óptico en Servidor (`_apply_editorial_optical_grade`):**
+  - Encuadre inteligente 16:9 con `ImageOps.fit` (`LANCZOS`), desaturación editorial (-6% color) para eliminar tonos sintéticos, micro-contraste (+5%) y nitidez de lente prime (`ImageFilter.UnsharpMask(radius=1.3, percent=125, threshold=3)`), exportando a WebP HD (`quality=90`).
+
+
 
 

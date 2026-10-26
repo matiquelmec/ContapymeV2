@@ -16,9 +16,11 @@ from workers.news_worker import (
     _extract_semantic_keywords,
     _extract_date_from_url,
     _extract_date_from_html_meta,
+    _extract_og_image_from_html,
     _has_anachronistic_content,
     _validate_and_resolve_article_date
 )
+from core.images import _optimize_to_webp, _sanitize_visual_prompt
 from core.ai import process_news_with_local_llm
 
 class TestNewsEditorialAudit(unittest.TestCase):
@@ -148,6 +150,30 @@ class TestNewsEditorialAudit(unittest.TestCase):
         )
         self.assertFalse(is_fresh_no_date)
         self.assertIsNone(dt_no_date)
+
+    def test_09_hd_optical_image_pipeline_and_og_image_extractor(self):
+        """9. Pipeline Visual HD: Extracción de og:image y revelado óptico WebP 16:9"""
+        import io
+        from PIL import Image
+        html_with_og = '<head><meta property="og:image" content="https://laprensaaustral.cl/wp-content/uploads/2026/10/puerto-punta-arenas-hd.jpg"></head>'
+        og_url = _extract_og_image_from_html(html_with_og)
+        self.assertEqual(og_url, "https://laprensaaustral.cl/wp-content/uploads/2026/10/puerto-punta-arenas-hd.jpg")
+
+        # Ignorar logos de Google News
+        html_google = '<head><meta property="og:image" content="https://lh3.googleusercontent.com/logo.png"></head>'
+        self.assertIsNone(_extract_og_image_from_html(html_google))
+
+        # Verificar que el revelado óptico genere un WebP 16:9 válido y enriquecido por categoría
+        prompt_enriched = _sanitize_visual_prompt("Container ship at Punta Arenas port", category="ECONOMÍA")
+        self.assertIn("Strait of Magellan", prompt_enriched)
+
+        raw_img = Image.new("RGB", (1600, 1200), color=(60, 90, 120))
+        buf = io.BytesIO()
+        raw_img.save(buf, format="JPEG", quality=95)
+        webp_out = _optimize_to_webp(buf.getvalue(), max_width=1536, quality=90, apply_optical_grade=True)
+        out_img = Image.open(io.BytesIO(webp_out))
+        self.assertEqual(out_img.format, "WEBP")
+        self.assertEqual(out_img.size, (1536, 864))
 
 if __name__ == '__main__':
     unittest.main()

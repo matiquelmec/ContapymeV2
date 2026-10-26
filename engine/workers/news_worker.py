@@ -248,6 +248,27 @@ def _extract_date_from_html_meta(raw_html: str) -> datetime | None:
     # Retornar la fecha más antigua (conservadora) encontrada en los metadatos de publicación
     return min(candidates)
 
+def _extract_og_image_from_html(raw_html: str) -> str | None:
+    """
+    Extrae la fotografía periodística oficial de alta resolución desde <meta property="og:image">
+    o <meta name="twitter:image"> del artículo original.
+    """
+    if not raw_html:
+        return None
+    head_sample = raw_html[:60000]
+    patterns = [
+        r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image|twitter:image:src)["\'][^>]+content=["\'](https?://[^"\']+)["\']',
+        r'<meta[^>]+content=["\'](https?://[^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image|twitter:image:src)["\']',
+    ]
+    for pat in patterns:
+        m = re.search(pat, head_sample, flags=re.IGNORECASE)
+        if m:
+            img_url = m.group(1).strip()
+            # Descartar placeholders o logos genéricos de Google News
+            if not any(bad in img_url.lower() for bad in ("google.com", "gstatic.com", "placeholder", "logo", "favicon", "avatar")):
+                return img_url
+    return None
+
 def _has_anachronistic_content(title: str, content: str, now_utc: datetime | None = None) -> tuple[bool, str]:
     """
     Escudo Semántico Anti-Anacronismo:
@@ -357,7 +378,7 @@ def _slugify(text: str) -> str:
 
 async def _fetch_full_content(url: str, client: httpx.AsyncClient, return_meta: bool = False):
     """Extrae el texto completo de una noticia visitando su URL con decodificación resiliente.
-    Si return_meta=True, retorna (cleaned_text, html_meta_dt, final_url).
+    Si return_meta=True, retorna (cleaned_text, html_meta_dt, final_url, og_image_url).
     """
     try:
         resp = await client.get(url, timeout=15.0, follow_redirects=True)
@@ -372,15 +393,16 @@ async def _fetch_full_content(url: str, client: httpx.AsyncClient, return_meta: 
             except Exception:
                 text_content = resp.text
             meta_dt = _extract_date_from_html_meta(text_content)
+            og_img = _extract_og_image_from_html(text_content)
             final_url = str(resp.url) if resp.url else url
             cleaned = _clean_html(text_content)
             if return_meta:
-                return cleaned, meta_dt, final_url
+                return cleaned, meta_dt, final_url, og_img
             return cleaned
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener contenido completo de {url}: {e}")
     if return_meta:
-        return "", None, url
+        return "", None, url, None
     return ""
 
 async def _fetch_from_magallanes_rss():
@@ -407,9 +429,10 @@ async def _fetch_from_magallanes_rss():
                         pub_date_el = item.find('pubDate')
                         pub_date = pub_date_el.text if pub_date_el is not None else None
                         
-                        # Deep Scraping: Intentar obtener el contenido real y metadatos de fecha del artículo
+                        # Deep Scraping: Intentar obtener el contenido real, metadatos de fecha y og:image del artículo
                         full_content = ""
                         html_meta_dt = None
+                        og_img = None
                         if link:
                             # Decodificar URL si es enlace de Google News
                             if "news.google.com" in link:
@@ -419,28 +442,28 @@ async def _fetch_from_magallanes_rss():
                                     if decoded_data.get("status") and decoded_data.get("decoded_url"):
                                         real_url = decoded_data["decoded_url"]
                                         logger.info(f"[News Worker] 🚀 URL Real decodificada: {real_url}")
-                                        full_content, html_meta_dt, final_url = await _fetch_full_content(real_url, client, return_meta=True)
+                                        full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(real_url, client, return_meta=True)
                                         # Actualizar link para guardar la fuente original resuelta
                                         link = final_url or real_url
                                     else:
-                                        full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                        full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(link, client, return_meta=True)
                                         if final_url and "news.google.com" not in final_url:
                                             link = final_url
                                 except Exception as dec_err:
                                     logger.warning(f"[News Worker] ⚠️ Error al decodificar URL de Google News: {dec_err}")
-                                    full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                    full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(link, client, return_meta=True)
                                     if final_url and "news.google.com" not in final_url:
                                         link = final_url
                             else:
                                 logger.info(f"[News Worker] 🔍 Deep Scraping habilitado para: {link}")
-                                full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(link, client, return_meta=True)
                                 if final_url:
                                     link = final_url
                         
                         news.append({
                             "headline": title.strip() if title else "Sin Título",
                             "content": full_content if len(full_content) > 100 else _clean_html(desc.strip()),
-                            "img": "/news-placeholder.png",
+                            "img": og_img or "/news-placeholder.png",
                             "link": link,
                             "source_name": source["name"],
                             "source_type": source.get("type", "regional"),
@@ -627,33 +650,36 @@ async def _fetch_and_process_news():
             continue
 
         try:
-            # Prioridad 1: Logotipo de Marca si aplica (Clearbit Scrapper)
+            category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
             image_url = None
-            brand_name = ai_data.get("brand_name")
-            if brand_name:
-                logger.info(f"[News Worker] Encontrada marca '{brand_name}' en la noticia. Buscando logo oficial...")
-                brand_logo_url = await fetch_brand_logo_url(brand_name)
-                if brand_logo_url:
-                    image_url = await download_and_upload_image(brand_logo_url)
-                    if image_url:
-                        logger.info(f"[News Worker] Exito descargando logo oficial de la marca: {image_url}")
-            
-            # Prioridad 2: Estilo Artístico (IA) - Si no hay marca o falló el logo
+
+            # Prioridad 1: Fotografía Periodística Real (og:image HD >= 750x400) con Revelado Óptico Editorial
+            original_img = raw_news.get("img")
+            if original_img and not original_img.startswith("/") and original_img not in used_images_in_cycle:
+                logger.info(f"[News Worker] 📸 Verificando fotografía periodística real HD (og:image): {original_img}")
+                image_url = await download_and_upload_image(original_img, min_width=750, min_height=400)
+                if image_url:
+                    logger.info(f"[News Worker] ✅ Fotografía periodística real HD revelada y subida: {image_url}")
+
+            # Prioridad 2: Generación Fotoperiodística HD con IA (FLUX.1-dev / flux-realism 1536x864 + Revelado Óptico)
             if not image_url or "placeholder" in image_url:
                 if ai_data.get("visual_prompt"):
-                    logger.info(f"[News Worker] Generando ESTILO ARTÍSTICO para: {ai_data['title']}")
-                    image_url = await generate_and_upload_image(ai_data["visual_prompt"])
-            
-            # Prioridad 3: Imagen Original (RSS) - Si la IA falla
+                    logger.info(f"[News Worker] 🎨 Generando Fotoperiodismo HD IA para: {ai_data['title']}")
+                    image_url = await generate_and_upload_image(ai_data["visual_prompt"], category=category)
+
+            # Prioridad 3: Logotipo de Marca si aplica (Clearbit Scrapper)
             if not image_url or "placeholder" in image_url:
-                original_img = raw_news.get("img")
-                if original_img and not original_img.startswith("/"):
-                    logger.info(f"[News Worker] Usando imagen original del RSS.")
-                    image_url = await download_and_upload_image(original_img)
+                brand_name = ai_data.get("brand_name")
+                if brand_name:
+                    logger.info(f"[News Worker] Encontrada marca '{brand_name}' en la noticia. Buscando logo oficial...")
+                    brand_logo_url = await fetch_brand_logo_url(brand_name)
+                    if brand_logo_url:
+                        image_url = await download_and_upload_image(brand_logo_url)
+                        if image_url:
+                            logger.info(f"[News Worker] Éxito descargando logo oficial de la marca: {image_url}")
             
-            # Prioridad 4: Stock Profesional con Anti-Colisión (Ahora asíncrono y seguro)
+            # Prioridad 4: Stock Profesional con Anti-Colisión (Asíncrono y seguro)
             if not image_url or "placeholder" in image_url:
-                category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
                 image_url = await get_category_fallback_url(category, ai_data.get("title", ""), exclude_urls=list(used_images_in_cycle))
                 logger.info(f"[News Worker] Usando stock seguro en Supabase para: {category}")
 
