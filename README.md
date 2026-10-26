@@ -41,7 +41,8 @@
 4. **💼 ContaEmpleos Magallanes (`/empleos` y `/publicar-empleo`):** Bolsa laboral regional de autoservicio (Self-Serve) con auditoría bajo el **Art. 2° del Código del Trabajo**, cálculo de sueldo líquido y cobros con Mercado Pago.
 5. **🎨 Generador Publicitario Co-Branding con IA:** Cuantización cromática de marcas y generación determinista de piezas en formato **Post 1:1** e **Historia 9:16**.
 6. **📰 Diario Regional & Media Kit Publicitario (`/noticias`, `/anunciar` y `/dashboard/publicidad`):**
-   * Portal de noticias de Magallanes con ingesta continua, deep scraping, validación Zod runtime y filtro estricto de nicho económico/regional.
+   * Portal de noticias de Magallanes con ingesta continua, deep scraping, validación Zod runtime, escudo temporal multicapa anti-anacronismos y pipeline de fotoperiodismo HD ($0 costo) con revelado óptico WebP.
+   * **Arquitectura Editorial Anti-Desborde (`PublicNav`):** Header adaptativo de doble nivel en laptops/tablets y fila única en monitores Ultra-Wide ($\ge 1536\text{px}$), con auto-centrado y ergonomía táctil WCAG 2.2 ($\ge 44\text{px}$).
    * **Mega Banner Header**, Banner en Calculadora y Banner Lateral con **Carrusel Inteligente (6s)** y pausa en hover.
    * **Control de Capacidad (Máx 5 marcas)** con badges dinámicos de escasez.
    * **Subida de Archivos con Compresión WebP en el navegador** (-80% peso).

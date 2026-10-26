@@ -28,37 +28,43 @@ export default async function PublicLayout({
       {/* ===== TICKER SUPERIOR DE INDICADORES ===== */}
       <MarketTicker indicators={indicators} />
 
-      {/* ===== HEADER / NAVBAR CON TABS ===== */}
-      <header className="sticky top-11 z-50 w-full border-b border-border bg-background/85 backdrop-blur-xl" suppressHydrationWarning>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-12" suppressHydrationWarning>
-          {/* Fila 1: Logo prominente y Botón de Acción */}
-          <div className="flex h-16 sm:h-20 items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-4 group transition-transform duration-300">
+      {/* ===== HEADER / NAVBAR CON TABS (ARQUITECTURA ANTI-DESBORDE) ===== */}
+      <header className="sticky top-0 lg:top-11 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl overflow-x-clip" suppressHydrationWarning>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 max-w-full" suppressHydrationWarning>
+          {/* Fila 1: Identidad de Marca, Navegación Ultra-Wide (2xl) y Acceso Clientes */}
+          <div className="flex h-14 sm:h-16 2xl:h-20 items-center justify-between gap-3 sm:gap-4 min-w-0">
+            <Link href="/" className="flex items-center gap-3 group transition-transform duration-300 shrink-0">
               <Image
                 src="/logo-contapyme.png"
                 alt="Contapymepuq Logo"
                 width={180}
                 height={50}
                 priority
-                className="h-auto w-[140px] sm:w-[170px] md:w-[200px] drop-shadow-sm shrink-0"
+                className="h-auto w-[130px] sm:w-[160px] md:w-[180px] drop-shadow-sm shrink-0"
               />
             </Link>
 
-            {/* En Desktop la navegación va al centro */}
-            <div className="hidden lg:block">
+            {/* En pantallas Ultra-Wide (2xl >= 1536px) la navegación va en la misma fila con min-w-0 */}
+            <div className="hidden 2xl:block flex-1 min-w-0 px-2">
               <PublicNav />
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+              {/* Indicador de Edición Regional visible en Desktop mediano (lg/xl) donde la nav baja a la Fila 2 */}
+              <div className="hidden lg:flex 2xl:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/60 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Edición Magallanes & Antártica Chilena</span>
+              </div>
+
               {session ? (
                 <Link href="/dashboard">
-                  <Button className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-4 sm:px-8 rounded-full h-9 sm:h-11">
-                    <LayoutDashboard className="mr-1.5 sm:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Panel de Control</span><span className="xs:hidden">Panel</span>
+                  <Button className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-4 sm:px-7 rounded-full h-10 sm:h-11 whitespace-nowrap">
+                    <LayoutDashboard className="mr-1.5 sm:mr-2 h-3.5 w-3.5" /> <span className="hidden xs:inline">Panel de Control</span><span className="xs:hidden">Panel</span>
                   </Button>
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-5 sm:px-10 rounded-full h-9 sm:h-11 whitespace-nowrap">
+                  <Button className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/20 transition-all px-4 sm:px-8 rounded-full h-10 sm:h-11 whitespace-nowrap">
                     Acceso Clientes
                   </Button>
                 </Link>
@@ -66,8 +72,8 @@ export default async function PublicLayout({
             </div>
           </div>
 
-          {/* Fila 2: Sub-Barra de Navegación Móvil (Solo visible en móviles/tablets) */}
-          <div className="block lg:hidden pb-3 border-t border-border/40 pt-2">
+          {/* Fila 2: Barra de Navegación Editorial Completa (Visible en Móvil, Tablet y Laptops/Monitores hasta 1535px para cero desborde) */}
+          <div className="block 2xl:hidden pb-2.5 pt-1.5 border-t border-border/40 min-w-0">
             <PublicNav />
           </div>
         </div>

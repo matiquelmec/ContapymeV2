@@ -110,7 +110,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
     }
   }, [indicators])
 
-  if (!mounted) return <div className="h-11 bg-background border-b border-border" />
+  if (!mounted) return <div className="h-9 lg:h-11 bg-background border-b border-border" />
 
   const getVal = (code: string, decimals = 2) => {
     const ind = liveIndicators.find(i => i.codigo === code)
@@ -147,17 +147,17 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
 
 
   return (
-    <div className="w-full bg-background/60 border-b border-border/50 h-11 flex items-center overflow-hidden sticky top-0 z-[60] backdrop-blur-2xl">
-      <div className="absolute left-0 top-0 h-full w-32 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
+    <div className="w-full bg-background/60 border-b border-border/50 h-9 lg:h-11 flex items-center overflow-hidden relative lg:sticky lg:top-0 z-[60] backdrop-blur-2xl">
+      <div className="absolute left-0 top-0 h-full w-16 sm:w-32 bg-gradient-to-r from-background via-background/80 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 h-full w-16 sm:w-32 bg-gradient-to-l from-background via-background/80 to-transparent z-10 pointer-events-none" />
       
-      <div className="flex animate-marquee whitespace-nowrap hover:[animation-play-state:paused]">
+      <div className="flex animate-marquee whitespace-nowrap hover:[animation-play-state:paused] motion-reduce:[animation-play-state:paused]">
         {tickerItems.map((item, idx) => {
           const isUpdated = item.code && updatedCodes[item.code];
           return (
             <div 
               key={idx} 
-              className={`flex items-center gap-3 px-10 border-r border-border/40 last:border-0 h-full transition-all duration-500 cursor-default ${
+              className={`flex items-center gap-2.5 sm:gap-3 px-6 sm:px-10 border-r border-border/40 last:border-0 h-full transition-all duration-500 cursor-default ${
                 isUpdated 
                   ? 'bg-emerald-500/10 text-emerald-400 scale-105 font-bold' 
                   : 'hover:bg-primary/[0.02]'
@@ -165,7 +165,7 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
             >
               <item.icon className={`w-3.5 h-3.5 ${item.color} opacity-70 group-hover:opacity-100 transition-opacity shrink-0`} />
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/50">{item.label}</span>
-              <span className={`text-sm font-black tracking-tight tabular-nums transition-colors duration-500 ${
+              <span className={`text-xs sm:text-sm font-black tracking-tight tabular-nums transition-colors duration-500 ${
                 isUpdated ? 'text-emerald-500 animate-pulse' : 'text-foreground/80'
               }`}>
                 {item.value}
@@ -182,6 +182,11 @@ export function MarketTicker({ indicators = [] }: { indicators: Indicator[] }) {
         }
         .animate-marquee {
           animation: marquee 50s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-marquee {
+            animation-play-state: paused !important;
+          }
         }
       `}</style>
     </div>

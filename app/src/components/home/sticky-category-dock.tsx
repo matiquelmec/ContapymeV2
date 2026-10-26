@@ -93,7 +93,7 @@ export function StickyCategoryDock({ activeCategory = "TODAS", onSelectCategory 
                   key={cat.id}
                   onClick={() => handleAction(cat)}
                   aria-label={`Ir a ${cat.label}`}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 min-h-[40px] rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isSelected
                       ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.02]"
                       : cat.id === "CALCULADORA"

@@ -118,6 +118,8 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
                 <img
                   src={heroNews.image_url || "/news-placeholder.png"}
                   alt={heroNews.title}
+                  fetchPriority="high"
+                  decoding="async"
                   className="object-cover transition-transform duration-1000 group-hover:scale-[1.04] w-full h-full absolute inset-0"
                 />
                 {/* Gradiente Cinematográfico Oscuro */}
@@ -173,10 +175,10 @@ export function ModernHeroBento({ heroNews, indicators = [] }: ModernHeroBentoPr
                     <Link
                       href={`/noticias/${heroNews.slug}`}
                       scroll={false}
-                      className="text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-lg"
+                      className="text-[10px] font-black uppercase tracking-wider px-4 py-2 min-h-[40px] rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-lg"
                     >
                       <span>Leer Noticia</span>
-                      <ArrowRight className="h-3 w-3" />
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
                 </div>

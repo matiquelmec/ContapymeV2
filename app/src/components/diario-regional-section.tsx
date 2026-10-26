@@ -246,14 +246,14 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 space-y-12" suppressHydrationWarning>
         {/* Cabecera Principal */}
-        <div className="flex flex-col md:flex-row items-end justify-between gap-8" suppressHydrationWarning>
-            <div className="space-y-4 relative">
-               <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse" />
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 lg:gap-8" suppressHydrationWarning>
+            <div className="space-y-4 relative min-w-0">
+               <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 blur-[120px] rounded-full -z-10 animate-pulse pointer-events-none" />
                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.35em] text-primary/80 italic">
                  <span className="w-8 h-[1px] bg-primary/50" />
-                 <Landmark className="h-3 w-3 animate-pulse text-primary" /> Diario & Portal Económico de la Patagonia
+                 <Landmark className="h-3 w-3 animate-pulse text-primary shrink-0" /> Diario & Portal Económico de la Patagonia
                </div>
-               <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground">
+               <h2 className="text-3xl sm:text-5xl xl:text-6xl font-black tracking-tighter uppercase leading-[0.95] sm:leading-[0.9] italic text-foreground">
                  Diario Regional <br />
                  <span className="text-primary italic font-serif">de Magallanes</span> <span className="text-muted-foreground/40">& Finanzas Australes.</span>
                </h2>
@@ -261,24 +261,24 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                  Información estratégica para emprendedores, empresas y la comunidad de Magallanes. El pulso diario de nuestra economía, inversiones regionales y actualidad global.
                </p>
             </div>
-             <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-                <Link href="/calculadora" className="flex-1 sm:flex-initial">
-                  <Button className="w-full text-xs font-black uppercase tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-11 px-6 transition-all active:scale-95">
+             <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0">
+                <Link href="/calculadora" className="w-full sm:w-auto">
+                  <Button className="w-full text-[11px] xl:text-xs font-black uppercase tracking-wider xl:tracking-widest bg-primary text-primary-foreground hover:shadow-xl hover:shadow-primary/20 rounded-2xl h-11 px-4 xl:px-6 transition-all active:scale-95">
                     Calculadora
                   </Button>
                 </Link>
-                <Link href="/empleos" className="flex-1 sm:flex-initial">
-                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-2xl h-11 px-6 transition-all">
+                <Link href="/empleos" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full text-[11px] xl:text-xs font-black uppercase tracking-wider xl:tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-2xl h-11 px-4 xl:px-6 transition-all">
                     Empleos
                   </Button>
                 </Link>
-                <Link href="/noticias" className="flex-1 sm:flex-initial">
-                  <Button variant="outline" className="w-full text-xs font-black uppercase tracking-widest border-border text-muted-foreground hover:bg-muted rounded-2xl h-11 px-6 transition-all">
+                <Link href="/noticias" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full text-[11px] xl:text-xs font-black uppercase tracking-wider xl:tracking-widest border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-2xl h-11 px-4 xl:px-6 transition-all">
                     Hemeroteca
                   </Button>
                 </Link>
-                <Link href="/anunciar" className="flex-1 sm:flex-initial">
-                  <Button variant="ghost" className="w-full text-xs font-black uppercase tracking-widest border border-dashed border-border text-muted-foreground hover:bg-muted rounded-2xl h-11 px-6 transition-all">
+                <Link href="/anunciar" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full text-[11px] xl:text-xs font-black uppercase tracking-wider xl:tracking-widest border-dashed border-primary/35 text-foreground/80 hover:text-primary hover:border-primary/60 hover:bg-primary/5 rounded-2xl h-11 px-4 xl:px-6 transition-all">
                     Anuncia
                   </Button>
                 </Link>
@@ -316,7 +316,7 @@ export function DiarioRegionalSection({ initialNews, indicators = [] }: DiarioRe
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                    className={`px-3.5 py-2 min-h-[38px] rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
                       selectedCategory === cat.id
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground hover:text-foreground"

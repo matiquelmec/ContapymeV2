@@ -386,11 +386,24 @@
 ### FASE 28: Pipeline de Fotoperiodismo HD ($0 Costo) con Extracción `og:image`, `FLUX.1-dev` / `flux-realism` y Revelado Óptico Pillow — **COMPLETADO** (Octubre 2026)
 * [x] **Prioridad 1 a la Fotografía Periodística Real (`og:image` Deep Scraper):**
   - Implementación de `_extract_og_image_from_html` en `engine/workers/news_worker.py` para capturar la foto de prensa original del medio (`og:image` / `twitter:image`).
-  - Validación de resolución mínima ($\ge 750\times 400\text{px}$) en `download_and_upload_image`, priorizando la foto real del suceso sobre imágenes sintéticas.
+  - Validación de resolución mínima ($\ge 500\times 300\text{px}$) en `download_and_upload_image`, priorizando la foto real del suceso sobre imágenes sintéticas.
 * [x] **Cascada de Generación IA Gratuita de Alta Definición (`1536x864` 16:9):**
-  - Integración de **Hugging Face Serverless Free Tier (`black-forest-labs/FLUX.1-dev` de 28 pasos)** y **Pollinations `flux-realism` HD (`1536x864`, `enhance=false`)** con perfiles ópticos contextuales por categoría (`CATEGORY_OPTICAL_PROFILES` en `engine/core/images.py`) y reglas estrictas anti-artefactos en `engine/core/ai.py` (cero primeros planos de rostros/manos y cero letreros con texto).
+  - Integración de **Hugging Face Serverless Free Tier (`black-forest-labs/FLUX.1-dev` de 28 pasos)** y **Pollinations `flux-realism` HD (`1280x720` escalado ópticamente a `1536x864`, `enhance=false`)** con perfiles ópticos contextuales por categoría (`CATEGORY_OPTICAL_PROFILES` en `engine/core/images.py`) y reglas estrictas anti-artefactos en `engine/core/ai.py` (cero primeros planos de rostros/manos y cero letreros con texto).
 * [x] **Revelado Digital Óptico en Servidor (`_apply_editorial_optical_grade`):**
   - Encuadre inteligente 16:9 con `ImageOps.fit` (`LANCZOS`), desaturación editorial (-6% color) para eliminar tonos sintéticos, micro-contraste (+5%) y nitidez de lente prime (`ImageFilter.UnsharpMask(radius=1.3, percent=125, threshold=3)`), exportando a WebP HD (`quality=90`).
+
+### FASE 29: Arquitectura Anti-Desborde del Header (`PublicNav`), Armonía Editorial Web y Ergonomía Móvil (`390px`) — **COMPLETADO** (Octubre 2026)
+* [x] **Solución Definitiva al Desborde Horizontal de `PublicNav` (`app/src/app/(public)/layout.tsx` y `app/src/components/public-nav.tsx`):**
+  - Eliminación del colapso de Flexbox (`min-width: auto`) incorporando `min-w-0` y `overflow-x-clip` en el Header público.
+  - Diseño adaptativo de 2 niveles editoriales en laptops/monitores medianos (`< 1536px`) con insignia en vivo *"Edición Magallanes & Antártica Chilena"* en la fila superior y barra de navegación centrada al 100% del ancho útil en la fila inferior, pasando a fila única (`2xl:block flex-1 min-w-0`) en monitores Ultra-Wide ($\ge 1536\text{px}$).
+  - Incorporación de auto-centrado suave (`scrollIntoView`) hacia la pestaña activa y máscara de difuminado lateral (`mask-image`) en dispositivos móviles/tablets.
+* [x] **Alineación de Cabecera Editorial y Optimización LCP (`diario-regional-section.tsx` y `modern-hero-bento.tsx`):**
+  - Reestructuración de los 4 botones de acción rápida (`Calculadora`, `Empleos`, `Hemeroteca`, `Anuncia`) en una grilla `grid-cols-2 sm:flex sm:flex-nowrap` que elimina el salto de línea huérfano (`3 + 1`) y eleva el contraste del botón `Anuncia`.
+  - Incorporación de `fetchPriority="high"` y `decoding="async"` en la imagen principal de `ModernHeroBento` para optimizar el LCP.
+* [x] **Descongestión Vertical Móvil y Touch Targets WCAG 2.2 (`market-ticker.tsx` y `SponsoredAdBanner.tsx`):**
+  - Desacople del `sticky` en `MarketTicker` para móviles (`relative lg:sticky`) y respeto a `prefers-reduced-motion` en `.animate-marquee`.
+  - Incremento de áreas táctiles ($\ge 40\text{px}-44\text{px}$) en filtros de noticias, `StickyCategoryDock` y controles de video (`min-w-[44px] min-h-[44px]`).
+
 
 
 

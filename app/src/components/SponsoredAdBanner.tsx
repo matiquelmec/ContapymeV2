@@ -145,7 +145,7 @@ export function SponsoredAdBanner({ className = '' }: SponsoredAdBannerProps) {
                     type="button"
                     onClick={togglePlay}
                     aria-label={isPlaying ? 'Pausar video' : 'Reproducir video'}
-                    className="p-2 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
+                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
                   >
                     {isPlaying ? (
                       <Pause className="w-4 h-4" />
@@ -163,7 +163,7 @@ export function SponsoredAdBanner({ className = '' }: SponsoredAdBannerProps) {
                   type="button"
                   onClick={toggleMute}
                   aria-label={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
-                  className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
+                  className="absolute bottom-3 right-3 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white transition-all transform hover:scale-105 border border-white/20 cursor-pointer"
                 >
                   {isMuted ? (
                     <VolumeX className="w-4 h-4 text-slate-300" />
