@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { 
   createCleanSummary, 
   isNicheRelevant, 
-  RegionalNewsInsertSchema 
+  RegionalNewsInsertSchema,
+  extractDateFromUrl,
+  extractDateFromHtmlMeta,
+  hasAnachronisticContent,
+  resolveAndValidateArticleFreshness,
+  isStoredArticleTimely
 } from "../../lib/news/news-quality.ts";
 
 describe("News Sync Quality & Hardened Crawler Suite", () => {
@@ -101,6 +106,106 @@ describe("News Sync Quality & Hardened Crawler Suite", () => {
 
       const result = RegionalNewsInsertSchema.safeParse(candidate);
       assert.equal(result.success, true);
+    });
+
+    test("rechaza en Zod Runtime noticias donde source_url tiene fecha antigua de abril aunque published_at sea de octubre (Caso Pauta Operación Renta)", () => {
+      const masqueradedCandidate = {
+        title: "Más de un millón de contribuyentes presentaron su declaración",
+        slug: "mas-de-un-millon-de-contribuyentes-presentaron-su-declaracion",
+        category: "SII / LEGAL",
+        content: "Este viernes 9 de abril concluye el primer plazo de la Operación Renta 2026 para que más de un millón de contribuyentes reciban su devolución anticipada de impuestos el próximo 29 de abril mediante depósito bancario directo en sus cuentas registradas ante la Tesorería General de la República y el Servicio de Impuestos Internos.",
+        summary: "Más de un millón de contribuyentes presentaron su declaración en la Operación Renta para recibir devolución anticipada.",
+        image_url: "https://example.com/imagen.jpg",
+        source_url: "https://www.pauta.cl/economia/2026/04/09/operacion-renta-26-de-los-contribuyentes-recibiran-la-devolucion-anticipada.html",
+        source_name: "Diario Punta Arenas",
+        normalized_title: "mas de un millon de contribuyentes presentaron su declaracion",
+        published_at: "2026-10-24T21:50:24.423671+00:00",
+        is_featured: true
+      };
+
+      const result = RegionalNewsInsertSchema.safeParse(masqueradedCandidate);
+      assert.equal(result.success, false, "Zod debe bloquear artículos cuya URL o contenido sea de abril cuando published_at es octubre");
+    });
+  });
+
+  describe("4. Escudo Temporal Multicapa (Anti-Anacronismo & Oldest Date Wins)", () => {
+    test("extractDateFromUrl detecta fechas exactas (/YYYY/MM/DD/) y mensuales (/YYYY/MM/)", () => {
+      const d1 = extractDateFromUrl("https://www.pauta.cl/economia/2026/04/09/operacion-renta.html");
+      assert.ok(d1);
+      assert.equal(d1.precision, "day");
+      assert.equal(d1.date.toISOString().slice(0, 10), "2026-04-09");
+
+      const d2 = extractDateFromUrl("https://www.ovejeronoticias.cl/2026/06/seis-proyectos-municipales/");
+      assert.ok(d2);
+      assert.equal(d2.precision, "month");
+      assert.equal(d2.date.toISOString().slice(0, 7), "2026-06");
+    });
+
+    test("extractDateFromHtmlMeta extrae article:published_time y JSON-LD datePublished", () => {
+      const sampleHtml = `
+        <html>
+          <head>
+            <meta property="article:published_time" content="2026-04-09T14:30:00Z" />
+          </head>
+          <body><p>Contenido</p></body>
+        </html>
+      `;
+      const metaDate = extractDateFromHtmlMeta(sampleHtml);
+      assert.ok(metaDate);
+      assert.equal(metaDate.toISOString().slice(0, 10), "2026-04-09");
+    });
+
+    test("resolveAndValidateArticleFreshness aplica Oldest Date Wins cuando Google News miente con pubDate de hoy", () => {
+      const octNow = new Date("2026-10-25T15:00:00Z");
+      const check = resolveAndValidateArticleFreshness({
+        title: "Más de un millón de contribuyentes presentaron su declaración",
+        content: "Detalle de la Operación Renta en curso.",
+        pubDate: "Sat, 24 Oct 2026 21:50:24 GMT", // Google News re-indexó hoy
+        sourceUrl: "https://www.pauta.cl/economia/2026/04/09/operacion-renta-26.html", // Pero URL es de abril
+        now: octNow
+      });
+      assert.equal(check.valid, false);
+      assert.ok(check.effectiveDate);
+      assert.equal(check.effectiveDate.toISOString().slice(0, 10), "2026-04-09");
+    });
+
+    test("resolveAndValidateArticleFreshness rechaza noticias sin fecha verificable (cero fallback a Date.now)", () => {
+      const check = resolveAndValidateArticleFreshness({
+        title: "Noticia sin fecha en RSS ni URL ni HTML",
+        content: "Texto de noticia regional en Punta Arenas.",
+        pubDate: null,
+        sourceUrl: "https://www.elpinguino.com/cronica/noticia-sin-fecha/",
+        htmlMetaDate: null
+      });
+      assert.equal(check.valid, false);
+      assert.equal(check.effectiveDate, null);
+    });
+
+    test("hasAnachronisticContent e isStoredArticleTimely bloquean Operación Renta y Fiestas Patrias en octubre", () => {
+      const octDate = new Date("2026-10-24T12:00:00Z");
+      const rentaCheck = hasAnachronisticContent(
+        "Más de un millón de contribuyentes presentaron su declaración",
+        "La devolución anticipada se pagará el 29 de abril.",
+        octDate
+      );
+      assert.equal(rentaCheck.anachronistic, true);
+
+      const garzonesCheck = hasAnachronisticContent(
+        "Municipalidad premia a ganadores de Corrida de Garzones 2026",
+        "El tradicional evento de Fiestas Patrias reunió a trabajadores gastronómicos.",
+        octDate
+      );
+      assert.equal(garzonesCheck.anachronistic, true);
+
+      assert.equal(
+        isStoredArticleTimely({
+          title: "Más de un millón de contribuyentes presentaron su declaración",
+          summary: "Operación Renta devolución anticipada",
+          source_url: "https://www.pauta.cl/economia/2026/04/09/operacion-renta.html",
+          published_at: "2026-10-24T21:50:24Z"
+        }),
+        false
+      );
     });
   });
 });

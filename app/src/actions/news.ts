@@ -10,8 +10,13 @@ import { notifyIndexNowForNews } from '@/lib/seo/indexing-service'
 import { 
   createCleanSummary, 
   isNicheRelevant, 
-  RegionalNewsInsertSchema 
+  RegionalNewsInsertSchema,
+  extractDateFromUrl,
+  extractDateFromHtmlMeta,
+  resolveAndValidateArticleFreshness,
+  isStoredArticleTimely
 } from '@/lib/news/news-quality'
+import { getSafeAuthenticatedOrgUser } from '@/lib/auth/guardrails'
 
 let lastNewsSync = 0
 const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
@@ -168,34 +173,16 @@ function parseRSS(xmlText: string): any[] {
     }
 
     if (title && link) {
-      // 1. Extraer fecha real desde la URL si existe (ej. /2026/04/09/...)
-      let parsedDate: Date | null = null;
-      const urlDateMatch = link.match(/\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//);
-      if (urlDateMatch) {
-        const y = parseInt(urlDateMatch[1], 10);
-        const m = parseInt(urlDateMatch[2], 10) - 1;
-        const d = parseInt(urlDateMatch[3], 10);
-        parsedDate = new Date(Date.UTC(y, m, d));
-      } else if (pubDate) {
-        const d = new Date(pubDate);
-        if (!isNaN(d.getTime())) {
-          parsedDate = d;
-        }
-      }
+      // 🛡️ Validación de Frescura Multicapa en RSS ("Oldest Date Wins" entre URL y pubDate, cero fallback a Date.now)
+      const freshness = resolveAndValidateArticleFreshness({
+        title: cleanHTML(title),
+        content: cleanHTML(description),
+        pubDate: pubDate || null,
+        sourceUrl: link.trim()
+      });
 
-      // 🛡️ Ventana estricta de frescura editorial (Máximo 5 días de antigüedad)
-      const now = Date.now();
-      const MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
-
-      if (parsedDate && !isNaN(parsedDate.getTime())) {
-        const ageMs = now - parsedDate.getTime();
-        // Descartar si es más vieja que 5 días o si está más de 24 horas en el futuro
-        if (ageMs > MAX_AGE_MS || ageMs < -24 * 60 * 60 * 1000) {
-          continue; // Descartar noticia obsoleta
-        }
-      } else {
-        // Cero fallbacks a la fecha actual: descartar sin fecha verificable
-        continue;
+      if (!freshness.valid || !freshness.effectiveDate) {
+        continue; // Descartar noticia obsoleta, anacrónica o sin fecha verificable
       }
 
       items.push({
@@ -203,7 +190,7 @@ function parseRSS(xmlText: string): any[] {
         link: link.trim(),
         description: cleanHTML(description),
         imageUrl: imageUrl.trim(),
-        pubDate: parsedDate.toISOString()
+        pubDate: freshness.effectiveDate.toISOString()
       })
     }
   }
@@ -245,12 +232,14 @@ export async function getRegionalNews() {
     }
 
     const rawNews = data || []
-    // 🛡️ Sanitización de encoding y caracteres corruptos en tiempo de ejecución
-    const news = rawNews.map((item) => ({
-      ...item,
-      title: (item.title || "").replace(/\uFFFD/g, "á"),
-      summary: (item.summary || "").replace(/\uFFFD/g, "á"),
-    }))
+    // 🛡️ Sanitización de encoding y Escudo en Tiempo de Lectura (Read-Time Temporal Shield)
+    const news = rawNews
+      .filter((item) => isStoredArticleTimely(item))
+      .map((item) => ({
+        ...item,
+        title: (item.title || "").replace(/\uFFFD/g, "á"),
+        summary: (item.summary || "").replace(/\uFFFD/g, "á"),
+      }))
 
     // Verificar si las noticias están desactualizadas
     let shouldSync = false
@@ -301,17 +290,22 @@ export async function getNewsBySlug(slug: string) {
 }
 
 /**
- * Deep Scraping en Node.js: extrae el cuerpo completo del artículo visitando la URL.
+ * Deep Scraping en Node.js: extrae el cuerpo completo del artículo y sus metadatos de fecha visitando la URL.
  */
-async function fetchArticleFullBody(url: string, headers: Record<string, string>): Promise<string> {
-  if (!url || !url.startsWith('http')) return ''
+async function fetchArticleFullBody(
+  url: string,
+  headers: Record<string, string>
+): Promise<{ body: string; htmlMetaDate: Date | null; finalUrl: string }> {
+  if (!url || !url.startsWith('http')) return { body: '', htmlMetaDate: null, finalUrl: url }
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 6000)
     const res = await fetch(url, { headers, signal: controller.signal, cache: 'no-store' })
     clearTimeout(timeout)
-    if (!res.ok) return ''
+    if (!res.ok) return { body: '', htmlMetaDate: null, finalUrl: url }
     const html = await res.text()
+    const htmlMetaDate = extractDateFromHtmlMeta(html)
+    const finalUrl = res.url || url
 
     // 1. Extraer párrafos editoriales <p>
     const pMatches = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi)
@@ -322,7 +316,7 @@ async function fetchArticleFullBody(url: string, headers: Record<string, string>
 
       const joined = cleanParagraphs.join('\n\n')
       if (joined.length >= 350) {
-        return joined
+        return { body: joined, htmlMetaDate, finalUrl }
       }
     }
 
@@ -332,13 +326,14 @@ async function fetchArticleFullBody(url: string, headers: Record<string, string>
     if (articleMatch) {
       const cleaned = cleanHTML(articleMatch[1] || articleMatch[0])
       if (cleaned.length >= 350) {
-        return cleaned
+        return { body: cleaned, htmlMetaDate, finalUrl }
       }
     }
+    return { body: '', htmlMetaDate, finalUrl }
   } catch {
     // Si falla el scraping, retornar vacío
   }
-  return ''
+  return { body: '', htmlMetaDate: null, finalUrl: url }
 }
 
 /**
@@ -409,8 +404,11 @@ export async function syncNewsAction() {
             continue
           }
 
-          // 🛡️ Deep Scraping del cuerpo del artículo completo
-          let fullContent = await fetchArticleFullBody(item.link, headers)
+          // 🛡️ Deep Scraping del cuerpo del artículo completo y metadatos HTML
+          const scraped = await fetchArticleFullBody(item.link, headers)
+          let fullContent = scraped.body
+          const resolvedUrl = scraped.finalUrl || item.link
+
           if (!fullContent || fullContent.length < 350) {
             // Si la descripción original del feed es suficientemente sustantiva (>=350c), usarla; de lo contrario DESCARTAR
             if (item.description && item.description.length >= 350) {
@@ -419,6 +417,19 @@ export async function syncNewsAction() {
               // Cero noticias incompletas o mutiladas
               continue
             }
+          }
+
+          // 🛡️ Segunda verificación de frescura post-scraping (incluye htmlMetaDate, URL final redirigida y contenido completo)
+          const postScrapeFreshness = resolveAndValidateArticleFreshness({
+            title: item.title,
+            content: fullContent,
+            pubDate: item.pubDate,
+            sourceUrl: resolvedUrl,
+            htmlMetaDate: scraped.htmlMetaDate
+          })
+          if (!postScrapeFreshness.valid || !postScrapeFreshness.effectiveDate) {
+            console.warn(`[Sync News] Rechazado por escudo temporal post-scraping (${postScrapeFreshness.reason}): ${item.title}`)
+            continue
           }
 
           // Resumen editorial limpio cortado a nivel de palabra completa
@@ -443,10 +454,10 @@ export async function syncNewsAction() {
             content: fullContent,
             summary,
             image_url: finalImage,
-            source_url: item.link,
+            source_url: resolvedUrl,
             source_name: feed.name,
             normalized_title: titleNorm,
-            published_at: item.pubDate,
+            published_at: postScrapeFreshness.effectiveDate.toISOString(),
             is_featured: false // Cero secuestro arbitrario de Portada Hero
           }
 
@@ -737,6 +748,17 @@ export async function uploadNewsImageAction(formData: FormData) {
   }
 }
 
+const CompanyNewsInputSchema = z.object({
+  title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
+  category: z.string().min(2),
+  content: z.string().min(20, 'El contenido es demasiado corto'),
+  summary: z.string().optional(),
+  image_url: z.string().optional(),
+  source_name: z.string().optional(),
+  source_url: z.string().optional(),
+  organizationId: z.string().optional()
+})
+
 /**
  * 🏢 Permite a una empresa u organización autenticada publicar un comunicado de prensa o noticia.
  */
@@ -748,12 +770,25 @@ export async function createCompanyNewsAction(newsData: {
   image_url?: string
   source_name?: string
   source_url?: string
+  organizationId?: string
 }) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { success: false, error: 'Debes iniciar sesión para publicar un comunicado.' }
+    const parsedInput = CompanyNewsInputSchema.safeParse(newsData)
+    if (!parsedInput.success) {
+      return { success: false, error: parsedInput.error.issues[0]?.message || 'Datos de comunicado inválidos.' }
+    }
+
+    if (newsData.organizationId) {
+      const guard = await getSafeAuthenticatedOrgUser(newsData.organizationId, ['owner', 'admin', 'accountant', 'member'])
+      if (!guard.success) {
+        return { success: false, error: guard.error }
+      }
+    } else {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: 'Debes iniciar sesión para publicar un comunicado.' }
+      }
     }
 
     const supabaseAdmin = createAdminClient()
@@ -805,8 +840,14 @@ export async function createCompanyNewsAction(newsData: {
 /**
  * 📰 Obtiene los comunicados y noticias de la empresa u organización conectada.
  */
-export async function getCompanyNewsAction() {
+export async function getCompanyNewsAction(organizationId?: string) {
   try {
+    if (organizationId) {
+      const guard = await getSafeAuthenticatedOrgUser(organizationId)
+      if (!guard.success) {
+        return { success: false, error: guard.error, data: [] }
+      }
+    }
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {

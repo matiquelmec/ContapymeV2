@@ -74,7 +74,7 @@
 | **Generación Documental** | Python-Docx, jsPDF, ReportLab | Emisión de escritos legales Word del SII, liquidaciones PDF y certificados laborales. |
 | **Pasarela de Pagos** | Mercado Pago Checkout Pro + Webhooks HMAC | Cobros automatizados en empleos, publirreportajes, banners y suscripciones ERP. |
 | **Compresión & Media** | HTML5 Canvas Client-Side, WebP Image Compressor | Reducción de 70%-90% de peso de imágenes antes de subir a Storage. |
-| **Test Suite** | Pytest (**312 tests aprobados**) + Next.js Typecheck & Node (**45 tests aprobados**) | Cobertura integral de cálculo tributario, RLS, DTE, WhatsApp, defensa SII, calidad de noticias y empleos. |
+| **Test Suite** | Pytest (**314+ tests aprobados**) + Next.js Typecheck & Node (**51 tests aprobados**) | Cobertura integral de cálculo tributario, RLS, DTE, WhatsApp, defensa SII, frescura temporal de noticias y empleos. |
 
 ---
 

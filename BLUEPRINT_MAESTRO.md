@@ -368,4 +368,20 @@
   - Nueva suite de pruebas unitarias `app/src/actions/__tests__/news-sync-quality.test.ts` (100% verde).
   - Verificación limpia de TypeScript (`npm run typecheck`, 0 errores), suite frontend completa (45 pruebas aprobadas) y suite Python en `engine` (5 pruebas aprobadas).
 
+### FASE 27: Escudo Temporal Multicapa Anti-Anacronismos ("Oldest Date Wins") & Purga de Noticias Desactualizadas — **COMPLETADO** (Octubre 2026)
+* [x] **Diagnóstico Forense de los 4 Vectores de Contaminación Temporal:**
+  1. **Re-indexación engañosa en Google News RSS (`pubDate` Masquerading):** Google News re-emite artículos antiguos (ej: nota de *Pauta* sobre Operación Renta del `2026/04/09`) con un `<pubDate>` del día actual (`24 Oct 2026`).
+  2. **Scripts auxiliares sin filtro temporal (`scratch/run_ollama_flux_ingest.py`, `scratch/run_flux_ingest.py`, `scratch/ingest_custom_news.py`):** Inyectaban `published_at = datetime.now().isoformat()` ignorando la fecha real de la URL/RSS y marcando `is_featured = True`.
+  3. **Ausencia de extracción de metadatos HTML (`article:published_time` / JSON-LD `datePublished`) y validación semántica estacional:** Medios cuyas URLs no contienen `/YYYY/MM/DD/` (como *El Pingüino*) pasaban con noticias de meses anteriores (ej: *Corrida de Garzones / Fiestas Patrias* en octubre).
+  4. **Falta de barrera en lectura/renderizado y validación Zod de congruencia URL ↔ Fecha:** `RegionalNewsInsertSchema` no cruzaba la fecha incrustada en `source_url` contra `published_at`.
+* [x] **Arquitectura Definitiva de 4 Capas ("Multi-Layer Temporal Freshness Shield"):**
+  - **Capa 1 (Motor Python `engine/workers/news_worker.py` & Scripts `scratch/`):** Implementación de `_extract_date_from_html_meta`, `_has_anachronistic_content` y `_validate_and_resolve_article_date` bajo el principio **"Oldest Date Wins"** (prevalece la fecha más antigua y conservadora entre `rss_pub_date`, `url_date` y `html_meta_date`). Eliminación total de `datetime.now().isoformat()` como fecha de publicación en todos los scripts.
+  - **Capa 2 (Contrato Zod Runtime `app/src/lib/news/news-quality.ts`):** Funciones `extractDateFromUrl`, `extractDateFromHtmlMeta`, `hasAnachronisticContent`, `resolveAndValidateArticleFreshness` e `isStoredArticleTimely`. Extensión de `RegionalNewsInsertSchema` con `.superRefine()` para rechazar en runtime cualquier desfase $> 5$ días entre `source_url` y `published_at` o contenido anacrónico.
+  - **Capa 3 (Server Actions `app/src/actions/news.ts`):** Doble verificación pre y post-scraping en `syncNewsAction`, escudo de lectura en `getRegionalNews` filtrando artículos con `isStoredArticleTimely`, y refuerzo de `getSafeAuthenticatedOrgUser` en acciones de comunicados corporativos.
+  - **Capa 4 (Motor Editorial Frontend `app/src/components/diario-regional-section.tsx`):** Blindaje en `newsRelevanceScoring` para impedir que cualquier artículo anacrónico alcance el Hero Bento o la grilla secundaria.
+* [x] **Purga en Producción y Certificación de Calidad:**
+  - Eliminación en Supabase (`regional_news`) de los registros anacrónicos detectados (`8c844e64-65fd-44de-8fe4-d5899117b697` de Operación Renta abril 2026 y `435c3c09-9fc6-46ca-affb-395fe4c0001b` de Corrida de Garzones septiembre 2026).
+  - Ampliación de pruebas unitarias en `app/src/actions/__tests__/news-sync-quality.test.ts` (51 pruebas aprobadas en frontend) y `tests/test_news_editorial_audit.py`.
+
+
 

@@ -7,12 +7,17 @@ from difflib import SequenceMatcher
 # Añadir ruta del engine al sys.path
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'engine'))
 
+from datetime import datetime, timezone
 from workers.news_worker import (
     _clean_html, 
     _slugify, 
     _validate_editorial_integrity, 
     _is_semantic_duplicate,
-    _extract_semantic_keywords
+    _extract_semantic_keywords,
+    _extract_date_from_url,
+    _extract_date_from_html_meta,
+    _has_anachronistic_content,
+    _validate_and_resolve_article_date
 )
 from core.ai import process_news_with_local_llm
 
@@ -99,6 +104,50 @@ class TestNewsEditorialAudit(unittest.TestCase):
         self.assertIn('"temperature": 0.0', source_code)
         self.assertIn('FIDELIDAD FACTUAL ESTRICTA (CERO ALUCINACIÓN)', source_code)
         self.assertIn('NUNCA inventes, supongas ni extrapoles', source_code)
+
+    def test_07_temporal_shield_rejects_google_news_masqueraded_old_articles(self):
+        """7. Escudo Temporal Multicapa: Rechaza artículos antiguos re-indexados por Google News con pubDate actual"""
+        now_oct = datetime(2026, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
+        # Google News entrega pubDate del 24 de octubre, pero la URL decodificada es del 9 de abril
+        is_fresh, effective_dt, reason = _validate_and_resolve_article_date(
+            pub_date_str="Sat, 24 Oct 2026 21:50:24 GMT",
+            url="https://www.pauta.cl/economia/2026/04/09/operacion-renta-26-de-los-contribuyentes-recibiran-la-devolucion-anticipada.html",
+            html_meta_dt=None,
+            title="Más de un millón de contribuyentes presentaron su declaración",
+            content="La devolución anticipada se pagará el 29 de abril.",
+            now_utc=now_oct
+        )
+        self.assertFalse(is_fresh)
+        self.assertEqual(effective_dt, datetime(2026, 4, 9, tzinfo=timezone.utc))
+        self.assertIn("Noticia obsoleta", reason)
+
+    def test_08_temporal_shield_extracts_html_meta_and_blocks_anachronistic_content(self):
+        """8. Escudo Semántico y HTML Meta: Detecta fecha real en <meta> y bloquea hitos fuera de temporada"""
+        now_oct = datetime(2026, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
+        sample_html = '<head><meta property="article:published_time" content="2026-09-19T10:00:00Z"></head>'
+        meta_dt = _extract_date_from_html_meta(sample_html)
+        self.assertEqual(meta_dt, datetime(2026, 9, 19, 10, 0, 0, tzinfo=timezone.utc))
+
+        # Aunque el RSS mienta con fecha de octubre y la URL no tenga fecha, el HTML meta o el filtro semántico lo bloquea
+        is_anach, reason = _has_anachronistic_content(
+            "Municipalidad premia a ganadores de Corrida de Garzones 2026",
+            "Tradicional evento de Fiestas Patrias en Punta Arenas.",
+            now_utc=now_oct
+        )
+        self.assertTrue(is_anach)
+        self.assertIn("Fiestas Patrias", reason)
+
+        # Y rechaza taxativamente artículos sin ninguna fecha verificable (cero fallback a datetime.now)
+        is_fresh_no_date, dt_no_date, _ = _validate_and_resolve_article_date(
+            pub_date_str=None,
+            url="https://www.elpinguino.com/cronica/nota-sin-fecha/",
+            html_meta_dt=None,
+            title="Nota normal",
+            content="Contenido normal en Punta Arenas.",
+            now_utc=now_oct
+        )
+        self.assertFalse(is_fresh_no_date)
+        self.assertIsNone(dt_no_date)
 
 if __name__ == '__main__':
     unittest.main()

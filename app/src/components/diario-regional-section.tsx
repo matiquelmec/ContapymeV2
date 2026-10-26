@@ -22,6 +22,7 @@ import { MacroRadarRealtime } from "@/components/home/macro-radar-realtime";
 import { PublicSalaryCalculator } from "@/components/public-salary-calculator";
 import { NewsCardSkeleton, SmallNewsCardSkeleton } from "@/components/skeleton-loader";
 import { AdBannerSlot } from "@/components/ads/ad-banner-slot";
+import { isStoredArticleTimely } from "@/lib/news/news-quality";
 
 /** 📰 Tipo de Noticia Profesional (Contapymepuq) */
 export interface NewsArticle {
@@ -45,10 +46,12 @@ export interface DiarioRegionalSectionProps {
 
 /** 🧬 Motor Editorial Experto: Scoring de Relevancia Dinámica y Frescura en Tiempo Real */
 export function newsRelevanceScoring(news: NewsArticle[]): { hero: NewsArticle | null; secondary: NewsArticle[] } {
-  if (news.length === 0) return { hero: null, secondary: [] };
+  // 0. Escudo en Tiempo de Renderizado: Excluir cualquier artículo anacrónico o con fecha de URL antigua
+  const timelyNews = news.filter(item => isStoredArticleTimely(item));
+  if (timelyNews.length === 0) return { hero: null, secondary: [] };
 
   // 1. Orden cronológico estricto de más reciente a más antigua
-  const sortedByDate = [...news].sort((a, b) => 
+  const sortedByDate = [...timelyNews].sort((a, b) => 
     new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
   );
 

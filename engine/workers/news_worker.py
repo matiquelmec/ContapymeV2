@@ -185,15 +185,16 @@ def _parse_article_datetime(pub_date_str: str | None) -> datetime | None:
     return None
 
 def _extract_date_from_url(url: str | None) -> datetime | None:
-    """Extrae fecha estampada en URLs típicas de medios (/YYYY/MM/DD/ o /YYYY/MM/)."""
+    """Extrae fecha estampada en URLs típicas de medios (/YYYY/MM/DD/, /YYYY-MM-DD/ o /YYYY/MM/)."""
     if not url:
         return None
-    # Patrón completo /2026/04/09/
-    match_full = re.search(r'/(202[0-9])/([0-1][0-9])/([0-3][0-9])/', url)
+    # Patrón completo /2026/04/09/ o /2026-04-09/
+    match_full = re.search(r'[/-](202[0-9])[/-]([0-1][0-9])[/-]([0-3][0-9])(?:[/-]|\b)', url)
     if match_full:
         try:
             y, m, d = int(match_full.group(1)), int(match_full.group(2)), int(match_full.group(3))
-            return datetime(y, m, d, tzinfo=timezone.utc)
+            if 1 <= m <= 12 and 1 <= d <= 31:
+                return datetime(y, m, d, tzinfo=timezone.utc)
         except Exception:
             pass
     # Patrón mensual /2026/04/
@@ -201,10 +202,149 @@ def _extract_date_from_url(url: str | None) -> datetime | None:
     if match_month:
         try:
             y, m = int(match_month.group(1)), int(match_month.group(2))
-            return datetime(y, m, 1, tzinfo=timezone.utc)
+            if 1 <= m <= 12:
+                return datetime(y, m, 1, tzinfo=timezone.utc)
         except Exception:
             pass
     return None
+
+def _extract_date_from_html_meta(raw_html: str) -> datetime | None:
+    """
+    Extrae la fecha real de publicación desde los metadatos HTML originales (<head>/<body>):
+    - <meta property="article:published_time" content="...">
+    - <meta name="pubdate" / "publishdate" / "date" / "DC.date.issued" content="...">
+    - JSON-LD "datePublished": "..."
+    - <time datetime="...">
+    """
+    if not raw_html:
+        return None
+
+    head_sample = raw_html[:60000]
+    patterns = [
+        r'<meta[^>]+(?:property|name|itemprop)=["\'](?:article:published_time|og:published_time|pubdate|publishdate|date|DC\.date\.issued|datePublished)["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name|itemprop)=["\'](?:article:published_time|og:published_time|pubdate|publishdate|date|DC\.date\.issued|datePublished)["\']',
+        r'"datePublished"\s*:\s*"([^"]+)"',
+        r'<time[^>]+datetime=["\']([^"\']+)["\']',
+    ]
+
+    candidates: list[datetime] = []
+    for pat in patterns:
+        for m in re.finditer(pat, head_sample, flags=re.IGNORECASE):
+            val = m.group(1).strip()
+            dt = _parse_article_datetime(val)
+            if not dt:
+                # Intentar extraer YYYY-MM-DD del inicio del string ISO
+                iso_m = re.match(r'^(202[0-9])-([0-1][0-9])-([0-3][0-9])', val)
+                if iso_m:
+                    try:
+                        dt = datetime(int(iso_m.group(1)), int(iso_m.group(2)), int(iso_m.group(3)), tzinfo=timezone.utc)
+                    except Exception:
+                        pass
+            if dt:
+                candidates.append(dt)
+
+    if not candidates:
+        return None
+    # Retornar la fecha más antigua (conservadora) encontrada en los metadatos de publicación
+    return min(candidates)
+
+def _has_anachronistic_content(title: str, content: str, now_utc: datetime | None = None) -> tuple[bool, str]:
+    """
+    Escudo Semántico Anti-Anacronismo:
+    Detecta si el titular o el cuerpo de la noticia habla de hitos estacionales/calendario
+    que pertenecen a meses pasados respecto a la fecha actual (ej: Operación Renta de abril
+    o Fiestas Patrias de septiembre publicadas en octubre).
+    """
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc)
+
+    combined = f"{title or ''} {content or ''}".lower()
+    current_month = now_utc.month
+
+    # 1. Operación Renta / Devolución Anticipada de Abril (válido solo en marzo, abril y mayo)
+    if current_month not in (3, 4, 5):
+        if (
+            "operación renta" in combined
+            or "operacion renta" in combined
+            or "devolución anticipada" in combined
+            or "devolucion anticipada" in combined
+            or "29 de abril" in combined
+        ):
+            return True, "Hito fuera de temporada: Operación Renta / Devolución de abril fuera de ventana marzo-mayo"
+
+    # 2. Fiestas Patrias / Corrida de Garzones de Septiembre (válido solo en agosto, septiembre y primeros 3 días de octubre)
+    if current_month not in (8, 9) and not (current_month == 10 and now_utc.day <= 3):
+        if "corrida de garzones" in combined or "fiestas patrias" in combined or "18 de septiembre" in combined:
+            return True, "Hito fuera de temporada: Fiestas Patrias / Septiembre fuera de ventana"
+
+    # 3. Referencias explícitas a fechas exactas de meses pasados lejanos (> 1 mes atrás)
+    month_names = {
+        1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
+        5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
+        9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+    }
+    for m_num, m_name in month_names.items():
+        # Calcular distancia hacia atrás en meses dentro del mismo año
+        if m_num < current_month - 1:
+            # Si menciona "el 29 de abril", "este 15 de mayo", "se pagará el ... de abril"
+            if re.search(rf'\b(?:el|este|pasado|pagar[aá] el)\s+\d{{1,2}}\s+de\s+{m_name}\b', combined):
+                return True, f"Mención explícita de fecha pasada ({m_name}) en mes {current_month}"
+
+    return False, ""
+
+def _validate_and_resolve_article_date(
+    pub_date_str: str | None,
+    url: str | None,
+    html_meta_dt: datetime | None = None,
+    title: str = "",
+    content: str = "",
+    now_utc: datetime | None = None,
+    max_age_days: int = MAX_ARTICLE_AGE_DAYS
+) -> tuple[bool, datetime | None, str]:
+    """
+    Resuelve la fecha real de publicación aplicando el principio de Fecha Más Conservadora (Oldest Date Wins)
+    entre RSS pubDate, URL slug date y HTML meta date, más validación semántica de anacronismos.
+    Jamás hace fallback a datetime.now().
+    """
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc)
+
+    rss_dt = _parse_article_datetime(pub_date_str)
+    url_dt = _extract_date_from_url(url)
+
+    # Si la URL solo tiene precisión mensual (/YYYY/MM/) y corresponde al mes y año actual,
+    # no castigar al día 1 si existe rss_dt o html_meta_dt dentro del mismo mes.
+    candidates: list[datetime] = []
+    if rss_dt:
+        candidates.append(rss_dt)
+    if html_meta_dt:
+        candidates.append(html_meta_dt)
+    if url_dt:
+        # Verificar si url_dt vino de un patrón mensual /YYYY/MM/ (día 1 a las 00:00)
+        is_month_only = bool(url and not re.search(r'[/-](202[0-9])[/-]([0-1][0-9])[/-]([0-3][0-9])(?:[/-]|\b)', url))
+        if is_month_only and url_dt.year == now_utc.year and url_dt.month == now_utc.month and (rss_dt or html_meta_dt):
+            pass  # Usar rss_dt / html_meta_dt para el día exacto dentro del mes actual
+        else:
+            candidates.append(url_dt)
+
+    if not candidates:
+        return False, None, "Fecha no verificable (sin pubDate, URL date ni HTML meta date)"
+
+    # Regla de Oro: La fecha más antigua (conservadora) gana para derrotar re-indexaciones de Google News
+    effective_dt = min(candidates)
+
+    age_delta = now_utc - effective_dt
+    if age_delta.days > max_age_days:
+        return False, effective_dt, f"Noticia obsoleta ({age_delta.days} días de antigüedad, máx {max_age_days}d)"
+
+    if age_delta.total_seconds() < -86400:
+        return False, effective_dt, "Fecha en el futuro inválida (>24h)"
+
+    is_anachronistic, anach_reason = _has_anachronistic_content(title, content, now_utc)
+    if is_anachronistic:
+        return False, effective_dt, anach_reason
+
+    return True, effective_dt, "OK"
 
 def _slugify(text: str) -> str:
     """Convierte texto en un slug amigable para URL con soporte para acentos españoles."""
@@ -215,8 +355,10 @@ def _slugify(text: str) -> str:
     normalized = re.sub(r'\s+', '-', normalized)
     return re.sub(r'-+', '-', normalized).strip('-')
 
-async def _fetch_full_content(url: str, client: httpx.AsyncClient) -> str:
-    """Extrae el texto completo de una noticia visitando su URL con decodificación resiliente."""
+async def _fetch_full_content(url: str, client: httpx.AsyncClient, return_meta: bool = False):
+    """Extrae el texto completo de una noticia visitando su URL con decodificación resiliente.
+    Si return_meta=True, retorna (cleaned_text, html_meta_dt, final_url).
+    """
     try:
         resp = await client.get(url, timeout=15.0, follow_redirects=True)
         if resp.status_code == 200:
@@ -229,9 +371,16 @@ async def _fetch_full_content(url: str, client: httpx.AsyncClient) -> str:
                     text_content = raw_bytes.decode('iso-8859-1', errors='replace')
             except Exception:
                 text_content = resp.text
-            return _clean_html(text_content)
+            meta_dt = _extract_date_from_html_meta(text_content)
+            final_url = str(resp.url) if resp.url else url
+            cleaned = _clean_html(text_content)
+            if return_meta:
+                return cleaned, meta_dt, final_url
+            return cleaned
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener contenido completo de {url}: {e}")
+    if return_meta:
+        return "", None, url
     return ""
 
 async def _fetch_from_magallanes_rss():
@@ -258,8 +407,9 @@ async def _fetch_from_magallanes_rss():
                         pub_date_el = item.find('pubDate')
                         pub_date = pub_date_el.text if pub_date_el is not None else None
                         
-                        # Deep Scraping: Intentar obtener el contenido real del artículo
+                        # Deep Scraping: Intentar obtener el contenido real y metadatos de fecha del artículo
                         full_content = ""
+                        html_meta_dt = None
                         if link:
                             # Decodificar URL si es enlace de Google News
                             if "news.google.com" in link:
@@ -269,15 +419,23 @@ async def _fetch_from_magallanes_rss():
                                     if decoded_data.get("status") and decoded_data.get("decoded_url"):
                                         real_url = decoded_data["decoded_url"]
                                         logger.info(f"[News Worker] 🚀 URL Real decodificada: {real_url}")
-                                        full_content = await _fetch_full_content(real_url, client)
-                                        # Actualizar link para guardar la fuente original
-                                        link = real_url
+                                        full_content, html_meta_dt, final_url = await _fetch_full_content(real_url, client, return_meta=True)
+                                        # Actualizar link para guardar la fuente original resuelta
+                                        link = final_url or real_url
+                                    else:
+                                        full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                        if final_url and "news.google.com" not in final_url:
+                                            link = final_url
                                 except Exception as dec_err:
                                     logger.warning(f"[News Worker] ⚠️ Error al decodificar URL de Google News: {dec_err}")
-                                    full_content = await _fetch_full_content(link, client)
+                                    full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                    if final_url and "news.google.com" not in final_url:
+                                        link = final_url
                             else:
                                 logger.info(f"[News Worker] 🔍 Deep Scraping habilitado para: {link}")
-                                full_content = await _fetch_full_content(link, client)
+                                full_content, html_meta_dt, final_url = await _fetch_full_content(link, client, return_meta=True)
+                                if final_url:
+                                    link = final_url
                         
                         news.append({
                             "headline": title.strip() if title else "Sin Título",
@@ -286,7 +444,8 @@ async def _fetch_from_magallanes_rss():
                             "link": link,
                             "source_name": source["name"],
                             "source_type": source.get("type", "regional"),
-                            "pub_date": pub_date
+                            "pub_date": pub_date,
+                            "html_meta_dt": html_meta_dt
                         })
                     logger.info(f"[News Worker] 📡 Capturadas {len(items)} noticias de {source['name']}")
             except Exception as e:
@@ -343,28 +502,19 @@ async def _fetch_and_process_news():
             logger.info(f"[News Worker] ⏭️ Omitiendo (Título exacto ya existe): {headline[:50]}...")
             continue
 
-        # 🛡️ ESCUDO DE FRESCURA EDITORIAL OBLIGATORIO:
-        # Extraer fecha real desde el RSS y desde la estructura de la URL
-        parsed_dt = _parse_article_datetime(raw.get("pub_date"))
-        url_dt = _extract_date_from_url(url)
-        
-        # Priorizar la fecha más confiable y antigua entre RSS y URL si existe discrepancia
-        effective_dt = parsed_dt or url_dt
-        if url_dt and parsed_dt:
-            # Si la URL indica una fecha más antigua (ej: /2026/04/09/), prevalece la fecha de la URL
-            if url_dt < parsed_dt:
-                effective_dt = url_dt
-        elif url_dt and not parsed_dt:
-            effective_dt = url_dt
-
-        # Si no se puede verificar ninguna fecha o la noticia tiene más de MAX_ARTICLE_AGE_DAYS días, DESCARTAR
-        if not effective_dt:
-            logger.warning(f"[News Worker] 🛑 Rechazando noticia por fecha no verificable: {headline[:50]}...")
-            continue
-
-        age_delta = now_utc - effective_dt
-        if age_delta.days > MAX_ARTICLE_AGE_DAYS:
-            logger.warning(f"[News Worker] 🛑 Rechazando noticia anacrónica/obsoleta ({age_delta.days} días de antigüedad, máx {MAX_ARTICLE_AGE_DAYS}d): {headline[:50]} | URL: {url}")
+        # 🛡️ ESCUDO DE FRESCURA EDITORIAL MULTICAPA OBLIGATORIO:
+        # Validar fecha más conservadora entre RSS, URL y metadatos HTML, más filtro semántico anti-anacronismo
+        is_fresh, effective_dt, fresh_reason = _validate_and_resolve_article_date(
+            pub_date_str=raw.get("pub_date"),
+            url=url,
+            html_meta_dt=raw.get("html_meta_dt"),
+            title=headline,
+            content=raw.get("content", ""),
+            now_utc=now_utc,
+            max_age_days=MAX_ARTICLE_AGE_DAYS
+        )
+        if not is_fresh or not effective_dt:
+            logger.warning(f"[News Worker] 🛑 Rechazando noticia por escudo temporal ({fresh_reason}): {headline[:55]} | URL: {url}")
             continue
 
         # Guardar la fecha validada en el dict para persistirla con fidelidad absoluta
@@ -510,15 +660,26 @@ async def _fetch_and_process_news():
             if image_url:
                 used_images_in_cycle.add(image_url)
 
-            # 🛡️ Formatear Fecha Certificada con Estricto Rechazo de Anacronismo
+            # 🛡️ Formatear Fecha Certificada con Estricto Rechazo de Anacronismo (Cero fallback a datetime.now)
             pub_date_iso = raw_news.get("validated_published_at")
             if not pub_date_iso:
-                # Si por alguna razón no pasó la validación, intentar parseo estricto
-                parsed_dt = _parse_article_datetime(raw_news.get("pub_date")) or _extract_date_from_url(raw_news.get("link"))
-                if not parsed_dt or (datetime.now(timezone.utc) - parsed_dt).days > MAX_ARTICLE_AGE_DAYS:
-                    logger.warning(f"[News Worker] 🛑 Abortando persistencia por fecha inválida o anacrónica: {ai_data['title']}")
+                is_fresh_post, parsed_dt, post_reason = _validate_and_resolve_article_date(
+                    pub_date_str=raw_news.get("pub_date"),
+                    url=raw_news.get("link"),
+                    html_meta_dt=raw_news.get("html_meta_dt"),
+                    title=ai_title,
+                    content=ai_content
+                )
+                if not is_fresh_post or not parsed_dt:
+                    logger.warning(f"[News Worker] 🛑 Abortando persistencia por fecha inválida o anacrónica ({post_reason}): {ai_title}")
                     continue
                 pub_date_iso = parsed_dt.isoformat()
+            else:
+                # Validar que el texto reescrito por la IA tampoco introduzca anacronismos
+                is_anach_ai, anach_ai_reason = _has_anachronistic_content(ai_title, ai_content)
+                if is_anach_ai:
+                    logger.warning(f"[News Worker] 🛑 Abortando persistencia por anacronismo en redacción IA ({anach_ai_reason}): {ai_title}")
+                    continue
 
             # Normalizar Categoría para prioridad Smart Mix
             category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
