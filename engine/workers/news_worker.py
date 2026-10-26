@@ -653,11 +653,11 @@ async def _fetch_and_process_news():
             category = _normalize_category(ai_data.get("category", "MAGALLANES ACTUAL"))
             image_url = None
 
-            # Prioridad 1: Fotografía Periodística Real (og:image HD >= 750x400) con Revelado Óptico Editorial
+            # Prioridad 1: Fotografía Periodística Real (og:image HD >= 500x300) con Revelado Óptico Editorial
             original_img = raw_news.get("img")
             if original_img and not original_img.startswith("/") and original_img not in used_images_in_cycle:
                 logger.info(f"[News Worker] 📸 Verificando fotografía periodística real HD (og:image): {original_img}")
-                image_url = await download_and_upload_image(original_img, min_width=750, min_height=400)
+                image_url = await download_and_upload_image(original_img, min_width=500, min_height=300)
                 if image_url:
                     logger.info(f"[News Worker] ✅ Fotografía periodística real HD revelada y subida: {image_url}")
 

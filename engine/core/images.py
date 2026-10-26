@@ -258,15 +258,15 @@ async def generate_and_upload_image(
                     except Exception as hfe:
                         logger.warning(f"[Images] Hugging Face ({hf_model}) no disponible: {hfe}")
 
-            # ─── MOTOR 3: Pollinations FLUX Realism / FLUX HD (16:9 Full HD 1536x864 + Revelado Óptico) ───
-            pollinations_models = ["flux-realism", "flux", "flux"]
+            # ─── MOTOR 3: Pollinations FLUX Realism / FLUX HD (16:9 1280x720 Gratis + Escalado y Revelado Óptico 1536x864) ───
+            pollinations_models = ["flux-realism", "flux", "turbo"]
             for attempt, model_name in enumerate(pollinations_models, start=1):
                 seed = random.randint(10000, 999999)
                 try:
-                    logger.info(f"[Images] Generando con Pollinations {model_name} HD 1536x864 (Intento {attempt}/{len(pollinations_models)})...")
+                    logger.info(f"[Images] Generando con Pollinations {model_name} 16:9 (Intento {attempt}/{len(pollinations_models)})...")
                     gen_url = (
                         f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-                        f"?width=1536&height=864&seed={seed}&model={model_name}&nologo=true&enhance=false&safe=true"
+                        f"?width=1280&height=720&seed={seed}&model={model_name}&nologo=true"
                     )
                     response = await client.get(gen_url, timeout=35.0)
                     content_type = response.headers.get("content-type", "")
@@ -274,7 +274,7 @@ async def generate_and_upload_image(
                     if response.status_code == 200 and content_type.startswith("image/"):
                         valid, _ = _validate_image_bytes(response.content)
                         if valid:
-                            logger.info(f"[Images] ✅ Éxito con Pollinations {model_name} HD en intento {attempt}!")
+                            logger.info(f"[Images] ✅ Éxito con Pollinations {model_name} en intento {attempt}!")
                             webp_bytes = _optimize_to_webp(response.content, max_width=1536, quality=90)
                             return await _upload_to_supabase(webp_bytes, "fluxhd")
                     elif response.status_code == 429:
