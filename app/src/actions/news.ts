@@ -24,16 +24,16 @@ const NEWS_OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 // 4 horas de validez de notic
 
 
 const FALLBACK_IMAGES_REGIONAL = [
-  "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=800&q=80", // Plaza Muñoz Gamero
-  "https://images.unsplash.com/photo-1517022812141-23620dba5c23?auto=format&fit=crop&w=800&q=80", // Torres del Paine
-  "https://images.unsplash.com/photo-1473163928189-364b2c4e1135?auto=format&fit=crop&w=800&q=80", // Patagonia Estrecho
-  "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?auto=format&fit=crop&w=800&q=80"  // Faro San Isidro / Puerto
+  "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1536&q=85", // Plaza Muñoz Gamero
+  "https://images.unsplash.com/photo-1517022812141-23620dba5c23?auto=format&fit=crop&w=1536&q=85", // Torres del Paine
+  "https://images.unsplash.com/photo-1473163928189-364b2c4e1135?auto=format&fit=crop&w=1536&q=85", // Patagonia Estrecho
+  "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?auto=format&fit=crop&w=1536&q=85"  // Faro San Isidro / Puerto
 ]
 
 const FALLBACK_IMAGES_FINANZAS = [
-  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80", // Finanzas oficina
-  "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80", // Contabilidad
-  "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80"  // Gráficos financieros
+  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1536&q=85", // Finanzas oficina
+  "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1536&q=85", // Contabilidad
+  "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1536&q=85"  // Gráficos financieros
 ]
 
 const NEWS_SOURCES = [

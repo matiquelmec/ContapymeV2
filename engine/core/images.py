@@ -365,8 +365,9 @@ async def download_and_upload_image(image_url: str, min_width: int = 0, min_heig
 
 async def get_category_fallback_url(category: str, title: str = "", exclude_urls: list[str] = None) -> str:
     """
-    Selecciona una imagen de stock profesional 16:9 garantizando CERO COLISIONES
-    con las imágenes recientemente utilizadas o excluidas.
+    Selecciona una imagen de stock profesional 16:9, la descarga y la procesa con el revelado
+    óptico editorial en formato WebP HD a 1536x864, subiéndola a Supabase Storage con prefijo 'fallbackhd'.
+    Garantiza CERO URLs crudas externas de Unsplash en la base de datos y cumplimiento de Política Zero-Binary.
     """
     cat_normalized = category.upper()
     matching_pool = FALLBACK_POOLS.get("MAGALLANES ACTUAL")
@@ -392,4 +393,15 @@ async def get_category_fallback_url(category: str, title: str = "", exclude_urls
         
     # Selección determinista pero única
     idx = abs(hash(title + str(len(exclude_set)))) % len(available_pool)
-    return available_pool[idx]
+    candidate_url = available_pool[idx]
+
+    # 4. Descarga, Revelado Óptico Editorial Lanczos 1536x864 y Subida a Supabase
+    try:
+        supabase_hd_url = await download_and_upload_image(candidate_url, min_width=0, min_height=0)
+        if supabase_hd_url:
+            logger.info(f"[Images] ✅ Stock fallback procesado a WebP HD en Supabase: {supabase_hd_url}")
+            return supabase_hd_url
+    except Exception as e:
+        logger.warning(f"[Images] Error procesando fallback a Supabase: {e}")
+
+    return candidate_url

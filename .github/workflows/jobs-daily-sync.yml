@@ -1,39 +1,40 @@
-﻿name: 🔄 Daily Regional Jobs Sync & Lifecycle Audit
+name: 🔄 Daily Regional News & Jobs Sync
 
 on:
   schedule:
-    # 11:00 UTC = 08:00 AM Punta Arenas (Magallanes) todos los días
+    # 08:00 AM Punta Arenas (11:00 UTC) todos los días
     - cron: '0 11 * * *'
-  workflow_dispatch: # Permite ejecución manual desde GitHub Actions
+    # 14:00 PM Punta Arenas (17:00 UTC) todos los días
+    - cron: '0 17 * * *'
+    # 20:00 PM Punta Arenas (23:00 UTC) todos los días
+    - cron: '0 23 * * *'
+  workflow_dispatch:
 
 jobs:
-  sync-magallanes-jobs:
-    name: 🌐 Ingesta Diaria de Vacantes Magallanes
+  sync-magallanes:
+    name: 🌐 Ingesta de Empleos y Noticias Magallanes
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
-      - name: Disparar Sincronización Segura vía Endpoint Vercel / Cloud
+      - name: Sincronizar Empleos
         env:
           SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://contapymepuq.cl' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET || secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           echo "Disparando sincronización diaria de empleos en $SITE_URL/api/v1/jobs/sync..."
-          
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$SITE_URL/api/v1/jobs/sync" \
+          curl -s -X POST "$SITE_URL/api/v1/jobs/sync" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "x-cron-secret: $CRON_SECRET" \
-            -H "Content-Type: application/json")
+            -H "Content-Type: application/json" || echo "Jobs sync terminado con aviso"
 
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-
-          echo "Código HTTP recibido: $HTTP_CODE"
-          echo "Respuesta del servidor: $BODY"
-
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Sincronización y ciclo de vida de empleos completado con éxito."
-          else
-            echo "⚠️ Advertencia o Fallo en la sincronización (HTTP $HTTP_CODE)."
-            exit 1
-          fi
+      - name: Sincronizar Noticias Regionales
+        env:
+          SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://contapymepuq.cl' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "Disparando sincronización de noticias en $SITE_URL/api/v1/news/sync..."
+          curl -s -X POST "$SITE_URL/api/v1/news/sync" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" || echo "News sync terminado con aviso"

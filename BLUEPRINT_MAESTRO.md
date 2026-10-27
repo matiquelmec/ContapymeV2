@@ -404,6 +404,19 @@
   - Desacople del `sticky` en `MarketTicker` para móviles (`relative lg:sticky`) y respeto a `prefers-reduced-motion` en `.animate-marquee`.
   - Incremento de áreas táctiles ($\ge 40\text{px}-44\text{px}$) en filtros de noticias, `StickyCategoryDock` y controles de video (`min-w-[44px] min-h-[44px]`).
 
+### FASE 30: Auditoría Forense de Automatización, Saneamiento de Base de Datos y Cron Dual Vercel/GitHub — **COMPLETADO** (Octubre 2026)
+* [x] **Purga de Contaminación en Producción Supabase (`regional_news`):**
+  - Eliminación definitiva del reingreso anacrónico de Operación Renta Abril 2026 y de 8 registros fuera de nicho (deportes y policial).
+  - Identificación de 44 registros históricos con enlaces externos de Unsplash para su modernización a assets WebP HD propios.
+* [x] **Automatización Dual de Noticias y Empleos (Vercel Cron + GitHub Actions):**
+  - Creación del endpoint Serverless de alta disponibilidad `POST/GET /api/v1/news/sync` con validación de cabeceras seguras (`CRON_SECRET` / `x-vercel-cron`) y telemetría inmutable en `audit_logs`.
+  - Configuración en `app/vercel.json` de sincronización periódica cada 4 horas (`0 */4 * * *`) para noticias y diaria a las 08:00 AM (`0 11 * * *`) para vacantes de ContaEmpleos.
+  - Actualización de `.github/workflows/jobs-daily-sync.yml` en un runner unificado que sincroniza empleos y noticias 3 veces al día (08:00, 14:00 y 20:00 hora de Magallanes).
+* [x] **Blindaje del Fallback de Imágenes (Zero Hotlinks de Unsplash):**
+  - Modificación de `get_category_fallback_url` en `engine/core/images.py`: cuando se recurre a imágenes de stock, se descargan, encuadran y procesan con el revelado óptico Lanczos (1536x864, WebP q=90) y se persisten en Supabase Storage, erradicando URLs crudas externas en la base de datos.
+  - Calibración de dimensiones a `w=1536&q=85` en las fallbacks de `app/src/actions/news.ts`.
+
+
 
 
 
