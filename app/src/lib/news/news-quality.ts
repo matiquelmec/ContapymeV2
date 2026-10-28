@@ -91,6 +91,7 @@ export function isNicheRelevant(title: string, description: string): boolean {
   // 1. Rechazo taxativo de deportes, crónica roja cotidiana y anécdotas barriales
   const forbiddenPatterns = [
     /\b(basquetbol|básquetbol|futbol|fútbol|baloncesto|padel|pádel|ciclismo|maraton|maratón|voley|rugby)\b/i,
+    /\b(judo|futsal|araucania|araucanía|taekwondo|boxeo|automovilismo|karting|atletismo|goleada|deporte|deportes|deportivo)\b/i,
     /\b(campeonato|torneo|semifinal|semifinales|gimnasio del espanol|gimnasio del español|maxibasquetbol|maxibásquetbol)\b/i,
     /\b(tiktoker preso|chofer sorprendido|quebrantamiento de condena|rotura de matriz)\b/i,
     /\b(necrologicas|necrológicas|funeraria|fallecimiento|sepelio|inmemorian)\b/i,
@@ -229,7 +230,8 @@ export function hasAnachronisticContent(title: string, content: string, referenc
   for (const [mNumStr, mName] of Object.entries(monthNames)) {
     const mNum = Number(mNumStr);
     if (mNum < currentMonth - 1) {
-      const explicitPastDateRegex = new RegExp(`\\b(?:el|este|pasado|pagara el)\\s+\\d{1,2}\\s+de\\s+${mName}\\b`, 'i');
+      // Solo consideramos anacronismo si la fecha pasada no va acompañada de un año anterior histórico/judicial (ej. "el 19 de marzo de 2023")
+      const explicitPastDateRegex = new RegExp(`\\b(?:el|este|pasado|pagara el)\\s+\\d{1,2}\\s+de\\s+${mName}(?!\\s+(?:de\\s+)?(?:19\\d\\d|20[0-2][0-5]))\\b`, 'i');
       if (explicitPastDateRegex.test(combined)) {
         return {
           anachronistic: true,
@@ -334,7 +336,14 @@ export function isStoredArticleTimely(article: {
   content?: string | null;
   source_url?: string | null;
   published_at?: string | null;
+  is_protected?: boolean | null;
+  content_type?: string | null;
 }): boolean {
+  // 🛡️ Comunicados oficiales y artículos protegidos siempre son vigentes y legítimos
+  if (article.is_protected || article.content_type === 'comunicado') {
+    return true;
+  }
+
   const pubDate = article.published_at ? new Date(article.published_at) : null;
   if (!pubDate || isNaN(pubDate.getTime())) return false;
 

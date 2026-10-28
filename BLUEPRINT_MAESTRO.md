@@ -430,6 +430,16 @@
   - Script versionado y reproducible en `scripts/publish_comunicado_srdanovic.py`.
   - Certificación en frontend (`/noticias/padres-adolescente-fallecida-hospital-puerto-natales-demandan-servicio-salud-magallanes`).
 
+### FASE 32: Desbloqueo del Escudo Temporal para Comunicados, Purga Deportiva y Rescate de Prensa HD — **COMPLETADO** (Octubre 2026)
+* [x] **Auditoría de Invisibilidad del Comunicado en `/noticias`:**
+  - Diagnóstico forense: La función `isStoredArticleTimely` invocaba `hasAnachronisticContent`, la cual detectó la frase "el 19 de marzo de 2023" en el relato de los hechos judiciales del comunicado como un supuesto anacronismo del año en curso, filtrando silenciosamente el artículo en tiempo de lectura en `getRegionalNews()`.
+  - Corrección: `isStoredArticleTimely` ahora garantiza la entrega inmediata de artículos con `is_protected: true` o `content_type: 'comunicado'`. Además, `hasAnachronisticContent` ahora descarta falsos positivos cuando la fecha viene acompañada de un año anterior histórico.
+* [x] **Auditoría de Calidad Visual & Purga de Contenido Fuera de Nicho:**
+  - Purga de dos noticias deportivas residuales (`Judo magallánico...` que contenía una imagen estilo anime/CGI generada antes del endurecimiento de prompts, y `Punta Arenas pierde clasificación...` que contenía un stock de vóley playa).
+  - Fortalecimiento de `forbiddenPatterns` en `isNicheRelevant` con tokens deportivos adicionales (`judo`, `futsal`, `araucania`, `deporte`, etc.).
+  - Rescate fotoperiodístico y revelado a WebP HD en Supabase Storage para las noticias de PNL (fotografía de prensa real de El Pingüino) y DEP (frontis SLEP Magallanes de Ovejero Noticias).
+
+
 
 
 
