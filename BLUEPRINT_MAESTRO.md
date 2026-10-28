@@ -417,6 +417,20 @@
   - Modificación de `get_category_fallback_url` en `engine/core/images.py`: cuando se recurre a imágenes de stock, se descargan, encuadran y procesan con el revelado óptico Lanczos (1536x864, WebP q=90) y se persisten en Supabase Storage, erradicando URLs crudas externas en la base de datos.
   - Calibración de dimensiones a `w=1536&q=85` en las fallbacks de `app/src/actions/news.ts`.
 
+### FASE 31: Publicación Oficial del Comunicado Legal Hospital de Puerto Natales (Abogado Juan José Srdanovic & Periodista Daisy Castillo) — **COMPLETADO** (Octubre 2026)
+* [x] **Ingesta y Curaduría Fidedigna del Comunicado Oficial:**
+  - Extracción y formateo íntegro del documento legal: Demanda de indemnización de perjuicios por $400 millones ante el 2.° Juzgado de Letras de Punta Arenas (Causa Rol C-1581-2026) contra el Servicio de Salud Magallanes por el fallecimiento de adolescente de 16 años por taponamiento cardíaco.
+  - Acreditación formal de autoría y difusión: `author_name` ("Abogado Juan José Srdanovic Arcos (Difusión: Periodista Daisy Castillo)") y `source_name` ("Juan José Srdanovic / Daisy Castillo").
+* [x] **Tratamiento Fotográfico Editorial Zero-Binary (Supabase Storage):**
+  - Procesamiento con Pillow de la fotografía oficial del abogado en el centro de Punta Arenas (`WhatsApp Image...`).
+  - Encuadre óptico 16:9 con preservación de encuadre en tercio superior (`centering=(0.5, 0.25)`), corrección de contraste dinámico y nitidez `UnsharpMask`.
+  - Conversión a WebP HD (`quality=92`, 84.4 KB) y almacenamiento directo en el bucket `news_images` (`comunicados/abogado-juan-jose-srdanovic-demanda-hospital-puerto-natales.webp`), evitando cualquier binario en base de datos.
+* [x] **Blindaje Inmutable en Supabase (`regional_news`):**
+  - Inserción con `is_protected = True` (inmune al algoritmo de higiene y purga del crawler), `is_featured = True`, categoría `SII / LEGAL` y `content_type = 'comunicado'`.
+  - Script versionado y reproducible en `scripts/publish_comunicado_srdanovic.py`.
+  - Certificación en frontend (`/noticias/padres-adolescente-fallecida-hospital-puerto-natales-demandan-servicio-salud-magallanes`).
+
+
 
 
 
