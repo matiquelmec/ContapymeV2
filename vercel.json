@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/v1/news/sync",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 12 * * *"
     }
   ],
   "headers": [
