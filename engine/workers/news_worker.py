@@ -562,7 +562,18 @@ async def _fetch_and_process_news():
             logger.info(f"[News Worker] ⏭️ Omitiendo (Contenido insuficiente o truncado): {headline[:50]}...")
             continue
 
-        # 4. Escudo Regional y de Nicho (Estrategia Híbrida Experta)
+        # 4. Escudo Regional y de Nicho (Estrategia Híbrida Experta: Cero Deportes ni Crónica Roja)
+        forbidden_niche_keywords = [
+            "fútbol", "futbol", "básquet", "basquet", "basket", "judo", "motocross", "campeonato",
+            "torneo", "medalla", "medallas", "goleada", "clasifica", "deporte", "deportivo",
+            "juegos de la araucanía", "araucanía", "colisión", "volcamiento", "lesionadas",
+            "agredido", "apuñalado", "ebriedad", "detenido por", "choque vehicular"
+        ]
+        combined_check = f"{norm_headline} {content_text[:400].lower()}"
+        if any(bad_kw in combined_check for bad_kw in forbidden_niche_keywords):
+            logger.info(f"[News Worker] 🛑 Omitiendo (Deportes o Crónica Roja fuera de nicho): {headline[:55]}...")
+            continue
+
         region_keywords = ["magallanes", "punta arenas", "natales", "porvenir", "williams", "tierra del fuego", "antártica"]
         financial_keywords = [
             "sii", "ipc", "dólar", "dolar", "impuesto", "finanzas", "economía", "hacienda", 
@@ -618,9 +629,10 @@ async def _fetch_and_process_news():
 
     # 5. Procesamiento SECUENCIAL para Imágenes y DB (Protección de VRAM GPU)
     for raw_news, ai_data in results:
-        # Blindajes de calidad y relevancia
-        if not ai_data or ai_data.get("category") == "IGNORE":
-            logger.info(f"[News Worker] ⏭️ Omitiendo noticia (Sin relevancia institucional): {raw_news['headline'][:50]}...")
+        # Blindajes de calidad y relevancia (Rechazar DEPORTES o IGNORE)
+        raw_cat = str(ai_data.get("category", "")).upper() if ai_data else "IGNORE"
+        if not ai_data or raw_cat == "IGNORE" or "DEPORTE" in raw_cat or "POLICIAL" in raw_cat:
+            logger.info(f"[News Worker] ⏭️ Omitiendo noticia (Sin relevancia institucional / {raw_cat}): {raw_news['headline'][:50]}...")
             continue
 
         if not ai_data.get("title") or not ai_data.get("full_content"):

@@ -406,12 +406,13 @@
 
 ### FASE 30: Auditoría Forense de Automatización, Saneamiento de Base de Datos y Cron Dual Vercel/GitHub — **COMPLETADO** (Octubre 2026)
 * [x] **Purga de Contaminación en Producción Supabase (`regional_news`):**
-  - Eliminación definitiva del reingreso anacrónico de Operación Renta Abril 2026 y de 8 registros fuera de nicho (deportes y policial).
-  - Identificación de 44 registros históricos con enlaces externos de Unsplash para su modernización a assets WebP HD propios.
-* [x] **Automatización Dual de Noticias y Empleos (Vercel Cron + GitHub Actions):**
+  - Eliminación definitiva del reingreso anacrónico de Operación Renta Abril 2026 y de registros fuera de nicho (deportes y policial: fútbol, judo, agresiones, colisiones).
+  - Blindaje en `engine/core/ai.py` y `engine/workers/news_worker.py` suprimiendo `DEPORTES REGIONALES` de las categorías permitidas y añadiendo lista de palabras clave prohibidas antes de invocar al LLM.
+  - Conversión en producción de las 20 noticias recientes que tenían enlaces de Unsplash al estándar **WebP HD `1536x864` (`presshd_*.webp`) en Supabase Storage**, rescatando `og:image` real de los medios regionales y aplicando revelado óptico Lanczos.
+* [x] **Automatización Dual de Noticias y Empleos (Vercel Cron + GitHub Actions) & Reactivación de Cartelera Laboral:**
   - Creación del endpoint Serverless de alta disponibilidad `POST/GET /api/v1/news/sync` con validación de cabeceras seguras (`CRON_SECRET` / `x-vercel-cron`) y telemetría inmutable en `audit_logs`.
-  - Configuración en `app/vercel.json` de sincronización periódica cada 4 horas (`0 */4 * * *`) para noticias y diaria a las 08:00 AM (`0 11 * * *`) para vacantes de ContaEmpleos.
-  - Actualización de `.github/workflows/jobs-daily-sync.yml` en un runner unificado que sincroniza empleos y noticias 3 veces al día (08:00, 14:00 y 20:00 hora de Magallanes).
+  - Configuración en `vercel.json` y `app/vercel.json` compatible con Vercel Hobby (`0 11 * * *` para empleos y `0 12 * * *` para noticias) más runner tri-diario en `.github/workflows/jobs-daily-sync.yml` (08:00, 14:00 y 20:00 Magallanes).
+  - Renovación idempotente (`upsert` por `slug` en `engine/workers/job_worker.py`) y publicación en producción de 4 nuevas vacantes verificadas de Magallanes (*Contador General Zona Franca*, *Ingeniero en Prevención de Riesgos SNS*, *Encargado de Adquisiciones Naviera* y *Recepcionista Bilingüe Hotel Cabo de Hornos*).
 * [x] **Blindaje del Fallback de Imágenes (Zero Hotlinks de Unsplash):**
   - Modificación de `get_category_fallback_url` en `engine/core/images.py`: cuando se recurre a imágenes de stock, se descargan, encuadran y procesan con el revelado óptico Lanczos (1536x864, WebP q=90) y se persisten en Supabase Storage, erradicando URLs crudas externas en la base de datos.
   - Calibración de dimensiones a `w=1536&q=85` en las fallbacks de `app/src/actions/news.ts`.

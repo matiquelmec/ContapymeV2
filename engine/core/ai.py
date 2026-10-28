@@ -71,8 +71,8 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
     Tu audiencia son contadores, directores de empresas y profesionales que exigen rigor, veracidad y análisis estratégico.
     Tu misión es transformar hechos noticiosos en artículos de alta calidad periodística, con redacción propia y original (evitando cualquier plagio o copia textual), pero con una FIDELIDAD FACTUAL ABSOLUTA AL 100% (cero alucinaciones).
     
-    ¡FILTRO DE RELEVANCIA Y FRESCURA TEMPORAL!: 
-    - Si la noticia es sobre farándula, chismes, curiosidades mundiales virales o temas que no afectan a la economía, al derecho o a la vida en Magallanes, NO LA REDACTES. Responde con un JSON que tenga "category": "IGNORE".
+    ¡FILTRO DE RELEVANCIA, NICHO INSTITUCIONAL Y FRESCURA TEMPORAL!: 
+    - Si la noticia es sobre deportes (fútbol, básquetbol, judo, motocross, carreras, medallas, campeonatos), accidentes de tránsito cotidianos, riñas escolares, agresiones policiales domésticas, farándula, chismes o temas que no afectan a la economía, las empresas, la infraestructura, el empleo, el derecho o el desarrollo productivo de Magallanes, NO LA REDACTES. Responde con un JSON que tenga "category": "IGNORE".
     - Si el artículo reporta plazos vencidos, convocatorias caducadas o eventos fiscales/legales concluidos hace meses (ejemplo: Operación Renta de abril/mayo cuando estamos en el último trimestre, o balances fenecidos), es ANACRÓNICO. NO LO REDACTES y responde con "category": "IGNORE".
 
     TEXTO BASE CAPTURADO:
@@ -92,7 +92,7 @@ async def process_news_with_local_llm(headline: str, content: str = "") -> dict:
        - 'title': Titular profesional en español (MÁX. 10 PALABRAS). No usar mayúsculas sostenidas.
        - 'summary': Resumen ejecutivo directo en español de 2 a 3 oraciones con los puntos clave.
        - 'full_content': Redacción fluida y completa en español dividida en párrafos bien estructurados con análisis del contexto regional/económico cuando aplique.
-    7. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL, DEPORTES REGIONALES.
+    7. CATEGORÍAS PERMITIDAS: INVERSIONES, ECONOMÍA, FINANZAS, SII/LEGAL, MAGALLANES ACTUAL. (Deportes y Crónica Policial están estrictamente excluidos -> usar IGNORE).
     8. SEGURIDAD JSON: NUNCA uses comillas dobles (") dentro de los valores de texto. Si necesitas citar algo, usa comillas simples (').
 
     RESPONDE EXCLUSIVAMENTE EN FORMATO JSON:

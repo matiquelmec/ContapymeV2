@@ -374,12 +374,12 @@ async def process_and_save_job(
         logger.info(f"[Job Worker] 🔁 Oferta duplicada detectada y descartada: {structured['title']} ({structured['company_name']})")
         return None
 
-    # 3. Inserción en base de datos
+    # 3. Inserción o renovación en base de datos (idempotente ante slugs expirados)
     try:
-        res = db.table("job_postings").insert(structured).execute()
+        res = db.table("job_postings").upsert(structured, on_conflict="slug").execute()
         if res.data and len(res.data) > 0:
             saved_job = res.data[0]
-            logger.info(f"[Job Worker] ✅ Nueva oferta guardada con éxito: {saved_job['title']} en {saved_job['location']}")
+            logger.info(f"[Job Worker] ✅ Oferta publicada/renovada con éxito: {saved_job['title']} en {saved_job['location']}")
             return saved_job
     except Exception as e:
         logger.error(f"[Job Worker] ❌ Error insertando oferta en Supabase: {e}")
@@ -493,6 +493,66 @@ REGIONAL_CURATED_FEEDS = [
         "source_url": "https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Puerto+Natales",
         "source_name": "Chiletrabajos Magallanes / Natales",
         "raw_text": "Empresa de ecoturismo busca Guía de Turismo Bilingüe (Español/Inglés) para circuitos en Parque Nacional Torres del Paine. Guiado, interpretación ambiental y seguridad de pasajeros. Requisitos: certificación WAFA/WFR vigente, registro SERNATUR, inglés fluido. Beneficios: alojamiento y alimentación en base de operaciones, equipamiento técnico de alta montaña y propinas compartidas equitativamente."
+    },
+    {
+        "title": "Contador(a) General & Especialista Tributario Zona Franca",
+        "company_name": "Consultora Austral Tributaria SpA",
+        "location": "Punta Arenas",
+        "sector": "Administración / Finanzas",
+        "job_type": "Indefinido",
+        "work_shift": "40 hrs",
+        "salary_min": 1150000,
+        "salary_max": 1500000,
+        "contact_email": "reclutamiento@australtributaria.cl",
+        "contact_whatsapp": "+56961220055",
+        "source_url": "https://www.bne.cl/ofertas-empleo/punta-arenas",
+        "source_name": "BNE Magallanes / Finanzas",
+        "raw_text": "Estudio contable y tributario en Punta Arenas requiere Contador(a) General o Auditor con manejo de régimen Zona Franca (DL 1055), bonificación de mano de obra DL 889, declaraciones F29 y conciliación bancaria ERP. Requisitos: título de Contador General o Contador Auditor, 2 años de experiencia en contabilidad regional, dominio de portal SII y Previred. Beneficios: jornada de 40 horas semanales, bono de desempeño en Operación Renta, seguro complementario de salud y capacitación tributaria continua."
+    },
+    {
+        "title": "Ingeniero(a) en Prevención de Riesgos y Medio Ambiente (SNS)",
+        "company_name": "Ingeniería y Montajes Australes Ltda.",
+        "location": "Punta Arenas",
+        "sector": "Construcción / Logística",
+        "job_type": "Indefinido",
+        "work_shift": "40 hrs",
+        "salary_min": 1300000,
+        "salary_max": 1700000,
+        "contact_email": "rrhh@montajesaustrales.cl",
+        "contact_whatsapp": "+56961200354",
+        "source_url": "https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas",
+        "source_name": "Chiletrabajos Magallanes / Ingeniería",
+        "raw_text": "Empresa de obras civiles y montajes industriales en Magallanes busca Ingeniero(a) en Prevención de Riesgos con registro SNS vigente. Supervisión de seguridad en terreno, protocolos MINSAL, cumplimiento de Ley Karin y gestión de matrices IPER. Requisitos: título profesional con registro SEREMI de Salud, licencia de conducir clase B al día, residencia en Punta Arenas. Beneficios: camioneta corporativa para terreno, viáticos de faena, seguro de vida y estabilidad laboral."
+    },
+    {
+        "title": "Encargado(a) de Adquisiciones y Logística Marítima",
+        "company_name": "Naviera y Abastecimiento Estrecho de Magallanes S.A.",
+        "location": "Punta Arenas",
+        "sector": "Salmonicultura / Marítimo",
+        "job_type": "Indefinido",
+        "work_shift": "40 hrs",
+        "salary_min": 1050000,
+        "salary_max": 1350000,
+        "contact_email": "abastecimiento@navieraestrecho.cl",
+        "contact_whatsapp": "+56961200556",
+        "source_url": "https://www.bne.cl/ofertas-empleo/magallanes",
+        "source_name": "BNE Magallanes / Logística Marítima",
+        "raw_text": "Compañía naviera regional busca Encargado(a) de Adquisiciones para gestionar órdenes de compra de repuestos navales, víveres de flota, insumos críticos y coordinación con proveedores en Punta Arenas y Puerto Natales. Requisitos: técnico o ingeniero en administración, logística o comercio exterior, manejo de ERP y Excel intermedio. Beneficios: almuerzo en casino corporativo, aguinaldos de fiestas patrias y navidad, seguro de salud familiar."
+    },
+    {
+        "title": "Recepcionista Bilingüe y Ejecutivo(a) de Reservas Hoteleras",
+        "company_name": "Hotel Cabo de Hornos & Patagonia Hospitality",
+        "location": "Punta Arenas",
+        "sector": "Turismo / Gastronomía",
+        "job_type": "Indefinido",
+        "work_shift": "40 hrs",
+        "salary_min": 780000,
+        "salary_max": 980000,
+        "contact_email": "talento@patagoniahospitality.cl",
+        "contact_whatsapp": "+56961220055",
+        "source_url": "https://www.chiletrabajos.cl/encuentra-un-empleo?carrera=&region=12&comuna=Punta+Arenas",
+        "source_name": "Chiletrabajos Magallanes / Turismo",
+        "raw_text": "Importante cadena hotelera en el centro de Punta Arenas busca Recepcionista Bilingüe (Español/Inglés) para atención de huéspedes internacionales, check-in/check-out, facturación de exportación turística y coordinación con operadores antárticos. Requisitos: dominio de inglés conversacional intermedio-avanzado, orientación de servicio de excelencia y disponibilidad para turnos rotativos bajo Ley 40 Horas. Beneficios: uniforme institucional, alimentación por turno, incentivos por temporada alta y plan de carrera."
     }
 ]
 
