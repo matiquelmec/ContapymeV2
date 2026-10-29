@@ -290,22 +290,34 @@ export async function getNewsBySlug(slug: string) {
 }
 
 /**
- * Deep Scraping en Node.js: extrae el cuerpo completo del artículo y sus metadatos de fecha visitando la URL.
+ * Deep Scraping en Node.js: extrae el cuerpo completo del artículo, sus metadatos de fecha y la fotografía oficial (og:image / twitter:image) visitando la URL.
  */
 async function fetchArticleFullBody(
   url: string,
   headers: Record<string, string>
-): Promise<{ body: string; htmlMetaDate: Date | null; finalUrl: string }> {
-  if (!url || !url.startsWith('http')) return { body: '', htmlMetaDate: null, finalUrl: url }
+): Promise<{ body: string; htmlMetaDate: Date | null; finalUrl: string; ogImage: string | null }> {
+  if (!url || !url.startsWith('http')) return { body: '', htmlMetaDate: null, finalUrl: url, ogImage: null }
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 6000)
     const res = await fetch(url, { headers, signal: controller.signal, cache: 'no-store' })
     clearTimeout(timeout)
-    if (!res.ok) return { body: '', htmlMetaDate: null, finalUrl: url }
+    if (!res.ok) return { body: '', htmlMetaDate: null, finalUrl: url, ogImage: null }
     const html = await res.text()
     const htmlMetaDate = extractDateFromHtmlMeta(html)
     const finalUrl = res.url || url
+
+    // 0. Extraer fotografía de prensa oficial (og:image / twitter:image) en alta resolución
+    let ogImage: string | null = null
+    const ogMatch = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image|image)["'][^>]+content=["']([^"']+)["']/i) ||
+                    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|twitter:image|image)["']/i)
+    if (ogMatch && ogMatch[1] && ogMatch[1].startsWith('http')) {
+      const candidate = ogMatch[1].trim()
+      const lower = candidate.toLowerCase()
+      if (!lower.includes('placeholder') && !lower.includes('default') && !lower.includes('avatar') && !lower.includes('favicon')) {
+        ogImage = candidate
+      }
+    }
 
     // 1. Extraer párrafos editoriales <p>
     const pMatches = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi)
@@ -316,7 +328,7 @@ async function fetchArticleFullBody(
 
       const joined = cleanParagraphs.join('\n\n')
       if (joined.length >= 350) {
-        return { body: joined, htmlMetaDate, finalUrl }
+        return { body: joined, htmlMetaDate, finalUrl, ogImage }
       }
     }
 
@@ -326,14 +338,14 @@ async function fetchArticleFullBody(
     if (articleMatch) {
       const cleaned = cleanHTML(articleMatch[1] || articleMatch[0])
       if (cleaned.length >= 350) {
-        return { body: cleaned, htmlMetaDate, finalUrl }
+        return { body: cleaned, htmlMetaDate, finalUrl, ogImage }
       }
     }
-    return { body: '', htmlMetaDate, finalUrl }
+    return { body: '', htmlMetaDate, finalUrl, ogImage }
   } catch {
     // Si falla el scraping, retornar vacío
   }
-  return { body: '', htmlMetaDate: null, finalUrl: url }
+  return { body: '', htmlMetaDate: null, finalUrl: url, ogImage: null }
 }
 
 /**
@@ -444,7 +456,8 @@ export async function syncNewsAction() {
             category = 'ECONOMÍA'
           }
 
-          const finalImage = item.imageUrl || getFallbackImage(item.title, feed.category)
+          // Prioridad fotoperiodística: 1. Foto real de prensa extraída del artículo (og:image) -> 2. Enclosure RSS -> 3. Fallback curado
+          const finalImage = scraped.ogImage || item.imageUrl || getFallbackImage(item.title, feed.category)
 
           // 🛡️ Validación Runtime Zod 100%
           const candidate = {
