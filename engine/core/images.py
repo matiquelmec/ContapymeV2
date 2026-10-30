@@ -49,57 +49,32 @@ CATEGORY_OPTICAL_PROFILES = {
     ),
 }
 
-# 📚 Biblioteca Ampliada de Stock Editorial 16:9 de Magallanes y Patagonia (40+ URLs Únicas)
+# 📚 Banco Editorial Oficial WebP HD 16:9 en Supabase Storage (Zero-Binary & Cero Hotlinks Externos)
+SUPABASE_STORAGE_BASE = "https://mofkjgfrpfmtnktaepqi.supabase.co/storage/v1/object/public/news_images"
+
 FALLBACK_POOLS = {
     "SII / LEGAL": [
-        "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1423592782089-60e02ad5d7bb?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1453728013993-6d66e9c9123a?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1479142506502-19b3a3b7ff33?w=1280&fit=crop&q=80",
+        f"{SUPABASE_STORAGE_BASE}/editorial/sii_legal_1.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/sii_legal_2.webp",
     ],
     "ECONOMÍA": [
-        "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1579532537598-459ecdaf39cc?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1280&fit=crop&q=80",
+        f"{SUPABASE_STORAGE_BASE}/editorial/economia_1.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/economia_2.webp",
+    ],
+    "FINANZAS": [
+        f"{SUPABASE_STORAGE_BASE}/editorial/economia_1.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/economia_2.webp",
     ],
     "INVERSIONES": [
-        "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1280&fit=crop&q=80",
-    ],
-    "DEPORTES REGIONALES": [
-        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1280&fit=crop&q=80",
+        f"{SUPABASE_STORAGE_BASE}/editorial/inversiones_1.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/inversiones_2.webp",
     ],
     "MAGALLANES ACTUAL": [
-        "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1280&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1280&fit=crop&q=80",
-    ]
+        f"{SUPABASE_STORAGE_BASE}/editorial/magallanes_1.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/magallanes_2.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/magallanes_3.webp",
+        f"{SUPABASE_STORAGE_BASE}/editorial/magallanes_4.webp",
+    ],
 }
 
 def _sanitize_visual_prompt(prompt: str, category: str = "") -> str:
@@ -272,9 +247,14 @@ async def generate_and_upload_image(
                     content_type = response.headers.get("content-type", "")
                     
                     if response.status_code == 200 and content_type.startswith("image/"):
+                        model_used = (response.headers.get("x-model-used") or "").lower()
+                        # Rechazar si Pollinations degradó silenciosamente a 'sana' o modelos de ilustración/anime
+                        if "sana" in model_used:
+                            logger.warning(f"[Images] ⚠️ Pollinations degradó a '{model_used}' (estilo sintético/anime no hiperrealista). Omitiendo para preservar máxima calidad.")
+                            continue
                         valid, _ = _validate_image_bytes(response.content)
                         if valid:
-                            logger.info(f"[Images] ✅ Éxito con Pollinations {model_name} en intento {attempt}!")
+                            logger.info(f"[Images] ✅ Éxito con Pollinations {model_name} ({model_used or 'flux'}) en intento {attempt}!")
                             webp_bytes = _optimize_to_webp(response.content, max_width=1536, quality=90)
                             return await _upload_to_supabase(webp_bytes, "fluxhd")
                     elif response.status_code == 429:
@@ -365,9 +345,10 @@ async def download_and_upload_image(image_url: str, min_width: int = 0, min_heig
 
 async def get_category_fallback_url(category: str, title: str = "", exclude_urls: list[str] = None) -> str:
     """
-    Selecciona una imagen de stock profesional 16:9, la descarga y la procesa con el revelado
-    óptico editorial en formato WebP HD a 1536x864, subiéndola a Supabase Storage con prefijo 'fallbackhd'.
-    Garantiza CERO URLs crudas externas de Unsplash en la base de datos y cumplimiento de Política Zero-Binary.
+    Selecciona una imagen editorial oficial de alta definición (1536x864 WebP)
+    directamente del banco de almacenamiento persistente en Supabase Storage.
+    Garantiza CERO URLs crudas externas de Unsplash en la base de datos y cumplimiento
+    estricto de la Política Zero-Binary y Fotoperiodismo Austral.
     """
     cat_normalized = category.upper()
     matching_pool = FALLBACK_POOLS.get("MAGALLANES ACTUAL")
@@ -391,17 +372,9 @@ async def get_category_fallback_url(category: str, title: str = "", exclude_urls
     if not available_pool:
         available_pool = matching_pool
         
-    # Selección determinista pero única
+    # Selección determinista pero rotativa
     idx = abs(hash(title + str(len(exclude_set)))) % len(available_pool)
     candidate_url = available_pool[idx]
 
-    # 4. Descarga, Revelado Óptico Editorial Lanczos 1536x864 y Subida a Supabase
-    try:
-        supabase_hd_url = await download_and_upload_image(candidate_url, min_width=0, min_height=0)
-        if supabase_hd_url:
-            logger.info(f"[Images] ✅ Stock fallback procesado a WebP HD en Supabase: {supabase_hd_url}")
-            return supabase_hd_url
-    except Exception as e:
-        logger.warning(f"[Images] Error procesando fallback a Supabase: {e}")
-
+    logger.info(f"[Images] ✅ Asignando asset editorial oficial de Supabase Storage: {candidate_url}")
     return candidate_url

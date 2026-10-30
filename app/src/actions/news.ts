@@ -23,17 +23,20 @@ const NEWS_SYNC_COOLDOWN = 5 * 60 * 1000 // 5 minutos de cooldown en memoria
 const NEWS_OUTDATED_INTERVAL = 4 * 60 * 60 * 1000 // 4 horas de validez de noticias en DB
 
 
+const SUPABASE_STORAGE_EDITORIAL = "https://mofkjgfrpfmtnktaepqi.supabase.co/storage/v1/object/public/news_images/editorial"
+
 const FALLBACK_IMAGES_REGIONAL = [
-  "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1536&q=85", // Plaza Muñoz Gamero
-  "https://images.unsplash.com/photo-1517022812141-23620dba5c23?auto=format&fit=crop&w=1536&q=85", // Torres del Paine
-  "https://images.unsplash.com/photo-1473163928189-364b2c4e1135?auto=format&fit=crop&w=1536&q=85", // Patagonia Estrecho
-  "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?auto=format&fit=crop&w=1536&q=85"  // Faro San Isidro / Puerto
+  `${SUPABASE_STORAGE_EDITORIAL}/magallanes_1.webp`, // Torres del Paine / Patagonia
+  `${SUPABASE_STORAGE_EDITORIAL}/magallanes_2.webp`, // Arquitectura y paisaje austral
+  `${SUPABASE_STORAGE_EDITORIAL}/magallanes_3.webp`, // Faro austral / Puerto Estrecho
+  `${SUPABASE_STORAGE_EDITORIAL}/magallanes_4.webp`  // Estrecho de Magallanes
 ]
 
 const FALLBACK_IMAGES_FINANZAS = [
-  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1536&q=85", // Finanzas oficina
-  "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1536&q=85", // Contabilidad
-  "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1536&q=85"  // Gráficos financieros
+  `${SUPABASE_STORAGE_EDITORIAL}/economia_1.webp`,   // Economía y finanzas corporativa
+  `${SUPABASE_STORAGE_EDITORIAL}/economia_2.webp`,   // Análisis contable y balances
+  `${SUPABASE_STORAGE_EDITORIAL}/inversiones_1.webp`,// Infraestructura moderna y finanzas
+  `${SUPABASE_STORAGE_EDITORIAL}/inversiones_2.webp` // Energía eólica / Viento austral
 ]
 
 const NEWS_SOURCES = [

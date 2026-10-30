@@ -430,14 +430,23 @@
   - Script versionado y reproducible en `scripts/publish_comunicado_srdanovic.py`.
   - Certificación en frontend (`/noticias/padres-adolescente-fallecida-hospital-puerto-natales-demandan-servicio-salud-magallanes`).
 
-### FASE 32: Desbloqueo del Escudo Temporal para Comunicados, Purga Deportiva y Rescate de Prensa HD — **COMPLETADO** (Octubre 2026)
-* [x] **Auditoría de Invisibilidad del Comunicado en `/noticias`:**
-  - Diagnóstico forense: La función `isStoredArticleTimely` invocaba `hasAnachronisticContent`, la cual detectó la frase "el 19 de marzo de 2023" en el relato de los hechos judiciales del comunicado como un supuesto anacronismo del año en curso, filtrando silenciosamente el artículo en tiempo de lectura en `getRegionalNews()`.
-  - Corrección: `isStoredArticleTimely` ahora garantiza la entrega inmediata de artículos con `is_protected: true` o `content_type: 'comunicado'`. Además, `hasAnachronisticContent` ahora descarta falsos positivos cuando la fecha viene acompañada de un año anterior histórico.
-* [x] **Auditoría de Calidad Visual & Purga de Contenido Fuera de Nicho:**
-  - Purga de dos noticias deportivas residuales (`Judo magallánico...` que contenía una imagen estilo anime/CGI generada antes del endurecimiento de prompts, y `Punta Arenas pierde clasificación...` que contenía un stock de vóley playa).
-  - Fortalecimiento de `forbiddenPatterns` en `isNicheRelevant` con tokens deportivos adicionales (`judo`, `futsal`, `araucania`, `deporte`, etc.).
-  - Rescate fotoperiodístico y revelado a WebP HD en Supabase Storage para las noticias de PNL (fotografía de prensa real de El Pingüino) y DEP (frontis SLEP Magallanes de Ovejero Noticias).
+### FASE 33: Auditoría Forense de Calidad de Imágenes, Erradicación de Fallbacks Degradados (Sana/Anime/Unsplash) y Despliegue de Banco Editorial WebP HD — **COMPLETADO** (Octubre 2026)
+* [x] **Diagnóstico Forense de la Falla de Generación Hiperrealista:**
+  - Descubrimiento 1 (Render Cloud): El servicio `contapymepuq-engine` corre en Render con APScheduler.
+  - Descubrimiento 2 (Migración HF & Pollinations): Hugging Face Serverless retiró FLUX.1 (`410 Gone`), mientras que la API gratuita comunitaria de Pollinations restringió su catálogo a `["sana"]` (modelo ligero que genera estilo anime/plástico) y bloqueó `flux-realism` (`402 Payment Required`), causando fallos 503 y degradaciones silenciosas.
+  - Descubrimiento 3 (Sobrecarga de Requests Secuenciales): El worker RSS ejecutaba peticiones secuenciales a 120 artículos sin filtrar previamente duplicados o deportes, ocasionando timeouts que dejaban `og_img = None` y forzaban la caída al fallback de Unsplash.
+* [x] **Pre-Filtrado Inteligente de Alto Rendimiento en el Crawler (`news_worker.py`):**
+  - Incorporación de `_is_forbidden_topic()` y verificación inmediata contra `existing_urls` y `existing_titles` antes de visitar cualquier página web, reduciendo los requests por ciclo de 120 a solo 3-6 noticias relevantes de alta prioridad.
+  - Eliminación definitiva del retorno de `"DEPORTES REGIONALES"` en `_normalize_category()`.
+* [x] **Banco Editorial Oficial WebP HD 100% Austral en Supabase Storage:**
+  - Creación y despliegue del banco persistente en `news_images/editorial/*.webp` (1536x864 con revelado óptico Lanczos): `sii_legal`, `economia`, `inversiones` y `magallanes`.
+  - Actualización de `FALLBACK_POOLS` y `get_category_fallback_url()` en `engine/core/images.py` y `app/src/actions/news.ts` apuntando exclusivamente a los assets de Supabase Storage. Cero URLs crudas de Unsplash.
+  - Rechazo estricto en `generate_and_upload_image()` ante modelos degradados como `sana` (`x-model-used: sana`).
+* [x] **Saneamiento Integral de la Base de Datos en Producción:**
+  - Purga de todas las noticias deportivas residuales (`category = 'DEPORTES REGIONALES'`, pádel, vóley, etc.).
+  - Rescate y optimización de 32 fotografías reales de prensa in situ (`og:image`) convertidas a WebP HD (`presshd_*.webp`).
+  - Cero noticias con Unsplash y cero noticias de deportes en la base de datos de producción.
+
 
 
 

@@ -405,9 +405,25 @@ async def _fetch_full_content(url: str, client: httpx.AsyncClient, return_meta: 
         return "", None, url, None
     return ""
 
-async def _fetch_from_magallanes_rss():
-    """Obtiene noticias reales de diarios locales vía RSS."""
+def _is_forbidden_topic(title: str, desc: str = "") -> bool:
+    """Filtro estricto que descarta deportes, farándula y sucesos irrelevantes de nicho."""
+    text = f"{title or ''} {desc or ''}".lower()
+    forbidden = [
+        "padel", "pádel", "futbol", "fútbol", "basquetbol", "básquetbol", "voley", "voleibol",
+        "balonmano", "ciclismo", "araucania", "araucanía", "judo", "taekwondo", "boxeo",
+        "karting", "atletismo", "goleada", "campeonato", "torneo", "semifinal", "deporte",
+        "deportes", "deportivo", "liga infantil", "maxibasquetbol", "triatlon", "triatlón",
+        "chofer ebrio", "riña", "tiktoker preso", "golpiza", "chofer sorprendido",
+        "quebrantamiento de condena", "necrologicas", "necrológicas", "funeraria", "sepelio"
+    ]
+    return any(re.search(rf"\b{re.escape(w)}\b", text) for w in forbidden)
+
+async def _fetch_from_magallanes_rss(existing_urls: set = None, existing_titles: set = None):
+    """Obtiene noticias reales de diarios locales vía RSS con pre-filtrado de alto rendimiento."""
     news = []
+    existing_urls = existing_urls or set()
+    existing_titles = existing_titles or set()
+
     async with httpx.AsyncClient(headers=STEALTH_HEADERS, follow_redirects=True, timeout=15.0) as client:
         for source in NEWS_SOURCES:
             try:
@@ -416,15 +432,25 @@ async def _fetch_from_magallanes_rss():
                 
                 if resp.status_code == 200 and len(resp.text) > 50:
                     root = ET.fromstring(resp.text)
-                    items = root.findall('.//item')[:20] # Aumentamos alcance por fuente
+                    items = root.findall('.//item')[:20]
                     for item in items:
                         title_el = item.find('title')
                         desc_el = item.find('description')
                         link_el = item.find('link')
                         
-                        title = title_el.text if title_el is not None else "Sin Título"
-                        desc = desc_el.text if desc_el is not None else ""
-                        link = link_el.text if link_el is not None else ""
+                        title = (title_el.text or "Sin Título").strip()
+                        desc = (desc_el.text or "").strip()
+                        link = (link_el.text or "").strip()
+                        norm_title = title.lower().strip()
+
+                        # 🛡️ 1. Pre-filtro: omitir si ya existe en DB (cero requests innecesarios)
+                        if link in existing_urls or norm_title in existing_titles:
+                            continue
+
+                        # 🛡️ 2. Pre-filtro: rechazar taxativamente deportes y sucesos fuera de nicho
+                        if _is_forbidden_topic(title, desc):
+                            logger.info(f"[News Worker] ⏭️ Omitiendo deporte/suceso irrelevante: {title[:50]}...")
+                            continue
                         
                         pub_date_el = item.find('pubDate')
                         pub_date = pub_date_el.text if pub_date_el is not None else None
@@ -443,7 +469,6 @@ async def _fetch_from_magallanes_rss():
                                         real_url = decoded_data["decoded_url"]
                                         logger.info(f"[News Worker] 🚀 URL Real decodificada: {real_url}")
                                         full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(real_url, client, return_meta=True)
-                                        # Actualizar link para guardar la fuente original resuelta
                                         link = final_url or real_url
                                     else:
                                         full_content, html_meta_dt, final_url, og_img = await _fetch_full_content(link, client, return_meta=True)
@@ -461,8 +486,8 @@ async def _fetch_from_magallanes_rss():
                                     link = final_url
                         
                         news.append({
-                            "headline": title.strip() if title else "Sin Título",
-                            "content": full_content if len(full_content) > 100 else _clean_html(desc.strip()),
+                            "headline": title if title else "Sin Título",
+                            "content": full_content if len(full_content) > 100 else _clean_html(desc),
                             "img": og_img or "/news-placeholder.png",
                             "link": link,
                             "source_name": source["name"],
@@ -485,25 +510,26 @@ async def _fetch_and_process_news():
 
     logger.info("[News Worker] Iniciando ciclo de recolección de noticias regionales...")
 
-    # 1. Captura de Noticias de Fuentes RSS
-    news_pool = await _fetch_from_magallanes_rss()
-    
-    if not news_pool:
-        logger.warning("[News Worker] ⚠️ No se encontraron noticias nuevas en las fuentes RSS.")
-        return {"total": 0}
-
-    # 2. Obtener historial reciente para deduplicación exacta, semántica y visual
+    # 1. Obtener historial reciente para deduplicación exacta, semántica y visual ANTES del scraping
     existing_articles = []
+    existing_urls = set()
+    existing_titles = set()
     used_images_in_cycle = set()
     try:
         existing_res = db.table("regional_news").select("source_url, normalized_title, title, summary, content, image_url").order("published_at", desc=True).limit(60).execute()
         existing_articles = existing_res.data or []
-        existing_urls = [n["source_url"] for n in existing_articles if n.get("source_url")]
-        existing_titles = [n["normalized_title"] for n in existing_articles if n.get("normalized_title")]
+        existing_urls = {n["source_url"] for n in existing_articles if n.get("source_url")}
+        existing_titles = {n["normalized_title"] for n in existing_articles if n.get("normalized_title")}
         used_images_in_cycle = {n["image_url"] for n in existing_articles[:20] if n.get("image_url")}
     except Exception as e:
         logger.warning(f"[News Worker] ⚠️ No se pudo obtener datos existentes: {e}")
-        existing_urls, existing_titles, existing_articles = [], [], []
+
+    # 2. Captura de Noticias de Fuentes RSS con pre-filtro activo
+    news_pool = await _fetch_from_magallanes_rss(existing_urls=existing_urls, existing_titles=existing_titles)
+    
+    if not news_pool:
+        logger.warning("[News Worker] ⚠️ No se encontraron noticias nuevas en las fuentes RSS.")
+        return {"total": 0}
 
     # 3. Filtrado Inteligente (Deduplicación semántica y relevancia local con priorización de nicho)
     financial_candidates = []
@@ -826,8 +852,6 @@ def _normalize_category(cat: str) -> str:
     # Mapeos Regionales
     if any(k in cat for k in ["MAGALLANES", "ARENAS", "PUNTA", "WILLIAMS", "NATALES", "PORVENIR", "LOCAL"]):
         return "MAGALLANES ACTUAL"
-    if "DEPORTE" in cat:
-        return "DEPORTES REGIONALES"
     
     return "MAGALLANES ACTUAL" # Fallback regional
 
