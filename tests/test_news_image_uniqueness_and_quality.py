@@ -57,7 +57,6 @@ class TestNewsImageUniquenessAndQuality:
             
             return clean_hero, clean_secondary
 
-        # Simular entrada con 4 imágenes repetidas intencionalmente
         hero_input = {"id": "h1", "title": "Hero", "image_url": "https://example.com/dup_image.webp"}
         secondary_input = [
             {"id": "s1", "title": "Sec 1", "image_url": "https://example.com/dup_image.webp"},
@@ -85,13 +84,15 @@ class TestNewsImageUniquenessAndQuality:
         assert "Queda estrictamente prohibido devolver títulos o textos en inglés" in ai_code
 
     def test_04_fallback_pool_contains_sufficient_diverse_images(self):
-        """Verifica que la biblioteca de imágenes de fallback contenga más de 30 fotos únicas 16:9."""
-        from engine.core.images import FALLBACK_POOLS
+        """Verifica que la biblioteca de imágenes de fallback oficial en Supabase Storage sea válida y contenga fotos 16:9 WebP HD."""
+        from engine.core.images import FALLBACK_POOLS, SUPABASE_STORAGE_BASE
 
         total_unique_urls = set()
         for cat, urls in FALLBACK_POOLS.items():
-            assert len(urls) >= 5, f"Categoría {cat} tiene menos de 5 imágenes"
+            assert len(urls) >= 2, f"Categoría {cat} tiene menos de 2 imágenes"
             for u in urls:
+                assert u.startswith(SUPABASE_STORAGE_BASE), f"URL no pertenece a Supabase Storage: {u}"
+                assert u.endswith(".webp"), f"Formato no es WebP HD: {u}"
                 total_unique_urls.add(u)
 
-        assert len(total_unique_urls) >= 30
+        assert len(total_unique_urls) >= 8

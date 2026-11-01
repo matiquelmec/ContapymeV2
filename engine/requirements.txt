@@ -28,7 +28,6 @@ urllib3>=2.0.0,<2.3.0
 charset-normalizer>=3.3.2,<4.0.0
 chardet>=5.0.0,<6.0.0
 apscheduler==3.10.4
-googlenewsdecoder==0.1.7
 
 # Documents, Word & PDF Generation
 python-docx==1.1.0

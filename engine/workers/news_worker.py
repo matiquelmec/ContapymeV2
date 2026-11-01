@@ -12,7 +12,7 @@ from core.database import get_supabase
 from core.ai import process_news_with_local_llm
 from core.brand_scrapper import fetch_brand_logo_url
 from core.images import generate_and_upload_image, download_and_upload_image, get_category_fallback_url
-from googlenewsdecoder import new_decoderv1
+from core.google_news_decoder import new_decoderv1
 
 logger = logging.getLogger("contapyme.news")
 
