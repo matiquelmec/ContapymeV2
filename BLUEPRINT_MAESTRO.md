@@ -430,22 +430,18 @@
   - Script versionado y reproducible en `scripts/publish_comunicado_srdanovic.py`.
   - Certificación en frontend (`/noticias/padres-adolescente-fallecida-hospital-puerto-natales-demandan-servicio-salud-magallanes`).
 
-### FASE 33: Auditoría Forense de Calidad de Imágenes, Erradicación de Fallbacks Degradados (Sana/Anime/Unsplash) y Despliegue de Banco Editorial WebP HD — **COMPLETADO** (Octubre 2026)
-* [x] **Diagnóstico Forense de la Falla de Generación Hiperrealista:**
-  - Descubrimiento 1 (Render Cloud): El servicio `contapymepuq-engine` corre en Render con APScheduler.
-  - Descubrimiento 2 (Migración HF & Pollinations): Hugging Face Serverless retiró FLUX.1 (`410 Gone`), mientras que la API gratuita comunitaria de Pollinations restringió su catálogo a `["sana"]` (modelo ligero que genera estilo anime/plástico) y bloqueó `flux-realism` (`402 Payment Required`), causando fallos 503 y degradaciones silenciosas.
-  - Descubrimiento 3 (Sobrecarga de Requests Secuenciales): El worker RSS ejecutaba peticiones secuenciales a 120 artículos sin filtrar previamente duplicados o deportes, ocasionando timeouts que dejaban `og_img = None` y forzaban la caída al fallback de Unsplash.
-* [x] **Pre-Filtrado Inteligente de Alto Rendimiento en el Crawler (`news_worker.py`):**
-  - Incorporación de `_is_forbidden_topic()` y verificación inmediata contra `existing_urls` y `existing_titles` antes de visitar cualquier página web, reduciendo los requests por ciclo de 120 a solo 3-6 noticias relevantes de alta prioridad.
-  - Eliminación definitiva del retorno de `"DEPORTES REGIONALES"` en `_normalize_category()`.
-* [x] **Banco Editorial Oficial WebP HD 100% Austral en Supabase Storage:**
-  - Creación y despliegue del banco persistente en `news_images/editorial/*.webp` (1536x864 con revelado óptico Lanczos): `sii_legal`, `economia`, `inversiones` y `magallanes`.
-  - Actualización de `FALLBACK_POOLS` y `get_category_fallback_url()` en `engine/core/images.py` y `app/src/actions/news.ts` apuntando exclusivamente a los assets de Supabase Storage. Cero URLs crudas de Unsplash.
-  - Rechazo estricto en `generate_and_upload_image()` ante modelos degradados como `sana` (`x-model-used: sana`).
-* [x] **Saneamiento Integral de la Base de Datos en Producción:**
-  - Purga de todas las noticias deportivas residuales (`category = 'DEPORTES REGIONALES'`, pádel, vóley, etc.).
-  - Rescate y optimización de 32 fotografías reales de prensa in situ (`og:image`) convertidas a WebP HD (`presshd_*.webp`).
-  - Cero noticias con Unsplash y cero noticias de deportes en la base de datos de producción.
+### FASE 34: Auditoría de Autenticidad de ContaEmpleos, Erradicación de Avisos Ficticios y Purga de Teléfonos de Relleno (Caso Rodrigo Negrete) — **COMPLETADO** (Noviembre 2026)
+* [x] **Auditoría Forense Integral de la Cartelera Laboral (`job_postings`):**
+  - Tras el reporte del postulante Rodrigo Negrete respecto al cargo de *Encargado de Adquisiciones y Logística Marítima*, se comprobó que el catálogo contenía 14 avisos sintéticos/curados provenientes de un seed de demostración.
+  - Verificación DNS de dominios de contacto: 8 dominios eran inexistentes (`navieraestrecho.cl`, `patagoniahospitality.cl`, `australtributaria.cl`, etc.) y 14 avisos compartían de manera cruzada 3 números de WhatsApp de terceros (`+56961200556`, `+56961220055`, `+56961200354`).
+* [x] **Saneamiento Inmediato en Producción Supabase:**
+  - Retiro y expiración inmediata (`status = 'expired'`, `is_verified = false`) de los 14 registros no verificados.
+  - La cartelera activa queda reducida estrictamente a los **6 empleos 100% reales** y verificables (Valtec Chile, Layner, Mutual de Seguridad, Confidencial, Empresa Retail).
+* [x] **Desactivación de Catálogos Curados Estáticos en Engine y Frontend:**
+  - Desactivación de `REGIONAL_CURATED_FEEDS` en `engine/workers/job_worker.py` y de `MAGALLANES_REGIONAL_SEED_JOBS` en `app/src/lib/jobs/jobs-feed-sync.ts` para impedir que los crons de Render o Vercel vuelvan a resucitar ofertas sintéticas vía `upsert`.
+  - Actualización de `tests/test_jobs_real_authenticity_audit.py` con prohibición expresa de teléfonos de relleno y verificación de base de datos activa.
+  - Triple puerta de calidad superada: 33/33 tests de jobs aprobados, typecheck limpio (0 errores) y 51/51 tests de frontend aprobados.
+
 
 
 

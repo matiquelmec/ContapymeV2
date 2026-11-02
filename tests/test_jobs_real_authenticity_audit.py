@@ -2,11 +2,10 @@
 🧪 Suite de Pruebas Unitarias: Certificación de Autenticidad de Empleos Magallanes
 ==================================================================================
 Valida que el portal opere exclusivamente con ofertas laborales reales y verificables:
-1. Ausencia absoluta de avisos de demostración / sintéticos (ej. Estudio Tributario Austral, HIF Global mock).
-2. Trazabilidad de origen y presencia de enlaces oficiales de postulación (BNE, Chiletrabajos, OMIL).
-3. Cumplimiento estricto del Art. 2° Código del Trabajo (0% cláusulas discriminatorias).
-4. Integridad del mapeo application_url en base de datos y UI.
-5. Idempotencia del motor de sincronización de vacantes reales.
+1. Ausencia absoluta de avisos de demostración o sintéticos.
+2. Trazabilidad de origen y mapeo de application_url.
+3. Cumplimiento estricto del Art. 2° Código del Trabajo.
+4. Política Zero-Ficción: Ausencia de teléfonos de relleno y dominios fantasma.
 """
 
 import pytest
@@ -18,7 +17,7 @@ import re
 class TestJobsRealAuthenticityAudit:
 
     def test_01_seed_jobs_contain_no_synthetic_demo_companies(self):
-        """Verifica que jobs-feed-sync.ts no contenga empresas ficticias o correos mock en el seed."""
+        """Verifica que jobs-feed-sync.ts no contenga empresas ficticias o correos mock."""
         sync_file = os.path.join("app", "src", "lib", "jobs", "jobs-feed-sync.ts")
         assert os.path.exists(sync_file), "El archivo jobs-feed-sync.ts debe existir."
 
@@ -29,24 +28,26 @@ class TestJobsRealAuthenticityAudit:
             "Estudio Tributario Austral SpA",
             "Antártica21 Expeditions",
             "Transportes y Grúas Magallanes Ltda.",
+            "Naviera y Abastecimiento Estrecho de Magallanes",
             "talento@contapymepuq.cl",
             "+56944444565",
+            "+56961200556",
+            "+56961220055",
+            "+56961200354",
         ]
 
         for term in prohibited_terms:
-            assert term not in content, f"El término de demostración '{term}' no debe existir en el feed oficial."
+            assert term not in content, f"El término de relleno '{term}' no debe existir en el feed oficial."
 
-    def test_02_seed_jobs_contain_real_magallanes_employers_with_urls(self):
-        """Verifica que el feed incluya empresas reales de Magallanes y enlaces oficiales de postulación."""
-        sync_file = os.path.join("app", "src", "lib", "jobs", "jobs-feed-sync.ts")
-        with open(sync_file, "r", encoding="utf-8") as f:
+    def test_02_dynamic_scraper_covers_real_magallanes_jobs(self):
+        """Verifica que el colector dinámico apunte a portales laborales oficiales de Magallanes."""
+        scraper_file = os.path.join("engine", "scrapers", "jobs_scraper.py")
+        assert os.path.exists(scraper_file), "El colector dinámico debe existir."
+        with open(scraper_file, "r", encoding="utf-8") as f:
             content = f.read()
 
-        assert "Sanchez & Sanchez Ltda." in content, "Debe incluir a Sanchez & Sanchez como empleador real verificado."
-        assert "Procesadora Barranco Amarillo" in content, "Debe incluir a Procesadora Barranco Amarillo."
-        assert "Australis Seafoods" in content, "Debe incluir a Australis Seafoods."
-        assert "https://www.bne.cl" in content, "Debe enlazar a la Bolsa Nacional de Empleo oficial."
-        assert "https://www.chiletrabajos.cl" in content, "Debe enlazar a Chiletrabajos Magallanes."
+        assert "chiletrabajos.cl" in content, "Debe consultar Chiletrabajos Magallanes."
+        assert "punta arenas" in content.lower(), "Debe filtrar por comunas de Magallanes."
 
     def test_03_application_url_mapped_in_sync_payload(self):
         """Verifica que el payload de inserción mapee 'application_url' y 'source_url' hacia la base de datos."""
@@ -83,17 +84,19 @@ class TestJobsRealAuthenticityAudit:
         key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vZmtqZ2ZycGZtdG5rdGFlcHFpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzUzMzg3MSwiZXhwIjoyMDg5MTA5ODcxfQ.4Dt6aFWe-0aDpY2LpeTC-CRkh2nh7YHFAGSr-M7uBvI"
         supabase = create_client(url, key)
 
-        res = supabase.table('job_postings').select('company_name, title, contact_email').eq('status', 'active').execute()
-        assert len(res.data) >= 8, "Debe haber al menos 8 empleos reales activos en Magallanes."
-
+        res = supabase.table('job_postings').select('company_name, title, contact_email, contact_whatsapp').eq('status', 'active').execute()
         forbidden_companies = [
             "estudio tributario austral",
             "grúas magallanes",
-            "antártica21"
+            "antártica21",
+            "naviera y abastecimiento estrecho de magallanes"
         ]
+
+        fallback_phones = {"+56961200556", "+56961220055", "+56961200354"}
 
         for job in res.data:
             c_name = job["company_name"].lower()
             for forbidden in forbidden_companies:
                 assert forbidden not in c_name, f"Se detectó empleo de demostración remanente: {job['company_name']}"
             assert job.get("contact_email") != "talento@contapymepuq.cl", "No debe haber correos mock en ofertas activas."
+            assert job.get("contact_whatsapp") not in fallback_phones, f"Teléfono fallback no permitido en oferta activa: {job.get('contact_whatsapp')}"
