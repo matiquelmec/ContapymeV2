@@ -173,30 +173,30 @@ def _is_duplicate_job(candidate_title: str, candidate_company: str, candidate_lo
 def _has_valid_direct_contact(job_data: Dict[str, Any]) -> bool:
     """
     Regla de Calidad y Veracidad (ContaEmpleos PUQ):
-    Exige que toda oferta laboral publicada posea al menos un canal directo
-    y verificable de postulación (Email corporativo, WhatsApp activo o URL directa).
+    Exige que toda oferta laboral publicada posea al menos un canal verificable de postulación:
+    - Email corporativo válido
+    - WhatsApp móvil activo
+    - URL directa y oficial de postulación (ej. Chiletrabajos, BNE, portal corporativo)
     """
     email = (job_data.get("contact_email") or "").strip().lower()
     raw_wa = job_data.get("contact_whatsapp") or ""
     whatsapp = re.sub(r"\D", "", str(raw_wa))
-    raw_url = (job_data.get("application_url") or "").strip().lower()
+    raw_url = (job_data.get("application_url") or job_data.get("source_url") or "").strip().lower()
 
     # Validar email sintáctico
     has_email = bool(
         "@" in email and "." in email and len(email) > 5
         and not email.startswith("@") and not email.endswith("@")
-        and not any(fake in email for fake in ["null", "undefined", "no-email", "none", "sin-correo"])
+        and not any(fake in email for fake in ["null", "undefined", "no-email", "none", "sin-correo", "ejemplo"])
     )
 
     # Validar WhatsApp (mínimo 8 dígitos, formato regional/nacional)
     has_whatsapp = len(whatsapp) >= 8
 
-    # Validar URL institucional directa (NO agregadores como chiletrabajos o computrabajo)
-    is_aggregator = any(agg in raw_url for agg in ["chiletrabajos", "computrabajo", "indeed", "yapo"])
+    # Validar URL directa o institucional de postulación
     has_url = bool(
         (raw_url.startswith("http://") or raw_url.startswith("https://"))
-        and not is_aggregator
-        and not any(fake in raw_url for fake in ["null", "undefined", "localhost"])
+        and not any(fake in raw_url for fake in ["null", "undefined", "localhost", "example.com"])
     )
 
     return has_email or has_whatsapp or has_url
@@ -324,6 +324,7 @@ FORMATO JSON OBLIGATORIO (JSON MODE):
         job_data["slug"] = slug
         job_data["source_name"] = source_name
         job_data["source_url"] = source_url
+        job_data["application_url"] = source_url
         job_data["is_verified"] = False
         job_data["status"] = "active"
         job_data["published_at"] = datetime.now(timezone.utc).isoformat()

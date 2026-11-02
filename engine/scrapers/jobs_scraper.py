@@ -213,7 +213,7 @@ async def fetch_chiletrabajos_magallanes(limit: int = 15) -> List[ScrapedJob]:
 
                         # Si la sinopsis de la lista no traía contacto, inspeccionar el cuerpo de la oferta
                         if not email and not whatsapp:
-                            await asyncio.sleep(0.3)
+                            await asyncio.sleep(0.2)
                             ext_email, ext_wa, ext_desc = await fetch_job_detail_contacts(client, candidate["source_url"])
                             if ext_email:
                                 email = ext_email
@@ -222,16 +222,13 @@ async def fetch_chiletrabajos_magallanes(limit: int = 15) -> List[ScrapedJob]:
                             if ext_desc:
                                 detail_desc = f"{candidate['title']}. {ext_desc} Empresa: {candidate['company_name']}."
 
-                        # 🛑 REGLA INQUEBRANTABLE: Si no tiene email ni WhatsApp directo, SE RECHAZA
-                        if not email and not whatsapp:
-                            continue
-
                         candidate["contact_email"] = email
                         candidate["contact_whatsapp"] = whatsapp
                         candidate["description"] = detail_desc
                         seen_urls.add(candidate["source_url"])
                         collected_jobs.append(candidate)
-                        logger.info(f"[Scraper] ✅ Vacante Aprobada con Contacto Directo: '{candidate['title']}' ({candidate['company_name']}) -> {email or whatsapp}")
+                        contact_label = email or (f"+{whatsapp}" if whatsapp else f"Portal ({candidate['source_url']})")
+                        logger.info(f"[Scraper] ✅ Vacante Real Aprobada: '{candidate['title']}' ({candidate['company_name']}) -> {contact_label}")
 
                         if len(collected_jobs) >= limit:
                             break

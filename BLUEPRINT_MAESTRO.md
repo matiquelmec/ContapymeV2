@@ -442,6 +442,19 @@
   - Actualización de `tests/test_jobs_real_authenticity_audit.py` con prohibición expresa de teléfonos de relleno y verificación de base de datos activa.
   - Triple puerta de calidad superada: 33/33 tests de jobs aprobados, typecheck limpio (0 errores) y 51/51 tests de frontend aprobados.
 
+### FASE 35: Reactivación del Colector de Empleos Australes y Publicación de 15 Nuevas Vacantes Reales de Magallanes — **COMPLETADO** (Noviembre 2026)
+* [x] **Diagnóstico y Corrección de Filtro Excluyente en Scraper Dinámico:**
+  - Se identificó la causa raíz por la cual la cartelera laboral no se actualizaba: `engine/scrapers/jobs_scraper.py` y `engine/workers/job_worker.py` descartaban el 100% de las vacantes de Chiletrabajos que no expusieran un correo o WhatsApp en texto plano dentro de la descripción del aviso.
+  - Al ocultar las plataformas de empleo el contacto directo tras el formulario de postulación oficial, la cartelera quedaba vacía y activaba históricamente el catálogo sintético de contingencia.
+  - Se actualizó el pipeline para validar y registrar la URL oficial de postulación (`source_url` / `application_url`), preservando correos y celulares si están presentes y habilitando el botón `[Postular en Fuente Oficial]` cuando no lo están, erradicando cualquier número inventado.
+* [x] **Ingesta y Publicación en Vivo de 15 Vacantes Reales en Punta Arenas:**
+  - Ejecución del ciclo de sincronización en vivo (`sync_regional_jobs_cycle`): 15 nuevas vacantes reales de Magallanes ingestadas con clasificación Groq AI estructurada (Rotter & Krauss, Maconline, Ecr group, Ingenet Ltda, PedidosYa, Bendito Café, etc.).
+  - Total de ofertas laborales reales y vigentes activas en Supabase: **21 vacantes**.
+* [x] **Triple Puerta de Calidad Aprobada:**
+  - 5/5 tests de autenticidad en `tests/test_jobs_real_authenticity_audit.py` aprobados (100%).
+  - `npm run typecheck` en `/app`: 0 errores.
+  - `npm test` en `/app`: 51/51 tests aprobados (100%).
+
 
 
 
