@@ -265,7 +265,7 @@ def _extract_og_image_from_html(raw_html: str) -> str | None:
         if m:
             img_url = m.group(1).strip()
             # Descartar placeholders o logos genéricos de Google News
-            if not any(bad in img_url.lower() for bad in ("google.com", "gstatic.com", "placeholder", "logo", "favicon", "avatar")):
+            if not any(bad in img_url.lower() for bad in ("google.com", "gstatic.com", "placeholder", "logo", "favicon", "avatar", "columna", "opinion", "banner", "plantilla", "cabecera", "separador", "portada-generica", "ovejero")):
                 return img_url
     return None
 

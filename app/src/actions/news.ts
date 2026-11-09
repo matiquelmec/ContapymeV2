@@ -317,7 +317,13 @@ async function fetchArticleFullBody(
     if (ogMatch && ogMatch[1] && ogMatch[1].startsWith('http')) {
       const candidate = ogMatch[1].trim()
       const lower = candidate.toLowerCase()
-      if (!lower.includes('placeholder') && !lower.includes('default') && !lower.includes('avatar') && !lower.includes('favicon')) {
+      const BANNER_BLACKLIST = [
+        'placeholder', 'default', 'avatar', 'favicon',
+        'columna', 'opinion', 'banner', 'logo', 'plantilla',
+        'cabecera', 'separador', 'portada-generica', 'ovejero'
+      ]
+      const isGraphicBanner = BANNER_BLACKLIST.some(b => lower.includes(b))
+      if (!isGraphicBanner) {
         ogImage = candidate
       }
     }

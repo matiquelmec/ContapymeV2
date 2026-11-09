@@ -308,7 +308,7 @@ async def download_and_upload_image(image_url: str, min_width: int = 0, min_heig
     if not image_url or not image_url.startswith("http"):
         return None
     lower_url = image_url.lower()
-    if any(b in lower_url for b in ("placeholder", "default-share", "avatar", "favicon.ico", "logo-default", "1x1", "pixel")):
+    if any(b in lower_url for b in ("placeholder", "default-share", "avatar", "favicon.ico", "logo-default", "1x1", "pixel", "columna", "opinion", "banner", "plantilla", "cabecera", "separador", "portada-generica", "ovejero")):
         return None
     try:
         headers = {
